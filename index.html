@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>EllipsisLM</title>
+    <title>AI Chat</title>
     
     <!-- PWA and iOS Home Screen Support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="...EllipsisLM">
-    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/pacmanincarnate/EllipsisLM/refs/heads/main/IMG_0005.jpeg">
+    <meta name="apple-mobile-web-app-title" content="AI Storyteller">
+    <link rel="apple-touch-icon" href="https://storage.googleapis.com/pai-images/22e56a81615f4e6691238e2124c6536b.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -49,6 +49,11 @@
             --transition-fast: 0.2s ease-in-out;
             --transition-medium: 0.4s ease-out;
             --transition-slow: 0.5s ease-in-out;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
         }
 
         body { 
@@ -102,6 +107,11 @@
         }
 
         /* --- Chat Components --- */
+        #chat-window {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
         #chat-window h1, 
         #chat-window h2, 
         #chat-window h3 { 
@@ -123,6 +133,25 @@
         #chat-window em {
             color: var(--text-accent);
             font-style: italic;
+        }
+
+        .chat-bubble-container {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .bubble-header {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0.25rem;
+        }
+        
+        .bubble-header .timestamp {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
         }
 
         /* --- Hover & Animation Effects --- */
@@ -148,45 +177,29 @@
         .chat-bubble-container.new-message {
             animation: fadeIn var(--transition-medium);
         }
-
-        .chat-bubble-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
+        
         /* --- Layout Management & Responsiveness --- */
-        #chat-window-container {
-            display: flex;
+        /* Default: vertical layout */
+        body.layout-vertical #chat-window-container {
             justify-content: center;
-            align-items: center; /* Vertically center content when not in float mode */
+        }
+        body.layout-vertical #chat-window {
+            width: 98%;
+        }
+        body.layout-vertical #character-portrait-container {
+            display: none;
         }
 
-        #chat-window {
-            width: 100%;
-            max-width: 1500px;
+        /* Horizontal layout */
+        body.layout-horizontal #chat-window-container {
+            justify-content: space-between;
         }
-
-        /* Hide the portrait container by default on medium+ screens to ensure chat is centered. */
-        @media (min-width: 768px) {
-            #character-portrait-container {
-                display: none;
-            }
+        body.layout-horizontal #chat-window {
+            width: 66.66%;
         }
-
-        @media (min-width: 1024px) {
-            /* For floating portrait mode on large screens, override the above styles */
-            body[data-mode="floating_portrait"] #chat-window-container {
-                justify-content: space-between;
-                align-items: stretch; /* Override vertical centering for float mode */
-            }
-            body[data-mode="floating_portrait"] #chat-window {
-                max-width: none;
-            }
-            body[data-mode="floating_portrait"] #character-portrait-container {
-                /* Show the container and make it a flex item */
-                display: flex;
-            }
+        body.layout-horizontal #character-portrait-container {
+            display: flex;
+            width: 33.33%;
         }
     </style>
 </head>
@@ -195,7 +208,7 @@
     <div id="global-background" class="fixed inset-0 -z-10 bg-gray-900 bg-cover bg-center transition-all duration-500"></div>
 
     <!-- Main Application Container -->
-    <div class="w-full h-screen p-2 md:p-6 lg:p-8 flex flex-col glass-bg">
+    <div class="w-full h-full p-2 md:p-6 lg:p-8 flex flex-col glass-bg">
         
         <!-- Header -->
         <header class="mb-4 flex justify-between items-center">
@@ -234,7 +247,7 @@
              <div id="chat-window-container" class="relative flex-grow flex min-h-0 mb-4 bg-black/30 rounded-lg overflow-hidden">
                 <div id="cinematic-overlay-bg" class="absolute inset-0 bg-contain bg-no-repeat bg-left-center transition-opacity duration-1000 opacity-20 pointer-events-none" style="mask-image: linear-gradient(to right, black 60%, transparent 100%);"></div>
                 <div id="chat-window" class="relative z-10 flex-grow p-4 overflow-y-auto"></div>
-                <div id="character-portrait-container" class="hidden md:flex flex-shrink-0 w-1/3 pl-4 flex-col justify-center items-center"></div>
+                <div id="character-portrait-container" class="flex-shrink-0 pl-4 flex-col justify-center items-center"></div>
              </div>
              <!-- /Chat Window & Portrait -->
              
@@ -272,7 +285,7 @@
     <div id="knowledge-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('knowledge-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative flex flex-col max-h-[90vh]"><div class="p-6 pb-0 flex justify-between items-center border-b border-gray-700"><div class="flex"><button id="knowledge-tab-world" onclick="app.switchKnowledgeTab('world')" class="py-3 px-4 font-semibold text-lg border-b-2 border-indigo-500 text-white">World</button><button id="knowledge-tab-lore" onclick="app.switchKnowledgeTab('lore')" class="py-3 px-4 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">Lore</button></div><button id="knowledge-add-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg ml-4 flex-shrink-0">Add Entry</button></div><div class="p-6 overflow-y-auto flex-grow"><div id="knowledge-world-content"><div id="world-info-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div id="world-info-list" class="md:col-span-1 bg-black/30 rounded-lg p-4 overflow-y-auto"></div><div id="world-info-details" class="md:col-span-2 bg-black/30 rounded-lg p-4"><div id="world-info-details-content" class="h-full"><div class="text-gray-400 flex items-center justify-center h-full">Select a world info entry.</div></div></div></div></div><div id="knowledge-lore-content" class="hidden"><div id="lorebook-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div id="lorebook-list" class="md:col-span-1 bg-black/30 rounded-lg p-4 overflow-y-auto"></div><div id="lorebook-details" class="md:col-span-2 bg-black/30 rounded-lg p-4"><div id="lorebook-details-content" class="h-full"><div class="text-gray-400 flex items-center justify-center h-full">Select a lorebook entry.</div></div></div></div></div></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="app.closeModal('knowledge-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
         
     <!-- Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('settings-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 relative flex flex-col max-h-[90vh]"><div class="p-6 pb-0 border-b border-gray-700"><h2 class="text-2xl font-semibold mb-4">Settings</h2><div class="flex -mb-px"><button id="settings-tab-appearance" onclick="app.switchSettingsTab('appearance')" class="py-2 px-4 font-semibold border-b-2 border-indigo-500 text-white">Appearance</button><button id="settings-tab-prompt" onclick="app.switchSettingsTab('prompt')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Prompt</button><button id="settings-tab-model" onclick="app.switchSettingsTab('model')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Model</button></div></div><div class="p-6 overflow-y-auto flex-grow"><div id="settings-appearance-content" class="space-y-6"><div><div class="grid grid-cols-2 gap-4"><div><label for="font-selector" class="text-gray-400 text-sm block mb-2">Chat Font</label><select id="font-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="'Inter', sans-serif">Inter (Sans-Serif)</option><option value="'Lora', serif">Lora (Serif)</option><option value="'Roboto Slab', serif">Roboto Slab</option><option value="'EB Garamond', serif">EB Garamond</option><option value="'Cormorant Garamond', serif">Cormorant Garamond</option><option value="'Source Code Pro', monospace">Source Code Pro</option></select></div><div><label for="chat-text-color" class="text-gray-400 text-sm block mb-2">Chat Text Color</label><input type="color" id="chat-text-color" class="w-full bg-black/30 border-gray-600 rounded-lg p-1 h-10"></div></div><label for="background-image-url" class="text-gray-400 text-sm block mt-4 mb-2">Background Image URL</label><input type="text" id="background-image-url" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="https://example.com/image.png"><label for="bubble-opacity-slider" class="text-gray-400 text-sm block mt-4 mb-2">Chat Bubble Opacity</label><div class="flex items-center space-x-4"><input type="range" id="bubble-opacity-slider" class="w-full" min="0" max="1" step="0.05"><span id="bubble-opacity-value" class="text-sm text-gray-400 w-12 text-right"></span></div><label for="character-image-display" class="text-gray-400 text-sm block mt-4 mb-2">Character Image Display</label><div class="flex space-x-4" id="character-image-display"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="none"><span>None</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="floating_portrait"><span>Floating</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="cinematic_overlay"><span>Cinematic</span></label></div></div></div><div id="settings-prompt-content" class="hidden space-y-6"><div><h3 class="text-lg font-medium mb-2">System Prompt</h3><p class="text-gray-400 text-sm mb-2">Guide the AI's style, atmosphere, and response format.</p><textarea id="system-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><div><h3 class="text-lg font-medium mb-2">Event Master Prompt</h3><p class="text-gray-400 text-sm mb-2">Define the base instruction for the Event Master, which injects surprise events.</p><textarea id="event-master-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><button onclick="app.openViewRawPromptModal()" class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw Prompt</button></div><div id="settings-model-content" class="hidden space-y-6"><div><h3 class="text-lg font-medium mb-2">AI Provider</h3><div class="flex space-x-4"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="gemini" onchange="app.setApiProvider('gemini')"><span>Gemini</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="openrouter" onchange="app.setApiProvider('openrouter')"><span>OpenRouter</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="koboldcpp" onchange="app.setApiProvider('koboldcpp')"><span>KoboldCPP</span></label></div></div><div id="gemini-settings"><h3 class="text-lg font-medium">Gemini API Settings</h3><p class="text-gray-400 text-sm mb-2">Required for text generation.</p><input type="password" id="gemini-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter Gemini API key"></div><div id="openrouter-settings"><h3 class="text-lg font-medium">OpenRouter API Settings</h3><p class="text-gray-400 text-sm mb-2">Your key and the model name.</p><input type="password" id="openrouter-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter OpenRouter API key"><input type="text" id="openrouter-model-input" class="mt-2 w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter model name"></div><div id="koboldcpp-settings"><h3 class="text-lg font-medium">KoboldCPP Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is running with the <strong>--cors</strong> flag.</p><div><label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label><select id="koboldcpp-template-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="none">None (Raw Text)</option><option value="mistral">Mistral</option><option value="chatml">ChatML</option><option value="alpaca">Alpaca</option></select></div><div><label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-min-p-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-min-p-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div><div><label for="koboldcpp-dry-slider" class="text-gray-400 text-sm block mt-4 mb-2">DRY (Repetition Penalty)</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-dry-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-dry-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div></div></div></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="app.closeModal('settings-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
+    <div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('settings-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 relative flex flex-col max-h-[90vh]"><div class="p-6 pb-0 border-b border-gray-700"><h2 class="text-2xl font-semibold mb-4">Settings</h2><div class="flex -mb-px"><button id="settings-tab-appearance" onclick="app.switchSettingsTab('appearance')" class="py-2 px-4 font-semibold border-b-2 border-indigo-500 text-white">Appearance</button><button id="settings-tab-prompt" onclick="app.switchSettingsTab('prompt')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Prompt</button><button id="settings-tab-model" onclick="app.switchSettingsTab('model')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Model</button></div></div><div class="p-6 overflow-y-auto flex-grow"><div id="settings-appearance-content" class="space-y-6"><div><div class="grid grid-cols-2 gap-4"><div><label for="font-selector" class="text-gray-400 text-sm block mb-2">Chat Font</label><select id="font-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="'Inter', sans-serif">Inter (Sans-Serif)</option><option value="'Lora', serif">Lora (Serif)</option><option value="'Roboto Slab', serif">Roboto Slab</option><option value="'EB Garamond', serif">EB Garamond</option><option value="'Cormorant Garamond', serif">Cormorant Garamond</option><option value="'Source Code Pro', monospace">Source Code Pro</option></select></div><div><label for="chat-text-color" class="text-gray-400 text-sm block mb-2">Chat Text Color</label><input type="color" id="chat-text-color" class="w-full bg-black/30 border-gray-600 rounded-lg p-1 h-10"></div></div><label for="background-image-url" class="text-gray-400 text-sm block mt-4 mb-2">Background Image URL</label><input type="text" id="background-image-url" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="https://example.com/image.png"><label for="bubble-opacity-slider" class="text-gray-400 text-sm block mt-4 mb-2">Chat Bubble Opacity</label><div class="flex items-center space-x-4"><input type="range" id="bubble-opacity-slider" class="w-full" min="0" max="1" step="0.05"><span id="bubble-opacity-value" class="text-sm text-gray-400 w-12 text-right"></span></div><label for="character-image-display" class="text-gray-400 text-sm block mt-4 mb-2">Character Image Display</label><div class="flex space-x-4" id="character-image-display"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="none" checked><span>None</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="cinematic_overlay"><span>Cinematic</span></label></div></div></div><div id="settings-prompt-content" class="hidden space-y-6"><div><h3 class="text-lg font-medium mb-2">System Prompt</h3><p class="text-gray-400 text-sm mb-2">Guide the AI's style, atmosphere, and response format.</p><textarea id="system-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><div><h3 class="text-lg font-medium mb-2">Event Master Prompt</h3><p class="text-gray-400 text-sm mb-2">Define the base instruction for the Event Master, which injects surprise events.</p><textarea id="event-master-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><button onclick="app.openViewRawPromptModal()" class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw Prompt</button></div><div id="settings-model-content" class="hidden space-y-6"><div><h3 class="text-lg font-medium mb-2">AI Provider</h3><div class="flex space-x-4"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="gemini" onchange="app.setApiProvider('gemini')"><span>Gemini</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="openrouter" onchange="app.setApiProvider('openrouter')"><span>OpenRouter</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="koboldcpp" onchange="app.setApiProvider('koboldcpp')"><span>KoboldCPP</span></label></div></div><div id="gemini-settings"><h3 class="text-lg font-medium">Gemini API Settings</h3><p class="text-gray-400 text-sm mb-2">Required for text generation.</p><input type="password" id="gemini-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter Gemini API key"></div><div id="openrouter-settings"><h3 class="text-lg font-medium">OpenRouter API Settings</h3><p class="text-gray-400 text-sm mb-2">Your key and the model name.</p><input type="password" id="openrouter-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter OpenRouter API key"><input type="text" id="openrouter-model-input" class="mt-2 w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter model name"></div><div id="koboldcpp-settings"><h3 class="text-lg font-medium">KoboldCPP Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is running with the <strong>--cors</strong> flag.</p><div><label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label><select id="koboldcpp-template-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="none">None (Raw Text)</option><option value="mistral">Mistral</option><option value="chatml">ChatML</option><option value="alpaca">Alpaca</option></select></div><div><label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-min-p-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-min-p-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div><div><label for="koboldcpp-dry-slider" class="text-gray-400 text-sm block mt-4 mb-2">DRY (Repetition Penalty)</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-dry-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-dry-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div></div></div></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="app.closeModal('settings-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
     
     <!-- AI Enhance Modal -->
     <div id="ai-enhance-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('ai-enhance-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl p-6 w-11/12 md:w-1/2 lg:w-1/3 relative"><h3 class="text-xl font-bold mb-4">Enhance with AI</h3><textarea id="modal-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" rows="4"></textarea><div class="mt-6 flex justify-end space-x-4"><button onclick="app.closeModal('ai-enhance-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Cancel</button><button id="modal-confirm-button" class="bg-indigo-600 hover:bg-indigo-700 font-bold py-2 px-4 rounded-lg">Generate</button></div></div></div>
@@ -598,6 +611,9 @@
                 });
                 slider.addEventListener('change', () => this.saveState());
             };
+            
+            this.updateLayout();
+            window.addEventListener('resize', debounce(() => this.updateLayout(), 100));
 
             setListener('gemini-api-key-input', 'geminiApiKey'); 
             setListener('openrouter-api-key-input', 'openRouterKey'); 
@@ -659,6 +675,17 @@
             });
         },
         
+        updateLayout() {
+            if (window.innerHeight > window.innerWidth) {
+                document.body.classList.add('layout-vertical');
+                document.body.classList.remove('layout-horizontal');
+            } else {
+                document.body.classList.add('layout-horizontal');
+                document.body.classList.remove('layout-vertical');
+            }
+             this.updateSidePortrait();
+        },
+
         toggleMobileMenu() {
             document.getElementById('mobile-menu').classList.toggle('hidden');
         },
@@ -979,20 +1006,14 @@
                 characterNameColor = `style="color: ${charColor.bold};"`;
             }
             
-            const bubbleWidthClass = 'max-w-xs md:max-w-md lg:max-w-2xl';
             const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
             return `
                 <div class="chat-bubble-container ${msg.isNew ? 'new-message' : ''} mb-4" data-message-index="${index}">
-                    <div class="flex items-start justify-between">
-                         <p class="font-bold text-sm mb-1" ${characterNameColor}>${this.escapeHTML(character.name)}</p>
-                         <span class="timestamp text-xs text-gray-500 ml-4">${timestamp}</span>
-                    </div>
-                    <div class="flex items-center w-full">
-                        <div class="${bubbleWidthClass} rounded-lg p-3" style="background-color: ${bubbleColor};">
-                            <div id="${contentId}" class="whitespace-pre-wrap" style="color: ${this.state.chatTextColor}; font-family: ${this.state.font};">${contentHTML}</div>
-                        </div>
-                        <div class="action-btn-group flex flex-col ml-2 space-y-1">
+                    <div class="bubble-header">
+                         <p class="font-bold text-sm" ${characterNameColor}>${this.escapeHTML(character.name)}</p>
+                         <span class="timestamp text-xs text-gray-500">${timestamp}</span>
+                         <div class="action-btn-group flex ml-2 space-x-2">
                             <button onclick="app.copyMessage(${index})" class="text-gray-400 hover:text-white" title="Copy">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                             </button>
@@ -1001,6 +1022,9 @@
                             </button>
                         </div>
                     </div>
+                    <div class="bubble-body rounded-lg p-3" style="background-color: ${bubbleColor};">
+                        <div id="${contentId}" class="whitespace-pre-wrap" style="color: ${this.state.chatTextColor}; font-family: ${this.state.font};">${contentHTML}</div>
+                    </div>
                 </div>`;
         },
 
@@ -1008,29 +1032,58 @@
             if (this.RUNTIME.streamingInterval) return; 
             
             document.body.dataset.mode = this.state.characterImageMode;
-
-            const chatWindow = document.getElementById('chat-window');
-            const lastChatMessages = this.state.chat_history.filter(m => m.type === 'chat');
-            const lastSpeakerMsg = lastChatMessages.length > 0 ? lastChatMessages[lastChatMessages.length - 1] : null;
-            const lastSpeaker = lastSpeakerMsg ? this.state.characters.find(c => c.id === lastSpeakerMsg.character_id) : null;
             
+            this.updateSidePortrait();
+
             const cinematicBg = document.getElementById('cinematic-overlay-bg');
-            if (this.state.characterImageMode === 'cinematic_overlay' && lastSpeaker && lastSpeaker.image_url) {
-                const lastEmotion = lastSpeakerMsg.emotion || 'neutral';
-                let portraitUrl = lastSpeaker.image_url;
-                if (lastEmotion !== 'neutral' && lastSpeaker.extra_portraits) {
-                    const emotionalPortrait = lastSpeaker.extra_portraits.find(p => p.emotion === lastEmotion);
-                    if (emotionalPortrait) portraitUrl = emotionalPortrait.url;
+            if (this.state.characterImageMode === 'cinematic_overlay') {
+                const lastChatMessages = this.state.chat_history.filter(m => m.type === 'chat');
+                const lastSpeakerMsg = lastChatMessages.length > 0 ? lastChatMessages[lastChatMessages.length - 1] : null;
+                const lastSpeaker = lastSpeakerMsg ? this.state.characters.find(c => c.id === lastSpeakerMsg.character_id) : null;
+                
+                if (lastSpeaker && lastSpeaker.image_url) {
+                    const lastEmotion = lastSpeakerMsg.emotion || 'neutral';
+                    let portraitUrl = lastSpeaker.image_url;
+                    if (lastEmotion !== 'neutral' && lastSpeaker.extra_portraits) {
+                        const emotionalPortrait = lastSpeaker.extra_portraits.find(p => p.emotion === lastEmotion);
+                        if (emotionalPortrait) portraitUrl = emotionalPortrait.url;
+                    }
+                    cinematicBg.style.backgroundImage = `url('${portraitUrl}')`;
+                    cinematicBg.style.opacity = 0.2;
+                } else {
+                   cinematicBg.style.opacity = 0;
                 }
-                cinematicBg.style.backgroundImage = `url('${portraitUrl}')`;
-                cinematicBg.style.opacity = 0.2;
             } else {
                 cinematicBg.style.opacity = 0;
             }
 
-            chatWindow.innerHTML = this.state.chat_history.map((msg, index) => this._createMessageHTML(msg, index)).join('');
+            document.getElementById('chat-window').innerHTML = this.state.chat_history.map((msg, index) => this._createMessageHTML(msg, index)).join('');
             
             this.state.chat_history.forEach(m => m.isNew = false);
+        },
+
+        updateSidePortrait() {
+            const portraitContainer = document.getElementById('character-portrait-container');
+            if(document.body.classList.contains('layout-vertical')) {
+                portraitContainer.innerHTML = '';
+                return;
+            }
+            
+            const lastChatMessages = this.state.chat_history.filter(m => m.type === 'chat' && !this.state.characters.find(c=>c.id === m.character_id)?.is_user);
+            const lastSpeakerMsg = lastChatMessages.length > 0 ? lastChatMessages[lastChatMessages.length - 1] : null;
+            const lastSpeaker = lastSpeakerMsg ? this.state.characters.find(c => c.id === lastSpeakerMsg.character_id) : null;
+            
+            if (lastSpeaker && lastSpeaker.image_url) {
+                 const lastEmotion = lastSpeakerMsg.emotion || 'neutral';
+                 let portraitUrl = lastSpeaker.image_url;
+                 if (lastEmotion !== 'neutral' && lastSpeaker.extra_portraits) {
+                     const emotionalPortrait = lastSpeaker.extra_portraits.find(p => p.emotion === lastEmotion);
+                     if (emotionalPortrait && emotionalPortrait.url) portraitUrl = emotionalPortrait.url;
+                 }
+                 portraitContainer.innerHTML = `<img src="${portraitUrl}" class="max-w-full max-h-full object-contain">`;
+            } else {
+                portraitContainer.innerHTML = '';
+            }
         },
 
         copyMessage(index) {
@@ -1101,7 +1154,7 @@
                     this.saveState();
                     setTimeout(() => bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
                 }
-            }, 10); // Decreased from 50ms to 10ms for faster streaming
+            }, 5); 
         },
 
         addMessageToHistory(id, content, type = 'chat', emotion = 'neutral') {
@@ -1769,12 +1822,4 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
 
