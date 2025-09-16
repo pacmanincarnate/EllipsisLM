@@ -35,7 +35,7 @@
             
             --surface-glass: rgba(17, 24, 39, 0.15);
             --surface-card: rgba(55, 65, 81, 0.6);
-            --surface-overlay: rgba(0, 0, 0, 0.7);
+            --surface-overlay: rgba(0, 0, 0, 0.4);
             
             --border-primary: rgba(75, 85, 99, 0.8);
             --brand-color: #6366f1; /* Indigo */
@@ -128,6 +128,7 @@
             margin: 0.5rem 0;
             color: var(--text-secondary);
             font-style: italic;
+            font-weight: bold;
         }
 
         #chat-window em {
@@ -146,6 +147,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 0 0.25rem;
+            padding-bottom: 4px;
         }
         
         .bubble-header .timestamp {
@@ -165,11 +167,11 @@
 
         .bubble-body .whitespace-pre-wrap {
             overflow: hidden; /* BFC to contain the float */
-			white-space: normal;
+            white-space: normal;
         }
         .bubble-body .whitespace-pre-wrap p {
             margin: 0;
-			white-space: normal;
+            white-space: normal;
         }
         .bubble-body .whitespace-pre-wrap p + p {
             margin-top: 0.75em;
@@ -286,6 +288,9 @@
             padding: 1rem;
             border-top: 1px solid var(--border-primary);
         }
+        body.layout-vertical .md\:hidden {
+            display: flex !important;
+        }
     </style>
 </head>
 <body data-mode="none" class="bg-gray-900 min-h-screen flex flex-col">
@@ -350,9 +355,9 @@
                  <div class="flex flex-col space-y-2">
                      <select id="ai-character-selector" class="bg-black/30 border border-gray-600 rounded-lg p-2 w-full mb-2"></select>
                      <div class="flex items-center justify-center space-x-1">
-                         <button onclick="app.handlePrimaryAction()" class="bg-indigo-600/80 hover:bg-indigo-700/80 text-white font-bold p-2 rounded-lg" title="Send / Write for Me"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg></button>
-                         <button onclick="app.handleRegen()" class="bg-sky-600/60 hover:bg-sky-700/60 text-white font-bold p-2 rounded-lg" title="Regenerate / New Response"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 9a9 9 0 0114.65-5.32L20 5M20 15a9 9 0 01-14.65 5.32L4 19"></path></svg></button>
-                         <button onclick="app.undoLastTurn()" class="bg-gray-600/60 hover:bg-gray-500/60 text-white font-bold p-2 rounded-lg" title="Undo"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l4-4m-4 4l4 4"></path></svg></button>
+                         <button onclick="app.handlePrimaryAction()" class="bg-indigo-600/50 hover:bg-indigo-600/80 text-white font-bold p-1.5 rounded-lg" title="Send / Write for Me"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg></button>
+                         <button onclick="app.handleRegen()" class="bg-sky-600/40 hover:bg-sky-600/70 text-white font-bold p-1.5 rounded-lg" title="Regenerate / New Response"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 9a9 9 0 0114.65-5.32L20 5M20 15a9 9 0 01-14.65 5.32L4 19"></path></svg></button>
+                         <button onclick="app.undoLastTurn()" class="bg-gray-600/40 hover:bg-gray-500/70 text-white font-bold p-1.5 rounded-lg" title="Undo"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l4-4m-4 4l4 4"></path></svg></button>
                      </div>
                  </div>
              </div>
@@ -377,17 +382,39 @@
     <div id="knowledge-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('knowledge-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative flex flex-col max-h-[90vh]"><div class="p-6 pb-0 flex justify-between items-center border-b border-gray-700"><div class="flex"><button id="knowledge-tab-static" onclick="app.switchKnowledgeTab('static')" class="py-3 px-4 font-semibold text-lg border-b-2 border-indigo-500 text-white">Static</button><button id="knowledge-tab-dynamic" onclick="app.switchKnowledgeTab('dynamic')" class="py-3 px-4 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">Dynamic</button></div><button id="knowledge-add-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg ml-4 flex-shrink-0">Add Entry</button></div><div class="p-6 overflow-y-auto flex-grow"><div id="knowledge-static-content"><div id="static-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div id="static-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4 overflow-y-auto"></div><div id="static-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4"><div id="static-entry-details-content" class="h-full"><div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.</div></div></div></div></div><div id="knowledge-dynamic-content" class="hidden"><div id="dynamic-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div id="dynamic-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4 overflow-y-auto"></div><div id="dynamic-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4"><div id="dynamic-entry-details-content" class="h-full"><div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.</div></div></div></div></div></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="app.closeModal('knowledge-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
         
     <!-- Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('settings-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 relative flex flex-col max-h-[90vh]"><div class="p-6 pb-0 border-b border-gray-700"><h2 class="text-2xl font-semibold mb-4">Settings</h2><div class="flex -mb-px"><button id="settings-tab-appearance" onclick="app.switchSettingsTab('appearance')" class="py-2 px-4 font-semibold border-b-2 border-indigo-500 text-white">Appearance</button><button id="settings-tab-prompt" onclick="app.switchSettingsTab('prompt')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Prompt</button><button id="settings-tab-model" onclick="app.switchSettingsTab('model')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Model</button></div></div><div class="p-6 overflow-y-auto flex-grow"><div id="settings-appearance-content" class="space-y-6"><div><div class="grid grid-cols-2 gap-4"><div><label for="font-selector" class="text-gray-400 text-sm block mb-2">Chat Font</label><select id="font-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="'Inter', sans-serif">Inter (Sans-Serif)</option><option value="'Lora', serif">Lora (Serif)</option><option value="'Roboto Slab', serif">Roboto Slab</option><option value="'EB Garamond', serif">EB Garamond</option><option value="'Cormorant Garamond', serif">Cormorant Garamond</option><option value="'Source Code Pro', monospace">Source Code Pro</option></select></div><div><label for="chat-text-color" class="text-gray-400 text-sm block mb-2">Chat Text Color</label><input type="color" id="chat-text-color" class="w-full bg-black/30 border-gray-600 rounded-lg p-1 h-10"></div></div><label for="background-image-url" class="text-gray-400 text-sm block mt-4 mb-2">Background Image URL</label><input type="text" id="background-image-url" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="https://example.com/image.png"><label for="bubble-opacity-slider" class="text-gray-400 text-sm block mt-4 mb-2">Chat Bubble Opacity</label><div class="flex items-center space-x-4"><input type="range" id="bubble-opacity-slider" class="w-full" min="0" max="1" step="0.05"><span id="bubble-opacity-value" class="text-sm text-gray-400 w-12 text-right"></span></div><label for="character-image-display" class="text-gray-400 text-sm block mt-4 mb-2">Character Image Display</label><div class="flex space-x-4" id="character-image-display"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="none" checked><span>None</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="cinematic_overlay"><span>Cinematic</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="bubble"><span>Bubble</span></label></div></div></div><div id="settings-prompt-content" class="hidden space-y-6"><div><h3 class="text-lg font-medium mb-2">System Prompt</h3><p class="text-gray-400 text-sm mb-2">Guide the AI's style, atmosphere, and response format.</p><textarea id="system-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><div><h3 class="text-lg font-medium mb-2">Event Master Prompt</h3><p class="text-gray-400 text-sm mb-2">Define the base instruction for the Event Master, which injects surprise events.</p><textarea id="event-master-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><button onclick="app.openViewRawPromptModal()" class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw Prompt</button></div><div id="settings-model-content" class="hidden space-y-6"><div><h3 class="text-lg font-medium mb-2">AI Provider</h3><div class="flex space-x-4"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="gemini" onchange="app.setApiProvider('gemini')"><span>Gemini</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="openrouter" onchange="app.setApiProvider('openrouter')"><span>OpenRouter</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="koboldcpp" onchange="app.setApiProvider('koboldcpp')"><span>KoboldCPP</span></label></div></div><div id="gemini-settings"><h3 class="text-lg font-medium">Gemini API Settings</h3><p class="text-gray-400 text-sm mb-2">Required for text generation.</p><input type="password" id="gemini-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter Gemini API key"></div><div id="openrouter-settings"><h3 class="text-lg font-medium">OpenRouter API Settings</h3><p class="text-gray-400 text-sm mb-2">Your key and the model name.</p><input type="password" id="openrouter-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter OpenRouter API key"><input type="text" id="openrouter-model-input" class="mt-2 w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter model name"></div><div id="koboldcpp-settings"><h3 class="text-lg font-medium">KoboldCPP Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is running with the <strong>--cors</strong> flag.</p><div><label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label><select id="koboldcpp-template-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="none">None (Raw Text)</option><option value="mistral">Mistral</option><option value="chatml">ChatML</option><option value="alpaca">Alpaca</option></select></div><div><label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-min-p-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-min-p-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div><div><label for="koboldcpp-dry-slider" class="text-gray-400 text-sm block mt-4 mb-2">DRY (Repetition Penalty)</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-dry-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-dry-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div></div></div></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="app.closeModal('settings-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
+    <div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('settings-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 relative flex flex-col max-h-[90vh]"><div class="p-6 pb-0 border-b border-gray-700"><h2 class="text-2xl font-semibold mb-4">Settings</h2><div class="flex -mb-px"><button id="settings-tab-appearance" onclick="app.switchSettingsTab('appearance')" class="py-2 px-4 font-semibold border-b-2 border-indigo-500 text-white">Appearance</button><button id="settings-tab-prompt" onclick="app.switchSettingsTab('prompt')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Prompt</button><button id="settings-tab-model" onclick="app.switchSettingsTab('model')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Model</button></div></div><div class="p-6 overflow-y-auto flex-grow" id="settings-content-container">...</div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="app.closeModal('settings-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
     
     <!-- AI Enhance Modal -->
     <div id="ai-enhance-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('ai-enhance-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl p-6 w-11/12 md:w-1/2 lg:w-1/3 relative"><h3 class="text-xl font-bold mb-4">Enhance with AI</h3><textarea id="modal-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" rows="4"></textarea><div class="mt-6 flex justify-end space-x-4"><button onclick="app.closeModal('ai-enhance-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Cancel</button><button id="modal-confirm-button" class="bg-indigo-600 hover:bg-indigo-700 font-bold py-2 px-4 rounded-lg">Generate</button></div></div></div>
     
     <!-- Edit Response Modal -->
-    <div id="edit-response-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('edit-response-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 relative flex flex-col max-h-[90vh]"><div class="p-6 border-b border-gray-700"><h3 class="text-xl font-bold">Edit Response</h3></div><div class="p-6 flex-grow"><textarea id="edit-modal-input" class="w-full h-full bg-gray-900 border-gray-700 rounded-lg p-2 resize-none"></textarea></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end space-x-4"><button onclick="app.closeModal('edit-response-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Cancel</button><button id="edit-modal-save-button" class="bg-indigo-600 hover:bg-indigo-700 font-bold py-2 px-4 rounded-lg">Save</button></div></div></div>
+    <div id="edit-response-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('edit-response-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 relative flex flex-col max-h-[75vh]"><div class="p-6 border-b border-gray-700"><h3 class="text-xl font-bold">Edit Response</h3></div><div class="p-6 flex-grow"><textarea id="edit-modal-input" class="w-full h-full bg-gray-900 border-gray-700 rounded-lg p-2 resize-none"></textarea></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end space-x-4"><button onclick="app.closeModal('edit-response-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Cancel</button><button id="edit-modal-save-button" class="bg-indigo-600 hover:bg-indigo-700 font-bold py-2 px-4 rounded-lg">Save</button></div></div></div>
     
     <!-- View Raw Prompt Modal -->
     <div id="view-raw-prompt-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('view-raw-prompt-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative flex flex-col max-h-[90vh]"><div class="p-6 border-b border-gray-700"><h2 class="text-2xl font-semibold">Raw Prompt</h2></div><div class="p-6 overflow-y-auto flex-grow bg-gray-900"><pre id="raw-prompt-content" class="text-sm whitespace-pre-wrap"></pre></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="app.closeModal('view-raw-prompt-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
     <!-- /Modals -->
+
+    <!-- Hidden template for settings tabs -->
+    <div id="settings-templates" class="hidden">
+        <div id="settings-appearance-content" class="space-y-6">
+            <div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label for="font-selector" class="text-gray-400 text-sm block mb-2">Chat Font</label><select id="font-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="'Inter', sans-serif">Inter (Sans-Serif)</option><option value="'Lora', serif">Lora (Serif)</option><option value="'Roboto Slab', serif">Roboto Slab</option><option value="'EB Garamond', serif">EB Garamond</option><option value="'Cormorant Garamond', serif">Cormorant Garamond</option><option value="'Source Code Pro', monospace">Source Code Pro</option></select></div>
+                    <div><label for="chat-text-color" class="text-gray-400 text-sm block mb-2">Chat Text Color</label><input type="color" id="chat-text-color" class="w-full bg-black/30 border-gray-600 rounded-lg p-1 h-10"></div>
+                </div>
+                <label for="background-image-url" class="text-gray-400 text-sm block mt-4 mb-2">Background Image URL</label><input type="text" id="background-image-url" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="https://example.com/image.png">
+                <label for="bubble-opacity-slider" class="text-gray-400 text-sm block mt-4 mb-2">Chat Bubble Opacity</label><div class="flex items-center space-x-4"><input type="range" id="bubble-opacity-slider" class="w-full" min="0" max="1" step="0.05"><span id="bubble-opacity-value" class="text-sm text-gray-400 w-12 text-right"></span></div>
+                <label class="text-gray-400 text-sm block mt-4 mb-2">Character Image Display</label><div class="flex space-x-4" id="character-image-display"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="none" checked><span>None</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="cinematic_overlay"><span>Cinematic</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="bubble"><span>Bubble</span></label></div>
+            </div>
+        </div>
+        <div id="settings-prompt-content" class="space-y-6">
+            <div><h3 class="text-lg font-medium mb-2">System Prompt</h3><p class="text-gray-400 text-sm mb-2">Guide the AI's style, atmosphere, and response format.</p><textarea id="system-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><div><h3 class="text-lg font-medium mb-2">Event Master Prompt</h3><p class="text-gray-400 text-sm mb-2">Define the base instruction for the Event Master, which injects surprise events.</p><textarea id="event-master-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><button onclick="app.openViewRawPromptModal()" class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw Prompt</button>
+        </div>
+        <div id="settings-model-content" class="space-y-6">
+            <div><h3 class="text-lg font-medium mb-2">AI Provider</h3><div class="flex space-x-4"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="gemini" onchange="app.setApiProvider('gemini')"><span>Gemini</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="openrouter" onchange="app.setApiProvider('openrouter')"><span>OpenRouter</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="koboldcpp" onchange="app.setApiProvider('koboldcpp')"><span>KoboldCPP</span></label></div></div><div id="gemini-settings"><h3 class="text-lg font-medium">Gemini API Settings</h3><p class="text-gray-400 text-sm mb-2">Required for text generation.</p><input type="password" id="gemini-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter Gemini API key"></div><div id="openrouter-settings"><h3 class="text-lg font-medium">OpenRouter API Settings</h3><p class="text-gray-400 text-sm mb-2">Your key and the model name.</p><input type="password" id="openrouter-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter OpenRouter API key"><input type="text" id="openrouter-model-input" class="mt-2 w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter model name"></div><div id="koboldcpp-settings"><h3 class="text-lg font-medium">KoboldCPP Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is running with the <strong>--cors</strong> flag.</p><div><label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label><select id="koboldcpp-template-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="none">None (Raw Text)</option><option value="mistral">Mistral</option><option value="chatml">ChatML</option><option value="alpaca">Alpaca</option></select></div><div><label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-min-p-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-min-p-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div><div><label for="koboldcpp-dry-slider" class="text-gray-400 text-sm block mt-4 mb-2">DRY (Repetition Penalty)</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-dry-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-dry-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div></div>
+        </div>
+    </div>
+
 
     <script>
     // Utility function to prevent a function from being called too frequently.
@@ -400,7 +427,7 @@
         CONSTANTS: {
             LIBRARY_KEY: 'aiStorytellerLibrary',
             CHARACTER_COLORS: [
-                { base: '#134e4a', bold: '#2dd4bf' }, // Teal
+                { base: '#334155', bold: '#94a3b8' }, // Slate (Blue-Grey)
                 { base: '#1e3a8a', bold: '#60a5fa' }, // Blue
                 { base: '#581c87', bold: '#f472b6' }, // Fuchsia
                 { base: '#78350f', bold: '#fbbf24' }, // Amber
@@ -447,8 +474,8 @@
             this.loadActiveStory();
             
             // Step 3: Check if an active story was successfully loaded.
-            if (!this.state) { 
-                console.log("No active story found, creating a new one.");
+            if (!this.library.active_story_id || !this.state) { 
+                console.log("No active story/narrative found, creating a new one.");
                 this.createNewStory(false); 
             } else {
                 this._ensureCharacterColors();
@@ -487,38 +514,81 @@
                 this.state = null;
                 return;
             }
-            
+
             let activeStory = this.library.stories.find(s => s.id === this.library.active_story_id);
 
             if (!activeStory) {
                 activeStory = this.library.stories.sort((a,b) => new Date(b.last_modified) - new Date(a.last_modified))[0];
-                this.library.active_story_id = activeStory ? activeStory.id : null;
+                if(activeStory) {
+                    this.library.active_story_id = activeStory.id;
+                } else {
+                     this.state = null;
+                     return;
+                }
             }
             
-            if (activeStory) {
-                this.state = activeStory.state;
-                // Migration for old data structure
-                if (this.state.world_info) {
-                    this.state.static_entries = this.state.world_info;
-                    delete this.state.world_info;
+            // --- DATA MIGRATION ---
+            // This ensures old stories are compatible with the new Scenarios/Narratives structure.
+            if (activeStory.state && !activeStory.state.scenarios) {
+                console.log(`Migrating story: ${activeStory.name}`);
+                activeStory.state.scenarios = (activeStory.state.first_messages || ["The story begins..."]).map(msg => ({
+                    id: this.uuid(),
+                    message: msg
+                }));
+                activeStory.state.narratives = [];
+                if (activeStory.state.chat_history && activeStory.state.chat_history.length > 0) {
+                    activeStory.state.narratives.push({
+                        id: this.uuid(),
+                        name: "Imported Chat",
+                        last_modified: new Date().toISOString(),
+                        chat_history: activeStory.state.chat_history,
+                        messageCounter: activeStory.state.messageCounter
+                    });
+                     activeStory.state.active_narrative_id = activeStory.state.narratives[0].id;
                 }
-                 if (this.state.lorebook_entries) {
-                    this.state.dynamic_entries = this.state.lorebook_entries;
-                    delete this.state.lorebook_entries;
-                }
+                delete activeStory.state.first_messages;
+                delete activeStory.state.chat_history;
+            }
+            // --- END MIGRATION ---
+
+            this.state = activeStory.state;
+            
+            let activeNarrative = (this.state.narratives || []).find(n => n.id === this.state.active_narrative_id);
+            
+            // If no active narrative is set, or the set one doesn't exist, find the most recent one.
+            if (!activeNarrative && (this.state.narratives || []).length > 0) {
+                activeNarrative = this.state.narratives.sort((a, b) => new Date(b.last_modified) - new Date(a.last_modified))[0];
+                this.state.active_narrative_id = activeNarrative.id;
+            }
+
+            if (activeNarrative) {
+                // Load the active narrative's data into the top-level state for the UI to use.
+                this.state.chat_history = activeNarrative.chat_history;
+                this.state.messageCounter = activeNarrative.messageCounter;
             } else {
-                this.state = null;
+                // If there are no narratives at all, initialize an empty chat.
+                this.state.chat_history = [];
+                this.state.messageCounter = 0;
             }
         },
 
         saveState() {
             const activeStory = this.library.stories.find(s => s.id === this.library.active_story_id);
-            if (activeStory) {
-                activeStory.state = this.state;
-                activeStory.last_modified = new Date().toISOString();
-                this.updateSearchIndex(activeStory);
-                this.saveLibrary();
+            if (!activeStory) return;
+
+            activeStory.state = this.state;
+            activeStory.last_modified = new Date().toISOString();
+            
+            const activeNarrative = (activeStory.state.narratives || []).find(n => n.id === activeStory.state.active_narrative_id);
+            if (activeNarrative) {
+                // Save the current chat back to its narrative object.
+                activeNarrative.chat_history = this.state.chat_history;
+                activeNarrative.messageCounter = this.state.messageCounter;
+                activeNarrative.last_modified = new Date().toISOString();
             }
+
+            this.updateSearchIndex(activeStory);
+            this.saveLibrary();
         },
 
         createNewStory(reload = true) {
@@ -535,12 +605,15 @@
             };
             this.library.stories.push(newStory);
             this.library.active_story_id = newStory.id;
-            this.saveLibrary();
+            
+            // Automatically create and activate the first narrative from the first scenario
+            const firstScenario = newStory.state.scenarios[0];
+            this.loadScenario(newStory.id, firstScenario.id, false); // false to prevent reload
 
             if (reload) {
                 window.location.reload();
             } else {
-                this.state = newStoryState;
+                this.loadActiveStory(); // Load the newly created story and narrative state
                 this.applyStyling();
                 this.renderAll();
                 this.setupEventListeners();
@@ -587,9 +660,10 @@
                     { id: this.uuid(), name: "Narrator", description: "Describes the world.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags:[], color: narratorColor }
                 ], 
                 static_entries: [{ id: this.uuid(), title: "World Overview", content: "A high-fantasy world." }], 
-                dynamic_entries: [{id: this.uuid(), title: "Example Lorebook Entry", triggers: "example, 100%", content: "This is a sample dynamic lore entry.", useAndLogic: false, triggered_at_turn: null }],
-                chat_history: [], 
-                messageCounter: 0, 
+                dynamic_entries: [{id: this.uuid(), title: "Example Lorebook Entry", triggers: "example, 100%", content: "This is a sample dynamic lore entry.", triggered_at_turn: null }],
+                scenarios: [{ id: this.uuid(), message: "The story begins..." }],
+                narratives: [],
+                active_narrative_id: null,
                 selectedStaticEntryId: null,
                 selectedDynamicEntryId: null,
             };
@@ -604,12 +678,52 @@
             }
         },
         
-        // --- Other Library Functions ---
-        loadStory(storyId) {
-            this.library.active_story_id = storyId;
+        // --- New Story/Narrative Loading Functions ---
+        loadScenario(storyId, scenarioId, reload = true) {
+            const story = this.library.stories.find(s => s.id === storyId);
+            const scenario = story.state.scenarios.find(sc => sc.id === scenarioId);
+            if (!story || !scenario) return;
+
+            const newNarrative = {
+                id: this.uuid(),
+                name: `Narrative (${new Date().toLocaleString()})`,
+                last_modified: new Date().toISOString(),
+                chat_history: [],
+                messageCounter: 0
+            };
+
+            const firstSpeaker = story.state.characters.find(c => !c.is_user && c.is_active);
+            if(firstSpeaker) {
+                newNarrative.chat_history.push({
+                    character_id: firstSpeaker.id, 
+                    content: scenario.message, 
+                    type: 'chat', 
+                    emotion: 'neutral',
+                    timestamp: new Date().toISOString(),
+                    isNew: true 
+                });
+                newNarrative.messageCounter = 1;
+            }
+
+            story.state.narratives.push(newNarrative);
+            story.state.active_narrative_id = newNarrative.id;
+            this.library.active_story_id = story.id;
+            
             this.saveLibrary();
-            window.location.reload();
+            if (reload) window.location.reload();
         },
+
+        loadNarrative(storyId, narrativeId, reload = true) {
+            const story = this.library.stories.find(s => s.id === storyId);
+            if (!story || !story.state.narratives.find(n => n.id === narrativeId)) return;
+
+            story.state.active_narrative_id = narrativeId;
+            this.library.active_story_id = story.id;
+
+            this.saveLibrary();
+            if (reload) window.location.reload();
+        },
+
         deleteStory(storyId) {
             this.library.stories = this.library.stories.filter(s => s.id !== storyId);
             this.updateTagCache();
@@ -645,6 +759,9 @@
             if (!originalStory) return;
 
             const newState = JSON.parse(JSON.stringify(originalStory.state));
+            // Reset active narrative so it doesn't carry over
+            newState.active_narrative_id = null;
+
             const newStory = {
                 id: this.uuid(),
                 name: `${originalStory.name || 'Untitled Story'} (Copy)`,
@@ -689,70 +806,8 @@
         // SECTION: EVENT LISTENERS & UI SETUP
         // =================================================================================================
         setupEventListeners() {
-            const setListener = (id, key, callback) => { 
-                const input = document.getElementById(id); 
-                if (!input) return;
-                input.value = this.state[key]; 
-                const debouncedCallback = debounce(function(e) { 
-                    this.state[key] = e.target.value; 
-                    this.saveState();
-                    if(callback) callback();
-                }.bind(this), 500);
-                input.addEventListener('input', debouncedCallback); 
-            };
-
-            const setupSlider = (sliderId, valueId, stateKey) => {
-                const slider = document.getElementById(sliderId);
-                const valueDisplay = document.getElementById(valueId);
-                if (!slider || !valueDisplay) return;
-                slider.value = this.state[stateKey];
-                valueDisplay.textContent = parseFloat(this.state[stateKey]).toFixed(2);
-                slider.addEventListener('input', (e) => {
-                    this.state[stateKey] = parseFloat(e.target.value);
-                    valueDisplay.textContent = parseFloat(this.state[stateKey]).toFixed(2);
-                });
-                slider.addEventListener('change', () => this.saveState());
-            };
-            
             this.updateLayout();
             window.addEventListener('resize', debounce(() => this.updateLayout(), 100));
-
-            setListener('gemini-api-key-input', 'geminiApiKey'); 
-            setListener('openrouter-api-key-input', 'openRouterKey'); 
-            setListener('openrouter-model-input', 'openRouterModel'); 
-            setListener('system-prompt-input', 'system_prompt');
-            setListener('event-master-prompt-input', 'event_master_base_prompt');
-            setListener('background-image-url', 'backgroundImageURL', () => this.applyStyling());
-            setListener('chat-text-color', 'chatTextColor', () => this.applyStyling());
-            
-            setupSlider('koboldcpp-min-p-slider', 'koboldcpp-min-p-value', 'koboldcpp_min_p');
-            setupSlider('koboldcpp-dry-slider', 'koboldcpp-dry-value', 'koboldcpp_dry');
-            
-            const fontSelector = document.getElementById('font-selector'); 
-            fontSelector.value = this.state.font; 
-            fontSelector.addEventListener('change', (e) => this.changeFont(e.target.value));
-
-            const templateSelector = document.getElementById('koboldcpp-template-selector');
-            templateSelector.value = this.state.koboldcpp_template;
-            templateSelector.addEventListener('change', (e) => {
-                this.state.koboldcpp_template = e.target.value;
-                this.saveState();
-            });
-            
-            const opacitySlider = document.getElementById('bubble-opacity-slider');
-            const opacityValue = document.getElementById('bubble-opacity-value');
-            opacitySlider.value = this.state.bubbleOpacity;
-            opacityValue.textContent = `${Math.round(this.state.bubbleOpacity * 100)}%`;
-            opacitySlider.addEventListener('input', (e) => {
-                this.state.bubbleOpacity = parseFloat(e.target.value);
-                opacityValue.textContent = `${Math.round(this.state.bubbleOpacity * 100)}%`;
-                this.renderChat();
-            });
-            opacitySlider.addEventListener('change', () => this.saveState());
-            
-            document.querySelectorAll('input[name="imageDisplayMode"]').forEach(radio => {
-                radio.addEventListener('change', (e) => this.setCharacterImageMode(e.target.value));
-            });
 
             const storyTitleInput = document.getElementById('story-title-input');
             storyTitleInput.addEventListener('input', debounce((e) => {
@@ -861,19 +916,21 @@
         switchSettingsTab(tabName) {
             this.RUNTIME.activeSettingsTab = tabName;
             const tabs = ['appearance', 'prompt', 'model'];
+            const container = document.getElementById('settings-content-container');
+            const template = document.getElementById(`settings-${tabName}-content`);
+            container.innerHTML = template.innerHTML;
+
             tabs.forEach(tab => {
                 const tabButton = document.getElementById(`settings-tab-${tab}`);
-                const tabContent = document.getElementById(`settings-${tab}-content`);
                 if (tab === tabName) {
-                    tabContent.classList.remove('hidden');
                     tabButton.classList.add('border-indigo-500', 'text-white');
                     tabButton.classList.remove('border-transparent', 'text-gray-400');
                 } else {
-                    tabContent.classList.add('hidden');
                     tabButton.classList.remove('border-indigo-500', 'text-white');
                     tabButton.classList.add('border-transparent', 'text-gray-400');
                 }
             });
+            this.bindSettingsListeners();
         },
 
         openSettingsToTab(tabName) {
@@ -888,8 +945,9 @@
             if (modalId === 'knowledge-modal') {
                 this.switchKnowledgeTab('static'); // Default to static tab
             }
-            if (modalId === 'settings-modal' && !this.RUNTIME.activeSettingsTab) {
-                this.switchSettingsTab('appearance'); // Default to appearance tab
+            if (modalId === 'settings-modal') {
+                this.prepareSettingsModal();
+                this.switchSettingsTab(this.RUNTIME.activeSettingsTab || 'appearance');
             }
             document.getElementById(modalId).style.display = 'flex'; 
         },
@@ -927,7 +985,6 @@
             this.renderDynamicEntries(); 
             this.renderChat(); 
             this.updateAICharacterSelector(); 
-            this.renderSettings(); 
         },
         renderLibraryInterface(filterState = {}) {
             const container = document.getElementById('library-content-container');
@@ -975,13 +1032,17 @@
             // --- Story List HTML ---
             const storyListHTML = stories.map(story => {
                 const displayName = story.name || 'Untitled Story';
+                const isActive = story.id === this.library.active_story_id;
+                const activeNarrative = isActive ? (story.state.narratives || []).find(n => n.id === story.state.active_narrative_id) : null;
+                const activeText = isActive && activeNarrative ? `<span class="text-xs text-indigo-300 font-bold">ACTIVE: ${this.escapeHTML(activeNarrative.name)}</span>` : '';
+
                 return `
-                <div class="p-4 rounded-lg flex justify-between items-center cursor-pointer ${story.id === this.library.active_story_id ? 'bg-indigo-600/30' : 'bg-gray-700/50 hover:bg-gray-600/50'}" onclick="app.openStoryDetails('${story.id}')">
+                <div class="p-4 rounded-lg flex justify-between items-center cursor-pointer ${isActive ? 'bg-indigo-600/30' : 'bg-gray-700/50 hover:bg-gray-600/50'}" onclick="app.openStoryDetails('${story.id}')">
                     <div>
                         <h3 class="font-semibold text-lg">${this.escapeHTML(displayName)}</h3>
                         <p class="text-sm text-gray-400">Modified: ${new Date(story.last_modified).toLocaleString()}</p>
                     </div>
-                    ${story.id === this.library.active_story_id ? '<span class="text-xs text-indigo-300 font-bold">ACTIVE</span>' : ''}
+                    ${activeText}
                 </div>
             `}).join('<hr class="border-gray-700 my-2">');
 
@@ -991,7 +1052,7 @@
             } else {
                 container.innerHTML = `
                     <div class="w-[450px] flex-shrink-0 border-r border-gray-700 flex flex-col">${controlsHTML}<div class="p-6 overflow-y-auto flex-grow">${storyListHTML}</div></div>
-                    <div id="story-details-content-desktop" class="flex-grow p-6 flex items-center justify-center text-gray-500">Select a story to see details...</div>
+                    <div id="story-details-content-desktop" class="flex-grow p-6 flex text-gray-500"><div class="w-full h-full flex items-center justify-center">Select a story to see details...</div></div>
                 `;
             }
         },
@@ -1003,22 +1064,55 @@
             story.state.characters.forEach(c => (c.tags || []).forEach(t => allStoryTags.add(t)));
             const tagsHTML = Array.from(allStoryTags).map(tag => `<span class="bg-gray-600/50 text-gray-300 text-xs font-medium mr-2 px-2.5 py-0.5 rounded">${tag}</span>`).join('');
             
+            // --- SCENARIOS ---
+            const scenarios = story.state.scenarios || [];
+            const scenariosHTML = scenarios.map(sc => `
+                <div class="bg-gray-700/50 p-3 rounded-lg flex justify-between items-center">
+                    <p class="text-sm italic pr-4">"${this.escapeHTML(sc.message)}"</p>
+                    <div class="flex-shrink-0 flex space-x-2">
+                        <button onclick="app.loadScenario('${story.id}', '${sc.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-3 rounded-lg">Load</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // --- NARRATIVES ---
+            const narratives = (story.state.narratives || []).sort((a,b) => new Date(b.last_modified) - new Date(a.last_modified));
+            const narrativesHTML = narratives.map(n => `
+                 <div class="bg-gray-700/50 p-3 rounded-lg flex justify-between items-center">
+                    <div>
+                        <p class="font-semibold">${this.escapeHTML(n.name)}</p>
+                        <p class="text-xs text-gray-400">Last Played: ${new Date(n.last_modified).toLocaleString()}</p>
+                    </div>
+                    <div class="flex-shrink-0 flex space-x-2">
+                        <button onclick="app.loadNarrative('${story.id}', '${n.id}')" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-3 rounded-lg">Load</button>
+                    </div>
+                </div>
+            `).join('');
+
+
             const detailsHTML = `
                 <div class="relative w-full h-full bg-black/20 overflow-hidden flex flex-col">
                     <div class="relative w-full aspect-video flex-shrink-0" id="details-carousel">
                          <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
-                         <h3 class="absolute top-4 left-4 text-white text-lg font-bold">${this.escapeHTML(story.name || 'Untitled Story')}</h3>
+                         <h3 class="absolute top-4 left-4 text-white text-lg font-bold drop-shadow-lg">${this.escapeHTML(story.name || 'Untitled Story')}</h3>
                     </div>
-                    <div class="p-6 flex-grow overflow-y-auto space-y-6">
+                    <div class="p-6 flex-grow overflow-y-auto space-y-6 min-h-0">
                          <div>
-                            <h4 class="font-bold mb-2">Tags</h4>
-                            <div class="flex flex-wrap">${tagsHTML || '<span class="text-gray-400 text-sm">No tags yet.</span>'}</div>
+                            <h4 class="font-bold mb-2">Scenarios (Start New Chat)</h4>
+                            <div class="space-y-2">${scenariosHTML || '<p class="text-sm text-gray-400">No scenarios defined.</p>'}</div>
+                         </div>
+                         <div>
+                            <h4 class="font-bold mb-2">Narratives (Continue Chat)</h4>
+                            <div class="space-y-2">${narrativesHTML || '<p class="text-sm text-gray-400">No saved chats yet. Start one from a scenario!</p>'}</div>
                          </div>
                          <div class="flex space-x-2">
-                            <button onclick="app.loadStory('${story.id}')" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-3 rounded-lg">Load</button>
                             <button onclick="app.renameStoryPrompt('${story.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded-lg" title="Rename"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
                             <button onclick="app.duplicateStory('${story.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded-lg" title="Duplicate"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
                             <button onclick="app.deleteStory('${story.id}')" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-3 rounded-lg" title="Delete"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                         </div>
+                         <div>
+                            <h4 class="font-bold mb-2">Tags</h4>
+                            <div class="flex flex-wrap">${tagsHTML || '<span class="text-gray-400 text-sm">No tags yet.</span>'}</div>
                          </div>
                          <div>
                             <h4 class="font-bold mb-2">Creator's Note</h4>
@@ -1058,8 +1152,8 @@
             }
 
             container.innerHTML += `
-                <img id="${containerId}-img1" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000" style="opacity: 1;">
-                <img id="${containerId}-img2" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000" style="opacity: 0;">
+                <img id="${containerId}-img1" class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" style="opacity: 1;">
+                <img id="${containerId}-img2" class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" style="opacity: 0;">
             `;
             
             let currentIndex = 0;
@@ -1107,7 +1201,6 @@
             this.renderDynamicEntries(); 
             this.renderChat(); 
             this.updateAICharacterSelector(); 
-            this.renderSettings(); 
         },
         renderCharacters() { document.getElementById('characters-container').innerHTML = this.state.characters.map(char => {
             const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) => `
@@ -1124,7 +1217,7 @@
             `).join('');
             const tagsHTML = (char.tags || []).join(', ');
 
-            return `<div class="character-card p-4 flex flex-col space-y-4"><div class="flex justify-between items-center"><input type="text" value="${this.escapeHTML(char.name)}" oninput="app.updateCharacterField('${char.id}', 'name', this.value)" class="text-xl font-bold bg-transparent p-1 w-2/3">${!char.is_user ? `<div class="flex items-center space-x-2"><span class="text-sm">Active</span><label class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" class="sr-only" ${char.is_active ? 'checked' : ''} onchange="app.toggleCharacterActive(event, '${char.id}')"><div class="w-12 h-6 bg-gray-600 rounded-full toggle-bg"></div></div></label></div>` : '<span class="text-sm font-semibold text-indigo-400">PLAYER</span>'}</div><textarea oninput="app.updateCharacterField('${char.id}', 'description', this.value); app.updateTokenCount('${char.id}', this.value)" class="w-full h-24 bg-black/30 border-gray-600 p-2 resize-none">${this.escapeHTML(char.description)}</textarea><div class="text-right text-sm text-gray-400" id="token-counter-${char.id}">~${Math.round((char.description || '').length / 4)} tokens</div><input type="text" value="${this.escapeHTML(char.image_url)}" oninput="app.updateCharacterField('${char.id}', 'image_url', this.value)" class="w-full bg-black/30 border-gray-600 p-2 text-sm" placeholder="Default/Neutral Image URL..."><div id="extra-portraits-${char.id}">${extraPortraitsHTML}</div><button onclick="app.addExtraPortrait('${char.id}')" class="text-sm text-sky-400 hover:text-sky-300 mt-2">+ Add Emotional Portrait</button><div class="mt-2"><input type="text" value="${tagsHTML}" oninput="app.updateCharacterTags('${char.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 text-sm" placeholder="Tags (comma-separated)..."><button onclick="app.generateTagsForCharacter('${char.id}')" class="text-xs text-sky-400 hover:text-sky-300 mt-1">Auto-Tag</button></div><div class="flex justify-end space-x-2"><button onclick="app.openAIEnhanceModal('${char.id}')" class="text-sm bg-gray-600/80 hover:bg-gray-500/80 font-semibold py-2 px-3 rounded-lg">AI Enhance</button>${!char.is_user ? `<button onclick="app.deleteCharacter('${char.id}')" class="text-sm bg-red-600/80 hover:bg-red-700/80 font-semibold py-2 px-3 rounded-lg">Delete</button>` : ''}</div></div>`;
+            return `<div class="character-card p-4 flex flex-col space-y-4"><div class="flex justify-between items-center"><input type="text" value="${this.escapeHTML(char.name)}" oninput="app.updateCharacterField('${char.id}', 'name', this.value)" class="text-xl font-bold bg-transparent p-1 w-2/3">${!char.is_user ? `<div class="flex items-center space-x-2"><span class="text-sm">Active</span><label class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" class="sr-only" ${char.is_active ? 'checked' : ''} onchange="app.toggleCharacterActive(event, '${char.id}')"><div class="w-12 h-6 bg-gray-600 rounded-full toggle-bg"></div></div></label></div>` : '<span class="text-sm font-semibold text-indigo-400">PLAYER</span>'}</div><textarea oninput="app.updateCharacterField('${char.id}', 'description', this.value); app.updateTokenCount('${char.id}', this.value)" class="w-full h-24 bg-black/30 border-gray-600 p-2 resize-none">${this.escapeHTML(char.description)}</textarea><div class="text-right text-sm text-gray-400" id="token-counter-${char.id}">~${Math.round((char.description || '').length / 4)} tokens</div><input type="text" value="${this.escapeHTML(char.image_url)}" oninput="app.updateCharacterField('${char.id}', 'image_url', this.value)" class="w-full bg-black/30 border-gray-600 p-2 text-sm" placeholder="Default/Neutral Image URL..."><div id="extra-portraits-${char.id}">${extraPortraitsHTML}</div><button onclick="app.addExtraPortrait('${char.id}')" class="text-sm text-sky-400 hover:text-sky-300 mt-2">+ Add Emotional Portrait</button><div class="mt-2"><input type="text" value="${tagsHTML}" oninput="app.updateCharacterTags('${char.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 text-sm" placeholder="Tags (comma-separated)..."><button onclick="app.generateTagsForCharacter(event, '${char.id}')" class="text-xs text-sky-400 hover:text-sky-300 mt-1">Auto-Tag</button></div><div class="flex justify-end space-x-2"><button onclick="app.openAIEnhanceModal('${char.id}')" class="text-sm bg-gray-600/80 hover:bg-gray-500/80 font-semibold py-2 px-3 rounded-lg">AI Enhance</button>${!char.is_user ? `<button onclick="app.deleteCharacter('${char.id}')" class="text-sm bg-red-600/80 hover:bg-red-700/80 font-semibold py-2 px-3 rounded-lg">Delete</button>` : ''}</div></div>`;
         }).join(''); },
         renderStaticEntries() { document.getElementById('static-entries-list').innerHTML = this.state.static_entries.map(entry => `<div onclick="app.selectStaticEntry('${entry.id}')" class="p-3 rounded-lg cursor-pointer ${this.state.selectedStaticEntryId === entry.id ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'}"><h4 class="font-semibold truncate">${this.escapeHTML(entry.title)}</h4></div>`).join(''); this.renderStaticEntryDetails(); },
         renderStaticEntryDetails() { const container = document.getElementById('static-entry-details-content'); const entry = this.state.static_entries.find(e => e.id === this.state.selectedStaticEntryId); if (entry) { container.innerHTML = `<input type="text" value="${this.escapeHTML(entry.title)}" oninput="app.updateStaticEntryField('${entry.id}', 'title', this.value)" class="text-xl font-bold bg-black/30 p-2 w-full mb-4"><textarea oninput="app.updateStaticEntryField('${entry.id}', 'content', this.value)" class="w-full h-4/5 bg-black/30 p-2 resize-none">${this.escapeHTML(entry.content)}</textarea><div class="flex justify-end mt-4"><button onclick="app.deleteStaticEntry('${entry.id}')" class="text-sm bg-red-600/80 hover:bg-red-700/80 font-semibold py-2 px-3 rounded-lg">Delete</button></div>`; } else { container.innerHTML = `<div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.</div>`; } },
@@ -1137,15 +1230,8 @@
                     <label class="font-bold">Title</label>
                     <input type="text" value="${this.escapeHTML(entry.title)}" oninput="app.updateDynamicEntryField('${entry.id}', 'title', this.value)" class="text-xl font-bold bg-black/30 p-2 w-full mb-4">
                     
-                    <div class="flex justify-between items-center mb-2">
-                        <label class="font-bold">Triggers (Keywords or % Chance)</label>
-                        <label class="flex items-center space-x-2 cursor-pointer text-sm">
-                            <span>OR</span>
-                            <div class="relative"><input type="checkbox" class="sr-only" ${entry.useAndLogic ? 'checked' : ''} onchange="app.updateDynamicEntryField('${entry.id}', 'useAndLogic', this.checked)"><div class="w-12 h-6 bg-gray-600 rounded-full toggle-bg"></div></div>
-                            <span>AND</span>
-                        </label>
-                    </div>
-                    <input type="text" value="${this.escapeHTML(entry.triggers)}" oninput="app.updateDynamicEntryField('${entry.id}', 'triggers', this.value)" placeholder="e.g. sword, magic, 25%" class="bg-black/30 p-2 w-full mb-4">
+                    <label class="font-bold mb-2">Triggers (Keywords, AND, XOR, % Chance)</label>
+                    <input type="text" value="${this.escapeHTML(entry.triggers)}" oninput="app.updateDynamicEntryField('${entry.id}', 'triggers', this.value)" placeholder="e.g. house, cat AND dog, 25%" class="bg-black/30 p-2 w-full mb-4">
                     
                     <label class="font-bold">Content</label>
                     <textarea oninput="app.updateDynamicEntryField('${entry.id}', 'content', this.value)" class="w-full flex-grow bg-black/30 p-2 resize-none">${this.escapeHTML(entry.content)}</textarea>
@@ -1177,7 +1263,11 @@
             if (!character) return '';
 
             const replacer = this._getReplacer(character);
-            const processedContent = replacer(msg.content);
+            let processedContent = replacer(msg.content);
+
+            // Bold text in quotes before parsing Markdown
+            processedContent = processedContent.replace(/"([^"]+)"/g, '<strong>"$1"</strong>');
+
             const contentId = `message-content-${index}`;
             
             let contentHTML = marked.parse(processedContent || '');
@@ -1187,8 +1277,7 @@
 
             if (this.state.characterImageMode === 'bubble' && character.image_url) {
                 const charImageHTML = `<img src="${character.image_url}" class="bubble-char-image">`;
-				// Prepend the image tag so it's a sibling to the paragraphs
-				contentHTML = charImageHTML + contentHTML;
+                 contentHTML = charImageHTML + contentHTML;
             }
 
             if (character.is_user) {
@@ -1252,9 +1341,9 @@
                 cinematicBg.style.opacity = 0;
             }
 
-            document.getElementById('chat-window').innerHTML = this.state.chat_history.map((msg, index) => this._createMessageHTML(msg, index)).join('');
+            document.getElementById('chat-window').innerHTML = (this.state.chat_history || []).map((msg, index) => this._createMessageHTML(msg, index)).join('');
             
-            this.state.chat_history.forEach(m => m.isNew = false);
+            (this.state.chat_history || []).forEach(m => m.isNew = false);
         },
 
         updateSidePortrait() {
@@ -1264,7 +1353,7 @@
                 return;
             }
             
-            const lastChatMessages = this.state.chat_history.filter(m => m.type === 'chat' && !this.state.characters.find(c=>c.id === m.character_id)?.is_user);
+            const lastChatMessages = (this.state.chat_history || []).filter(m => m.type === 'chat' && !this.state.characters.find(c=>c.id === m.character_id)?.is_user);
             const lastSpeakerMsg = lastChatMessages.length > 0 ? lastChatMessages[lastChatMessages.length - 1] : null;
             const lastSpeaker = lastSpeakerMsg ? this.state.characters.find(c => c.id === lastSpeakerMsg.character_id) : null;
             
@@ -1332,13 +1421,14 @@
                     const word = words[wordIndex];
                     this.state.chat_history[messageIndex].content += word;
                     const replacer = this._getReplacer(this.state.characters.find(c => c.id === charId));
-                    const processedContent = replacer(this.state.chat_history[messageIndex].content);
+                    let processedContent = replacer(this.state.chat_history[messageIndex].content);
+                    processedContent = processedContent.replace(/"([^"]+)"/g, '<strong>"$1"</strong>');
                     
                     let fullHTML = marked.parse(processedContent);
                     
                     if (this.state.characterImageMode === 'bubble' && this.state.characters.find(c => c.id === charId)?.image_url) {
                         const charImageHTML = `<img src="${this.state.characters.find(c => c.id === charId).image_url}" class="bubble-char-image">`;
-                        fullHTML = fullHTML.replace('<p>', `<p>${charImageHTML}`);
+                         fullHTML = charImageHTML + fullHTML;
                     }
                     
                     messageContentEl.innerHTML = fullHTML;
@@ -1366,6 +1456,7 @@
                 this.RUNTIME.streamingInterval = null;
                 this.saveState();
             }
+            if(!this.state.chat_history) this.state.chat_history = [];
             this.state.chat_history.push({ 
                 character_id: id, 
                 content, 
@@ -1374,7 +1465,10 @@
                 timestamp: new Date().toISOString(),
                 isNew: true 
             });
-            if (type === 'chat') this.state.messageCounter++;
+            if (type === 'chat') {
+                if(!this.state.messageCounter) this.state.messageCounter = 0;
+                this.state.messageCounter++;
+            }
             this.renderChat();
             this.saveState();
             
@@ -1401,21 +1495,102 @@
             }
         },
         
-        renderSettings() { 
-            document.querySelector(`input[name="apiProvider"][value="${this.state.apiProvider}"]`).checked = true; 
-            document.getElementById('gemini-settings').style.display = this.state.apiProvider === 'gemini' ? 'block' : 'none'; 
-            document.getElementById('openrouter-settings').style.display = this.state.apiProvider === 'openrouter' ? 'block' : 'none';
-            document.getElementById('koboldcpp-settings').style.display = this.state.apiProvider === 'koboldcpp' ? 'block' : 'none';
-            document.getElementById('system-prompt-input').value = this.state.system_prompt; 
-            document.getElementById('event-master-prompt-input').value = this.state.event_master_base_prompt; 
-            document.getElementById('font-selector').value = this.state.font; 
-            document.getElementById('background-image-url').value = this.state.backgroundImageURL; 
-            document.getElementById('bubble-opacity-slider').value = this.state.bubbleOpacity; 
-            document.getElementById('bubble-opacity-value').textContent = `${Math.round(this.state.bubbleOpacity * 100)}%`; 
-            document.getElementById('chat-text-color').value = this.state.chatTextColor; 
-            document.querySelector(`input[name="imageDisplayMode"][value="${this.state.characterImageMode}"]`).checked = true;
-            document.getElementById('koboldcpp-template-selector').value = this.state.koboldcpp_template;
+        prepareSettingsModal() {
+            const container = document.getElementById('settings-content-container');
+            if (container.innerHTML.trim() !== '...') return; // Already populated
+            
+            // Calculate max height
+            const templates = document.getElementById('settings-templates');
+            let maxHeight = 0;
+            ['appearance', 'prompt', 'model'].forEach(tabName => {
+                const content = templates.querySelector(`#settings-${tabName}-content`);
+                if(content) {
+                     document.body.appendChild(content); // Temporarily append to measure
+                     maxHeight = Math.max(maxHeight, content.scrollHeight);
+                     templates.appendChild(content); // Move it back
+                }
+            });
+            container.style.minHeight = `${maxHeight}px`;
         },
+
+        bindSettingsListeners() {
+            const setListener = (id, key, callback) => { 
+                const input = document.getElementById(id); 
+                if (!input) return;
+                input.value = this.state[key] !== undefined ? this.state[key] : '';
+                const debouncedCallback = debounce(function(e) { 
+                    this.state[key] = e.target.value; 
+                    this.saveState();
+                    if(callback) callback();
+                }.bind(this), 500);
+                input.addEventListener('input', debouncedCallback); 
+            };
+            const setupSlider = (sliderId, valueId, stateKey) => {
+                const slider = document.getElementById(sliderId);
+                const valueDisplay = document.getElementById(valueId);
+                if (!slider || !valueDisplay) return;
+                slider.value = this.state[stateKey];
+                valueDisplay.textContent = parseFloat(this.state[stateKey]).toFixed(2);
+                slider.addEventListener('input', (e) => {
+                    this.state[stateKey] = parseFloat(e.target.value);
+                    valueDisplay.textContent = parseFloat(this.state[stateKey]).toFixed(2);
+                });
+                slider.addEventListener('change', () => this.saveState());
+            };
+            
+            if(document.getElementById('gemini-api-key-input')) setListener('gemini-api-key-input', 'geminiApiKey'); 
+            if(document.getElementById('openrouter-api-key-input')) setListener('openrouter-api-key-input', 'openRouterKey'); 
+            if(document.getElementById('openrouter-model-input')) setListener('openrouter-model-input', 'openRouterModel'); 
+            if(document.getElementById('system-prompt-input')) setListener('system-prompt-input', 'system_prompt');
+            if(document.getElementById('event-master-prompt-input')) setListener('event-master-prompt-input', 'event_master_base_prompt');
+            if(document.getElementById('background-image-url')) setListener('background-image-url', 'backgroundImageURL', () => this.applyStyling());
+            if(document.getElementById('chat-text-color')) setListener('chat-text-color', 'chatTextColor', () => this.applyStyling());
+            
+            if(document.getElementById('koboldcpp-min-p-slider')) setupSlider('koboldcpp-min-p-slider', 'koboldcpp-min-p-value', 'koboldcpp_min_p');
+            if(document.getElementById('koboldcpp-dry-slider')) setupSlider('koboldcpp-dry-slider', 'koboldcpp-dry-value', 'koboldcpp_dry');
+            
+            const fontSelector = document.getElementById('font-selector'); 
+            if(fontSelector) {
+                fontSelector.value = this.state.font; 
+                fontSelector.addEventListener('change', (e) => this.changeFont(e.target.value));
+            }
+
+            const templateSelector = document.getElementById('koboldcpp-template-selector');
+            if(templateSelector) {
+                templateSelector.value = this.state.koboldcpp_template;
+                templateSelector.addEventListener('change', (e) => {
+                    this.state.koboldcpp_template = e.target.value;
+                    this.saveState();
+                });
+            }
+            
+            const opacitySlider = document.getElementById('bubble-opacity-slider');
+            if(opacitySlider) {
+                const opacityValue = document.getElementById('bubble-opacity-value');
+                opacitySlider.value = this.state.bubbleOpacity;
+                opacityValue.textContent = `${Math.round(this.state.bubbleOpacity * 100)}%`;
+                opacitySlider.addEventListener('input', (e) => {
+                    this.state.bubbleOpacity = parseFloat(e.target.value);
+                    opacityValue.textContent = `${Math.round(this.state.bubbleOpacity * 100)}%`;
+                    this.renderChat();
+                });
+                opacitySlider.addEventListener('change', () => this.saveState());
+            }
+            
+            document.querySelectorAll('input[name="imageDisplayMode"]').forEach(radio => {
+                radio.checked = this.state.characterImageMode === radio.value;
+                radio.addEventListener('change', (e) => this.setCharacterImageMode(e.target.value));
+            });
+            document.querySelectorAll('input[name="apiProvider"]').forEach(radio => {
+                radio.checked = this.state.apiProvider === radio.value;
+                radio.addEventListener('change', (e) => this.setApiProvider(e.target.value));
+            });
+
+             document.getElementById('gemini-settings').style.display = this.state.apiProvider === 'gemini' ? 'block' : 'none'; 
+             document.getElementById('openrouter-settings').style.display = this.state.apiProvider === 'openrouter' ? 'block' : 'none';
+             document.getElementById('koboldcpp-settings').style.display = this.state.apiProvider === 'koboldcpp' ? 'block' : 'none';
+        },
+
         updateAICharacterSelector() {
             const selector = document.getElementById('ai-character-selector');
             const currentValue = selector.value;
@@ -1453,9 +1628,15 @@
                 this.updateTagCache();
             }
         }, 500),
-        async generateTagsForCharacter(charId) {
+        async generateTagsForCharacter(event, charId) {
             const char = this.state.characters.find(c => c.id === charId);
             if (!char) return;
+
+            const button = event.target;
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = "Generating...";
+
             const prompt = `Analyze the following character. Generate 3 to 5 relevant, one-word, comma-separated tags.\n\nCHARACTER: ${char.name}\nDESCRIPTION: ${char.description}`;
             try {
                 const tagsString = await this.callAI(prompt);
@@ -1465,6 +1646,10 @@
                 this.updateTagCache();
             } catch (e) {
                 console.error("Tag generation failed:", e);
+                alert("Failed to generate tags.");
+            } finally {
+                button.disabled = false;
+                button.textContent = originalText;
             }
         },
         addExtraPortrait(charId) { const char = this.state.characters.find(c => c.id === charId); if(char) { if(!char.extra_portraits) char.extra_portraits = []; char.extra_portraits.push({emotion: 'happy', url: ''}); this.renderCharacters(); this.saveState(); } },
@@ -1491,7 +1676,7 @@
             } 
         }, 300),
 
-        addDynamicEntry() { const newEntry = {id: this.uuid(), title: "New Dynamic Entry", triggers: "", content: "", useAndLogic: false, triggered_at_turn: null }; this.state.dynamic_entries.push(newEntry); this.state.selectedDynamicEntryId = newEntry.id; this.saveAndRenderDynamicEntries(); },
+        addDynamicEntry() { const newEntry = {id: this.uuid(), title: "New Dynamic Entry", triggers: "", content: "", triggered_at_turn: null }; this.state.dynamic_entries.push(newEntry); this.state.selectedDynamicEntryId = newEntry.id; this.saveAndRenderDynamicEntries(); },
         deleteDynamicEntry(id) { 
             this.state.dynamic_entries = this.state.dynamic_entries.filter(e => e.id !== id); 
             if(this.state.selectedDynamicEntryId === id) this.state.selectedDynamicEntryId = null; 
@@ -1506,7 +1691,6 @@
                 if (field === 'title') {
                      document.getElementById('dynamic-entries-list').innerHTML = this.state.dynamic_entries.map(entry => `<div onclick="app.selectDynamicEntry('${entry.id}')" class="p-3 rounded-lg cursor-pointer ${this.state.selectedDynamicEntryId === entry.id ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'} flex justify-between items-center"><h4 class="font-semibold truncate">${this.escapeHTML(entry.title)}</h4> ${entry.triggered_at_turn !== null ? '<span class="text-xs text-sky-300">ACTIVE</span>' : ''}</div>`).join('');
                 }
-                 this.renderDynamicEntryDetails(); // Re-render to update checkbox state immediately
             } 
         },
 
@@ -1571,7 +1755,7 @@
                 event_master_prompt: replacer(this.state.event_master_prompt),
                 static_entries: this.state.static_entries.map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`).join('\n\n'),
                 characters: this.state.characters.filter(c => c.is_active).map(c => `[Character: ${c.name}]\nDescription: ${replacer(c.description)}`).join('\n\n'),
-                history: this.state.chat_history.slice(-10),
+                history: (this.state.chat_history || []).slice(-10),
                 charToAct: charToAct,
                 isForUser: isForUser
             };
@@ -1645,32 +1829,40 @@
             }
         },
         async checkWorldInfoAgent() { this.showTypingIndicator('static-entry-agent', 'Updating static knowledge...'); try { const updates = JSON.parse(await this.callAI(this.buildStaticEntryAgentPrompt(), true)); if (updates.add) updates.add.forEach(item => this.state.static_entries.push({id: this.uuid(), ...item})); if (updates.modify) updates.modify.forEach(item => { const entry = this.state.static_entries.find(e => e.title.toLowerCase() === item.title.toLowerCase()); if (entry) entry.content = item.new_content; }); this.saveAndRenderStaticEntries(); } catch (e) { console.error("Static Entry Agent failed:", e); } finally { this.hideTypingIndicator(); } },
-        buildStaticEntryAgentPrompt() { let p = `As Static Knowledge Master, read chat/info, update the info. Output valid JSON: { "add": [{"title": "...", "content": "..."}], "modify": [{"title": "...", "new_content": "..."}] } or {}. INFO:${JSON.stringify(this.state.static_entries)}CHAT:`; this.state.chat_history.filter(m=>m.type==='chat').slice(-8).forEach(msg => { const c = this.state.characters.find(i=>i.id===msg.character_id); if(c) p += `${c.name}: ${msg.content}\n`;}); return p; },
+        buildStaticEntryAgentPrompt() { let p = `As Static Knowledge Master, read chat/info, update the info. Output valid JSON: { "add": [{"title": "...", "content": "..."}], "modify": [{"title": "...", "new_content": "..."}] } or {}. INFO:${JSON.stringify(this.state.static_entries)}CHAT:`; (this.state.chat_history || []).filter(m=>m.type==='chat').slice(-8).forEach(msg => { const c = this.state.characters.find(i=>i.id===msg.character_id); if(c) p += `${c.name}: ${msg.content}\n`;}); return p; },
         async checkEventMaster() { if (this.state.messageCounter > 0 && this.state.messageCounter % 6 === 0) try { this.state.event_master_prompt = await this.callAI(this.buildEventMasterPrompt()); this.saveState(); console.log("Event Master:", this.state.event_master_prompt); } catch (e) { console.error("Event Master failed:", e); } },
-        buildEventMasterPrompt() { let p = this.state.event_master_base_prompt + '\n\n--- RECENT CHAT HISTORY ---\n'; this.state.chat_history.filter(m=>m.type==='chat').slice(-12).forEach(msg => { const c = this.state.characters.find(i=>i.id===msg.character_id); if(c) p += `${c.name}: ${msg.content}\n`;}); return p; },
+        buildEventMasterPrompt() { let p = this.state.event_master_base_prompt + '\n\n--- RECENT CHAT HISTORY ---\n'; (this.state.chat_history || []).filter(m=>m.type==='chat').slice(-12).forEach(msg => { const c = this.state.characters.find(i=>i.id===msg.character_id); if(c) p += `${c.name}: ${msg.content}\n`;}); return p; },
         
         checkDynamicEntryTriggers() {
-            const lastMessage = this.state.chat_history.filter(m => m.type === 'chat').pop();
+            const lastMessage = (this.state.chat_history || []).filter(m => m.type === 'chat').pop();
             if (!lastMessage) return;
             const content = lastMessage.content.toLowerCase();
 
             this.state.dynamic_entries.forEach(entry => {
+                // Reset trigger after 10 turns
                 if (entry.triggered_at_turn !== null && (this.state.messageCounter - entry.triggered_at_turn > 10)) {
                     entry.triggered_at_turn = null;
                 }
 
                 if (entry.triggered_at_turn === null) {
-                    const { keywords, chance } = this.parseTriggers(entry.triggers);
+                    const { groups, chance } = this.parseTriggers(entry.triggers);
                     
-                    let keywordMatch = false;
-                    if (keywords.length > 0) {
-                        if (entry.useAndLogic) {
-                            keywordMatch = keywords.every(kw => content.includes(kw));
-                        } else {
-                            keywordMatch = keywords.some(kw => content.includes(kw));
+                    // Check keyword groups. The comma-separated groups are OR'd together, so we just need one to match.
+                    const keywordMatch = groups.some(group => {
+                        switch (group.type) {
+                            case 'OR':
+                                return content.includes(group.keywords[0]);
+                            case 'AND':
+                                return group.keywords.every(kw => content.includes(kw));
+                            case 'XOR':
+                                const firstFound = content.includes(group.keywords[0]);
+                                const secondFound = content.includes(group.keywords[1]);
+                                return (firstFound && !secondFound) || (!firstFound && secondFound);
+                            default:
+                                return false;
                         }
-                    }
-                    
+                    });
+
                     const chanceMatch = Math.random() * 100 < chance;
                     
                     if (keywordMatch || chanceMatch) {
@@ -1685,12 +1877,32 @@
         },
 
         parseTriggers(triggersStr) {
-            if (!triggersStr) return { keywords: [], chance: 0 };
-            const parts = triggersStr.split(',').map(s => s.trim().toLowerCase());
-            const keywords = parts.filter(p => !p.match(/^\d+\s*\%$/) && p.length > 0);
+            if (!triggersStr) return { groups: [], chance: 0 };
+
+            const parts = triggersStr.split(',').map(s => s.trim());
             const chancePart = parts.find(p => p.match(/^\d+\s*\%$/));
             const chance = chancePart ? parseInt(chancePart.replace('%', '')) : 0;
-            return { keywords, chance };
+            
+            const keywordParts = parts.filter(p => p && !p.match(/^\d+\s*\%$/));
+
+            const groups = keywordParts.map(part => {
+                if (part.includes(' XOR ')) {
+                    const keywords = part.split(' XOR ').map(k => k.trim().toLowerCase()).filter(Boolean);
+                    if (keywords.length === 2) {
+                        return { type: 'XOR', keywords };
+                    }
+                }
+                if (part.includes(' AND ')) {
+                    const keywords = part.split(' AND ').map(k => k.trim().toLowerCase()).filter(Boolean);
+                    if (keywords.length > 0) {
+                        return { type: 'AND', keywords };
+                    }
+                }
+                // Default is a single OR keyword
+                return { type: 'OR', keywords: [part.toLowerCase()] };
+            });
+
+            return { groups, chance };
         },
 
         openEditModal(index) {
@@ -1778,7 +1990,7 @@
             return data.results[0].text.trim();
         },
         
-        setApiProvider(provider) { this.state.apiProvider = provider; this.renderSettings(); this.saveState(); },
+        setApiProvider(provider) { this.state.apiProvider = provider; this.bindSettingsListeners(); this.saveState(); },
         exportStory() { 
             const activeStory = this.library.stories.find(s => s.id === this.library.active_story_id);
             if (!activeStory) return alert("No active story to export.");
@@ -1841,28 +2053,30 @@
                         const manifestData = JSON.parse(await manifestFile.async('string'));
 
                         if (!manifestData.characters || manifestData.characters.length === 0) throw new Error("No character specified in manifest.json.");
-                        if (!manifestData.scenarios || manifestData.scenarios.length === 0) throw new Error("No scenario specified in manifest.json.");
                         
                         const charFilePath = manifestData.characters[0];
-                        const scenarioFilePath = manifestData.scenarios[0];
-
                         const charFileEntry = zip.file(charFilePath);
-                        const scenarioFileEntry = zip.file(scenarioFilePath);
-
                         if (!charFileEntry) throw new Error(`Character file not found at path: ${charFilePath}`);
-                        if (!scenarioFileEntry) throw new Error(`Scenario file not found at path: ${scenarioFilePath}`);
-
                         const byafCharData = JSON.parse(await charFileEntry.async('string'));
-                        const byafScenarioData = JSON.parse(await scenarioFileEntry.async('string'));
+
+                        let byafScenarioData = {};
+                        if(manifestData.scenarios && manifestData.scenarios.length > 0) {
+                             const scenarioFilePath = manifestData.scenarios[0];
+                             const scenarioFileEntry = zip.file(scenarioFilePath);
+                             if(scenarioFileEntry) {
+                                byafScenarioData = JSON.parse(await scenarioFileEntry.async('string'));
+                             }
+                        }
 
                         const newStoryState = this.getDefaultState();
+                        newStoryState.scenarios = []; // Clear default
                         const userChar = newStoryState.characters.find(c => c.is_user);
                         const characterName = byafCharData.name || "Unnamed Character";
                         
                         const newCharacter = {
                             id: this.uuid(),
                             name: characterName,
-                            description: (byafCharData.persona || '').replace(/{character}/g, characterName),
+                            description: (byafCharData.description || byafCharData.persona || '').replace(/{character}/g, characterName),
                             image_url: '',
                             extra_portraits: [],
                             tags: byafCharData.tags || [],
@@ -1889,51 +2103,73 @@
                         }
                         
                         newStoryState.characters = [userChar, newCharacter];
+                        const characterNameIdMap = {
+                            [newCharacter.name.toLowerCase()]: newCharacter.id,
+                            'user': userChar.id,
+                            [userChar.name.toLowerCase()]: userChar.id,
+                            '{{char}}': newCharacter.id,
+                            '{{user}}': userChar.id
+                        };
 
                         if (byafScenarioData.narrative) {
                             const content = byafScenarioData.narrative.replace(/{character}/g, characterName);
                             newStoryState.static_entries.push({ id: this.uuid(), title: "Narrative", content: content });
                         }
                         
-                        const characterNameIdMap = {
-                            [byafCharData.id.toLowerCase()]: newCharacter.id,
-                            'user': userChar.id 
-                        };
-
-                        if (byafScenarioData.exampleMessages && Array.isArray(byafScenarioData.exampleMessages)) {
-                            byafScenarioData.exampleMessages.forEach(msg => {
-                                const speakerId = characterNameIdMap[msg.characterID.toLowerCase()];
-                                if (speakerId && msg.text) {
-                                    const content = msg.text.replace(/{character}/g, characterName);
-                                    newStoryState.chat_history.push({ character_id: speakerId, content: content, type: 'chat', emotion: 'neutral' });
-                                }
-                            });
-                        }
-
-                        if (byafScenarioData.firstMessages && Array.isArray(byafScenarioData.firstMessages) && byafScenarioData.firstMessages.length > 0) {
-                            const firstMsg = byafScenarioData.firstMessages[0];
-                            const speakerId = characterNameIdMap[firstMsg.characterID.toLowerCase()];
-                            if (speakerId && firstMsg.text) {
-                                const content = firstMsg.text.replace(/{character}/g, characterName);
-                                newStoryState.chat_history.push({ character_id: speakerId, content: content, type: 'chat', emotion: 'neutral' });
-                            }
+                        
+                        if (byafCharData.first_mes) {
+                             const firstMsgContent = byafCharData.first_mes.replace(/{character}/g, characterName).replace(/{user}/g, userChar.name);
+                             newStoryState.scenarios.push({ id: this.uuid(), message: firstMsgContent });
                         }
                         
-                        if (byafScenarioData.formattingInstructions) {
-                            newStoryState.system_prompt = byafScenarioData.formattingInstructions.replace(/{character}/g, characterName);
+                        if(byafScenarioData.firstMessages && Array.isArray(byafScenarioData.firstMessages)) {
+                             byafScenarioData.firstMessages.forEach(msg => {
+                                 if (msg.text) {
+                                     newStoryState.scenarios.push({ id: this.uuid(), message: msg.text.replace(/{character}/g, characterName).replace(/{user}/g, userChar.name) });
+                                 }
+                             });
+                        }
+                        // Create a narrative from example dialogue
+                        if (byafCharData.example_dialogue) {
+                            const newNarrative = { id: this.uuid(), name: "Example Dialogue", last_modified: new Date().toISOString(), chat_history: [], messageCounter: 0 };
+                            const dialogueString = byafCharData.example_dialogue;
+                            const regex = /#([^:]+):([\s\S]*?)(?=#|$)/g;
+                            const matches = [...dialogueString.matchAll(regex)];
+
+                            matches.forEach(match => {
+                                let speakerName = match[1].trim().toLowerCase();
+                                const content = match[2].trim();
+                                if (speakerName === '{{char}}' || speakerName === characterName.toLowerCase()) speakerName = newCharacter.name.toLowerCase();
+                                else if (speakerName === '{{user}}' || speakerName === 'you') speakerName = 'user';
+                                const speakerId = characterNameIdMap[speakerName];
+                                if (speakerId && content) {
+                                    newNarrative.chat_history.push({ 
+                                        character_id: speakerId, 
+                                        content: content.replace(/{character}/g, characterName).replace(/{user}/g, userChar.name), 
+                                        type: 'chat', 
+                                        emotion: 'neutral' 
+                                    });
+                                }
+                            });
+                             newNarrative.messageCounter = newNarrative.chat_history.filter(m => m.type === 'chat').length;
+                             newStoryState.narratives.push(newNarrative);
+                        }
+
+
+                        if (byafCharData.system_prompt) {
+                            newStoryState.system_prompt = byafCharData.system_prompt.replace(/{character}/g, characterName);
                         }
 
                         if (byafCharData.loreItems && Array.isArray(byafCharData.loreItems)) {
                             byafCharData.loreItems.forEach(item => {
-                                newStoryState.dynamic_entries.push({ id: this.uuid(), title: item.key, triggers: item.key, content: item.value.replace(/{character}/g, characterName), useAndLogic: false, triggered_at_turn: null });
+                                newStoryState.dynamic_entries.push({ id: this.uuid(), title: item.key, triggers: item.key, content: item.value.replace(/{character}/g, characterName), triggered_at_turn: null });
                             });
                         }
-
-                        newStoryState.messageCounter = newStoryState.chat_history.filter(m => m.type === 'chat').length;
                         
                         const newStory = {
-                            id: this.uuid(), name: byafScenarioData?.title || byafCharData.displayName || `Chat with ${characterName}`,
-                            last_modified: new Date().toISOString(), created_date: new Date().toISOString(),
+                            id: this.uuid(), name: byafScenarioData?.title || byafCharData.name || `Chat with ${characterName}`,
+                            last_modified: new Date().toISOString(),
+                            created_date: new Date().toISOString(),
                             creator_notes: `[Imported from BYAF file: ${file.name}]`,
                             tags: byafCharData.tags || [],
                             state: newStoryState
