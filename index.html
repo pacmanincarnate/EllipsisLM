@@ -146,8 +146,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 0.25rem;
-            padding-bottom: 4px;
+            padding: 0.5rem 0.25rem; /* Increased padding */
         }
         
         .bubble-header .timestamp {
@@ -205,92 +204,29 @@
         /* --- Layout Management & Responsiveness --- */
         
         /* Horizontal (Desktop) Layout */
-        body.layout-horizontal #app-container {
-             padding: 0.5rem;
-        }
-        @media (min-width: 768px) {
-            body.layout-horizontal #app-container {
-                padding: 1.5rem;
-            }
-        }
-         @media (min-width: 1024px) {
-            body.layout-horizontal #app-container {
-                padding: 2rem;
-            }
-        }
-        body.layout-horizontal #chat-window-container {
-            justify-content: space-between;
-        }
-        body.layout-horizontal #chat-window {
-            width: 66.66%;
-        }
-        body.layout-horizontal #character-portrait-container {
-            display: flex;
-            width: 33.33%;
-        }
-        body.layout-horizontal #mobile-header-elements {
-            display: none;
-        }
+        body.layout-horizontal #app-container { padding: 0.5rem; }
+        @media (min-width: 768px) { body.layout-horizontal #app-container { padding: 1.5rem; } }
+        @media (min-width: 1024px) { body.layout-horizontal #app-container { padding: 2rem; } }
+        body.layout-horizontal #chat-window-container { justify-content: space-between; }
+        body.layout-horizontal #chat-window { width: 66.66%; }
+        body.layout-horizontal #character-portrait-container { display: flex; width: 33.33%; }
+        body.layout-horizontal #mobile-header-elements { display: none !important; }
+        body.layout-horizontal .md\:hidden { display: none !important; }
+        body.layout-horizontal .hidden.md\:flex { display: flex !important; }
+
 
         /* Vertical (Mobile) Layout */
-        body.layout-vertical #app-container {
-            padding: 0;
-        }
-        body.layout-vertical #main-header .md\:flex {
-            display: none;
-        }
-        body.layout-vertical #main-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 50;
-            margin: 0;
-            padding: 0.5rem;
-            background: transparent;
-            pointer-events: none;
-        }
-        body.layout-vertical #hamburger-menu-button-container {
-             opacity: 0.3;
-             transition: opacity 0.3s ease;
-             pointer-events: auto;
-        }
-         body.layout-vertical #hamburger-menu-button-container:hover {
-             opacity: 1;
-         }
-        body.layout-vertical #mobile-story-title-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            z-index: 49;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
-            padding: 1rem;
-            text-align: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: auto;
-        }
-        body.layout-vertical #chat-window-container {
-            justify-content: center;
-            border-radius: 0;
-            margin-bottom: 0 !important;
-        }
-        body.layout-vertical #chat-window {
-            width: 99%;
-        }
-        body.layout-vertical #character-portrait-container {
-            display: none;
-        }
-        body.layout-vertical #chat-input-container {
-            background-color: rgba(17, 24, 39, 0.7);
-            backdrop-filter: blur(5px);
-            padding: 1rem;
-            border-top: 1px solid var(--border-primary);
-        }
-        body.layout-vertical .md\:hidden {
-            display: flex !important;
-        }
+        body.layout-vertical #app-container { padding: 0; }
+        body.layout-vertical #main-header { position: fixed; top: 0; left: 0; right: 0; z-index: 50; margin: 0; padding: 0.5rem; background: transparent; pointer-events: none; }
+        body.layout-vertical #hamburger-menu-button-container { opacity: 0.3; transition: opacity 0.3s ease; pointer-events: auto; }
+        body.layout-vertical #hamburger-menu-button-container:hover { opacity: 1; }
+        body.layout-vertical #mobile-story-title-overlay { position: fixed; top: 0; left: 0; width: 100%; z-index: 49; background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent); padding: 1rem; text-align: center; opacity: 0; transition: opacity 0.3s ease; pointer-events: auto; }
+        body.layout-vertical #chat-window-container { justify-content: center; border-radius: 0; margin-bottom: 0 !important; }
+        body.layout-vertical #chat-window { width: 99%; }
+        body.layout-vertical #character-portrait-container { display: none; }
+        body.layout-vertical #chat-input-container { background-color: rgba(17, 24, 39, 0.7); backdrop-filter: blur(5px); padding: 1rem; border-top: 1px solid var(--border-primary); }
+        body.layout-vertical .hidden.md\:flex { display: none !important; }
+        body.layout-vertical .md\:hidden { display: flex !important; }
     </style>
 </head>
 <body data-mode="none" class="bg-gray-900 min-h-screen flex flex-col">
@@ -309,7 +245,7 @@
                      <button onclick="app.openModal('story-library-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Story Library"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path><path d="M4 6h16M4 12h16M4 18h7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M18 18v-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M15 12h6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
                      <button onclick="app.openModal('characters-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Characters"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A5.965 5.965 0 0112 13a5.965 5.965 0 013 1.803"></path></svg></button>
                      <button onclick="app.openModal('knowledge-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Knowledge"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253z"></path></svg></button>
-                     <button onclick="app.openModal('settings-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Settings"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                     <button onclick="app.openModal('settings-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Settings"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066 2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
                 </div>
             </div>
 
@@ -370,7 +306,7 @@
 
     <!-- Modals -->
     <!-- Story Library Modal -->
-    <div id="story-library-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('story-library-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-6xl relative flex flex-col max-h-[90vh]"><div class="p-6 border-b border-gray-700 flex justify-between items-center"><h2 class="text-2xl font-semibold">Story Library</h2><button onclick="app.createNewStory()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Create New Story</button></div><div id="library-content-container" class="flex-grow flex min-h-0"></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-between items-center flex-wrap gap-4"><div class="flex items-center space-x-2"><span class="font-bold text-gray-400">Import:</span><button onclick="app.importBYAF()" class="bg-teal-600/80 hover:bg-teal-700/80 font-bold py-2 px-4 rounded-lg">BYAF</button><button onclick="document.getElementById('import-story-file').click()" class="bg-blue-600/80 hover:bg-blue-700/80 font-bold py-2 px-4 rounded-lg">Story</button><input type="file" id="import-story-file" class="hidden" accept=".json" onchange="app.importStory(event)"><button onclick="document.getElementById('import-library-file').click()" class="bg-cyan-600/80 hover:bg-cyan-700/80 font-bold py-2 px-4 rounded-lg">Library</button><input type="file" id="import-library-file" class="hidden" accept=".json" onchange="app.importLibrary(event)"></div><div class="flex items-center space-x-2"><span class="font-bold text-gray-400">Export:</span><button onclick="app.exportStory()" class="bg-green-600/80 hover:bg-green-700/80 font-bold py-2 px-4 rounded-lg">Story</button><button onclick="app.exportLibrary()" class="bg-emerald-600/80 hover:bg-emerald-700/80 font-bold py-2 px-4 rounded-lg">Library</button></div><button onclick="app.closeModal('story-library-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Close</button></div></div></div>
+    <div id="story-library-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('story-library-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-6xl relative flex flex-col max-h-[90vh]"><div class="p-6 border-b border-gray-700 flex justify-between items-center"><h2 class="text-2xl font-semibold">Story Library</h2><button onclick="app.createNewStory()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">New Story</button></div><div id="library-content-container" class="flex-grow flex min-h-0"></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-between items-center flex-wrap gap-4"><div class="flex items-center space-x-2"><span class="font-bold text-gray-400">Import:</span><button onclick="app.importBYAF()" class="bg-teal-600/80 hover:bg-teal-700/80 font-bold py-2 px-4 rounded-lg">BYAF</button><button onclick="document.getElementById('import-story-file').click()" class="bg-blue-600/80 hover:bg-blue-700/80 font-bold py-2 px-4 rounded-lg">Story</button><input type="file" id="import-story-file" class="hidden" accept=".json" onchange="app.importStory(event)"><button onclick="document.getElementById('import-library-file').click()" class="bg-cyan-600/80 hover:bg-cyan-700/80 font-bold py-2 px-4 rounded-lg">Library</button><input type="file" id="import-library-file" class="hidden" accept=".json" onchange="app.importLibrary(event)"></div><div class="flex items-center space-x-2"><span class="font-bold text-gray-400">Export:</span><button onclick="app.exportLibrary()" class="bg-emerald-600/80 hover:bg-emerald-700/80 font-bold py-2 px-4 rounded-lg">Library</button></div><button onclick="app.closeModal('story-library-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Close</button></div></div></div>
     
     <!-- Story Details Modal (for mobile view) -->
     <div id="story-details-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('story-details-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-2xl relative flex flex-col max-h-[90vh]"><div id="story-details-content-mobile" class="flex-grow flex flex-col min-h-0"></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="app.closeModal('story-details-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Back to Library</button></div></div></div>
@@ -388,10 +324,41 @@
     <div id="ai-enhance-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('ai-enhance-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl p-6 w-11/12 md:w-1/2 lg:w-1/3 relative"><h3 class="text-xl font-bold mb-4">Enhance with AI</h3><textarea id="modal-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" rows="4"></textarea><div class="mt-6 flex justify-end space-x-4"><button onclick="app.closeModal('ai-enhance-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Cancel</button><button id="modal-confirm-button" class="bg-indigo-600 hover:bg-indigo-700 font-bold py-2 px-4 rounded-lg">Generate</button></div></div></div>
     
     <!-- Edit Response Modal -->
-    <div id="edit-response-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('edit-response-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 relative flex flex-col max-h-[75vh]"><div class="p-6 border-b border-gray-700"><h3 class="text-xl font-bold">Edit Response</h3></div><div class="p-6 flex-grow"><textarea id="edit-modal-input" class="w-full h-full bg-gray-900 border-gray-700 rounded-lg p-2 resize-none"></textarea></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end space-x-4"><button onclick="app.closeModal('edit-response-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Cancel</button><button id="edit-modal-save-button" class="bg-indigo-600 hover:bg-indigo-700 font-bold py-2 px-4 rounded-lg">Save</button></div></div></div>
+    <div id="edit-response-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
+        <div class="modal-overlay absolute inset-0" onclick="app.closeModal('edit-response-modal')"></div>
+        <div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 relative flex flex-col max-h-[75vh]">
+            <div class="p-6 border-b border-gray-700 flex-shrink-0">
+                <h3 class="text-xl font-bold">Edit Response</h3>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <textarea id="edit-modal-input" class="w-full bg-gray-900 border-gray-700 rounded-lg p-2 resize-none"></textarea>
+            </div>
+            <div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end space-x-4 flex-shrink-0">
+                <button onclick="app.closeModal('edit-response-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Cancel</button>
+                <button id="edit-modal-save-button" class="bg-indigo-600 hover:bg-indigo-700 font-bold py-2 px-4 rounded-lg">Save</button>
+            </div>
+        </div>
+    </div>
     
     <!-- View Raw Prompt Modal -->
     <div id="view-raw-prompt-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="app.closeModal('view-raw-prompt-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative flex flex-col max-h-[90vh]"><div class="p-6 border-b border-gray-700"><h2 class="text-2xl font-semibold">Raw Prompt</h2></div><div class="p-6 overflow-y-auto flex-grow bg-gray-900"><pre id="raw-prompt-content" class="text-sm whitespace-pre-wrap"></pre></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="app.closeModal('view-raw-prompt-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
+
+    <!-- Example Dialogue Modal -->
+    <div id="example-dialogue-modal" class="fixed inset-0 z-[60] items-center justify-center hidden">
+        <div class="modal-overlay absolute inset-0 bg-black/50" onclick="app.closeModal('example-dialogue-modal')"></div>
+        <div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center">
+                <h2 class="text-2xl font-semibold">Edit Example Dialogue</h2>
+                <button onclick="app.addExampleDialogueTurn()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Add Turn</button>
+            </div>
+            <div id="example-dialogue-container" class="p-6 overflow-y-auto flex-grow space-y-4">
+                <!-- Dialogue turns will be rendered here by JavaScript -->
+            </div>
+            <div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end">
+                <button onclick="app.closeModal('example-dialogue-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button>
+            </div>
+        </div>
+    </div>
     <!-- /Modals -->
 
     <!-- Hidden template for settings tabs -->
@@ -408,7 +375,7 @@
             </div>
         </div>
         <div id="settings-prompt-content" class="space-y-6">
-            <div><h3 class="text-lg font-medium mb-2">System Prompt</h3><p class="text-gray-400 text-sm mb-2">Guide the AI's style, atmosphere, and response format.</p><textarea id="system-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><div><h3 class="text-lg font-medium mb-2">Event Master Prompt</h3><p class="text-gray-400 text-sm mb-2">Define the base instruction for the Event Master, which injects surprise events.</p><textarea id="event-master-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><button onclick="app.openViewRawPromptModal()" class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw Prompt</button>
+            <div><h3 class="text-lg font-medium mb-2">System Prompt</h3><p class="text-gray-400 text-sm mb-2">Guide the AI's style, atmosphere, and response format.</p><textarea id="system-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><div><h3 class="text-lg font-medium mb-2">Event Master Prompt</h3><p class="text-gray-400 text-sm mb-2">Define the base instruction for the Event Master, which injects surprise events.</p><textarea id="event-master-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><div class="flex space-x-2"><button onclick="app.openViewRawPromptModal()" class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw Prompt</button><button onclick="app.openModal('example-dialogue-modal')" class="bg-sky-600/80 hover:bg-sky-500/80 text-white font-bold py-2 px-4 rounded-lg">Edit Example Dialogue</button></div>
         </div>
         <div id="settings-model-content" class="space-y-6">
             <div><h3 class="text-lg font-medium mb-2">AI Provider</h3><div class="flex space-x-4"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="gemini" onchange="app.setApiProvider('gemini')"><span>Gemini</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="openrouter" onchange="app.setApiProvider('openrouter')"><span>OpenRouter</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="koboldcpp" onchange="app.setApiProvider('koboldcpp')"><span>KoboldCPP</span></label></div></div><div id="gemini-settings"><h3 class="text-lg font-medium">Gemini API Settings</h3><p class="text-gray-400 text-sm mb-2">Required for text generation.</p><input type="password" id="gemini-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter Gemini API key"></div><div id="openrouter-settings"><h3 class="text-lg font-medium">OpenRouter API Settings</h3><p class="text-gray-400 text-sm mb-2">Your key and the model name.</p><input type="password" id="openrouter-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter OpenRouter API key"><input type="text" id="openrouter-model-input" class="mt-2 w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter model name"></div><div id="koboldcpp-settings"><h3 class="text-lg font-medium">KoboldCPP Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is running with the <strong>--cors</strong> flag.</p><div><label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label><select id="koboldcpp-template-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="none">None (Raw Text)</option><option value="mistral">Mistral</option><option value="chatml">ChatML</option><option value="alpaca">Alpaca</option></select></div><div><label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-min-p-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-min-p-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div><div><label for="koboldcpp-dry-slider" class="text-gray-400 text-sm block mt-4 mb-2">DRY (Repetition Penalty)</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-dry-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-dry-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div></div>
@@ -441,11 +408,12 @@
         // Holds the entire library of stories, saved to localStorage.
         library: { 
             active_story_id: null, 
+            active_narrative_id: null,
             stories: [], 
             tag_cache: [] 
         },
         
-        // Holds the state of the *currently active* story. This is the object that gets modified during play.
+        // Holds the state of the *currently active* narrative.
         state: {}, 
 
         // Holds temporary, non-persistent properties related to the app's runtime behavior.
@@ -467,22 +435,29 @@
          * Initializes the app by loading data, setting up the UI, and attaching event listeners.
          */
         init() {
-            // Step 1: Load the entire story library from localStorage.
             this.loadLibrary();
-
-            // Step 2: Determine and load the currently active story into the main `app.state`.
-            this.loadActiveStory();
             
-            // Step 3: Check if an active story was successfully loaded.
-            if (!this.library.active_story_id || !this.state) { 
-                console.log("No active story/narrative found, creating a new one.");
-                this.createNewStory(false); 
+            if (this.library.stories.length === 0) {
+                console.log("No stories found, creating default story and narrative.");
+                this.createDefaultStoryAndNarrative(); // This will create, save, and reload.
+                return; // Stop further execution since the page will reload.
+            }
+
+            this.loadActiveNarrative();
+            
+            if (!this.state || Object.keys(this.state).length === 0) { 
+                console.log("No active narrative found. Please load one from the library.");
+                const activeStory = this.library.stories.find(s => s.id === this.library.active_story_id);
+                 document.getElementById('story-title-input').value = activeStory ? activeStory.name : "No Story Loaded";
+                 document.getElementById('mobile-story-title-overlay').value = activeStory ? activeStory.name : "No Story Loaded";
+                 this.renderChat(); // Show "no narrative" message
             } else {
                 this._ensureCharacterColors();
                 this.applyStyling();
                 this.renderAll();
-                this.setupEventListeners();
             }
+            // Always set up listeners
+            this.setupEventListeners();
         },
         
         // SECTION: LIBRARY & STATE MANAGEMENT
@@ -492,16 +467,30 @@
             if (savedLibraryJSON) {
                 try {
                     const parsedLibrary = JSON.parse(savedLibraryJSON);
+                    
+                    // MIGRATION STEP: Ensure all stories have the latest settings properties.
+                    const defaults = {
+                        ...this._getDefaultApiSettings(),
+                        ...this._getDefaultUiSettings(),
+                        ...this._getDefaultSystemPrompts(),
+                    };
+
+                    parsedLibrary.stories = (parsedLibrary.stories || []).map(story => {
+                        // For each story, create a new object starting with defaults,
+                        // then spread the existing story over it. This adds missing keys without overwriting existing values.
+                        return { ...defaults, ...story };
+                    });
+
                     this.library = parsedLibrary;
-                    if (!this.library.tag_cache) {
-                        this.library.tag_cache = [];
-                    }
+                    if (!this.library.tag_cache) this.library.tag_cache = [];
+                    if (!this.library.active_narrative_id) this.library.active_narrative_id = null;
+
                 } catch (error) {
-                    console.error("Failed to parse library from localStorage. It might be corrupted.", error);
-                    this.library = { active_story_id: null, stories: [], tag_cache: [] };
+                    console.error("Failed to parse library from localStorage.", error);
+                    this.library = { active_story_id: null, active_narrative_id: null, stories: [], tag_cache: [] };
                 }
             } else {
-                this.library = { active_story_id: null, stories: [], tag_cache: [] };
+                this.library = { active_story_id: null, active_narrative_id: null, stories: [], tag_cache: [] };
             }
         },
 
@@ -509,90 +498,106 @@
             localStorage.setItem(this.CONSTANTS.LIBRARY_KEY, JSON.stringify(this.library));
         },
 
-        loadActiveStory() {
-            if (this.library.stories.length === 0) {
-                this.state = null;
+        loadActiveNarrative() {
+            if (!this.library.active_story_id || !this.library.active_narrative_id) {
+                this.state = {};
                 return;
             }
-
-            let activeStory = this.library.stories.find(s => s.id === this.library.active_story_id);
-
+            
+            const activeStory = this.library.stories.find(s => s.id === this.library.active_story_id);
             if (!activeStory) {
-                activeStory = this.library.stories.sort((a,b) => new Date(b.last_modified) - new Date(a.last_modified))[0];
-                if(activeStory) {
-                    this.library.active_story_id = activeStory.id;
-                } else {
-                     this.state = null;
-                     return;
-                }
+                this.state = {};
+                return;
             }
             
-            // --- DATA MIGRATION ---
-            // This ensures old stories are compatible with the new Scenarios/Narratives structure.
-            if (activeStory.state && !activeStory.state.scenarios) {
-                console.log(`Migrating story: ${activeStory.name}`);
-                activeStory.state.scenarios = (activeStory.state.first_messages || ["The story begins..."]).map(msg => ({
-                    id: this.uuid(),
-                    message: msg
-                }));
-                activeStory.state.narratives = [];
-                if (activeStory.state.chat_history && activeStory.state.chat_history.length > 0) {
-                    activeStory.state.narratives.push({
-                        id: this.uuid(),
-                        name: "Imported Chat",
-                        last_modified: new Date().toISOString(),
-                        chat_history: activeStory.state.chat_history,
-                        messageCounter: activeStory.state.messageCounter
-                    });
-                     activeStory.state.active_narrative_id = activeStory.state.narratives[0].id;
-                }
-                delete activeStory.state.first_messages;
-                delete activeStory.state.chat_history;
-            }
-            // --- END MIGRATION ---
-
-            this.state = activeStory.state;
-            
-            let activeNarrative = (this.state.narratives || []).find(n => n.id === this.state.active_narrative_id);
-            
-            // If no active narrative is set, or the set one doesn't exist, find the most recent one.
-            if (!activeNarrative && (this.state.narratives || []).length > 0) {
-                activeNarrative = this.state.narratives.sort((a, b) => new Date(b.last_modified) - new Date(a.last_modified))[0];
-                this.state.active_narrative_id = activeNarrative.id;
-            }
-
+            const activeNarrative = (activeStory.narratives || []).find(n => n.id === this.library.active_narrative_id);
             if (activeNarrative) {
-                // Load the active narrative's data into the top-level state for the UI to use.
-                this.state.chat_history = activeNarrative.chat_history;
-                this.state.messageCounter = activeNarrative.messageCounter;
+                // Combine story-level settings with narrative-specific data
+                const storySettings = { ...activeStory };
+                delete storySettings.narratives;
+                delete storySettings.scenarios;
+                
+                this.state = {
+                    ...storySettings,
+                    ...activeNarrative.state,
+                    narrativeName: activeNarrative.name
+                };
+
             } else {
-                // If there are no narratives at all, initialize an empty chat.
-                this.state.chat_history = [];
-                this.state.messageCounter = 0;
+                this.state = {};
             }
         },
 
         saveState() {
-            const activeStory = this.library.stories.find(s => s.id === this.library.active_story_id);
-            if (!activeStory) return;
-
-            activeStory.state = this.state;
-            activeStory.last_modified = new Date().toISOString();
-            
-            const activeNarrative = (activeStory.state.narratives || []).find(n => n.id === activeStory.state.active_narrative_id);
-            if (activeNarrative) {
-                // Save the current chat back to its narrative object.
-                activeNarrative.chat_history = this.state.chat_history;
-                activeNarrative.messageCounter = this.state.messageCounter;
-                activeNarrative.last_modified = new Date().toISOString();
+            if (!this.library.active_story_id || !this.library.active_narrative_id || !this.state) {
+                return;
             }
+            const activeStory = this.library.stories.find(s => s.id === this.library.active_story_id);
+            if (activeStory) {
+                const narrativeIndex = (activeStory.narratives || []).findIndex(n => n.id === this.library.active_narrative_id);
+                if (narrativeIndex !== -1) {
+                    // Extract narrative-specific state
+                    const narrativeState = {
+                        chat_history: this.state.chat_history,
+                        messageCounter: this.state.messageCounter,
+                        static_entries: this.state.static_entries
+                    };
 
-            this.updateSearchIndex(activeStory);
-            this.saveLibrary();
+                    activeStory.narratives[narrativeIndex].state = narrativeState;
+                    activeStory.narratives[narrativeIndex].last_modified = new Date().toISOString();
+                    activeStory.last_modified = new Date().toISOString();
+                    
+                    // Save shared settings back to the story object
+                    activeStory.characters = this.state.characters;
+                    activeStory.dynamic_entries = this.state.dynamic_entries;
+                    // ... save other shared settings if they are editable ...
+
+                    this.updateSearchIndex(activeStory);
+                    this.saveLibrary();
+                }
+            }
         },
 
-        createNewStory(reload = true) {
-            const newStoryState = this.getDefaultState();
+        createDefaultStoryAndNarrative() {
+            const newStory = {
+                id: this.uuid(), name: "My First Story", last_modified: new Date().toISOString(), created_date: new Date().toISOString(), creator_notes: "", tags: [],
+                search_index: "my first story",
+                ...this._getDefaultApiSettings(), ...this._getDefaultUiSettings(), ...this._getDefaultSystemPrompts(),
+                characters: [
+                    { id: this.uuid(), name: "You", description: "The protagonist.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags:[] }, 
+                    { id: this.uuid(), name: "Narrator", description: "Describes the world.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags:[], color: this.CONSTANTS.CHARACTER_COLORS[0] }
+                ], 
+                dynamic_entries: [{id: this.uuid(), title: "Example Lorebook Entry", triggers: "example, 100%", content: "This is a sample dynamic lore entry.", triggered_at_turn: null }],
+                selectedStaticEntryId: null, selectedDynamicEntryId: null,
+                scenarios: [{ id: this.uuid(), name: "Default Start", message: "The story begins..." }],
+                narratives: []
+            };
+            
+            const defaultScenario = newStory.scenarios[0];
+            const newNarrative = {
+                id: this.uuid(), name: `${defaultScenario.name} - Chat`, last_modified: new Date().toISOString(),
+                state: {
+                    chat_history: [], messageCounter: 0,
+                    static_entries: [{ id: this.uuid(), title: "World Overview", content: "A high-fantasy world." }]
+                }
+            };
+            
+            const firstSpeaker = newStory.characters.find(c => !c.is_user);
+            newNarrative.state.chat_history.push({
+                character_id: firstSpeaker.id, content: defaultScenario.message, type: 'chat', emotion: 'neutral', timestamp: new Date().toISOString(),
+            });
+            newNarrative.state.messageCounter = 1;
+
+            newStory.narratives.push(newNarrative);
+            this.library.stories.push(newStory);
+            this.library.active_story_id = newStory.id;
+            this.library.active_narrative_id = newNarrative.id;
+
+            this.saveLibrary();
+            window.location.reload();
+        },
+        
+        createNewStory() {
             const newStory = {
                 id: this.uuid(),
                 name: "New Story",
@@ -601,25 +606,129 @@
                 creator_notes: "",
                 tags: [],
                 search_index: "new story",
-                state: newStoryState
+                // Shared state
+                ...this._getDefaultApiSettings(),
+                ...this._getDefaultUiSettings(),
+                ...this._getDefaultSystemPrompts(),
+                characters: [
+                    { id: this.uuid(), name: "You", description: "The protagonist.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags:[] }, 
+                    { id: this.uuid(), name: "Narrator", description: "Describes the world.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags:[], color: this.CONSTANTS.CHARACTER_COLORS[0] }
+                ], 
+                dynamic_entries: [{id: this.uuid(), title: "Example Lorebook Entry", triggers: "example, 100%", content: "This is a sample dynamic lore entry.", triggered_at_turn: null }],
+                selectedStaticEntryId: null,
+                selectedDynamicEntryId: null,
+                // Scenarios and Narratives
+                scenarios: [{ id: this.uuid(), name: "Default Start", message: "The story begins..." }],
+                narratives: []
             };
             this.library.stories.push(newStory);
-            this.library.active_story_id = newStory.id;
-            
-            // Automatically create and activate the first narrative from the first scenario
-            const firstScenario = newStory.state.scenarios[0];
-            this.loadScenario(newStory.id, firstScenario.id, false); // false to prevent reload
+            this.library.active_story_id = null; // Don't auto-activate
+            this.library.active_narrative_id = null;
+            this.saveLibrary();
+            this.renderLibraryInterface();
+        },
 
-            if (reload) {
-                window.location.reload();
-            } else {
-                this.loadActiveStory(); // Load the newly created story and narrative state
-                this.applyStyling();
-                this.renderAll();
-                this.setupEventListeners();
+        createNarrativeFromScenario(storyId, scenarioId) {
+            const story = this.library.stories.find(s => s.id === storyId);
+            const scenario = story.scenarios.find(sc => sc.id === scenarioId);
+            if (!story || !scenario) return;
+
+            const newNarrative = {
+                id: this.uuid(),
+                name: `${scenario.name} - Chat`,
+                created_date: new Date().toISOString(),
+                last_modified: new Date().toISOString(),
+                state: {
+                    chat_history: [],
+                    messageCounter: 0,
+                    static_entries: [{ id: this.uuid(), title: "World Overview", content: "A high-fantasy world." }] // Each narrative gets its own static context
+                }
+            };
+            
+            const firstMessage = scenario.message;
+            if (firstMessage) {
+                const firstSpeaker = story.characters.find(c => !c.is_user && c.is_active);
+                if (firstSpeaker) {
+                    newNarrative.state.chat_history.push({
+                        character_id: firstSpeaker.id,
+                        content: firstMessage,
+                        type: 'chat',
+                        emotion: 'neutral',
+                        timestamp: new Date().toISOString(),
+                        isNew: true
+                    });
+                    newNarrative.state.messageCounter = 1;
+                }
             }
+            if(!story.narratives) story.narratives = [];
+            story.narratives.push(newNarrative);
+            this.loadNarrative(storyId, newNarrative.id);
         },
         
+        loadNarrative(storyId, narrativeId) {
+            this.library.active_story_id = storyId;
+            this.library.active_narrative_id = narrativeId;
+            this.saveLibrary();
+            window.location.reload();
+        },
+        
+        duplicateNarrative(storyId, narrativeId) {
+            const story = this.library.stories.find(s => s.id === storyId);
+            const narrative = story.narratives.find(n => n.id === narrativeId);
+            if (!story || !narrative) return;
+            
+            const newNarrative = JSON.parse(JSON.stringify(narrative)); // Deep copy
+            newNarrative.id = this.uuid();
+            newNarrative.name = `${narrative.name} (Copy)`;
+            newNarrative.created_date = new Date().toISOString();
+            newNarrative.last_modified = new Date().toISOString();
+            
+            story.narratives.push(newNarrative);
+            this.saveLibrary();
+            this.openStoryDetails(storyId); // Re-render the details view
+        },
+
+        deleteNarrative(storyId, narrativeId) {
+            if (!confirm("Are you sure you want to delete this narrative and all its history?")) return;
+            const story = this.library.stories.find(s => s.id === storyId);
+            if (story) {
+                story.narratives = story.narratives.filter(n => n.id !== narrativeId);
+                if (this.library.active_narrative_id === narrativeId) {
+                    this.library.active_narrative_id = null;
+                }
+                this.saveLibrary();
+                this.openStoryDetails(storyId);
+            }
+        },
+
+        duplicateScenario(storyId, scenarioId) {
+            const story = this.library.stories.find(s => s.id === storyId);
+            const scenario = story.scenarios.find(sc => sc.id === scenarioId);
+            if (!story || !scenario) return;
+            
+            const newScenario = JSON.parse(JSON.stringify(scenario));
+            newScenario.id = this.uuid();
+            newScenario.name = `${scenario.name} (Copy)`;
+            story.scenarios.push(newScenario);
+            this.saveLibrary();
+            this.openStoryDetails(storyId);
+        },
+        
+        deleteScenario(storyId, scenarioId) {
+            const story = this.library.stories.find(s => s.id === storyId);
+            if (story) {
+                if (story.scenarios.length <= 1) {
+                    alert("You cannot delete the last scenario.");
+                    return;
+                }
+                if (!confirm("Are you sure you want to delete this scenario?")) return;
+                story.scenarios = story.scenarios.filter(sc => sc.id !== scenarioId);
+                this.saveLibrary();
+                this.openStoryDetails(storyId);
+            }
+        },
+
+
         // --- Modular Default State Generators ---
         _getDefaultApiSettings() {
             return {
@@ -651,89 +760,15 @@
                 event_master_prompt: '', 
             };
         },
-
-        _getDefaultStoryContent() {
-            const narratorColor = this.CONSTANTS.CHARACTER_COLORS[0];
-            return {
-                characters: [
-                    { id: this.uuid(), name: "You", description: "The protagonist.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags:[] }, 
-                    { id: this.uuid(), name: "Narrator", description: "Describes the world.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags:[], color: narratorColor }
-                ], 
-                static_entries: [{ id: this.uuid(), title: "World Overview", content: "A high-fantasy world." }], 
-                dynamic_entries: [{id: this.uuid(), title: "Example Lorebook Entry", triggers: "example, 100%", content: "This is a sample dynamic lore entry.", triggered_at_turn: null }],
-                scenarios: [{ id: this.uuid(), message: "The story begins..." }],
-                narratives: [],
-                active_narrative_id: null,
-                selectedStaticEntryId: null,
-                selectedDynamicEntryId: null,
-            };
-        },
-
-        getDefaultState() {
-            return {
-                ...this._getDefaultApiSettings(),
-                ...this._getDefaultUiSettings(),
-                ...this._getDefaultSystemPrompts(),
-                ...this._getDefaultStoryContent(),
-            }
-        },
         
-        // --- New Story/Narrative Loading Functions ---
-        loadScenario(storyId, scenarioId, reload = true) {
-            const story = this.library.stories.find(s => s.id === storyId);
-            const scenario = story.state.scenarios.find(sc => sc.id === scenarioId);
-            if (!story || !scenario) return;
-
-            const newNarrative = {
-                id: this.uuid(),
-                name: `Narrative (${new Date().toLocaleString()})`,
-                last_modified: new Date().toISOString(),
-                chat_history: [],
-                messageCounter: 0
-            };
-
-            const firstSpeaker = story.state.characters.find(c => !c.is_user && c.is_active);
-            if(firstSpeaker) {
-                newNarrative.chat_history.push({
-                    character_id: firstSpeaker.id, 
-                    content: scenario.message, 
-                    type: 'chat', 
-                    emotion: 'neutral',
-                    timestamp: new Date().toISOString(),
-                    isNew: true 
-                });
-                newNarrative.messageCounter = 1;
-            }
-
-            story.state.narratives.push(newNarrative);
-            story.state.active_narrative_id = newNarrative.id;
-            this.library.active_story_id = story.id;
-            
-            this.saveLibrary();
-            if (reload) window.location.reload();
-        },
-
-        loadNarrative(storyId, narrativeId, reload = true) {
-            const story = this.library.stories.find(s => s.id === storyId);
-            if (!story || !story.state.narratives.find(n => n.id === narrativeId)) return;
-
-            story.state.active_narrative_id = narrativeId;
-            this.library.active_story_id = story.id;
-
-            this.saveLibrary();
-            if (reload) window.location.reload();
-        },
-
+        // --- Other Library Functions ---
         deleteStory(storyId) {
             this.library.stories = this.library.stories.filter(s => s.id !== storyId);
             this.updateTagCache();
 
             if (this.library.active_story_id === storyId) {
-                if (this.library.stories.length > 0) {
-                    this.library.active_story_id = this.library.stories.sort((a,b) => new Date(b.last_modified) - new Date(a.last_modified))[0].id;
-                } else {
-                    this.library.active_story_id = null;
-                }
+                this.library.active_story_id = null;
+                this.library.active_narrative_id = null;
                 this.saveLibrary();
                 window.location.reload();
             } else {
@@ -758,19 +793,12 @@
             const originalStory = this.library.stories.find(s => s.id === storyId);
             if (!originalStory) return;
 
-            const newState = JSON.parse(JSON.stringify(originalStory.state));
-            // Reset active narrative so it doesn't carry over
-            newState.active_narrative_id = null;
-
-            const newStory = {
-                id: this.uuid(),
-                name: `${originalStory.name || 'Untitled Story'} (Copy)`,
-                last_modified: new Date().toISOString(),
-                created_date: new Date().toISOString(),
-                creator_notes: originalStory.creator_notes || "",
-                tags: [...(originalStory.tags || [])],
-                state: newState
-            };
+            const newStory = JSON.parse(JSON.stringify(originalStory));
+            newStory.id = this.uuid();
+            newStory.name = `${originalStory.name || 'Untitled Story'} (Copy)`;
+            newStory.last_modified = new Date().toISOString();
+            newStory.created_date = new Date().toISOString();
+            
             this.updateSearchIndex(newStory);
             this.library.stories.push(newStory);
             this.saveLibrary();
@@ -780,8 +808,8 @@
             if (!story) return;
             let index = [story.name];
             if (story.tags) index.push(...story.tags);
-            if (story.state && story.state.characters) {
-                story.state.characters.forEach(char => {
+            if (story.characters) {
+                story.characters.forEach(char => {
                     index.push(char.name);
                     index.push(char.description);
                     if (char.tags) index.push(...char.tags);
@@ -793,8 +821,8 @@
             const allTags = new Set();
             this.library.stories.forEach(story => {
                 if (story.tags) story.tags.forEach(tag => allTags.add(tag));
-                if (story.state && story.state.characters) {
-                    story.state.characters.forEach(char => {
+                if (story.characters) {
+                    story.characters.forEach(char => {
                         if (char.tags) char.tags.forEach(tag => allTags.add(tag));
                     });
                 }
@@ -942,12 +970,19 @@
             if(modalId === 'story-library-modal') {
                 this.renderLibraryInterface();
             }
+            if ((modalId === 'knowledge-modal' || modalId === 'characters-modal' || modalId === 'settings-modal' || modalId === 'example-dialogue-modal') && (!this.library.active_narrative_id || Object.keys(this.state).length === 0)) {
+                 alert("Please load a narrative first.");
+                 return;
+            }
             if (modalId === 'knowledge-modal') {
                 this.switchKnowledgeTab('static'); // Default to static tab
             }
             if (modalId === 'settings-modal') {
                 this.prepareSettingsModal();
                 this.switchSettingsTab(this.RUNTIME.activeSettingsTab || 'appearance');
+            }
+            if (modalId === 'example-dialogue-modal') {
+                this.renderExampleDialogueModal();
             }
             document.getElementById(modalId).style.display = 'flex'; 
         },
@@ -976,9 +1011,10 @@
         renderAll() { 
             const activeStory = this.library.stories.find(s => s.id === this.library.active_story_id);
             if (activeStory) {
-                document.getElementById('story-title-input').value = activeStory.name || '';
+                const activeNarrative = (activeStory.narratives || []).find(n => n.id === this.library.active_narrative_id);
+                document.getElementById('story-title-input').value = activeNarrative ? `${activeStory.name}: ${activeNarrative.name}` : activeStory.name;
                 const mobileTitle = document.getElementById('mobile-story-title-overlay');
-                if (mobileTitle) mobileTitle.value = activeStory.name || '';
+                if (mobileTitle) mobileTitle.value = activeNarrative ? `${activeStory.name}: ${activeNarrative.name}` : activeStory.name;
             }
             this.renderCharacters(); 
             this.renderStaticEntries(); 
@@ -1001,7 +1037,7 @@
             if (filterTag) {
                 stories = stories.filter(s => {
                     const storyTags = new Set(s.tags || []);
-                    s.state.characters.forEach(c => (c.tags || []).forEach(t => storyTags.add(t)));
+                    (s.characters || []).forEach(c => (c.tags || []).forEach(t => storyTags.add(t)));
                     return storyTags.has(filterTag);
                 });
             }
@@ -1018,12 +1054,12 @@
                     <input type="search" placeholder="Search stories..." value="${searchTerm}" oninput="app.renderLibraryInterface({searchTerm: this.value, sortBy: document.getElementById('sort-by').value, filterTag: document.getElementById('filter-by-tag').value})" class="w-full bg-black/30 p-2 rounded-lg border-gray-600">
                     <div class="flex space-x-4">
                         <select id="sort-by" onchange="app.renderLibraryInterface({searchTerm: document.querySelector('#library-content-container input[type=search]').value, sortBy: this.value, filterTag: document.getElementById('filter-by-tag').value})" class="w-1/2 bg-black/30 p-2 rounded-lg border-gray-600">
-                            <option value="last_modified" ${sortBy === 'last_modified' ? 'selected' : ''}>Sort by Last Modified</option>
-                            <option value="name" ${sortBy === 'name' ? 'selected' : ''}>Sort by Name</option>
-                            <option value="created_date" ${sortBy === 'created_date' ? 'selected' : ''}>Sort by Date Created</option>
+                            <option value="last_modified" ${sortBy === 'last_modified' ? 'selected' : ''}>Modified</option>
+                            <option value="name" ${sortBy === 'name' ? 'selected' : ''}>Name</option>
+                            <option value="created_date" ${sortBy === 'created_date' ? 'selected' : ''}>Created</option>
                         </select>
                         <select id="filter-by-tag" onchange="app.renderLibraryInterface({searchTerm: document.querySelector('#library-content-container input[type=search]').value, sortBy: document.getElementById('sort-by').value, filterTag: this.value})" class="w-1/2 bg-black/30 p-2 rounded-lg border-gray-600">
-                            <option value="">Filter by Tag</option>
+                            <option value="">Tag</option>
                             ${tagOptions}
                         </select>
                     </div>
@@ -1032,17 +1068,14 @@
             // --- Story List HTML ---
             const storyListHTML = stories.map(story => {
                 const displayName = story.name || 'Untitled Story';
-                const isActive = story.id === this.library.active_story_id;
-                const activeNarrative = isActive ? (story.state.narratives || []).find(n => n.id === story.state.active_narrative_id) : null;
-                const activeText = isActive && activeNarrative ? `<span class="text-xs text-indigo-300 font-bold">ACTIVE: ${this.escapeHTML(activeNarrative.name)}</span>` : '';
-
+                const isActiveStory = story.id === this.library.active_story_id;
                 return `
-                <div class="p-4 rounded-lg flex justify-between items-center cursor-pointer ${isActive ? 'bg-indigo-600/30' : 'bg-gray-700/50 hover:bg-gray-600/50'}" onclick="app.openStoryDetails('${story.id}')">
+                <div class="p-4 rounded-lg flex justify-between items-center cursor-pointer ${isActiveStory ? 'bg-indigo-600/30' : 'bg-gray-700/50 hover:bg-gray-600/50'}" onclick="app.openStoryDetails('${story.id}')">
                     <div>
                         <h3 class="font-semibold text-lg">${this.escapeHTML(displayName)}</h3>
                         <p class="text-sm text-gray-400">Modified: ${new Date(story.last_modified).toLocaleString()}</p>
                     </div>
-                    ${activeText}
+                    ${isActiveStory ? '<span class="text-xs text-indigo-300 font-bold">ACTIVE</span>' : ''}
                 </div>
             `}).join('<hr class="border-gray-700 my-2">');
 
@@ -1060,63 +1093,55 @@
             const story = this.library.stories.find(s => s.id === storyId);
             if (!story) return;
 
-            const allStoryTags = new Set(story.tags || []);
-            story.state.characters.forEach(c => (c.tags || []).forEach(t => allStoryTags.add(t)));
-            const tagsHTML = Array.from(allStoryTags).map(tag => `<span class="bg-gray-600/50 text-gray-300 text-xs font-medium mr-2 px-2.5 py-0.5 rounded">${tag}</span>`).join('');
-            
-            // --- SCENARIOS ---
-            const scenarios = story.state.scenarios || [];
-            const scenariosHTML = scenarios.map(sc => `
-                <div class="bg-gray-700/50 p-3 rounded-lg flex justify-between items-center">
-                    <p class="text-sm italic pr-4">"${this.escapeHTML(sc.message)}"</p>
-                    <div class="flex-shrink-0 flex space-x-2">
-                        <button onclick="app.loadScenario('${story.id}', '${sc.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-3 rounded-lg">Load</button>
+            const scenariosHTML = (story.scenarios || []).map(scenario => `
+                <div class="bg-gray-700/30 p-3 rounded-lg flex justify-between items-center gap-2">
+                    <p class="font-semibold flex-grow">${this.escapeHTML(scenario.name)}</p>
+                    <div class="flex-shrink-0 flex items-center gap-2">
+                        <button onclick="app.createNarrativeFromScenario('${story.id}', '${scenario.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold p-2 rounded-lg" title="Load Scenario (Creates New Narrative)"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg></button>
+                        <button onclick="app.duplicateScenario('${story.id}', '${scenario.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold p-2 rounded-lg" title="Duplicate Scenario"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
+                        <button onclick="app.deleteScenario('${story.id}', '${scenario.id}')" class="bg-red-600 hover:bg-red-500 text-white font-bold p-2 rounded-lg" title="Delete Scenario"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                     </div>
                 </div>
             `).join('');
 
-            // --- NARRATIVES ---
-            const narratives = (story.state.narratives || []).sort((a,b) => new Date(b.last_modified) - new Date(a.last_modified));
-            const narrativesHTML = narratives.map(n => `
-                 <div class="bg-gray-700/50 p-3 rounded-lg flex justify-between items-center">
-                    <div>
-                        <p class="font-semibold">${this.escapeHTML(n.name)}</p>
-                        <p class="text-xs text-gray-400">Last Played: ${new Date(n.last_modified).toLocaleString()}</p>
+            const narrativesHTML = (story.narratives || []).sort((a, b) => new Date(b.last_modified) - new Date(a.last_modified)).map(narrative => `
+                <div class="bg-gray-700/60 p-3 rounded-lg flex justify-between items-center gap-2">
+                    <div class="flex-grow">
+                        <p class="font-semibold">${this.escapeHTML(narrative.name)}</p>
+                        <p class="text-xs text-gray-400">Modified: ${new Date(narrative.last_modified).toLocaleString()}</p>
                     </div>
-                    <div class="flex-shrink-0 flex space-x-2">
-                        <button onclick="app.loadNarrative('${story.id}', '${n.id}')" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-3 rounded-lg">Load</button>
+                    ${narrative.id === this.library.active_narrative_id && story.id === this.library.active_story_id ? '<span class="text-xs text-sky-300 font-bold flex-shrink-0">ACTIVE</span>' : ''}
+                    <div class="flex-shrink-0 flex items-center gap-2">
+                        <button onclick="app.loadNarrative('${story.id}', '${narrative.id}')" class="bg-green-600 hover:bg-green-500 text-white font-bold p-2 rounded-lg" title="Load Narrative"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
+                        <button onclick="app.duplicateNarrative('${story.id}', '${narrative.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold p-2 rounded-lg" title="Duplicate"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
+                        <button onclick="app.deleteNarrative('${story.id}', '${narrative.id}')" class="bg-red-600 hover:bg-red-500 text-white font-bold p-2 rounded-lg" title="Delete"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                     </div>
                 </div>
             `).join('');
-
 
             const detailsHTML = `
                 <div class="relative w-full h-full bg-black/20 overflow-hidden flex flex-col">
-                    <div class="relative w-full aspect-video flex-shrink-0" id="details-carousel">
-                         <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
-                         <h3 class="absolute top-4 left-4 text-white text-lg font-bold drop-shadow-lg">${this.escapeHTML(story.name || 'Untitled Story')}</h3>
+                    <div class="relative w-full aspect-video flex-shrink-0">
+                         <div id="details-carousel" class="w-full h-full"></div>
+                         <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/80 via-black/30 to-transparent pointer-events-none z-10"></div>
+                         <h3 class="absolute top-4 left-4 text-white text-2xl font-bold drop-shadow-lg z-20">${this.escapeHTML(story.name || 'Untitled Story')}</h3>
                     </div>
                     <div class="p-6 flex-grow overflow-y-auto space-y-6 min-h-0">
                          <div>
-                            <h4 class="font-bold mb-2">Scenarios (Start New Chat)</h4>
-                            <div class="space-y-2">${scenariosHTML || '<p class="text-sm text-gray-400">No scenarios defined.</p>'}</div>
+                            <h4 class="font-bold text-lg mb-2 text-indigo-300">Scenarios (Templates)</h4>
+                            <div class="space-y-2">${scenariosHTML || '<p class="text-sm text-gray-400">No scenarios in this story.</p>'}</div>
                          </div>
+                         <hr class="border-gray-600">
                          <div>
-                            <h4 class="font-bold mb-2">Narratives (Continue Chat)</h4>
-                            <div class="space-y-2">${narrativesHTML || '<p class="text-sm text-gray-400">No saved chats yet. Start one from a scenario!</p>'}</div>
+                            <h4 class="font-bold text-lg mb-2 text-sky-300">Narratives (Chats)</h4>
+                            <div class="space-y-2">${narrativesHTML || '<p class="text-sm text-gray-400">No narratives yet. Load a scenario to start one.</p>'}</div>
                          </div>
+                          <hr class="border-gray-600">
                          <div class="flex space-x-2">
                             <button onclick="app.renameStoryPrompt('${story.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded-lg" title="Rename"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
                             <button onclick="app.duplicateStory('${story.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded-lg" title="Duplicate"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
+                            <button onclick="app.exportStory('${story.id}')" class="bg-green-600/80 hover:bg-green-700/80 text-white font-bold py-2 px-3 rounded-lg" title="Export Story"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>
                             <button onclick="app.deleteStory('${story.id}')" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-3 rounded-lg" title="Delete"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                         </div>
-                         <div>
-                            <h4 class="font-bold mb-2">Tags</h4>
-                            <div class="flex flex-wrap">${tagsHTML || '<span class="text-gray-400 text-sm">No tags yet.</span>'}</div>
-                         </div>
-                         <div>
-                            <h4 class="font-bold mb-2">Creator's Note</h4>
-                            <textarea oninput="app.updateStoryField('${story.id}', 'creator_notes', this.value)" class="w-full h-32 bg-black/30 p-2 rounded-lg border-gray-600">${story.creator_notes || ''}</textarea>
                          </div>
                     </div>
                 </div>
@@ -1125,10 +1150,10 @@
             if (window.innerHeight > window.innerWidth) {
                 document.getElementById('story-details-content-mobile').innerHTML = detailsHTML;
                 this.openModal('story-details-modal');
-                this.startCarousel(story.state.characters, 'details-carousel');
+                this.startCarousel(story.characters, 'details-carousel');
             } else {
                 document.getElementById('story-details-content-desktop').innerHTML = detailsHTML;
-                this.startCarousel(story.state.characters, 'details-carousel');
+                this.startCarousel(story.characters, 'details-carousel');
             }
         },
         updateStoryField: debounce(function(storyId, field, value) {
@@ -1145,13 +1170,13 @@
             const container = document.getElementById(containerId);
             if (!container) return;
 
-            const images = characters.map(c => c.image_url).filter(Boolean);
+            const images = (characters || []).map(c => c.image_url).filter(Boolean);
             if (images.length === 0) {
-                container.innerHTML += `<div class="w-full h-full flex items-center justify-center text-gray-500">No character images</div>`;
+                container.innerHTML += `<div class="w-full h-full flex items-center justify-center bg-gray-900 text-gray-500">No character images</div>`;
                 return;
             }
 
-            container.innerHTML += `
+            container.innerHTML = `
                 <img id="${containerId}-img1" class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" style="opacity: 1;">
                 <img id="${containerId}-img2" class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" style="opacity: 0;">
             `;
@@ -1191,27 +1216,16 @@
         },
         
         // --- The rest of the app logic ---
-        renderAllButLibrary() { 
-            const activeStory = this.library.stories.find(s => s.id === this.library.active_story_id);
-            if (activeStory) {
-                document.getElementById('story-title-input').value = activeStory.name || '';
-            }
-            this.renderCharacters(); 
-            this.renderStaticEntries(); 
-            this.renderDynamicEntries(); 
-            this.renderChat(); 
-            this.updateAICharacterSelector(); 
-        },
-        renderCharacters() { document.getElementById('characters-container').innerHTML = this.state.characters.map(char => {
+        renderCharacters() { document.getElementById('characters-container').innerHTML = (this.state.characters || []).map(char => {
             const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) => `
                 <div class="flex items-center space-x-2 mt-2">
-                    <select onchange="app.updateExtraPortrait('${char.id}', ${index}, 'emotion', this.value)" class="w-1/3 bg-black/30 border-gray-600 rounded p-1 text-sm">
+                    <select onchange="app.updateCharacterField('${char.id}', ${index}, 'emotion', this.value)" class="w-1/3 bg-black/30 border-gray-600 rounded p-1 text-sm">
                         <option value="happy" ${portrait.emotion === 'happy' ? 'selected' : ''}>Happy</option>
                         <option value="sad" ${portrait.emotion === 'sad' ? 'selected' : ''}>Sad</option>
                         <option value="angry" ${portrait.emotion === 'angry' ? 'selected' : ''}>Angry</option>
                         <option value="surprised" ${portrait.emotion === 'surprised' ? 'selected' : ''}>Surprised</option>
                     </select>
-                    <input type="text" value="${this.escapeHTML(portrait.url)}" oninput="app.updateExtraPortrait('${char.id}', ${index}, 'url', this.value)" class="w-2/3 bg-black/30 border-gray-600 p-1 text-sm" placeholder="URL...">
+                    <input type="text" value="${this.escapeHTML(portrait.url)}" oninput="app.updateCharacterField('${char.id}', ${index}, 'url', this.value)" class="w-2/3 bg-black/30 border-gray-600 p-1 text-sm" placeholder="URL...">
                     <button onclick="app.removeExtraPortrait('${char.id}', ${index})" class="text-red-400 hover:text-red-300">X</button>
                 </div>
             `).join('');
@@ -1219,12 +1233,12 @@
 
             return `<div class="character-card p-4 flex flex-col space-y-4"><div class="flex justify-between items-center"><input type="text" value="${this.escapeHTML(char.name)}" oninput="app.updateCharacterField('${char.id}', 'name', this.value)" class="text-xl font-bold bg-transparent p-1 w-2/3">${!char.is_user ? `<div class="flex items-center space-x-2"><span class="text-sm">Active</span><label class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" class="sr-only" ${char.is_active ? 'checked' : ''} onchange="app.toggleCharacterActive(event, '${char.id}')"><div class="w-12 h-6 bg-gray-600 rounded-full toggle-bg"></div></div></label></div>` : '<span class="text-sm font-semibold text-indigo-400">PLAYER</span>'}</div><textarea oninput="app.updateCharacterField('${char.id}', 'description', this.value); app.updateTokenCount('${char.id}', this.value)" class="w-full h-24 bg-black/30 border-gray-600 p-2 resize-none">${this.escapeHTML(char.description)}</textarea><div class="text-right text-sm text-gray-400" id="token-counter-${char.id}">~${Math.round((char.description || '').length / 4)} tokens</div><input type="text" value="${this.escapeHTML(char.image_url)}" oninput="app.updateCharacterField('${char.id}', 'image_url', this.value)" class="w-full bg-black/30 border-gray-600 p-2 text-sm" placeholder="Default/Neutral Image URL..."><div id="extra-portraits-${char.id}">${extraPortraitsHTML}</div><button onclick="app.addExtraPortrait('${char.id}')" class="text-sm text-sky-400 hover:text-sky-300 mt-2">+ Add Emotional Portrait</button><div class="mt-2"><input type="text" value="${tagsHTML}" oninput="app.updateCharacterTags('${char.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 text-sm" placeholder="Tags (comma-separated)..."><button onclick="app.generateTagsForCharacter(event, '${char.id}')" class="text-xs text-sky-400 hover:text-sky-300 mt-1">Auto-Tag</button></div><div class="flex justify-end space-x-2"><button onclick="app.openAIEnhanceModal('${char.id}')" class="text-sm bg-gray-600/80 hover:bg-gray-500/80 font-semibold py-2 px-3 rounded-lg">AI Enhance</button>${!char.is_user ? `<button onclick="app.deleteCharacter('${char.id}')" class="text-sm bg-red-600/80 hover:bg-red-700/80 font-semibold py-2 px-3 rounded-lg">Delete</button>` : ''}</div></div>`;
         }).join(''); },
-        renderStaticEntries() { document.getElementById('static-entries-list').innerHTML = this.state.static_entries.map(entry => `<div onclick="app.selectStaticEntry('${entry.id}')" class="p-3 rounded-lg cursor-pointer ${this.state.selectedStaticEntryId === entry.id ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'}"><h4 class="font-semibold truncate">${this.escapeHTML(entry.title)}</h4></div>`).join(''); this.renderStaticEntryDetails(); },
-        renderStaticEntryDetails() { const container = document.getElementById('static-entry-details-content'); const entry = this.state.static_entries.find(e => e.id === this.state.selectedStaticEntryId); if (entry) { container.innerHTML = `<input type="text" value="${this.escapeHTML(entry.title)}" oninput="app.updateStaticEntryField('${entry.id}', 'title', this.value)" class="text-xl font-bold bg-black/30 p-2 w-full mb-4"><textarea oninput="app.updateStaticEntryField('${entry.id}', 'content', this.value)" class="w-full h-4/5 bg-black/30 p-2 resize-none">${this.escapeHTML(entry.content)}</textarea><div class="flex justify-end mt-4"><button onclick="app.deleteStaticEntry('${entry.id}')" class="text-sm bg-red-600/80 hover:bg-red-700/80 font-semibold py-2 px-3 rounded-lg">Delete</button></div>`; } else { container.innerHTML = `<div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.</div>`; } },
-        renderDynamicEntries() { document.getElementById('dynamic-entries-list').innerHTML = this.state.dynamic_entries.map(entry => `<div onclick="app.selectDynamicEntry('${entry.id}')" class="p-3 rounded-lg cursor-pointer ${this.state.selectedDynamicEntryId === entry.id ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'} flex justify-between items-center"><h4 class="font-semibold truncate">${this.escapeHTML(entry.title)}</h4> ${entry.triggered_at_turn !== null ? '<span class="text-xs text-sky-300">ACTIVE</span>' : ''}</div>`).join(''); this.renderDynamicEntryDetails(); },
+        renderStaticEntries() { document.getElementById('static-entries-list').innerHTML = (this.state.static_entries || []).map(entry => `<div onclick="app.selectStaticEntry('${entry.id}')" class="p-3 rounded-lg cursor-pointer ${this.state.selectedStaticEntryId === entry.id ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'}"><h4 class="font-semibold truncate">${this.escapeHTML(entry.title)}</h4></div>`).join(''); this.renderStaticEntryDetails(); },
+        renderStaticEntryDetails() { const container = document.getElementById('static-entry-details-content'); const entry = (this.state.static_entries || []).find(e => e.id === this.state.selectedStaticEntryId); if (entry) { container.innerHTML = `<input type="text" value="${this.escapeHTML(entry.title)}" oninput="app.updateStaticEntryField('${entry.id}', 'title', this.value)" class="text-xl font-bold bg-black/30 p-2 w-full mb-4"><textarea oninput="app.updateStaticEntryField('${entry.id}', 'content', this.value)" class="w-full h-4/5 bg-black/30 p-2 resize-none">${this.escapeHTML(entry.content)}</textarea><div class="flex justify-end mt-4"><button onclick="app.deleteStaticEntry('${entry.id}')" class="text-sm bg-red-600/80 hover:bg-red-700/80 font-semibold py-2 px-3 rounded-lg">Delete</button></div>`; } else { container.innerHTML = `<div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.</div>`; } },
+        renderDynamicEntries() { document.getElementById('dynamic-entries-list').innerHTML = (this.state.dynamic_entries || []).map(entry => `<div onclick="app.selectDynamicEntry('${entry.id}')" class="p-3 rounded-lg cursor-pointer ${this.state.selectedDynamicEntryId === entry.id ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'} flex justify-between items-center"><h4 class="font-semibold truncate">${this.escapeHTML(entry.title)}</h4> ${entry.triggered_at_turn !== null ? '<span class="text-xs text-sky-300">ACTIVE</span>' : ''}</div>`).join(''); this.renderDynamicEntryDetails(); },
         renderDynamicEntryDetails() { 
             const container = document.getElementById('dynamic-entry-details-content'); 
-            const entry = this.state.dynamic_entries.find(e => e.id === this.state.selectedDynamicEntryId); 
+            const entry = (this.state.dynamic_entries || []).find(e => e.id === this.state.selectedDynamicEntryId); 
             if (entry) { 
                 container.innerHTML = `<div class="flex flex-col h-full">
                     <label class="font-bold">Title</label>
@@ -1258,19 +1272,18 @@
         },
         
         _createMessageHTML(msg, index) {
-            if (msg.type === 'lore_reveal') return '';
+            if (msg.type === 'lore_reveal' || msg.isHidden) return '';
             const character = this.state.characters.find(c => c.id === msg.character_id);
             if (!character) return '';
 
             const replacer = this._getReplacer(character);
-            let processedContent = replacer(msg.content);
-
-            // Bold text in quotes before parsing Markdown
-            processedContent = processedContent.replace(/"([^"]+)"/g, '<strong>"$1"</strong>');
+            const processedContent = replacer(msg.content);
 
             const contentId = `message-content-${index}`;
             
-            let contentHTML = marked.parse(processedContent || '');
+            // Pre-process for bolding quotes before sending to Marked
+            const boldedContent = processedContent.replace(/(["“])([^"”]*)(["”])/g, '**$1$2$3**');
+            let contentHTML = marked.parse(boldedContent || '');
             
             let bubbleColor;
             let characterNameColor = '';
@@ -1281,7 +1294,7 @@
             }
 
             if (character.is_user) {
-                bubbleColor = `rgba(75, 85, 99, ${this.state.bubbleOpacity})`; // Default user color
+                bubbleColor = `rgba(75, 85, 99, ${this.state.bubbleOpacity})`; 
             } else {
                 const charColor = character.color || this.CONSTANTS.CHARACTER_COLORS[0];
                 bubbleColor = this.UTILITY.hexToRgba(charColor.base, this.state.bubbleOpacity);
@@ -1313,6 +1326,10 @@
         },
 
         renderChat() {
+            if (!this.state || !this.state.chat_history) {
+                 document.getElementById('chat-window').innerHTML = `<div class="h-full w-full flex items-center justify-center text-gray-500 text-lg">No Narrative Loaded</div>`;
+                 return;
+            }
             if (this.RUNTIME.streamingInterval) return; 
             
             document.body.dataset.mode = this.state.characterImageMode;
@@ -1321,7 +1338,7 @@
 
             const cinematicBg = document.getElementById('cinematic-overlay-bg');
             if (this.state.characterImageMode === 'cinematic_overlay') {
-                const lastChatMessages = this.state.chat_history.filter(m => m.type === 'chat');
+                const lastChatMessages = this.state.chat_history.filter(m => m.type === 'chat' && !m.isHidden);
                 const lastSpeakerMsg = lastChatMessages.length > 0 ? lastChatMessages[lastChatMessages.length - 1] : null;
                 const lastSpeaker = lastSpeakerMsg ? this.state.characters.find(c => c.id === lastSpeakerMsg.character_id) : null;
                 
@@ -1345,7 +1362,125 @@
             
             (this.state.chat_history || []).forEach(m => m.isNew = false);
         },
+        
+        // SECTION: EXAMPLE DIALOGUE MODAL
+        // =================================================================================================
+        renderExampleDialogueModal() {
+            const container = document.getElementById('example-dialogue-container');
+            if (!container) return;
 
+            const userChar = this.state.characters.find(c => c.is_user);
+            const aiChars = this.state.characters.filter(c => !c.is_user);
+
+            const exampleMessages = this.state.chat_history
+                .map((msg, index) => ({ ...msg, originalIndex: index }))
+                .filter(msg => msg.isHidden === true);
+
+            if (exampleMessages.length === 0) {
+                container.innerHTML = `<div class="text-gray-400 text-center">No example dialogue found. Add a turn to start.</div>`;
+                return;
+            }
+
+            container.innerHTML = exampleMessages.map((msg, idx) => {
+                const speakerOptions = [userChar, ...aiChars].map(char => 
+                    `<option value="${char.id}" ${msg.character_id === char.id ? 'selected' : ''}>${this.escapeHTML(char.name)}</option>`
+                ).join('');
+
+                return `
+                    <div class="bg-black/20 p-4 rounded-lg flex items-center space-x-4">
+                        <div class="flex flex-col space-y-2">
+                            <button onclick="app.moveExampleDialogueTurn(${msg.originalIndex}, 'up')" ${idx === 0 ? 'disabled' : ''} class="bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 disabled:opacity-50 text-white font-bold p-2 rounded-lg" title="Move Up">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                            </button>
+                            <button onclick="app.moveExampleDialogueTurn(${msg.originalIndex}, 'down')" ${idx === exampleMessages.length - 1 ? 'disabled' : ''} class="bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 disabled:opacity-50 text-white font-bold p-2 rounded-lg" title="Move Down">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                        </div>
+                        <div class="flex-grow flex flex-col space-y-2">
+                            <select onchange="app.updateExampleDialogueTurn(${msg.originalIndex}, 'character_id', this.value)" class="w-full bg-gray-700 border-gray-600 rounded p-2 text-sm">
+                                ${speakerOptions}
+                            </select>
+                            <textarea oninput="app.updateExampleDialogueTurn(${msg.originalIndex}, 'content', this.value)" class="w-full bg-gray-900/80 border-gray-600 p-2 resize-y rounded-md">${this.escapeHTML(msg.content)}</textarea>
+                        </div>
+                        <button onclick="app.deleteExampleDialogueTurn(${msg.originalIndex})" class="flex-shrink-0 bg-red-600/80 hover:bg-red-700/80 text-white font-bold p-2 rounded-lg" title="Delete Turn">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        },
+
+        addExampleDialogueTurn() {
+            const firstAiChar = this.state.characters.find(c => !c.is_user);
+            if (!firstAiChar) {
+                alert("Cannot add example dialogue without at least one AI character.");
+                return;
+            }
+            this.state.chat_history.push({
+                character_id: firstAiChar.id,
+                content: "New example dialogue.",
+                type: 'chat',
+                emotion: 'neutral',
+                timestamp: new Date().toISOString(),
+                isHidden: true
+            });
+            this.saveState();
+            this.renderExampleDialogueModal();
+        },
+
+        deleteExampleDialogueTurn(originalIndex) {
+            this.state.chat_history.splice(originalIndex, 1);
+            this.saveState();
+            this.renderExampleDialogueModal();
+        },
+
+        updateExampleDialogueTurn: debounce(function(originalIndex, field, value) {
+            if (this.state.chat_history[originalIndex]) {
+                this.state.chat_history[originalIndex][field] = value;
+                this.saveState();
+            }
+        }, 300),
+
+        moveExampleDialogueTurn(originalIndex, direction) {
+            const history = this.state.chat_history;
+            const itemToMove = history[originalIndex];
+
+            if (!itemToMove) return;
+
+            let swapIndex = -1;
+
+            if (direction === 'up') {
+                // Find the previous hidden message by searching backwards
+                for (let i = originalIndex - 1; i >= 0; i--) {
+                    if (history[i].isHidden) {
+                        swapIndex = i;
+                        break;
+                    }
+                }
+            } else { // direction === 'down'
+                // Find the next hidden message by searching forwards
+                for (let i = originalIndex + 1; i < history.length; i++) {
+                    if (history[i].isHidden) {
+                        swapIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            // If a valid swap target was found
+            if (swapIndex !== -1) {
+                // Perform the swap
+                const temp = history[swapIndex];
+                history[swapIndex] = itemToMove;
+                history[originalIndex] = temp;
+
+                this.saveState();
+                this.renderExampleDialogueModal();
+            }
+        },
+
+        // SECTION: CORE APP LOGIC
+        // =================================================================================================
         updateSidePortrait() {
             const portraitContainer = document.getElementById('character-portrait-container');
             if(document.body.classList.contains('layout-vertical')) {
@@ -1353,7 +1488,12 @@
                 return;
             }
             
-            const lastChatMessages = (this.state.chat_history || []).filter(m => m.type === 'chat' && !this.state.characters.find(c=>c.id === m.character_id)?.is_user);
+            if (!this.state || !this.state.characters || !this.state.chat_history) {
+                portraitContainer.innerHTML = '';
+                return;
+            }
+
+            const lastChatMessages = (this.state.chat_history || []).filter(m => m.type === 'chat' && !m.isHidden && !this.state.characters.find(c=>c.id === m.character_id)?.is_user);
             const lastSpeakerMsg = lastChatMessages.length > 0 ? lastChatMessages[lastChatMessages.length - 1] : null;
             const lastSpeaker = lastSpeakerMsg ? this.state.characters.find(c => c.id === lastSpeakerMsg.character_id) : null;
             
@@ -1422,9 +1562,9 @@
                     this.state.chat_history[messageIndex].content += word;
                     const replacer = this._getReplacer(this.state.characters.find(c => c.id === charId));
                     let processedContent = replacer(this.state.chat_history[messageIndex].content);
-                    processedContent = processedContent.replace(/"([^"]+)"/g, '<strong>"$1"</strong>');
+                    const boldedContent = processedContent.replace(/(["“])([^"”]*)(["”])/g, '**$1$2$3**');
                     
-                    let fullHTML = marked.parse(processedContent);
+                    let fullHTML = marked.parse(boldedContent);
                     
                     if (this.state.characterImageMode === 'bubble' && this.state.characters.find(c => c.id === charId)?.image_url) {
                         const charImageHTML = `<img src="${this.state.characters.find(c => c.id === charId).image_url}" class="bubble-char-image">`;
@@ -1456,7 +1596,6 @@
                 this.RUNTIME.streamingInterval = null;
                 this.saveState();
             }
-            if(!this.state.chat_history) this.state.chat_history = [];
             this.state.chat_history.push({ 
                 character_id: id, 
                 content, 
@@ -1465,10 +1604,7 @@
                 timestamp: new Date().toISOString(),
                 isNew: true 
             });
-            if (type === 'chat') {
-                if(!this.state.messageCounter) this.state.messageCounter = 0;
-                this.state.messageCounter++;
-            }
+            if (type === 'chat') this.state.messageCounter++;
             this.renderChat();
             this.saveState();
             
@@ -1593,6 +1729,10 @@
 
         updateAICharacterSelector() {
             const selector = document.getElementById('ai-character-selector');
+            if (!this.state || !this.state.characters) {
+                selector.innerHTML = '';
+                return;
+            }
             const currentValue = selector.value;
             selector.innerHTML = this.state.characters.filter(c => !c.is_user && c.is_active).map(c => `<option value="${c.id}">${this.escapeHTML(c.name)}</option>`).join('');
             if (currentValue && selector.querySelector(`option[value="${currentValue}"]`)) {
@@ -1694,8 +1834,9 @@
             } 
         },
 
-        handlePrimaryAction() { document.getElementById('chat-input').value.trim() === '' ? this.writeForMe() : this.sendMessage(); },
+        handlePrimaryAction() { if(!this.library.active_narrative_id) { alert("Load a narrative from the Story Library first."); return; } document.getElementById('chat-input').value.trim() === '' ? this.writeForMe() : this.sendMessage(); },
         async handleRegen() {
+            if(!this.library.active_narrative_id) { alert("Load a narrative from the Story Library first."); return; }
             if (this.RUNTIME.streamingInterval) return;
             const selectedCharId = document.getElementById('ai-character-selector').value;
             const lastMsg = this.state.chat_history.filter(m => m.type === 'chat').pop();
@@ -1719,7 +1860,7 @@
             this.checkEventMaster();
         },
         
-        showTypingIndicator(charId, text="is thinking...") { this.hideTypingIndicator(); const chatWindow=document.getElementById('chat-window'); const name = this.state.characters.find(c => c.id === charId)?.name || 'System'; const indicator = document.createElement('div'); indicator.id = 'typing-indicator'; indicator.innerHTML = `<div class="mb-4 flex flex-col items-start"><p class="font-bold text-sm mb-1">${this.escapeHTML(name)}</p><div class="p-3 bg-gray-700/80 rounded-lg"><p class="italic">${text}</p></div></div>`; chatWindow.appendChild(indicator); chatWindow.scrollTop = chatWindow.scrollHeight; },
+        showTypingIndicator(charId, text="is thinking...") { this.hideTypingIndicator(); const chatWindow=document.getElementById('chat-window'); const name = (this.state.characters || []).find(c => c.id === charId)?.name || 'System'; const indicator = document.createElement('div'); indicator.id = 'typing-indicator'; indicator.innerHTML = `<div class="mb-4 flex flex-col items-start"><p class="font-bold text-sm mb-1">${this.escapeHTML(name)}</p><div class="p-3 bg-gray-700/80 rounded-lg"><p class="italic">${text}</p></div></div>`; chatWindow.appendChild(indicator); chatWindow.scrollTop = chatWindow.scrollHeight; },
         hideTypingIndicator() { const el = document.getElementById('typing-indicator'); if (el) el.remove(); },
         undoLastTurn() { 
             if (this.RUNTIME.streamingInterval) return;
@@ -1753,8 +1894,8 @@
             const components = {
                 system_prompt: replacer(this.state.system_prompt),
                 event_master_prompt: replacer(this.state.event_master_prompt),
-                static_entries: this.state.static_entries.map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`).join('\n\n'),
-                characters: this.state.characters.filter(c => c.is_active).map(c => `[Character: ${c.name}]\nDescription: ${replacer(c.description)}`).join('\n\n'),
+                static_entries: (this.state.static_entries || []).map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`).join('\n\n'),
+                characters: (this.state.characters || []).filter(c => c.is_active).map(c => `[Character: ${c.name}]\nDescription: ${replacer(c.description)}`).join('\n\n'),
                 history: (this.state.chat_history || []).slice(-10),
                 charToAct: charToAct,
                 isForUser: isForUser
@@ -1828,7 +1969,21 @@
                     return this.buildDefaultPrompt(components, replacer);
             }
         },
-        async checkWorldInfoAgent() { this.showTypingIndicator('static-entry-agent', 'Updating static knowledge...'); try { const updates = JSON.parse(await this.callAI(this.buildStaticEntryAgentPrompt(), true)); if (updates.add) updates.add.forEach(item => this.state.static_entries.push({id: this.uuid(), ...item})); if (updates.modify) updates.modify.forEach(item => { const entry = this.state.static_entries.find(e => e.title.toLowerCase() === item.title.toLowerCase()); if (entry) entry.content = item.new_content; }); this.saveAndRenderStaticEntries(); } catch (e) { console.error("Static Entry Agent failed:", e); } finally { this.hideTypingIndicator(); } },
+        async checkWorldInfoAgent() { 
+            if (!this.library.active_narrative_id) { alert("Please load a narrative first."); return; }
+            this.showTypingIndicator('static-entry-agent', 'Updating static knowledge...'); 
+            try { 
+                const updates = JSON.parse(await this.callAI(this.buildStaticEntryAgentPrompt(), true)); 
+                if (updates.add) updates.add.forEach(item => this.state.static_entries.push({id: this.uuid(), ...item})); 
+                if (updates.modify) updates.modify.forEach(item => { const entry = this.state.static_entries.find(e => e.title.toLowerCase() === item.title.toLowerCase()); if (entry) entry.content = item.new_content; }); 
+                this.saveAndRenderStaticEntries(); 
+            } catch (e) { 
+                console.error("Static Entry Agent failed:", e); 
+                alert("The AI failed to update static entries. It may have returned an invalid format.");
+            } finally { 
+                this.hideTypingIndicator(); 
+            } 
+        },
         buildStaticEntryAgentPrompt() { let p = `As Static Knowledge Master, read chat/info, update the info. Output valid JSON: { "add": [{"title": "...", "content": "..."}], "modify": [{"title": "...", "new_content": "..."}] } or {}. INFO:${JSON.stringify(this.state.static_entries)}CHAT:`; (this.state.chat_history || []).filter(m=>m.type==='chat').slice(-8).forEach(msg => { const c = this.state.characters.find(i=>i.id===msg.character_id); if(c) p += `${c.name}: ${msg.content}\n`;}); return p; },
         async checkEventMaster() { if (this.state.messageCounter > 0 && this.state.messageCounter % 6 === 0) try { this.state.event_master_prompt = await this.callAI(this.buildEventMasterPrompt()); this.saveState(); console.log("Event Master:", this.state.event_master_prompt); } catch (e) { console.error("Event Master failed:", e); } },
         buildEventMasterPrompt() { let p = this.state.event_master_base_prompt + '\n\n--- RECENT CHAT HISTORY ---\n'; (this.state.chat_history || []).filter(m=>m.type==='chat').slice(-12).forEach(msg => { const c = this.state.characters.find(i=>i.id===msg.character_id); if(c) p += `${c.name}: ${msg.content}\n`;}); return p; },
@@ -1838,7 +1993,7 @@
             if (!lastMessage) return;
             const content = lastMessage.content.toLowerCase();
 
-            this.state.dynamic_entries.forEach(entry => {
+            (this.state.dynamic_entries || []).forEach(entry => {
                 // Reset trigger after 10 turns
                 if (entry.triggered_at_turn !== null && (this.state.messageCounter - entry.triggered_at_turn > 10)) {
                     entry.triggered_at_turn = null;
@@ -1910,7 +2065,21 @@
             const message = this.state.chat_history[index];
             const input = document.getElementById('edit-modal-input');
             input.value = message.content;
+
+            const autoResize = () => {
+                input.style.height = 'auto';
+                input.style.height = `${input.scrollHeight}px`;
+            };
+            
+            if (input.autoResizeListener) {
+                input.removeEventListener('input', input.autoResizeListener);
+            }
+            input.autoResizeListener = autoResize;
+            input.addEventListener('input', autoResize);
+            
             document.getElementById('edit-modal-save-button').onclick = () => this.saveEditedResponse(index);
+            
+            setTimeout(autoResize, 0);
         },
         saveEditedResponse(index) {
             const newContent = document.getElementById('edit-modal-input').value;
@@ -1991,11 +2160,12 @@
         },
         
         setApiProvider(provider) { this.state.apiProvider = provider; this.bindSettingsListeners(); this.saveState(); },
-        exportStory() { 
-            const activeStory = this.library.stories.find(s => s.id === this.library.active_story_id);
-            if (!activeStory) return alert("No active story to export.");
-            const storyName = activeStory.name || 'Untitled_Story';
-            const data = JSON.stringify(activeStory.state, null, 2); 
+        exportStory(storyId) { 
+            const storyToExp = this.library.stories.find(s => s.id === storyId);
+            if (!storyToExp) return alert("Could not find story to export.");
+            
+            const storyName = storyToExp.name || 'Untitled_Story';
+            const data = JSON.stringify(storyToExp, null, 2); 
             const blob = new Blob([data], {type: 'application/json'}); 
             const url = URL.createObjectURL(blob); 
             const a = document.createElement('a'); 
@@ -2003,37 +2173,38 @@
             a.click(); 
             URL.revokeObjectURL(url); 
         },
-        importStory(event) { 
-            const file = event.target.files[0]; 
-            if (!file) return; 
-            const reader = new FileReader(); 
-            reader.onload = e => { 
-                try { 
-                    const importedState = JSON.parse(e.target.result); 
-                    if (importedState.characters) { 
-                        const newStory = {
-                            id: this.uuid(),
-                            name: file.name.replace('.json', '') || "Imported Story",
-                            last_modified: new Date().toISOString(),
-                            created_date: new Date().toISOString(),
-                            creator_notes: '',
-                            tags: [],
-                            state: {...this.getDefaultState(), ...importedState}
+        importStory(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const importedStory = JSON.parse(e.target.result);
+                    if (importedStory.characters && importedStory.scenarios && importedStory.narratives) {
+                         const defaults = {
+                            ...this._getDefaultApiSettings(),
+                            ...this._getDefaultUiSettings(),
+                            ...this._getDefaultSystemPrompts(),
                         };
-                        this.updateSearchIndex(newStory);
+                        const newStory = {
+                            ...defaults,
+                            ...importedStory,
+                            id: this.uuid()
+                        };
+                        
                         this.library.stories.push(newStory);
                         this.updateTagCache();
                         this.saveLibrary();
                         this.renderLibraryInterface();
-                        alert(`'${newStory.name}' imported successfully! You can load it from the Story Library.`);
-                    } else { 
-                        alert('Invalid story file.'); 
-                    } 
-                } catch (err) { 
-                    alert(`Error importing: ${err.message}`); 
-                } 
-            }; 
-            reader.readAsText(file); 
+                        alert(`'${newStory.name}' imported successfully!`);
+                    } else {
+                        alert('Invalid story file. Must be a valid story object.');
+                    }
+                } catch (err) {
+                    alert(`Error importing: ${err.message}`);
+                }
+            };
+            reader.readAsText(file);
             event.target.value = '';
         },
         importBYAF() {
@@ -2049,29 +2220,42 @@
                         const zip = await JSZip.loadAsync(e.target.result);
                         
                         const manifestFile = zip.file('manifest.json');
-                        if (!manifestFile) throw new Error("manifest.json not found in the archive.");
+                        if (!manifestFile) throw new Error("manifest.json not found.");
                         const manifestData = JSON.parse(await manifestFile.async('string'));
 
-                        if (!manifestData.characters || manifestData.characters.length === 0) throw new Error("No character specified in manifest.json.");
+                        if (!manifestData.characters || manifestData.characters.length === 0) throw new Error("No character in manifest.");
                         
                         const charFilePath = manifestData.characters[0];
                         const charFileEntry = zip.file(charFilePath);
-                        if (!charFileEntry) throw new Error(`Character file not found at path: ${charFilePath}`);
+                        if (!charFileEntry) throw new Error(`Character file not found: ${charFilePath}`);
                         const byafCharData = JSON.parse(await charFileEntry.async('string'));
 
                         let byafScenarioData = {};
-                        if(manifestData.scenarios && manifestData.scenarios.length > 0) {
-                             const scenarioFilePath = manifestData.scenarios[0];
-                             const scenarioFileEntry = zip.file(scenarioFilePath);
-                             if(scenarioFileEntry) {
-                                byafScenarioData = JSON.parse(await scenarioFileEntry.async('string'));
-                             }
+                        const scenarioPath = manifestData.scenarios && manifestData.scenarios.length > 0 ? manifestData.scenarios[0] : 'scenario.json';
+                        const scenarioFileEntry = zip.file(scenarioPath);
+                        if(scenarioFileEntry) {
+                           byafScenarioData = JSON.parse(await scenarioFileEntry.async('string'));
                         }
-
-                        const newStoryState = this.getDefaultState();
-                        newStoryState.scenarios = []; // Clear default
-                        const userChar = newStoryState.characters.find(c => c.is_user);
+                        
+                        // Create a new story structure for this import
                         const characterName = byafCharData.name || "Unnamed Character";
+                        const newStory = {
+                            id: this.uuid(),
+                            name: byafScenarioData?.title || byafCharData.name || `Chat with ${characterName}`,
+                            last_modified: new Date().toISOString(),
+                            created_date: new Date().toISOString(),
+                            creator_notes: `[Imported from BYAF file: ${file.name}]`,
+                            tags: byafCharData.tags || [],
+                            ...this._getDefaultApiSettings(),
+                            ...this._getDefaultUiSettings(),
+                            ...this._getDefaultSystemPrompts(),
+                            characters: [],
+                            dynamic_entries: [],
+                            scenarios: [],
+                            narratives: []
+                        };
+
+                        const userChar = { id: this.uuid(), name: "You", description: "The protagonist.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags:[] };
                         
                         const newCharacter = {
                             id: this.uuid(),
@@ -2082,105 +2266,88 @@
                             tags: byafCharData.tags || [],
                             is_user: false, is_active: true
                         };
+                         newStory.characters = [userChar, newCharacter];
 
-                        if (byafCharData.images && Array.isArray(byafCharData.images)) {
-                            const imagePromises = byafCharData.images.map(async (imgData) => {
-                                const imageFileEntry = zip.file(imgData.path);
-                                if (imageFileEntry) {
-                                    const blob = await imageFileEntry.async('blob');
-                                    const objectURL = URL.createObjectURL(blob);
-                                    return { label: imgData.label, url: objectURL };
-                                }
-                                return null;
-                            });
-                            const imageDataResults = (await Promise.all(imagePromises)).filter(Boolean);
-                            if (imageDataResults.length > 0) {
-                                newCharacter.image_url = imageDataResults[0].url;
-                                if (imageDataResults.length > 1) {
-                                    newCharacter.extra_portraits = imageDataResults.slice(1).map(img => ({ emotion: img.label, url: img.url }));
+                        if (byafCharData.system_prompt) {
+                            newStory.system_prompt = byafCharData.system_prompt.replace(/{character}/g, characterName);
+                        }
+                        // Prioritize scenario formatting instructions if they exist
+                        if (byafScenarioData.formattingInstructions) {
+                            newStory.system_prompt = byafScenarioData.formattingInstructions
+                                .replace(/{character}/g, characterName)
+                                .replace(/{user}/g, userChar.name);
+                        }
+                        
+                        // Handle `first_mes` as a scenario, prioritizing the scenario file
+                        const firstMes = (byafScenarioData.firstMessages && byafScenarioData.firstMessages[0]?.text) 
+                                         || byafCharData.first_mes 
+                                         || `The story of ${characterName} begins.`;
+
+                        const newScenario = { 
+                            id: this.uuid(), 
+                            name: "Imported Start", 
+                            message: firstMes.replace(/{character}/g, characterName).replace(/{user}/g, userChar.name) 
+                        };
+                        newStory.scenarios.push(newScenario);
+                        
+                        // Create a narrative from this scenario
+                        const newNarrative = {
+                            id: this.uuid(), name: "Imported Chat", last_modified: new Date().toISOString(),
+                            state: {
+                                chat_history: [], messageCounter: 0,
+                                static_entries: byafScenarioData.narrative ? [{id: this.uuid(), title: "Initial Scene", content: byafScenarioData.narrative.replace(/{character}/g, characterName)}] : []
+                            }
+                        };
+                        
+                        // Pre-populate with example dialogue from the scenario, correctly assigning speakers
+                        if (byafScenarioData.exampleMessages && byafScenarioData.exampleMessages[0]?.text) {
+                            const exampleText = byafScenarioData.exampleMessages[0].text;
+                            
+                            const characterNameIdMap = {
+                                '#{character}:': newCharacter.id,
+                                '#{user}:': userChar.id
+                            };
+
+                            const regex = /(#\{(?:character|user)\}:)([\s\S]*?)(?=#\{|$)/g;
+                            const matches = exampleText.matchAll(regex);
+
+                            for (const match of matches) {
+                                const speakerTag = match[1];
+                                const content = match[2].trim();
+                                const speakerId = characterNameIdMap[speakerTag];
+
+                                if (speakerId && content) {
+                                    newNarrative.state.chat_history.push({ 
+                                        character_id: speakerId, 
+                                        content: content.replace(/{character}/g, characterName).replace(/{user}/g, userChar.name), 
+                                        type: 'chat', 
+                                        emotion: 'neutral', 
+                                        timestamp: new Date().toISOString(),
+                                        isHidden: true
+                                    });
                                 }
                             }
                         }
                         
-                        newStoryState.characters = [userChar, newCharacter];
-                        const characterNameIdMap = {
-                            [newCharacter.name.toLowerCase()]: newCharacter.id,
-                            'user': userChar.id,
-                            [userChar.name.toLowerCase()]: userChar.id,
-                            '{{char}}': newCharacter.id,
-                            '{{user}}': userChar.id
-                        };
-
-                        if (byafScenarioData.narrative) {
-                            const content = byafScenarioData.narrative.replace(/{character}/g, characterName);
-                            newStoryState.static_entries.push({ id: this.uuid(), title: "Narrative", content: content });
+                        // Add the scenario's first message as the next message
+                        const firstSpeaker = newStory.characters.find(c => !c.is_user && c.is_active);
+                        if(firstSpeaker) {
+                           newNarrative.state.chat_history.push({
+                                character_id: firstSpeaker.id, content: newScenario.message, type: 'chat', emotion: 'neutral', timestamp: new Date().toISOString()
+                           });
                         }
                         
+                        newNarrative.state.messageCounter = newNarrative.state.chat_history.filter(m => !m.isHidden).length;
+                        newStory.narratives.push(newNarrative);
                         
-                        if (byafCharData.first_mes) {
-                             const firstMsgContent = byafCharData.first_mes.replace(/{character}/g, characterName).replace(/{user}/g, userChar.name);
-                             newStoryState.scenarios.push({ id: this.uuid(), message: firstMsgContent });
-                        }
-                        
-                        if(byafScenarioData.firstMessages && Array.isArray(byafScenarioData.firstMessages)) {
-                             byafScenarioData.firstMessages.forEach(msg => {
-                                 if (msg.text) {
-                                     newStoryState.scenarios.push({ id: this.uuid(), message: msg.text.replace(/{character}/g, characterName).replace(/{user}/g, userChar.name) });
-                                 }
-                             });
-                        }
-                        // Create a narrative from example dialogue
-                        if (byafCharData.example_dialogue) {
-                            const newNarrative = { id: this.uuid(), name: "Example Dialogue", last_modified: new Date().toISOString(), chat_history: [], messageCounter: 0 };
-                            const dialogueString = byafCharData.example_dialogue;
-                            const regex = /#([^:]+):([\s\S]*?)(?=#|$)/g;
-                            const matches = [...dialogueString.matchAll(regex)];
-
-                            matches.forEach(match => {
-                                let speakerName = match[1].trim().toLowerCase();
-                                const content = match[2].trim();
-                                if (speakerName === '{{char}}' || speakerName === characterName.toLowerCase()) speakerName = newCharacter.name.toLowerCase();
-                                else if (speakerName === '{{user}}' || speakerName === 'you') speakerName = 'user';
-                                const speakerId = characterNameIdMap[speakerName];
-                                if (speakerId && content) {
-                                    newNarrative.chat_history.push({ 
-                                        character_id: speakerId, 
-                                        content: content.replace(/{character}/g, characterName).replace(/{user}/g, userChar.name), 
-                                        type: 'chat', 
-                                        emotion: 'neutral' 
-                                    });
-                                }
-                            });
-                             newNarrative.messageCounter = newNarrative.chat_history.filter(m => m.type === 'chat').length;
-                             newStoryState.narratives.push(newNarrative);
-                        }
-
-
-                        if (byafCharData.system_prompt) {
-                            newStoryState.system_prompt = byafCharData.system_prompt.replace(/{character}/g, characterName);
-                        }
-
-                        if (byafCharData.loreItems && Array.isArray(byafCharData.loreItems)) {
-                            byafCharData.loreItems.forEach(item => {
-                                newStoryState.dynamic_entries.push({ id: this.uuid(), title: item.key, triggers: item.key, content: item.value.replace(/{character}/g, characterName), triggered_at_turn: null });
-                            });
-                        }
-                        
-                        const newStory = {
-                            id: this.uuid(), name: byafScenarioData?.title || byafCharData.name || `Chat with ${characterName}`,
-                            last_modified: new Date().toISOString(),
-                            created_date: new Date().toISOString(),
-                            creator_notes: `[Imported from BYAF file: ${file.name}]`,
-                            tags: byafCharData.tags || [],
-                            state: newStoryState
-                        };
-                        
-                        this.updateSearchIndex(newStory);
                         this.library.stories.push(newStory);
+                        this.updateSearchIndex(newStory);
                         this.updateTagCache();
                         this.saveLibrary();
-                        alert(`'${newStory.name}' imported successfully! You can now find it in your Story Library.`);
-                        this.renderLibraryInterface();
+                        
+                        alert(`'${newStory.name}' imported successfully! Loading now.`);
+                        // Load the newly created narrative
+                        this.loadNarrative(newStory.id, newNarrative.id);
 
                     } catch (err) {
                         alert(`Error importing BYAF file: ${err.message}`);
@@ -2242,6 +2409,7 @@
             }
         },
         _ensureCharacterColors() {
+            if (!this.state || !this.state.characters) return;
             let aiCharCount = 0;
             this.state.characters.forEach(char => {
                 if (!char.is_user) {
@@ -2260,6 +2428,7 @@
         escapeHTML(str) { if(typeof str !== 'string') return ''; const p = document.createElement("p"); p.textContent = str; return p.innerHTML; },
 
         openViewRawPromptModal() {
+            if (!this.library.active_narrative_id) { alert("Please load a narrative from the Story Library first."); return; }
             const selectedCharId = document.getElementById('ai-character-selector').value;
             if (!selectedCharId) {
                 alert("Please select an AI character from the dropdown first.");
@@ -2275,4 +2444,5 @@
     </script>
 </body>
 </html>
+
 
