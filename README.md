@@ -62,3 +62,7 @@ The entire library of all stories can be saved to, or completely replaced by, a 
 
 **BYAF Compatibility:** The app supports the "Build Your Own Adventure Format" standard, allowing users to import character and scenario data from .zip files.
 
+
+Try it now:
+https://pacmanincarnate.github.io/EllipsisLM/
+
