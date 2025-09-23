@@ -19,7 +19,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400&family=EB+Garamond:ital,wght@0,400;1,400&family=Inter:wght@400;500;700&family=Lora:ital,wght@0,400;1,400&family=Roboto+Slab:wght@400;700&family=Source+Code+Pro:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Dancing+Script:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=Inter:wght@400;500;700&family=Lora:ital,wght@0,400;1,400&family=Nunito+Sans:ital,wght@0,400;1,400&family=Roboto+Slab:wght@400;700&family=Source+Code+Pro:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
 
     <!-- Link to External Stylesheet -->
     <style>
@@ -34,7 +34,8 @@
 			--surface-card: rgba(55, 65, 81, 0.6);
 			--surface-overlay: rgba(0, 0, 0, 0.4);
 			
-			--border-primary: rgba(75, 85, 99, 0.8);
+			--border-hue-color: rgba(75, 85, 99, 0.8); /* Default border color */
+			--border-primary: var(--border-hue-color); /* Use the dynamic hue color */
 			--brand-color: #6366f1; /* Indigo */
 			--brand-color-toggle: #4f46e5;
 			
@@ -46,6 +47,10 @@
 			--transition-fast: 0.2s ease-in-out;
 			--transition-medium: 0.4s ease-out;
 			--transition-slow: 0.5s ease-in-out;
+
+			/* New Dynamic Variables */
+			--chat-font-size: 16px;
+			--bubble-image-size: 100px;
 		}
 
 		html, body {
@@ -60,7 +65,7 @@
 
 		.glass-bg { 
 			background-color: var(--surface-glass); 
-			backdrop-filter: blur(5px); 
+			/* The blur is now applied via inline style in ui.js */
 		}
 
 		/* --- Scrollbar Styling --- */
@@ -191,7 +196,7 @@
 
 		.bubble-char-image {
 			float: left;
-			width: 100px;
+			width: var(--bubble-image-size);
 			height: auto;
 			border-radius: 0.5rem;
 			margin-right: 1rem;
@@ -201,6 +206,7 @@
 		.bubble-body .whitespace-pre-wrap {
 			overflow: hidden; /* BFC to contain the float */
 			white-space: normal;
+			font-size: var(--chat-font-size);
 		}
 		.bubble-body .whitespace-pre-wrap p {
 			margin: 0;
@@ -235,6 +241,35 @@
 			animation: fadeIn var(--transition-medium);
 		}
 
+		/* --- Cinematic Mode Enhancements --- */
+		body[data-mode="cinematic_overlay"] #chat-window-container {
+			height: 33.33vh;
+			max-height: 33.33vh; /* ensure it doesn't grow */
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			margin-bottom: 0 !important;
+			border-radius: 0;
+			z-index: 20;
+		}
+		body[data-mode="cinematic_overlay"] #cinematic-overlay-bg {
+			opacity: 1 !important;
+			mask-image: none;
+		}
+		body[data-mode="cinematic_overlay"] #chat-window-container::before {
+			content: '';
+			position: absolute;
+			top: -100px;
+			left: 0;
+			right: 0;
+			height: 100px;
+			background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.3));
+			pointer-events: none;
+			z-index: 25;
+		}
+
+
 		/* --- Layout Management & Responsiveness --- */
 
 		/* Horizontal (Desktop) Layout */
@@ -267,7 +302,8 @@
 <body data-mode="none" class="bg-gray-900 min-h-screen flex flex-col">
     
     <!-- This is where the main user interface will be inserted. -->
-<!-- Background Image Container -->
+    <!-- PASTE content of main_ui.html HERE -->
+	<!-- Background Image Container -->
 <div id="global-background" class="fixed inset-0 -z-10 bg-gray-900 bg-cover bg-center transition-all duration-500"></div>
 
 <!-- Main Application Container -->
@@ -344,10 +380,10 @@
 <!-- /Main Application Container -->
 
 
-
     
     <!-- This is where all the modal dialogs and templates will be inserted. -->
-<!-- Modals -->
+    <!-- PASTE content of modals.html HERE -->
+	<!-- Modals -->
 <!-- Story Library Modal -->
 <div id="story-library-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('story-library-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-6xl relative flex flex-col max-h-[90vh]"><div class="p-6 border-b border-gray-700 flex justify-between items-center"><h2 class="text-2xl font-semibold">Story Library</h2><button onclick="Controller.createNewStory()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">New Story</button></div><div id="library-content-container" class="flex-grow flex min-h-0"></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-between items-center flex-wrap gap-4"><div class="flex items-center space-x-2"><span class="font-bold text-gray-400">Import:</span><button onclick="Controller.importBYAF()" class="bg-teal-600/80 hover:bg-teal-700/80 font-bold py-2 px-4 rounded-lg">BYAF</button><button onclick="document.getElementById('import-story-file').click()" class="bg-blue-600/80 hover:bg-blue-700/80 font-bold py-2 px-4 rounded-lg">Story</button><input type="file" id="import-story-file" class="hidden" accept=".json" onchange="Controller.importStory(event)"><button onclick="document.getElementById('import-library-file').click()" class="bg-cyan-600/80 hover:bg-cyan-700/80 font-bold py-2 px-4 rounded-lg">Library</button><input type="file" id="import-library-file" class="hidden" accept=".json" onchange="Controller.importLibrary(event)"></div><div class="flex items-center space-x-2"><span class="font-bold text-gray-400">Export:</span><button onclick="Controller.exportLibrary()" class="bg-emerald-600/80 hover:bg-emerald-700/80 font-bold py-2 px-4 rounded-lg">Library</button></div><button onclick="Controller.closeModal('story-library-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Close</button></div></div></div>
 
@@ -367,23 +403,19 @@
 
 <!-- Knowledge Modal (Static & Dynamic) -->
 <div id="knowledge-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('knowledge-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative flex flex-col max-h-[90vh]"><div class="p-6 pb-0 flex justify-between items-center border-b border-gray-700"><div class="flex"><button id="knowledge-tab-static" onclick="Controller.switchKnowledgeTab('static')" class="py-3 px-4 font-semibold text-lg border-b-2 border-indigo-500 text-white">Static</button><button id="knowledge-tab-dynamic" onclick="Controller.switchKnowledgeTab('dynamic')" class="py-3 px-4 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">Dynamic</button></div><button id="knowledge-add-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg ml-4 flex-shrink-0">Add Entry</button></div><div class="p-6 overflow-y-auto flex-grow"><div id="knowledge-static-content"><div id="static-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div id="static-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4 overflow-y-auto"></div><div id="static-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4"><div id="static-entry-details-content" class="h-full"><div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.</div></div></div></div></div><div id="knowledge-dynamic-content" class="hidden"><div id="dynamic-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div id="dynamic-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4 overflow-y-auto"></div><div id="dynamic-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4"><div id="dynamic-entry-details-content" class="h-full"><div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.</div></div></div></div></div></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="Controller.closeModal('knowledge-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
-
+    
 <!-- World Map Modal -->
 <div id="world-map-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
     <div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('world-map-modal')"></div>
     <div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-6xl relative flex flex-col max-h-[90vh]">
-        <!-- Content will be injected by ui.js -->
         <div id="world-map-modal-content" class="flex-grow flex flex-col min-h-0">
-             <!-- This div will be populated by UIManager.renderWorldMapModal() -->
+            <!-- Content will be injected by JS -->
         </div>
     </div>
 </div>
-    
+
 <!-- Settings Modal -->
 <div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('settings-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 relative flex flex-col max-h-[90vh]"><div class="p-6 pb-0 border-b border-gray-700"><h2 class="text-2xl font-semibold mb-4">Settings</h2><div class="flex -mb-px"><button id="settings-tab-appearance" onclick="Controller.switchSettingsTab('appearance')" class="py-2 px-4 font-semibold border-b-2 border-indigo-500 text-white">Appearance</button><button id="settings-tab-prompt" onclick="Controller.switchSettingsTab('prompt')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Prompt</button><button id="settings-tab-model" onclick="Controller.switchSettingsTab('model')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Model</button></div></div><div class="p-6 overflow-y-auto flex-grow" id="settings-content-container">...</div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="Controller.closeModal('settings-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
-
-<!-- AI Enhance Modal -->
-<div id="ai-enhance-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('ai-enhance-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl p-6 w-11/12 md:w-1/2 lg:w-1/3 relative"><h3 class="text-xl font-bold mb-4">Enhance with AI</h3><textarea id="modal-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" rows="4"></textarea><div class="mt-6 flex justify-end space-x-4"><button onclick="Controller.closeModal('ai-enhance-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Cancel</button><button id="modal-confirm-button" class="bg-indigo-600 hover:bg-indigo-700 font-bold py-2 px-4 rounded-lg">Generate</button></div></div></div>
 
 <!-- Edit Response Modal -->
 <div id="edit-response-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
@@ -428,11 +460,14 @@
     <div id="settings-appearance-content" class="space-y-6">
         <div>
             <div class="grid grid-cols-2 gap-4">
-                <div><label for="font-selector" class="text-gray-400 text-sm block mb-2">Chat Font</label><select id="font-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="'Inter', sans-serif">Inter (Sans-Serif)</option><option value="'Lora', serif">Lora (Serif)</option><option value="'Roboto Slab', serif">Roboto Slab</option><option value="'EB Garamond', serif">EB Garamond</option><option value="'Cormorant Garamond', serif">Cormorant Garamond</option><option value="'Source Code Pro', monospace">Source Code Pro</option></select></div>
+                <div><label for="font-selector" class="text-gray-400 text-sm block mb-2">Chat Font</label><select id="font-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="'Inter', sans-serif">Inter</option><option value="'Nunito Sans', sans-serif">Nunito Sans</option><option value="'Lora', serif">Lora</option><option value="'Roboto Slab', serif">Roboto Slab</option><option value="'EB Garamond', serif">EB Garamond</option><option value="'Cormorant Garamond', serif">Cormorant Garamond</option><option value="'Source Code Pro', monospace">Source Code Pro</option><option value="'Dancing Script', cursive">Dancing Script</option></select></div>
                 <div><label for="chat-text-color" class="text-gray-400 text-sm block mb-2">Chat Text Color</label><input type="color" id="chat-text-color" class="w-full bg-black/30 border-gray-600 rounded-lg p-1 h-10"></div>
             </div>
             <label for="background-image-url" class="text-gray-400 text-sm block mt-4 mb-2">Background Image URL</label><input type="text" id="background-image-url" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="https://example.com/image.png">
             <label for="bubble-opacity-slider" class="text-gray-400 text-sm block mt-4 mb-2">Chat Bubble Opacity</label><div class="flex items-center space-x-4"><input type="range" id="bubble-opacity-slider" class="w-full" min="0" max="1" step="0.05"><span id="bubble-opacity-value" class="text-sm text-gray-400 w-12 text-right"></span></div>
+            <label for="blur-slider" class="text-gray-400 text-sm block mt-4 mb-2">Background Blur (px)</label><div class="flex items-center space-x-4"><input type="range" id="blur-slider" class="w-full" min="0" max="20" step="1"><span id="blur-value" class="text-sm text-gray-400 w-12 text-right"></span></div>
+            <label for="text-size-slider" class="text-gray-400 text-sm block mt-4 mb-2">Text Size (px)</label><div class="flex items-center space-x-4"><input type="range" id="text-size-slider" class="w-full" min="12" max="24" step="1"><span id="text-size-value" class="text-sm text-gray-400 w-12 text-right"></span></div>
+            <label for="bubble-image-size-slider" class="text-gray-400 text-sm block mt-4 mb-2">Bubble Image Size (px)</label><div class="flex items-center space-x-4"><input type="range" id="bubble-image-size-slider" class="w-full" min="50" max="150" step="5"><span id="bubble-image-size-value" class="text-sm text-gray-400 w-12 text-right"></span></div>
             <label class="text-gray-400 text-sm block mt-4 mb-2">Character Image Display</label><div class="flex space-x-4" id="character-image-display"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="none" checked><span>None</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="cinematic_overlay"><span>Cinematic</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="bubble"><span>Bubble</span></label></div>
         </div>
     </div>
@@ -443,6 +478,7 @@
         <div><h3 class="text-lg font-medium mb-2">AI Provider</h3><div class="flex space-x-4"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="gemini" onchange="Controller.setApiProvider('gemini')"><span>Gemini</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="openrouter" onchange="Controller.setApiProvider('openrouter')"><span>OpenRouter</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="koboldcpp" onchange="Controller.setApiProvider('koboldcpp')"><span>KoboldCPP</span></label></div></div><div id="gemini-settings"><h3 class="text-lg font-medium">Gemini API Settings</h3><p class="text-gray-400 text-sm mb-2">Required for text generation.</p><input type="password" id="gemini-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter Gemini API key"></div><div id="openrouter-settings"><h3 class="text-lg font-medium">OpenRouter API Settings</h3><p class="text-gray-400 text-sm mb-2">Your key and the model name.</p><input type="password" id="openrouter-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter OpenRouter API key"><input type="text" id="openrouter-model-input" class="mt-2 w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter model name"></div><div id="koboldcpp-settings"><h3 class="text-lg font-medium">KoboldCPP Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is running with the <strong>--cors</strong> flag.</p><div><label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label><select id="koboldcpp-template-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="none">None (Raw Text)</option><option value="mistral">Mistral</option><option value="chatml">ChatML</option><option value="alpaca">Alpaca</option></select></div><div><label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-min-p-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-min-p-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div><div><label for="koboldcpp-dry-slider" class="text-gray-400 text-sm block mt-4 mb-2">DRY (Repetition Penalty)</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-dry-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-dry-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div></div>
     </div>
 </div>
+
 
 
     <!-- Application Logic - The order of these scripts is important! -->
@@ -619,15 +655,14 @@ const StateManager = {
                     chat_history: currentState.chat_history,
                     messageCounter: currentState.messageCounter,
                     static_entries: currentState.static_entries,
-                    worldMap: currentState.worldMap // Save the world map object
+                    worldMap: currentState.worldMap
                 };
                 
                 // 2. Update the narrative object in the library.
                 activeStory.narratives[narrativeIndex].state = narrativeState;
                 activeStory.narratives[narrativeIndex].last_modified = new Date().toISOString();
                 
-                // 3. Save shared settings (like characters) from the active state back to the story object.
-                // This ensures changes made during a session (e.g., editing a character) are saved at the story level.
+                // 3. Save shared settings from the active state back to the story object.
                 activeStory.characters = currentState.characters;
                 activeStory.dynamic_entries = currentState.dynamic_entries;
                 activeStory.font = currentState.font;
@@ -635,6 +670,12 @@ const StateManager = {
                 activeStory.bubbleOpacity = currentState.bubbleOpacity;
                 activeStory.chatTextColor = currentState.chatTextColor;
                 activeStory.characterImageMode = currentState.characterImageMode;
+                
+                // Save new appearance settings
+                activeStory.backgroundBlur = currentState.backgroundBlur;
+                activeStory.textSize = currentState.textSize;
+                activeStory.bubbleImageSize = currentState.bubbleImageSize;
+                
                 activeStory.system_prompt = currentState.system_prompt;
                 activeStory.event_master_base_prompt = currentState.event_master_base_prompt;
                 activeStory.event_master_prompt = currentState.event_master_prompt;
@@ -648,7 +689,6 @@ const StateManager = {
 
                 // 4. Update story metadata and persist the entire library.
                 activeStory.last_modified = new Date().toISOString();
-                // app.updateSearchIndex(activeStory); // This will be handled by the Controller
                 this.saveLibrary();
             }
         }
@@ -795,6 +835,7 @@ const UTILITY = {
         return {
             font: "'Inter', sans-serif", backgroundImageURL: '', bubbleOpacity: 0.85,
             chatTextColor: '#e5e7eb', characterImageMode: 'none',
+            backgroundBlur: 5, textSize: 16, bubbleImageSize: 100,
         };
     },
     getDefaultSystemPrompts() {
@@ -805,66 +846,65 @@ const UTILITY = {
         };
     },
     findPath(grid, startCoords, endCoords) {
-        const openSet = [];
-        const closedSet = new Set();
-        const nodes = {};
+        const toKey = ({ x, y }) => `${x},${y}`;
+        const fromKey = (key) => { const [x, y] = key.split(',').map(Number); return { x, y }; };
 
-        const startKey = `${startCoords.x},${startCoords.y}`;
-        const endKey = `${endCoords.x},${endCoords.y}`;
-
-        nodes[startKey] = {
-            coords: startCoords,
-            g: 0,
-            h: Math.abs(startCoords.x - endCoords.x) + Math.abs(startCoords.y - endCoords.y),
-            f: Math.abs(startCoords.x - endCoords.x) + Math.abs(startCoords.y - endCoords.y),
+        const nodes = grid.map(loc => ({
+            ...loc,
+            g: Infinity, // cost from start to current node
+            h: Infinity, // heuristic: estimated cost from current node to end
+            f: Infinity, // g + h
             parent: null,
-        };
-        openSet.push(nodes[startKey]);
+        }));
+
+        const startNode = nodes.find(n => n.coords.x === startCoords.x && n.coords.y === startCoords.y);
+        const endNode = nodes.find(n => n.coords.x === endCoords.x && n.coords.y === endCoords.y);
+
+        if (!startNode || !endNode) return [];
+
+        const heuristic = (a, b) => Math.abs(a.coords.x - b.coords.x) + Math.abs(a.coords.y - b.coords.y);
+
+        let openSet = [startNode];
+        let closedSet = new Set();
+
+        startNode.g = 0;
+        startNode.h = heuristic(startNode, endNode);
+        startNode.f = startNode.h;
 
         while (openSet.length > 0) {
             openSet.sort((a, b) => a.f - b.f);
-            const currentNode = openSet.shift();
-            const currentKey = `${currentNode.coords.x},${currentNode.coords.y}`;
+            let currentNode = openSet.shift();
 
-            if (currentKey === endKey) {
-                const path = [];
+            if (currentNode === endNode) {
+                let path = [];
                 let temp = currentNode;
                 while (temp) {
-                    path.unshift(temp.coords);
+                    path.push(temp.coords);
                     temp = temp.parent;
                 }
-                return path;
+                return path.reverse();
             }
 
-            closedSet.add(currentKey);
+            closedSet.add(toKey(currentNode.coords));
 
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
-                    if (dx === 0 && dy === 0) continue;
+            const neighbors = nodes.filter(n => {
+                const dx = Math.abs(n.coords.x - currentNode.coords.x);
+                const dy = Math.abs(n.coords.y - currentNode.coords.y);
+                return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+            });
 
-                    const neighborCoords = { x: currentNode.coords.x + dx, y: currentNode.coords.y + dy };
-                    const neighborKey = `${neighborCoords.x},${neighborCoords.y}`;
+            for (let neighbor of neighbors) {
+                if (closedSet.has(toKey(neighbor.coords))) continue;
 
-                    if (neighborCoords.x < 0 || neighborCoords.x >= 8 || neighborCoords.y < 0 || neighborCoords.y >= 8 || closedSet.has(neighborKey)) {
-                        continue;
-                    }
+                let tentativeG = currentNode.g + 1; // Distance between neighbors is 1
 
-                    const gScore = currentNode.g + 1;
-                    let neighborNode = nodes[neighborKey];
-
-                    if (!neighborNode || gScore < neighborNode.g) {
-                        if (!neighborNode) {
-                            neighborNode = { coords: neighborCoords };
-                            nodes[neighborKey] = neighborNode;
-                        }
-                        neighborNode.parent = currentNode;
-                        neighborNode.g = gScore;
-                        neighborNode.h = Math.abs(neighborCoords.x - endCoords.x) + Math.abs(neighborCoords.y - endCoords.y);
-                        neighborNode.f = neighborNode.g + neighborNode.h;
-
-                        if (!openSet.some(node => node.coords.x === neighborCoords.x && node.coords.y === neighborCoords.y)) {
-                            openSet.push(neighborNode);
-                        }
+                if (tentativeG < neighbor.g) {
+                    neighbor.parent = currentNode;
+                    neighbor.g = tentativeG;
+                    neighbor.h = heuristic(neighbor, endNode);
+                    neighbor.f = neighbor.g + neighbor.h;
+                    if (!openSet.includes(neighbor)) {
+                        openSet.push(neighbor);
                     }
                 }
             }
@@ -891,58 +931,34 @@ const PromptBuilder = {
             return processedText;
         };
     },
-
-    _getCardinalDirection(dx, dy) {
-        if (dx === 0 && dy === -1) return 'North';
-        if (dx === 1 && dy === -1) return 'North-East';
-        if (dx === 1 && dy === 0) return 'East';
-        if (dx === 1 && dy === 1) return 'South-East';
-        if (dx === 0 && dy === 1) return 'South';
-        if (dx === -1 && dy === 1) return 'South-West';
-        if (dx === -1 && dy === 0) return 'West';
-        if (dx === -1 && dy === -1) return 'North-West';
-        return '';
-    },
-
     buildPrompt(charToActId, isForUser = false) {
         const state = StateManager.getState();
         const charToAct = state.characters.find(c => c.id === charToActId);
         const replacer = this._getReplacer(charToAct);
         const modelInstructions = charToAct.model_instructions || state.system_prompt;
-        
-        // --- Location Context ---
-        let locationContext = '';
-        if (state.worldMap && state.worldMap.grid && state.worldMap.grid.length > 0 && state.worldMap.currentLocation.x !== null) {
-            const { grid, currentLocation, path, destination } = state.worldMap;
-            const currentPos = currentLocation;
-            const currentLocData = grid.find(loc => loc.coords.x === currentPos.x && loc.coords.y === currentPos.y);
 
-            if (currentLocData) {
-                let contextParts = [`[Current Location: ${currentLocData.name}]`, currentLocData.prompt];
-                
-                const adjacentLocations = [];
-                for (let dx = -1; dx <= 1; dx++) {
-                    for (let dy = -1; dy <= 1; dy++) {
-                        if (dx === 0 && dy === 0) continue;
-                        const adjX = currentPos.x + dx;
-                        const adjY = currentPos.y + dy;
-                        const adjLocData = grid.find(loc => loc.coords.x === adjX && loc.coords.y === adjY);
-                        if (adjLocData) {
-                            const direction = this._getCardinalDirection(dx, dy);
-                            adjacentLocations.push(`To the ${direction} is ${adjLocData.name}: ${adjLocData.description}`);
-                        }
-                    }
-                }
-                if (adjacentLocations.length > 0) {
-                    contextParts.push('\n[Nearby Locations]');
-                    contextParts.push(...adjacentLocations);
-                }
-                locationContext = contextParts.join('\n');
+        let locationContext = '';
+        if (state.worldMap && state.worldMap.grid.length > 0) {
+            const { grid, currentLocation, path } = state.worldMap;
+            const currentLoc = grid.find(l => l.coords.x === currentLocation.x && l.coords.y === currentLocation.y);
+            if (currentLoc) {
+                locationContext += `CURRENT LOCATION: ${currentLoc.name}\n${currentLoc.prompt}\n\n`;
+                const directions = [
+                    { dir: 'North', x: 0, y: -1 }, { dir: 'South', x: 0, y: 1 },
+                    { dir: 'East', x: 1, y: 0 }, { dir: 'West', x: -1, y: 0 },
+                    { dir: 'Northeast', x: 1, y: -1 }, { dir: 'Northwest', x: -1, y: -1 },
+                    { dir: 'Southeast', x: 1, y: 1 }, { dir: 'Southwest', x: -1, y: 1 }
+                ];
+                let adjacentInfo = 'ADJACENT LOCATIONS:\n';
+                directions.forEach(({ dir, x, y }) => {
+                    const adjLoc = grid.find(l => l.coords.x === currentLocation.x + x && l.coords.y === currentLocation.y + y);
+                    if (adjLoc) adjacentInfo += `- (${dir}): ${adjLoc.name} - ${adjLoc.description}\n`;
+                });
+                locationContext += adjacentInfo;
             }
-            if (path && path.length > 1) {
-                const destinationLoc = grid.find(loc => loc.coords.x === destination.x && loc.coords.y === destination.y);
-                const pathNames = path.map(coord => grid.find(loc => loc.coords.x === coord.x && loc.coords.y === coord.y)?.name).filter(Boolean).join(' -> ');
-                locationContext += `\n\n--- INTENDED PATH ---\nYou are on a journey to ${destinationLoc.name}.\nThe planned route is: ${pathNames}`;
+            if (path && path.length > 0) {
+                const pathNames = path.map(p => grid.find(l => l.coords.x === p.x && l.coords.y === p.y)?.name).filter(Boolean).join(' -> ');
+                locationContext += `\nTRAVEL PATH TO DESTINATION: ${pathNames}\n`;
             }
         }
         
@@ -950,11 +966,11 @@ const PromptBuilder = {
             system_prompt: replacer(modelInstructions),
             event_master_prompt: replacer(state.event_master_prompt),
             static_entries: (state.static_entries || []).map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`).join('\n\n'),
-            location_context: locationContext,
             characters: (state.characters || []).filter(c => c.is_active).map(c => `[Character: ${c.name}]\nDescription: ${replacer(c.description)}`).join('\n\n'),
             history: (state.chat_history || []).slice(-10),
             charToAct: charToAct,
-            isForUser: isForUser
+            isForUser: isForUser,
+            location_context: locationContext,
         };
         
         if (state.event_master_prompt) { 
@@ -971,8 +987,8 @@ const PromptBuilder = {
         const state = StateManager.getState();
         let p = components.system_prompt + "\n\n";
         if (components.event_master_prompt) p += "--- SECRET EVENT MASTER INSTRUCTION ---\n" + components.event_master_prompt + "\n\n";
+        if (components.location_context) p += "--- LOCATION CONTEXT ---\n" + components.location_context + "\n\n";
         p += "--- STATIC KNOWLEDGE ---\n" + components.static_entries + "\n\n";
-        if(components.location_context) p += "--- LOCATION CONTEXT ---\n" + components.location_context + "\n\n";
         p += "--- CHARACTERS ---\n" + components.characters + "\n\n";
         p += "--- RECENT CONVERSATION & EVENTS ---\n";
         components.history.forEach(msg => { 
@@ -981,8 +997,6 @@ const PromptBuilder = {
                 if (char) p += `[Speaker: ${char.name}]\n${replacer(msg.content)}\n\n`;
             } else if (msg.type === 'lore_reveal') {
                 p += `[System Note: Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}\n\n`;
-            } else if (msg.type === 'system_event') {
-                 p += `[System Event: ${replacer(msg.content)}]\n\n`;
             }
         });
         p += "\n--- INSTRUCTION ---\n";
@@ -997,8 +1011,8 @@ const PromptBuilder = {
 
         let system = [components.system_prompt];
         if (components.event_master_prompt) system.push("SECRET EVENT INSTRUCTION:\n" + components.event_master_prompt);
+        if (components.location_context) system.push("LOCATION CONTEXT:\n" + components.location_context);
         system.push("STATIC KNOWLEDGE:\n" + components.static_entries);
-        if(components.location_context) system.push("LOCATION CONTEXT:\n" + components.location_context);
         system.push("CHARACTERS:\n" + components.characters);
         const system_prompt_str = system.join('\n\n');
         
@@ -1008,8 +1022,6 @@ const PromptBuilder = {
                 if (char) return `${char.is_user ? 'user' : 'assistant'}:${char.name}:\n${replacer(msg.content)}`;
             } else if (msg.type === 'lore_reveal') {
                 return `system:Dynamic Entry Revealed - ${msg.title}:\n${replacer(msg.content)}`;
-            } else if (msg.type === 'system_event') {
-                return `system:Event: ${replacer(msg.content)}`;
             }
         }).filter(Boolean).join('\n');
 
@@ -1021,8 +1033,8 @@ const PromptBuilder = {
                 return `<s>[INST] ${system_prompt_str}\n\n${history_str}\n\n${instruction} [/INST]`;
             case 'chatml':
                 const history_chatml = components.history.map(msg => {
-                    const role = msg.type === 'lore_reveal' || msg.type === 'system_event' ? 'system' : (state.characters.find(c=>c.id === msg.character_id)?.is_user ? 'user' : 'assistant');
-                    const content = msg.type === 'lore_reveal' ? `[Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}` : (msg.type === 'system_event' ? `[Event: ${replacer(msg.content)}]` : `${state.characters.find(c=>c.id === msg.character_id)?.name}:\n${replacer(msg.content)}`);
+                    const role = msg.type === 'lore_reveal' ? 'system' : (state.characters.find(c=>c.id === msg.character_id)?.is_user ? 'user' : 'assistant');
+                    const content = msg.type === 'lore_reveal' ? `[Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}` : `${state.characters.find(c=>c.id === msg.character_id)?.name}:\n${replacer(msg.content)}`;
                     return `<|im_start|>${role}\n${content}<|im_end|>`;
                 }).join('\n');
                 return `<|im_start|>system\n${system_prompt_str}<|im_end|>\n${history_chatml}\n<|im_start|>user\n${instruction}<|im_end|>\n<|im_start|>assistant\n${components.charToAct.name}:\n`;
@@ -1121,8 +1133,7 @@ const ImportExportService = {
             id: UTILITY.uuid(), name: "Imported Chat", last_modified: new Date().toISOString(),
             state: {
                 chat_history: [], messageCounter: 0,
-                static_entries: byafScenarioData.narrative ? [{id: UTILITY.uuid(), title: "Initial Scene", content: byafScenarioData.narrative.replace(/{character}/g, characterName)}] : [],
-                worldMap: { grid: [], currentLocation: { x: null, y: null }, destination: { x: null, y: null }, path: [] }
+                static_entries: byafScenarioData.narrative ? [{id: UTILITY.uuid(), title: "Initial Scene", content: byafScenarioData.narrative.replace(/{character}/g, characterName)}] : []
             }
         };
         
@@ -1150,7 +1161,8 @@ const ImportExportService = {
     },
 };
 
-/**
+
+    /**
  * =================================================================================================
  * UIManager Module (The View)
  * =================================================================================================
@@ -1162,6 +1174,10 @@ const UIManager = {
     RUNTIME: {
         streamingInterval: null,
         titleTimeout: null,
+    },
+
+    getAIGenIcon() {
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wand-2"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.21 1.21 0 0 0 1.72 0L21.64 5.36a1.21 1.21 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 18h-4"/><path d="M11 3H9"/></svg>`;
     },
     
     renderAll() { 
@@ -1273,6 +1289,7 @@ const UIManager = {
                 </div>
                 ${narrative.id === library.active_narrative_id && story.id === library.active_story_id ? '<span class="text-xs text-sky-300 font-bold flex-shrink-0">ACTIVE</span>' : ''}
                 <div class="flex-shrink-0 flex items-center gap-2">
+                    <button onclick="Controller.elevateNarrativeToScenario('${story.id}', '${narrative.id}')" class="bg-teal-600 hover:bg-teal-500 text-white font-bold p-2 rounded-lg" title="Elevate to Scenario"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg></button>
                     <button onclick="Controller.loadNarrative('${story.id}', '${narrative.id}')" class="bg-green-600 hover:bg-green-500 text-white font-bold p-2 rounded-lg" title="Load Narrative"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
                     <button onclick="Controller.duplicateNarrative('${story.id}', '${narrative.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold p-2 rounded-lg" title="Duplicate"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
                     <button onclick="Controller.deleteNarrative('${story.id}', '${narrative.id}')" class="bg-red-600 hover:bg-red-500 text-white font-bold p-2 rounded-lg" title="Delete"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
@@ -1536,12 +1553,11 @@ const UIManager = {
                     if (emotionalPortrait) portraitUrl = emotionalPortrait.url;
                 }
                 cinematicBg.style.backgroundImage = `url('${portraitUrl}')`;
-                cinematicBg.style.opacity = 0.2;
             } else {
-               cinematicBg.style.opacity = 0;
+               cinematicBg.style.backgroundImage = 'none';
             }
         } else {
-            cinematicBg.style.opacity = 0;
+            cinematicBg.style.backgroundImage = 'none';
         }
 
         document.getElementById('chat-window').innerHTML = (state.chat_history || []).map((msg, index) => this._createMessageHTML(msg, index)).join('');
@@ -1692,6 +1708,7 @@ const UIManager = {
     applyStyling() { 
         const state = StateManager.getState();
         const backgroundElement = document.getElementById('global-background');
+        const appContainer = document.getElementById('app-container');
         
         let backgroundUrl = state.backgroundImageURL || '';
         if (state.worldMap && state.worldMap.grid.length > 0) {
@@ -1702,8 +1719,26 @@ const UIManager = {
         }
         
         backgroundElement.style.backgroundImage = backgroundUrl ? `url('${backgroundUrl}')` : 'none';
-        document.documentElement.style.setProperty('--chat-text-color', state.chatTextColor);
-        document.documentElement.style.setProperty('--chat-font-family', state.font);
+        
+        // Dynamic CSS Variables
+        document.documentElement.style.setProperty('--chat-font-size', `${state.textSize}px`);
+        document.documentElement.style.setProperty('--bubble-image-size', `${state.bubbleImageSize}px`);
+        appContainer.style.backdropFilter = `blur(${state.backgroundBlur}px)`;
+        
+        // Border Color from Text Color
+        const hex = state.chatTextColor || '#e5e7eb';
+        let r = 0, g = 0, b = 0;
+        if (hex.length === 4) { 
+            r = parseInt(hex[1] + hex[1], 16);
+            g = parseInt(hex[2] + hex[2], 16);
+            b = parseInt(hex[3] + hex[3], 16);
+        } else if (hex.length === 7) {
+            r = parseInt(hex.substring(1, 3), 16);
+            g = parseInt(hex.substring(3, 5), 16);
+            b = parseInt(hex.substring(5, 7), 16);
+        }
+        document.documentElement.style.setProperty('--border-hue-color', `rgba(${r}, ${g}, ${b}, 0.4)`);
+
         this.renderChat();
     },
 
@@ -1716,7 +1751,7 @@ const UIManager = {
         if (!worldMap || !worldMap.grid || worldMap.grid.length === 0) {
             container.innerHTML = `<div class="h-full flex flex-col items-center justify-center p-6 text-center">
                 <p class="text-gray-400 mb-4">The world map is empty.</p>
-                <button id="generate-world-button" onclick="Controller.generateWorldMap()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Generate World</button>
+                <button id="generate-world-button" onclick="Controller.generateWorldMap()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">${this.getAIGenIcon()}</button>
             </div>`;
             return;
         }
@@ -1821,7 +1856,7 @@ const UIManager = {
                     <button id="world-map-tab-move" onclick="Controller.switchWorldMapTab('move')" class="py-3 px-4 font-semibold text-lg ${activeWorldMapTab === 'move' ? 'border-b-2 border-indigo-500 text-white' : 'border-b-2 border-transparent text-gray-400 hover:text-white'}">Move</button>
                     <button id="world-map-tab-worldmap" onclick="Controller.switchWorldMapTab('worldmap')" class="py-3 px-4 font-semibold text-lg ${activeWorldMapTab === 'worldmap' ? 'border-b-2 border-indigo-500 text-white' : 'border-b-2 border-transparent text-gray-400 hover:text-white'}">World Map</button>
                 </div>
-                <button id="generate-world-button" onclick="Controller.generateWorldMap()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg ml-4 flex-shrink-0">Generate World</button>
+                <button id="generate-world-button" onclick="Controller.generateWorldMap()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg ml-4 flex-shrink-0">${this.getAIGenIcon()}</button>
             </div>
             ${contentHTML}
             <div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end">
@@ -1865,21 +1900,21 @@ const UIManager = {
                         <div><label class="text-sm text-gray-400">Name</label><input type="text" value="${UTILITY.escapeHTML(char.name)}" oninput="Controller.updateCharacterField('${char.id}', 'name', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded text-lg"></div>
                         <div><label class="text-sm text-gray-400">Short Description (for roster card)</label><input type="text" value="${UTILITY.escapeHTML(char.short_description)}" oninput="Controller.updateCharacterField('${char.id}', 'short_description', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"></div>
                         <div><label class="text-sm text-gray-400">Default Image URL</label><input type="text" value="${UTILITY.escapeHTML(char.image_url)}" oninput="Controller.updateCharacterField('${char.id}', 'image_url', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"></div>
-                        <div><label class="text-sm text-gray-400">Tags (comma-separated)</label><input type="text" value="${tagsValue}" oninput="Controller.updateCharacterTags('${char.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"><button onclick="Controller.generateTagsForCharacter(event, '${char.id}')" class="text-xs text-sky-400 hover:text-sky-300 mt-1">Auto-Tag</button></div>
+                        <div><label class="text-sm text-gray-400">Tags (comma-separated)</label><div class="flex items-center space-x-2"><input type="text" value="${tagsValue}" oninput="Controller.updateCharacterTags('${char.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"><button onclick="Controller.generateTagsForCharacter(event, '${char.id}')" class="p-2 bg-gray-600/80 hover:bg-gray-500/80 rounded-lg" title="Auto-Tag with AI">${this.getAIGenIcon()}</button></div></div>
                     </div>
                 </details>
                 <details>
                     <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300">Persona</summary>
                     <div class="p-4 space-y-4 bg-black/20 rounded-b-lg">
                          <textarea oninput="Controller.updateCharacterField('${char.id}', 'description', this.value); UIManager.updateTokenCount('${char.id}', this.value)" class="w-full h-48 bg-black/30 border-gray-600 p-2 resize-y rounded">${UTILITY.escapeHTML(char.description)}</textarea>
-                         <div class="flex justify-between items-center"><span class="text-right text-sm text-gray-400" id="token-counter-${char.id}">~${Math.round((char.description || '').length / 4)} tokens</span><button onclick="Controller.openModal('ai-enhance-modal', '${char.id}')" class="text-sm bg-gray-600/80 hover:bg-gray-500/80 font-semibold py-2 px-3 rounded-lg">AI Enhance</button></div>
+                         <div class="flex justify-between items-center"><span class="text-right text-sm text-gray-400" id="token-counter-${char.id}">~${Math.round((char.description || '').length / 4)} tokens</span><button onclick="Controller.enhancePersonaWithAI(event, '${char.id}')" class="bg-gray-600/80 hover:bg-gray-500/80 font-semibold p-2 rounded-lg" title="Enhance Persona with AI">${this.getAIGenIcon()}</button></div>
                     </div>
                 </details>
                 <details>
                     <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300">Model Instructions</summary>
                     <div class="p-4 space-y-4 bg-black/20 rounded-b-lg">
                          <textarea oninput="Controller.updateCharacterField('${char.id}', 'model_instructions', this.value)" class="w-full h-48 bg-black/30 border-gray-600 p-2 resize-y rounded">${UTILITY.escapeHTML(char.model_instructions)}</textarea>
-                         ${!char.is_user ? `<div class="text-right"><button onclick="Controller.generateModelInstructions(event, '${char.id}')" class="text-sm bg-sky-600/80 hover:bg-sky-700/80 font-semibold py-2 px-3 rounded-lg">AI Gen</button></div>` : ''}
+                         ${!char.is_user ? `<div class="text-right"><button onclick="Controller.generateModelInstructions(event, '${char.id}')" class="bg-sky-600/80 hover:bg-sky-700/80 font-semibold p-2 rounded-lg" title="Generate Instructions with AI">${this.getAIGenIcon()}</button></div>` : ''}
                     </div>
                 </details>
                 <details>
@@ -1925,8 +1960,7 @@ const UIManager = {
 };
 
 
-
-/**
+    /**
  * =================================================================================================
  * Controller Module (The Handler)
  * =================================================================================================
@@ -2030,13 +2064,28 @@ const Controller = {
         if (!story || !scenario) return;
 
         const newNarrative = {
-            id: UTILITY.uuid(), name: `${scenario.name} - Chat`, created_date: new Date().toISOString(), last_modified: new Date().toISOString(),
-            state: {
+            id: UTILITY.uuid(),
+            name: `${scenario.name} - Chat`,
+            created_date: new Date().toISOString(),
+            last_modified: new Date().toISOString(),
+            state: {}
+        };
+
+        // If scenario has state, use it. Otherwise, create default.
+        if (scenario.static_entries && scenario.worldMap) {
+            newNarrative.state = {
+                chat_history: [],
+                messageCounter: 0,
+                static_entries: JSON.parse(JSON.stringify(scenario.static_entries)),
+                worldMap: JSON.parse(JSON.stringify(scenario.worldMap))
+            };
+        } else {
+            newNarrative.state = {
                 chat_history: [], messageCounter: 0,
                 static_entries: [{ id: UTILITY.uuid(), title: "World Overview", content: "A high-fantasy world." }],
                 worldMap: { grid: [], currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
-            }
-        };
+            };
+        }
         
         const firstMessage = scenario.message;
         if (firstMessage) {
@@ -2229,9 +2278,6 @@ const Controller = {
             case 'character-detail-modal':
                 UIManager.openCharacterDetailModal(contextId);
                 break;
-            case 'ai-enhance-modal':
-                this.openAIEnhanceModal(contextId);
-                break;
             case 'edit-response-modal':
                 this.openEditModal(contextId);
                 break;
@@ -2315,15 +2361,16 @@ const Controller = {
             }.bind(this), 500);
             input.addEventListener('input', debouncedCallback); 
         };
-        const setupSlider = (sliderId, valueId, stateKey) => {
+        const setupSlider = (sliderId, valueId, stateKey, callback = null) => {
             const slider = document.getElementById(sliderId);
             const valueDisplay = document.getElementById(valueId);
             if (!slider || !valueDisplay) return;
             slider.value = state[stateKey];
-            valueDisplay.textContent = parseFloat(state[stateKey]).toFixed(2);
+            valueDisplay.textContent = slider.value;
             slider.addEventListener('input', (e) => {
                 state[stateKey] = parseFloat(e.target.value);
-                valueDisplay.textContent = parseFloat(state[stateKey]).toFixed(2);
+                valueDisplay.textContent = e.target.value;
+                if(callback) callback();
             });
             slider.addEventListener('change', () => StateManager.saveState());
         };
@@ -2336,9 +2383,15 @@ const Controller = {
         if(document.getElementById('background-image-url')) setListener('background-image-url', 'backgroundImageURL', () => UIManager.applyStyling());
         if(document.getElementById('chat-text-color')) setListener('chat-text-color', 'chatTextColor', () => UIManager.applyStyling());
         
+        // Kobold Sliders
         if(document.getElementById('koboldcpp-min-p-slider')) setupSlider('koboldcpp-min-p-slider', 'koboldcpp-min-p-value', 'koboldcpp_min_p');
         if(document.getElementById('koboldcpp-dry-slider')) setupSlider('koboldcpp-dry-slider', 'koboldcpp-dry-value', 'koboldcpp_dry');
         
+        // New Appearance Sliders
+        if(document.getElementById('blur-slider')) setupSlider('blur-slider', 'blur-value', 'backgroundBlur', () => UIManager.applyStyling());
+        if(document.getElementById('text-size-slider')) setupSlider('text-size-slider', 'text-size-value', 'textSize', () => UIManager.applyStyling());
+        if(document.getElementById('bubble-image-size-slider')) setupSlider('bubble-image-size-slider', 'bubble-image-size-value', 'bubbleImageSize', () => UIManager.applyStyling());
+
         const fontSelector = document.getElementById('font-selector'); 
         if(fontSelector) {
             fontSelector.value = state.font; 
@@ -2639,39 +2692,40 @@ const Controller = {
         this.closeModal('edit-response-modal');
     },
 
-    openAIEnhanceModal(charId) { 
-        const state = StateManager.getState();
-        const char = state.characters.find(c => c.id === charId); 
-        if(!char) return;
-        document.getElementById('modal-input').value = char.description; 
-        const btn = document.getElementById('modal-confirm-button'); 
-        btn.onclick = async () => { 
-            btn.disabled = true; 
-            btn.textContent = 'Generating...'; 
-            try { 
-                const newDescription = await APIService.callAI(`Embellish this character concept into a rich description. CONCEPT: "${document.getElementById('modal-input').value}"`); 
-                this.updateCharacterField(charId, 'description', newDescription);
-                UIManager.openCharacterDetailModal(charId);
-            } catch (error) { 
-                alert(`AI Error: ${error.message}`); 
-            } finally { 
-                this.closeModal('ai-enhance-modal'); 
-                btn.disabled = false; 
-                btn.textContent = 'Generate'; 
-            } 
-        }; 
-        ModalManager.open('ai-enhance-modal');
-    },
-
-    async generateModelInstructions(event, charId) {
+    async enhancePersonaWithAI(event, charId) {
+        if (!confirm("This will overwrite the current persona. Are you sure?")) return;
         const state = StateManager.getState();
         const char = state.characters.find(c => c.id === charId);
         if (!char) return;
 
-        const button = event.target;
-        const originalText = button.textContent;
+        const button = event.target.closest('button');
+        const originalContent = button.innerHTML;
         button.disabled = true;
-        button.textContent = "Generating...";
+        button.innerHTML = '...';
+
+        try {
+            const prompt = `Embellish this character concept into a rich description. CONCEPT: "${char.description}"`;
+            const newDescription = await APIService.callAI(prompt);
+            this.updateCharacterField(charId, 'description', newDescription);
+            UIManager.openCharacterDetailModal(charId);
+        } catch (error) {
+            alert(`AI Error: ${error.message}`);
+        } finally {
+            button.disabled = false;
+            button.innerHTML = originalContent;
+        }
+    },
+
+    async generateModelInstructions(event, charId) {
+        if (!confirm("This will overwrite the current model instructions. Are you sure?")) return;
+        const state = StateManager.getState();
+        const char = state.characters.find(c => c.id === charId);
+        if (!char) return;
+
+        const button = event.target.closest('button');
+        const originalContent = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '...';
 
         const staticKnowledge = (state.static_entries || []).map(e => `### ${e.title}\n${e.content}`).join('\n\n');
         const prompt = `Based on the following character persona and world information, generate a concise set of model instructions for an AI roleplaying as this character. The instructions should guide the AI on how to speak, its personality, and key traits to embody.\n\n### Character Persona:\n${char.description}\n\n### World Static Knowledge:\n${staticKnowledge}\n\n### INSTRUCTIONS:`;
@@ -2685,7 +2739,7 @@ const Controller = {
             alert("Failed to generate instructions.");
         } finally {
             button.disabled = false;
-            button.textContent = originalText;
+            button.innerHTML = originalContent;
         }
     },
 
@@ -2762,14 +2816,15 @@ const Controller = {
     }, 500),
 
     async generateTagsForCharacter(event, charId) {
+        if (!confirm("This will add to the current tags. Are you sure?")) return;
         const state = StateManager.getState();
         const char = state.characters.find(c => c.id === charId);
         if (!char) return;
 
-        const button = event.target;
-        const originalText = button.textContent;
+        const button = event.target.closest('button');
+        const originalContent = button.innerHTML;
         button.disabled = true;
-        button.textContent = "Generating...";
+        button.innerHTML = '...';
 
         const prompt = `Analyze the following character. Generate 3 to 5 relevant, one-word, comma-separated tags.\n\nCHARACTER: ${char.name}\nDESCRIPTION: ${char.description}`;
         try {
@@ -2784,7 +2839,7 @@ const Controller = {
             alert("Failed to generate tags.");
         } finally {
             button.disabled = false;
-            button.textContent = originalText;
+            button.innerHTML = originalContent;
         }
     },
 
@@ -2903,21 +2958,28 @@ const Controller = {
     
     // --- World Map Functions ---
     async generateWorldMap() {
-        const state = StateManager.getState();
-        if (state.worldMap.grid.length > 0) {
-            if (!confirm("This will overwrite the existing world map. Are you sure you want to proceed?")) {
-                return;
-            }
+        if (!confirm("This will overwrite the existing world map and may incur API costs. Are you sure?")) {
+            return;
         }
+        const state = StateManager.getState();
         
         const btn = document.getElementById('generate-world-button');
         btn.disabled = true;
-        btn.textContent = 'Generating...';
+        btn.innerHTML = '...';
 
         try {
-            const prompt = `Generate an 8x8 grid of interconnected, logically consistent fantasy locations. The central location (4,4) should be a neutral starting point like a village or crossroads. Ensure variety (forests, mountains, cities, ruins, etc.).
-            Respond with a valid JSON object: { "grid": [ { "coords": {"x":int, "y":int}, "name": "string", "description": "string (one-line summary)", "prompt": "string (a rich, detailed paragraph for the AI)", "imageUrl": "" } ] }.
+            const context = {
+                characters: state.characters.map(c => `${c.name}: ${c.short_description}`).join('\n'),
+                static: (state.static_entries || []).map(e => `* ${e.title}: ${e.content}`).join('\n'),
+                dynamic: (state.dynamic_entries || []).map(e => `* ${e.title}: ${e.content}`).join('\n'),
+                recent: (state.chat_history || []).filter(m => m.type === 'chat').slice(-3).map(m => m.content).join('\n---\n'),
+            };
+            const contextString = `CHARACTERS:\n${context.characters}\n\nSTATIC LORE:\n${context.static}\n\nDYNAMIC LORE:\n${context.dynamic}\n\nRECENT EVENTS:\n${context.recent}`;
+
+            const prompt = `Based on the following story context, generate a genre-appropriate 8x8 grid of interconnected fantasy locations. The central location (4,4) should be a neutral starting point. Attempt to include locations mentioned in the context.
+            CONTEXT:\n${contextString}\n\nRespond with a valid JSON object: { "grid": [ { "coords": {"x":int, "y":int}, "name": "string", "description": "string (one-line summary)", "prompt": "string (a rich, detailed paragraph for the AI)", "imageUrl": "" } ] }.
             The grid must contain exactly 64 locations.`;
+            
             const response = await APIService.callAI(prompt, true);
             const newWorld = JSON.parse(response);
             if (newWorld.grid && newWorld.grid.length === 64) {
@@ -2928,7 +2990,7 @@ const Controller = {
                 this.RUNTIME.selectedMapTile = null;
                 StateManager.saveState();
                 UIManager.renderWorldMapModal();
-                UIManager.applyStyling(); // Apply new background if available
+                UIManager.applyStyling(); 
             } else {
                 throw new Error("Generated data is not a valid 64-item grid.");
             }
@@ -2937,7 +2999,7 @@ const Controller = {
             alert("Failed to generate world map. The AI may have returned an invalid format.");
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Generate World';
+            btn.innerHTML = UIManager.getAIGenIcon();
         }
     },
 
@@ -3003,6 +3065,27 @@ const Controller = {
             StateManager.saveState();
         }
     }, 500),
+
+    elevateNarrativeToScenario(storyId, narrativeId) {
+        const library = StateManager.getLibrary();
+        const story = library.stories.find(s => s.id === storyId);
+        const narrative = story.narratives.find(n => n.id === narrativeId);
+        if (!story || !narrative) return;
+        
+        const firstMessage = narrative.state.chat_history.find(m => !m.isHidden && m.type === 'chat');
+
+        const newScenario = {
+            id: UTILITY.uuid(),
+            name: `${narrative.name} (Scenario)`,
+            message: firstMessage ? firstMessage.content : "The story continues...",
+            static_entries: JSON.parse(JSON.stringify(narrative.state.static_entries || [])),
+            worldMap: JSON.parse(JSON.stringify(narrative.state.worldMap || {})),
+        };
+
+        story.scenarios.push(newScenario);
+        StateManager.saveLibrary();
+        UIManager.openStoryDetails(storyId);
+    },
 
     // --- Import / Export ---
     exportStory(storyId) { 
@@ -3242,4 +3325,3 @@ document.addEventListener('DOMContentLoaded', () => app.init());
     
 </body>
 </html>
-
