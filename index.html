@@ -318,6 +318,24 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #character-portrait-contai
 body.layout-horizontal[data-mode="cinematic_overlay"] #chat-window {
     width: 100%; /* Take full width since side portrait is gone */
 }
+
+/* BUG FIX: Make header float over cinematic background in horizontal mode */
+body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
+    position: absolute;
+    top: 0rem;      /* Match app-container padding */
+    left: 0rem;
+    right: 0rem;
+    z-index: 50;      /* Ensure it's on top of other elements */
+    margin-bottom: 0; /* Override default margin */
+    /* Removed vertical padding to maintain original alignment of controls */
+    padding-top: 1rem;
+	padding-left: 1rem;
+    padding-right: 1rem;
+    background: linear-gradient(to bottom, rgba(17, 24, 39, 0.6), transparent);
+    border-radius: 0.75rem;
+}
+
+
 	</style>
 </head>
 <body data-mode="none" class="bg-gray-900 min-h-screen flex flex-col">
@@ -340,6 +358,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #chat-window {
                  <button onclick="Controller.openModal('characters-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Characters"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A5.965 5.965 0 0112 13a5.965 5.965 0 013 1.803"></path></svg></button>
                  <button onclick="Controller.openModal('world-map-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="World Map"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m-6 4v.01"></path></svg></button>
                  <button onclick="Controller.openModal('knowledge-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Knowledge"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253z"></path></svg></button>
+                 <button onclick="Controller.checkWorldInfoAgent()" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Update Static Memory"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg></button>
                  <button onclick="Controller.openModal('settings-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Settings"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066 2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
             </div>
         </div>
@@ -400,6 +419,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #chat-window {
 
 </div>
 <!-- /Main Application Container -->
+
 
 
     <!-- This is where all the modal dialogs and templates will be inserted. -->
@@ -1592,7 +1612,7 @@ const UIManager = {
         const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
         return `
-            <div class="chat-bubble-container ${msg.isNew ? 'new-message' : ''} mb-4" data-message-index="${index}">
+            <div class="chat-bubble-container ${msg.isNew ? 'new-message' : ''}" data-message-index="${index}" style="margin-bottom: 0rem;">
                 <div class="bubble-header">
                      <p class="font-bold text-sm" ${characterNameColor}>${UTILITY.escapeHTML(character.name)}</p>
                      <span class="timestamp text-xs text-gray-500">${timestamp}</span>
@@ -1655,6 +1675,20 @@ const UIManager = {
                 const activeBg = document.getElementById(`cinematic-bg-${this.RUNTIME.activeCinematicBg}`);
                 if (activeBg) activeBg.style.backgroundImage = `url('${this.RUNTIME.lastCinematicImageUrl}')`;
             }
+        } else {
+            // BUG FIX: Clear cinematic backgrounds if not in cinematic mode to fix lingering portraits
+            const bg1 = document.getElementById('cinematic-bg-1');
+            const bg2 = document.getElementById('cinematic-bg-2');
+            if (bg1) {
+                bg1.style.backgroundImage = 'none';
+                bg1.style.opacity = '0';
+            }
+            if (bg2) {
+                bg2.style.backgroundImage = 'none';
+                bg2.style.opacity = '0';
+            }
+            this.RUNTIME.lastCinematicImageUrl = null;
+            this.RUNTIME.activeCinematicBg = 1;
         }
 
 
@@ -1725,7 +1759,7 @@ const UIManager = {
                  const emotionalPortrait = lastSpeaker.extra_portraits.find(p => p.emotion === lastEmotion);
                  if (emotionalPortrait && emotionalPortrait.url) portraitUrl = emotionalPortrait.url;
              }
-             portraitContainer.innerHTML = `<img src="${portraitUrl}" class="max-w-full max-h-full object-contain">`;
+             portraitContainer.innerHTML = `<img src="${portraitUrl}" class="max-w-full max-h-full object-contain rounded-lg">`;
         } else {
             portraitContainer.innerHTML = '';
         }
@@ -2013,7 +2047,12 @@ const UIManager = {
                         </div>
                         <input type="text" value="${UTILITY.escapeHTML(char.name)}" oninput="Controller.updateCharacterField('${char.id}', 'name', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded text-lg">
                         <div><label class="text-sm text-gray-400">Short Description (for roster card)</label><input type="text" value="${UTILITY.escapeHTML(char.short_description)}" oninput="Controller.updateCharacterField('${char.id}', 'short_description', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"></div>
-                        <div><label class="text-sm text-gray-400">Default Image URL</label><input type="text" value="${UTILITY.escapeHTML(char.image_url)}" oninput="Controller.updateCharacterField('${char.id}', 'image_url', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"></div>
+                        <div>
+                            <label class="text-sm text-gray-400">Default Image URL</label>
+                            <input type="text" value="${UTILITY.escapeHTML(char.image_url)}" oninput="Controller.updateCharacterField('${char.id}', 'image_url', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded" placeholder="Paste URL...">
+                            <label class="text-sm text-gray-400 mt-2 block">Or Upload Local Image</label>
+                            <input type="file" accept="image/*" onchange="Controller.handleLocalImageUpload(event, '${char.id}')" class="mt-1 block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
+                        </div>
                         ${!char.is_user ? `<div class="grid grid-cols-2 gap-4"><div><label class="text-sm text-gray-400">Bubble Base Color</label><input type="color" value="${color.base}" oninput="Controller.updateCharacterColor('${char.id}', 'base', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded"></div><div><label class="text-sm text-gray-400">Name Color</label><input type="color" value="${color.bold}" oninput="Controller.updateCharacterColor('${char.id}', 'bold', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded"></div></div>` : ''}
                         <div><label class="text-sm text-gray-400">Tags (comma-separated)</label><input type="text" value="${tagsValue}" oninput="Controller.updateCharacterTags('${char.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"><button onclick="Controller.generateTagsForCharacter(event, '${char.id}')" class="text-xs text-sky-400 hover:text-sky-300 mt-1 p-1 bg-sky-600/80 rounded">${this.getAIGenIcon()}</button></div>
                     </div>
@@ -3077,8 +3116,54 @@ const Controller = {
                 const header = document.querySelector(`#character-detail-modal-content h2[data-char-id="${id}"]`);
                 if(header) header.textContent = value;
             }
+             // Refresh the character roster whenever a relevant field changes
+            if (field === 'name' || field === 'short_description' || field === 'image_url' || field === 'tags') {
+                UIManager.renderCharacters();
+            }
         } 
     }, 300),
+
+    /**
+     * Handles the selection of a local image file for a character's portrait.
+     * Reads the file and converts it to a Base64 data URL, then updates the character's state.
+     * @param {Event} event - The file input change event.
+     * @param {string} charId - The ID of the character to update.
+     */
+    handleLocalImageUpload(event, charId) {
+        const file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        // Limit file size to 2MB to prevent performance issues with large Base64 strings
+        if (file.size > 2 * 1024 * 1024) {
+            alert("Error: Image file size should not exceed 2MB.");
+            event.target.value = ''; // Clear the file input
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            const imageUrl = e.target.result; // This is the Base64 data URL
+            
+            // This function updates the character's data and refreshes the UI
+            this.updateCharacterField(charId, 'image_url', imageUrl);
+            
+            // To provide immediate feedback, we also update the text input field in the modal.
+            const textInput = event.target.closest('div').querySelector('input[type="text"]');
+            if (textInput) {
+                textInput.value = `[Local Image: ${file.name}]`;
+            }
+        };
+        
+        reader.onerror = () => {
+            console.error("Error reading file.");
+            alert("There was an error reading the selected file.");
+        };
+
+        reader.readAsDataURL(file);
+    },
 
     updateCharacterColor: debounce(function(charId, type, value) {
         const state = StateManager.getState();
@@ -3596,7 +3681,6 @@ const app = {
 
 // Start the application once the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => app.init());
-
 
 
 	</script>
