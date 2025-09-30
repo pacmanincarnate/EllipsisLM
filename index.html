@@ -1873,6 +1873,13 @@ const UIManager = {
 
         document.documentElement.style.setProperty('--chat-text-color', state.chatTextColor);
         document.documentElement.style.setProperty('--chat-font-family', state.font);
+		
+		// Update title colors to match the chat text color
+        const storyTitleInput = document.getElementById('story-title-input');
+        const mobileStoryTitleOverlay = document.getElementById('mobile-story-title-overlay');
+        if (storyTitleInput) storyTitleInput.style.color = state.chatTextColor;
+        if (mobileStoryTitleOverlay) mobileStoryTitleOverlay.style.color = state.chatTextColor;
+		
         this.renderChat();
     },
 
