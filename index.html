@@ -24,7 +24,7 @@
 
     <!-- Link to External Stylesheet -->
     <style>
-	/* --- General Layout & Theme --- */
+	<!-- PASTE content of style.css HERE -->
 :root {
     --font-primary: 'Inter', sans-serif;
     --text-primary: #e5e7eb;
@@ -61,8 +61,24 @@ html, body {
 
 body { 
     font-family: var(--font-primary); 
-    color: var(--text-primary); 
+    color: #e5e7eb; 
 }
+
+/* [FIX] Global styles for form elements to ensure readability on dark backgrounds */
+input, textarea, select {
+    color: var(--text-primary);
+    background-color: rgba(0,0,0,0.7);
+    border: 1px solid var(--border-primary);
+}
+input::placeholder, textarea::placeholder {
+    color: #9ca3af; /* Tailwind gray-400 */
+}
+input:focus, textarea:focus, select:focus {
+    outline: 2px solid var(--brand-color);
+    outline-offset: -1px;
+    border-color: var(--brand-color);
+}
+
 
 .glass-bg { 
     background-color: var(--surface-glass); 
@@ -217,6 +233,13 @@ input:checked + .toggle-bg:after {
     margin-top: 0.75em;
 }
 
+/* Style for scrolling memory lists */
+#static-entries-list, #dynamic-entries-list {
+    overflow-y: auto;
+    max-height: 20rem; /* Corresponds to roughly 6-7 entries */
+    min-height: 0; /* Important for flex/grid children to respect max-height */
+}
+
 /* --- Hover & Animation Effects --- */
 .chat-bubble-container:hover .action-btn-group,
 .chat-bubble-container:hover .timestamp { 
@@ -322,17 +345,16 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #chat-window {
 /* BUG FIX: Make header float over cinematic background in horizontal mode */
 body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
     position: absolute;
-    top: 0rem;      /* Match app-container padding */
-    left: 0rem;
-    right: 0rem;
+    top: 0.5rem;      /* Match app-container padding */
+    left: 0.5rem;
+    right: 0.5rem;
     z-index: 50;      /* Ensure it's on top of other elements */
     margin-bottom: 0; /* Override default margin */
-    /* Removed vertical padding to maintain original alignment of controls */
     padding-top: 1rem;
 	padding-left: 1rem;
     padding-right: 1rem;
     background: linear-gradient(to bottom, rgba(17, 24, 39, 0.6), transparent);
-    border-radius: 0.75rem;
+    border-radius: 0.75rem 0.75rem 0 0;
 }
 
 
@@ -421,7 +443,6 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
 <!-- /Main Application Container -->
 
 
-
     <!-- This is where all the modal dialogs and templates will be inserted. -->
     <!-- PASTE content of modals.html HERE -->
 <!-- Modals -->
@@ -443,7 +464,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
 </div>
 
 <!-- Knowledge Modal (Static & Dynamic) -->
-<div id="knowledge-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('knowledge-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative flex flex-col max-h-[90vh]"><div class="p-6 pb-0 flex justify-between items-center border-b border-gray-700"><div class="flex"><button id="knowledge-tab-static" onclick="Controller.switchKnowledgeTab('static')" class="py-3 px-4 font-semibold text-lg border-b-2 border-indigo-500 text-white">Static</button><button id="knowledge-tab-dynamic" onclick="Controller.switchKnowledgeTab('dynamic')" class="py-3 px-4 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">Dynamic</button></div><button id="knowledge-add-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg ml-4 flex-shrink-0">Add Entry</button></div><div class="p-6 overflow-y-auto flex-grow"><div id="knowledge-static-content"><div id="static-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div id="static-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4 overflow-y-auto"></div><div id="static-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4"><div id="static-entry-details-content" class="h-full"><div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.</div></div></div></div></div><div id="knowledge-dynamic-content" class="hidden"><div id="dynamic-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div id="dynamic-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4 overflow-y-auto"></div><div id="dynamic-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4"><div id="dynamic-entry-details-content" class="h-full"><div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.</div></div></div></div></div></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="Controller.closeModal('knowledge-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
+<div id="knowledge-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('knowledge-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative flex flex-col max-h-[90vh]"><div class="p-6 pb-0 flex justify-between items-center border-b border-gray-700"><div class="flex"><button id="knowledge-tab-static" onclick="Controller.switchKnowledgeTab('static')" class="py-3 px-4 font-semibold text-lg border-b-2 border-indigo-500 text-white">Static</button><button id="knowledge-tab-dynamic" onclick="Controller.switchKnowledgeTab('dynamic')" class="py-3 px-4 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">Dynamic</button></div><button id="knowledge-add-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg ml-4 flex-shrink-0">Add Entry</button></div><div class="p-6 overflow-y-auto flex-grow"><div id="knowledge-static-content"><div id="static-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div id="static-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4"></div><div id="static-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4"><div id="static-entry-details-content" class="h-full"><div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.</div></div></div></div></div><div id="knowledge-dynamic-content" class="hidden"><div id="dynamic-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div id="dynamic-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4"></div><div id="dynamic-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4"><div id="dynamic-entry-details-content" class="h-full"><div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.</div></div></div></div></div></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="Controller.closeModal('knowledge-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
 
 <!-- World Map Modal -->
 <div id="world-map-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
@@ -486,6 +507,21 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
         </div>
     </div>
 </div>
+
+<!-- Generic Confirmation Modal -->
+<div id="confirmation-modal" class="fixed inset-0 z-[70] items-center justify-center hidden">
+    <div class="modal-overlay absolute inset-0 bg-black/60" onclick="Controller.closeModal('confirmation-modal')"></div>
+    <div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-md relative flex flex-col">
+        <div class="p-6">
+            <h3 class="text-xl font-bold mb-4">Are you sure?</h3>
+            <p id="confirmation-modal-message" class="text-gray-300">This action cannot be undone.</p>
+        </div>
+        <div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end space-x-4">
+            <button onclick="Controller.closeModal('confirmation-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Cancel</button>
+            <button id="confirmation-modal-confirm-button" class="bg-red-600 hover:bg-red-700 font-bold py-2 px-4 rounded-lg">Confirm</button>
+        </div>
+    </div>
+</div>
 <!-- /Modals -->
 
 <!-- Hidden template for settings tabs -->
@@ -495,7 +531,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label for="font-selector" class="text-gray-400 text-sm block mb-2">Chat Font</label>
-                    <select id="font-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2">
+                    <select id="font-selector" class="w-full rounded-lg p-2">
                         <option value="'Inter', sans-serif">Inter (Sans-Serif)</option>
                         <option value="'Nunito Sans', sans-serif">Nunito Sans (Sans-Serif)</option>
                         <option value="'Lora', serif">Lora (Serif)</option>
@@ -506,9 +542,9 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
                         <option value="'Source Code Pro', monospace">Source Code Pro</option>
                     </select>
                 </div>
-                <div><label for="chat-text-color" class="text-gray-400 text-sm block mb-2">Chat Text Color</label><input type="color" id="chat-text-color" class="w-full bg-black/30 border-gray-600 rounded-lg p-1 h-10"></div>
+                <div><label for="chat-text-color" class="text-gray-400 text-sm block mb-2">Chat Text Color</label><input type="color" id="chat-text-color" class="w-full rounded-lg p-1 h-10"></div>
             </div>
-            <label for="background-image-url" class="text-gray-400 text-sm block mt-4 mb-2">Background Image URL</label><input type="text" id="background-image-url" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="https://example.com/image.png">
+            <label for="background-image-url" class="text-gray-400 text-sm block mt-4 mb-2">Background Image URL</label><input type="text" id="background-image-url" class="w-full rounded-lg p-2" placeholder="https://example.com/image.png">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div><label for="bubble-opacity-slider" class="text-gray-400 text-sm block mb-2">Chat Bubble Opacity</label><div class="flex items-center space-x-4"><input type="range" id="bubble-opacity-slider" class="w-full" min="0" max="1" step="0.05"><span id="bubble-opacity-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div>
                 <div><label for="blur-slider" class="text-gray-400 text-sm block mb-2">Background Blur (px)</label><div class="flex items-center space-x-4"><input type="range" id="blur-slider" class="w-full" min="0" max="20" step="1"><span id="blur-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div>
@@ -518,17 +554,25 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
             <label class="text-gray-400 text-sm block mt-4 mb-2">Character Image Display</label><div class="flex space-x-4" id="character-image-display"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="none" checked><span>None</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="cinematic_overlay"><span>Cinematic</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="bubble"><span>Bubble</span></label></div>
         </div>
     </div>
-    <div id="settings-prompt-content" class="space-y-6">
-        <div><h3 class="text-lg font-medium mb-2">System Prompt (Global Fallback)</h3><p class="text-gray-400 text-sm mb-2">Used by AI characters who don't have their own specific instructions.</p><textarea id="system-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><div><h3 class="text-lg font-medium mb-2">Event Master Prompt</h3><p class="text-gray-400 text-sm mb-2">Define the base instruction for the Event Master, which injects surprise events.</p><textarea id="event-master-prompt-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><div class="flex space-x-2"><button onclick="Controller.openViewRawPromptModal()" class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw Prompt</button><button onclick="Controller.openModal('example-dialogue-modal')" class="bg-sky-600/80 hover:bg-sky-500/80 text-white font-bold py-2 px-4 rounded-lg">Edit Example Dialogue</button></div>
+    <!-- [FIX] Replaced the Prompt tab content with individual, collapsible <details> sections for better organization. -->
+    <div id="settings-prompt-content" class="space-y-2">
+        <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Core Prompts</summary><div class="p-4 space-y-4 bg-black/20 rounded-b-lg"><div><h3 class="text-base font-medium mb-2">System Prompt (Global Fallback)</h3><p class="text-gray-400 text-sm mb-2">Used by AI characters who don't have their own specific instructions.</p><textarea id="system-prompt-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><div><h3 class="text-base font-medium mb-2">Event Master Prompt</h3><p class="text-gray-400 text-sm mb-2">Define the base instruction for the Event Master, which injects surprise events.</p><textarea id="event-master-prompt-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></div></details>
+        <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Persona Generation Prompt</summary><div class="p-4 bg-black/20 rounded-b-lg"><p class="text-gray-400 text-sm mb-2">Used by the AI button on a character's persona. Use <code>{concept}</code> for the existing text.</p><textarea id="prompt-persona-gen-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></details>
+        <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">World Map Generation Prompt</summary><div class="p-4 bg-black/20 rounded-b-lg"><p class="text-gray-400 text-sm mb-2">Used to generate the entire world map. Use <code>{characters}</code>, <code>{static}</code>, and <code>{recent}</code>.</p><textarea id="prompt-world-map-gen-input" class="w-full rounded-lg p-2 resize-y" rows="6"></textarea></div></details>
+        <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Location Prompt Generation</summary><div class="p-4 bg-black/20 rounded-b-lg"><p class="text-gray-400 text-sm mb-2">Used to generate a location's detailed prompt. Use <code>{name}</code> and <code>{description}</code>.</p><textarea id="prompt-location-gen-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></details>
+        <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Memory Entry Generation</summary><div class="p-4 bg-black/20 rounded-b-lg"><p class="text-gray-400 text-sm mb-2">Used for Static/Dynamic memory entries. Use <code>{title}</code> and <code>{triggers}</code>.</p><textarea id="prompt-entry-gen-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></details>
+        <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Location Memory Summary</summary><div class="p-4 bg-black/20 rounded-b-lg"><p class="text-gray-400 text-sm mb-2">Used to auto-summarize events when you leave a location. Use <code>{transcript}</code>.</p><textarea id="prompt-location-memory-gen-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></details>
+        <div class="flex space-x-2 pt-4"><button onclick="Controller.openViewRawPromptModal()" class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw Prompt</button><button onclick="Controller.openModal('example-dialogue-modal')" class="bg-sky-600/80 hover:bg-sky-500/80 text-white font-bold py-2 px-4 rounded-lg">Edit Example Dialogue</button></div>
     </div>
     <div id="settings-model-content" class="space-y-6">
-        <div><h3 class="text-lg font-medium mb-2">AI Provider</h3><div class="flex space-x-4"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="gemini" onchange="Controller.setApiProvider('gemini')"><span>Gemini</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="openrouter" onchange="Controller.setApiProvider('openrouter')"><span>OpenRouter</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="koboldcpp" onchange="Controller.setApiProvider('koboldcpp')"><span>KoboldCPP</span></label></div></div><div id="gemini-settings"><h3 class="text-lg font-medium">Gemini API Settings</h3><p class="text-gray-400 text-sm mb-2">Required for text generation.</p><input type="password" id="gemini-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter Gemini API key"></div><div id="openrouter-settings"><h3 class="text-lg font-medium">OpenRouter API Settings</h3><p class="text-gray-400 text-sm mb-2">Your key and the model name.</p><input type="password" id="openrouter-api-key-input" class="w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter OpenRouter API key"><input type="text" id="openrouter-model-input" class="mt-2 w-full bg-black/30 border-gray-600 rounded-lg p-2" placeholder="Enter model name"></div><div id="koboldcpp-settings"><h3 class="text-lg font-medium">KoboldCPP Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is running with the <strong>--cors</strong> flag.</p><div><label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label><select id="koboldcpp-template-selector" class="w-full bg-black/30 border-gray-600 rounded-lg p-2"><option value="none">None (Raw Text)</option><option value="mistral">Mistral</option><option value="chatml">ChatML</option><option value="alpaca">Alpaca</option></select></div><div><label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-min-p-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-min-p-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div><div><label for="koboldcpp-dry-slider" class="text-gray-400 text-sm block mt-4 mb-2">DRY (Repetition Penalty)</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-dry-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-dry-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div></div>
+        <div><h3 class="text-lg font-medium mb-2">AI Provider</h3><div class="flex space-x-4"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="gemini" onchange="Controller.setApiProvider('gemini')"><span>Gemini</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="openrouter" onchange="Controller.setApiProvider('openrouter')"><span>OpenRouter</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="koboldcpp" onchange="Controller.setApiProvider('koboldcpp')"><span>KoboldCPP</span></label></div></div><div id="gemini-settings"><h3 class="text-lg font-medium">Gemini API Settings</h3><p class="text-gray-400 text-sm mb-2">Required for text generation.</p><input type="password" id="gemini-api-key-input" class="w-full rounded-lg p-2" placeholder="Enter Gemini API key"></div><div id="openrouter-settings"><h3 class="text-lg font-medium">OpenRouter API Settings</h3><p class="text-gray-400 text-sm mb-2">Your key and the model name.</p><input type="password" id="openrouter-api-key-input" class="w-full rounded-lg p-2" placeholder="Enter OpenRouter API key"><input type="text" id="openrouter-model-input" class="mt-2 w-full rounded-lg p-2" placeholder="Enter model name"></div><div id="koboldcpp-settings"><h3 class="text-lg font-medium">KoboldCPP Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is running with the <strong>--cors</strong> flag.</p><div><label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label><select id="koboldcpp-template-selector" class="w-full rounded-lg p-2"><option value="none">None (Raw Text)</option><option value="mistral">Mistral</option><option value="chatml">ChatML</option><option value="alpaca">Alpaca</option></select></div><div><label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-min-p-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-min-p-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div><div><label for="koboldcpp-dry-slider" class="text-gray-400 text-sm block mt-4 mb-2">DRY (Repetition Penalty)</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-dry-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-dry-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div></div>
     </div>
 </div>
 
 
     <!-- Application Logic - The order of these scripts is important! -->
     <script>
+    <!-- PASTE content of modules.js HERE -->
 // Utility function to prevent a function from being called too frequently.
 const debounce = (func, wait) => { let timeout; return function(...args) { const context = this; clearTimeout(timeout); timeout = setTimeout(() => func.apply(context, args), wait); }; };
 
@@ -596,7 +640,6 @@ const StateManager = {
                 parsedLibrary.stories = (parsedLibrary.stories || []).map(story => {
                     const newStory = { ...defaults, ...story };
 
-                    // Character-level migration to add new description and instruction fields.
                     if (newStory.characters) {
                         newStory.characters = newStory.characters.map(char => {
                             const newChar = { ...char };
@@ -613,28 +656,37 @@ const StateManager = {
                             if (typeof newChar.is_narrator === 'undefined') {
                                 newChar.is_narrator = false;
                             }
-                            // Migrate old string colors to new object format
                             if (typeof char.color === 'string') {
                                 newChar.color = { base: char.color, bold: '#FFFFFF' }; 
                             }
                             return newChar;
                         });
                     }
+                    
+                    // [MIGRATION] Ensure world map data exists and is valid
+                    (newStory.narratives || []).forEach(narrative => {
+                        if (narrative.state && (!narrative.state.worldMap || !narrative.state.worldMap.grid || narrative.state.worldMap.grid.length === 0)) {
+                            narrative.state.worldMap = { 
+                                grid: UTILITY.createDefaultMapGrid(), 
+                                currentLocation: { x: 4, y: 4 }, 
+                                destination: { x: null, y: null }, 
+                                path: [] 
+                            };
+                        }
+                    });
+                    
                     return newStory;
                 });
                 
                 this.data.library = parsedLibrary;
-                // Ensure essential library properties exist.
                 if (!this.data.library.tag_cache) this.data.library.tag_cache = [];
                 if (!this.data.library.active_narrative_id) this.data.library.active_narrative_id = null;
 
             } catch (error) {
                 console.error("Failed to parse library from localStorage.", error);
-                // Reset to a clean slate if parsing fails.
                 this.data.library = { active_story_id: null, active_narrative_id: null, stories: [], tag_cache: [] };
             }
         } else {
-             // Initialize with a clean slate if no library is found.
             this.data.library = { active_story_id: null, active_narrative_id: null, stories: [], tag_cache: [] };
         }
     },
@@ -648,9 +700,7 @@ const StateManager = {
     },
     
     /**
-     * Loads the currently active narrative (identified by active_story_id and
-     * active_narrative_id in the library) into the `activeNarrativeState`.
-     * This combines story-level settings with narrative-specific data like chat history.
+     * Loads the currently active narrative into the `activeNarrativeState`.
      */
     loadActiveNarrative() {
         const { active_story_id, active_narrative_id, stories } = this.data.library;
@@ -668,17 +718,25 @@ const StateManager = {
         
         const activeNarrative = (activeStory.narratives || []).find(n => n.id === active_narrative_id);
         if (activeNarrative) {
-            // Combine story-level settings with narrative-specific data.
-            // This creates a single, unified state object for the active session.
             const storySettings = { ...activeStory };
-            delete storySettings.narratives; // Avoid duplicating data
+            delete storySettings.narratives;
             delete storySettings.scenarios;
             
             this.data.activeNarrativeState = {
-                ...storySettings, // Story-level settings (characters, prompts, etc.)
-                ...activeNarrative.state, // Narrative-specific data (chat history, etc.)
-                narrativeName: activeNarrative.name // Add narrative name for display
+                ...storySettings,
+                ...activeNarrative.state,
+                narrativeName: activeNarrative.name
             };
+
+            // [MIGRATION] Ensure loaded narrative has a valid world map.
+            if (!this.data.activeNarrativeState.worldMap || !this.data.activeNarrativeState.worldMap.grid || this.data.activeNarrativeState.worldMap.grid.length === 0) {
+                 this.data.activeNarrativeState.worldMap = { 
+                    grid: UTILITY.createDefaultMapGrid(), 
+                    currentLocation: { x: 4, y: 4 }, 
+                    destination: { x: null, y: null }, 
+                    path: [] 
+                };
+            }
 
         } else {
             this.data.activeNarrativeState = {};
@@ -686,9 +744,7 @@ const StateManager = {
     },
 
     /**
-     * Saves the current `activeNarrativeState` back into its corresponding
-     * narrative and story objects within the main library, then persists the library.
-     * This is the primary method for saving progress.
+     * Saves the `activeNarrativeState` back into the library.
      */
     saveState() {
         const { active_story_id, active_narrative_id, stories } = this.data.library;
@@ -703,7 +759,6 @@ const StateManager = {
         if (activeStory) {
             const narrativeIndex = (activeStory.narratives || []).findIndex(n => n.id === active_narrative_id);
             if (narrativeIndex !== -1) {
-                // 1. Isolate the parts of the state that are specific to this narrative.
                 const narrativeState = {
                     chat_history: currentState.chat_history,
                     messageCounter: currentState.messageCounter,
@@ -711,11 +766,10 @@ const StateManager = {
                     worldMap: currentState.worldMap
                 };
                 
-                // 2. Update the narrative object in the library.
                 activeStory.narratives[narrativeIndex].state = narrativeState;
+                activeStory.narratives[narrativeIndex].name = currentState.narrativeName; // Save narrative name
                 activeStory.narratives[narrativeIndex].last_modified = new Date().toISOString();
                 
-                // 3. Save shared settings from the active state back to the story object.
                 activeStory.characters = currentState.characters;
                 activeStory.dynamic_entries = currentState.dynamic_entries;
                 activeStory.font = currentState.font;
@@ -723,12 +777,9 @@ const StateManager = {
                 activeStory.bubbleOpacity = currentState.bubbleOpacity;
                 activeStory.chatTextColor = currentState.chatTextColor;
                 activeStory.characterImageMode = currentState.characterImageMode;
-                
-                // Save new appearance settings
                 activeStory.backgroundBlur = currentState.backgroundBlur;
                 activeStory.textSize = currentState.textSize;
                 activeStory.bubbleImageSize = currentState.bubbleImageSize;
-                
                 activeStory.system_prompt = currentState.system_prompt;
                 activeStory.event_master_base_prompt = currentState.event_master_base_prompt;
                 activeStory.event_master_prompt = currentState.event_master_prompt;
@@ -740,7 +791,12 @@ const StateManager = {
                 activeStory.koboldcpp_min_p = currentState.koboldcpp_min_p;
                 activeStory.koboldcpp_dry = currentState.koboldcpp_dry;
 
-                // 4. Update story metadata and persist the entire library.
+                activeStory.prompt_persona_gen = currentState.prompt_persona_gen;
+                activeStory.prompt_world_map_gen = currentState.prompt_world_map_gen;
+                activeStory.prompt_location_gen = currentState.prompt_location_gen;
+                activeStory.prompt_entry_gen = currentState.prompt_entry_gen;
+                activeStory.prompt_location_memory_gen = currentState.prompt_location_memory_gen;
+
                 activeStory.last_modified = new Date().toISOString();
                 this.saveLibrary();
             }
@@ -749,7 +805,6 @@ const StateManager = {
 
     /**
      * Scans all stories and characters to build a unique, sorted list of all tags.
-     * Caches this list in the library for quick access (e.g., in filter dropdowns).
      */
     updateTagCache() {
         const allTags = new Set();
@@ -762,7 +817,7 @@ const StateManager = {
             }
         });
         this.data.library.tag_cache = Array.from(allTags).sort();
-        this.saveLibrary(); // Persist the updated cache
+        this.saveLibrary();
     },
 };
 
@@ -772,16 +827,19 @@ const StateManager = {
  * =================================================================================================
  */
 const APIService = {
-    async callAI(prompt, isJson = false) {
+    /**
+     * [MODIFIED] Added 'signal' parameter to handle request abortion for the stop generation feature.
+     */
+    async callAI(prompt, isJson = false, signal = null) {
         const state = StateManager.getState();
         let text = "";
         try {
             if (state.apiProvider === 'gemini') {
-                text = await this.callGemini(prompt);
+                text = await this.callGemini(prompt, signal);
             } else if (state.apiProvider === 'openrouter') {
-                text = await this.callOpenRouter(prompt);
+                text = await this.callOpenRouter(prompt, signal);
             } else if (state.apiProvider === 'koboldcpp') {
-                text = await this.callKoboldCPP(prompt);
+                text = await this.callKoboldCPP(prompt, signal);
             }
 
             if (isJson) {
@@ -794,27 +852,32 @@ const APIService = {
             }
             return text.trim();
         } catch (error) {
+            // Don't re-throw abort errors, as they are intentional.
+            if (error.name === 'AbortError') {
+                console.log("Fetch aborted by user.");
+                throw error; // Re-throw to be caught by the controller
+            }
             console.error(`AI call failed for provider ${state.apiProvider}:`, error);
             throw error;
         }
     },
-    async callGemini(prompt) {
+    async callGemini(prompt, signal) {
         const state = StateManager.getState();
         if (!state.geminiApiKey) throw new Error("Gemini API key not set.");
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${state.geminiApiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${state.geminiApiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }), signal });
         if (!res.ok) { let errorDetails = `Status: ${res.status} ${res.statusText}.`; try { errorDetails += ` Message: ${(await res.json()).error.message}`; } catch (e) { errorDetails += ` Response body: ${await res.text()}`; } throw new Error(`API Error: ${errorDetails}`); }
         const data = await res.json();
         return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     },
-    async callOpenRouter(prompt) {
+    async callOpenRouter(prompt, signal) {
         const state = StateManager.getState();
         if (!state.openRouterKey || !state.openRouterModel) throw new Error("OpenRouter API key or model not set.");
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.openRouterKey}`}, body: JSON.stringify({ model: state.openRouterModel, messages: [{ role: 'user', content: prompt }] }) });
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.openRouterKey}`}, body: JSON.stringify({ model: state.openRouterModel, messages: [{ role: 'user', content: prompt }] }), signal });
         if (!res.ok) { let errorDetails = `Status: ${res.status} ${res.statusText}.`; try { const errorJson = await res.json(); errorDetails += ` Message: ${errorJson.error.message || JSON.stringify(errorJson.error)}`; } catch (e) { errorDetails += ` Response body: ${await res.text()}`; } throw new Error(`API Error: ${errorDetails}`); }
         const data = await res.json();
         return data.choices[0].message.content;
     },
-    async callKoboldCPP(prompt) {
+    async callKoboldCPP(prompt, signal) {
         const state = StateManager.getState();
         const payload = {
             prompt: prompt, use_story: false, use_memory: false, use_authors_note: false, use_world_info: false,
@@ -823,7 +886,7 @@ const APIService = {
             tfs: 1, top_p: 0.92, top_k: 0, typical: 1, sampler_order: [6, 0, 1, 2, 3, 4, 5],
             mirostat: 2, mirostat_tau: 4, mirostat_eta: 0.1, dry: state.koboldcpp_dry,
         };
-        const res = await fetch(`${state.koboldcpp_url}/api/v1/generate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const res = await fetch(`${state.koboldcpp_url}/api/v1/generate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal });
         if (!res.ok) { let errorDetails = `Status: ${res.status} ${res.statusText}.`; try { errorDetails += ` Message: ${(await res.json()).error.message}`; } catch (e) { errorDetails += ` Response body: ${await res.text()}`; } throw new Error(`KoboldCPP API Error: ${errorDetails}`); }
         const data = await res.json();
         return data.results[0].text.trim();
@@ -904,7 +967,28 @@ const UTILITY = {
             system_prompt: 'You are a master storyteller. Follow instructions precisely.',
             event_master_base_prompt: 'You are a secret Event Master. Read the chat. Generate a brief, secret instruction for AI characters to introduce a logical but unexpected event.',
             event_master_prompt: '', 
+            prompt_persona_gen: "Embellish this character concept into a rich, detailed, and compelling persona description. CONCEPT: \"{concept}\"",
+            prompt_world_map_gen: "Based on the following story context, generate a genre-appropriate 8x8 grid of interconnected fantasy locations. The central location (4,4) should be a neutral starting point. Attempt to include locations mentioned in the context.\nCONTEXT:\nCHARACTERS:\n{characters}\n\nSTATIC LORE:\n{static}\n\nRECENT EVENTS:\n{recent}\n\nRespond with a valid JSON object: { \"grid\": [ { \"coords\": {\"x\":int, \"y\":int}, \"name\": \"string\", \"description\": \"string (one-line summary)\", \"prompt\": \"string (a rich, detailed paragraph for the AI)\", \"imageUrl\": \"\" } ] }. The grid must contain exactly 64 locations.",
+            prompt_location_gen: "Generate a rich, detailed, and evocative paragraph-long prompt for a fantasy location named '{name}' which is briefly described as '{description}'. This prompt will be given to an AI storyteller to describe the scene.",
+            prompt_entry_gen: "Generate a detailed and informative encyclopedia-style entry for a lore topic titled '{title}'. If relevant, use the following triggers as context: '{triggers}'.",
+            prompt_location_memory_gen: "You are an archivist. Read the following chat transcript that occurred at a specific location. Summarize the key events, character developments, and important facts into a concise, single paragraph. This will serve as a memory for what happened at that location.\n\nTRANSCRIPT:\n{transcript}"
         };
+    },
+    createDefaultMapGrid() {
+        const grid = [];
+        for (let y = 0; y < 8; y++) {
+            for (let x = 0; x < 8; x++) {
+                grid.push({
+                    coords: { x, y },
+                    name: "",
+                    description: "",
+                    prompt: "",
+                    imageUrl: "",
+                    local_static_entries: []
+                });
+            }
+        }
+        return grid;
     },
     findPath(grid, startCoords, endCoords) {
         const toKey = ({ x, y }) => `${x},${y}`;
@@ -912,9 +996,9 @@ const UTILITY = {
 
         const nodes = grid.map(loc => ({
             ...loc,
-            g: Infinity, // cost from start to current node
-            h: Infinity, // heuristic: estimated cost from current node to end
-            f: Infinity, // g + h
+            g: Infinity,
+            h: Infinity,
+            f: Infinity,
             parent: null,
         }));
 
@@ -957,7 +1041,7 @@ const UTILITY = {
             for (let neighbor of neighbors) {
                 if (closedSet.has(toKey(neighbor.coords))) continue;
 
-                let tentativeG = currentNode.g + 1; // Distance between neighbors is 1
+                let tentativeG = currentNode.g + 1;
 
                 if (tentativeG < neighbor.g) {
                     neighbor.parent = currentNode;
@@ -970,7 +1054,7 @@ const UTILITY = {
                 }
             }
         }
-        return []; // No path found
+        return [];
     },
     weightedChoice(characters, weights, controller) {
         if (controller) {
@@ -1031,6 +1115,12 @@ const PromptBuilder = {
             const currentLoc = grid.find(l => l.coords.x === currentLocation.x && l.coords.y === currentLocation.y);
             if (currentLoc) {
                 locationContext += `CURRENT LOCATION: ${currentLoc.name}\n${currentLoc.prompt}\n\n`;
+
+                if (currentLoc.local_static_entries && currentLoc.local_static_entries.length > 0) {
+                    locationContext += "--- LOCATION-SPECIFIC KNOWLEDGE ---\n";
+                    locationContext += currentLoc.local_static_entries.map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`).join('\n\n') + "\n\n";
+                }
+
                 const directions = [
                     { dir: 'North', x: 0, y: -1 }, { dir: 'South', x: 0, y: 1 },
                     { dir: 'East', x: 1, y: 0 }, { dir: 'West', x: -1, y: 0 },
@@ -1250,6 +1340,8 @@ const ImportExportService = {
 };
 
 
+
+    <!-- PASTE content of ui.js HERE -->
 /**
  * =================================================================================================
  * UIManager Module (The View)
@@ -1271,13 +1363,12 @@ const UIManager = {
     },
 
     renderAll() { 
-        const library = StateManager.getLibrary();
-        const activeStory = library.stories.find(s => s.id === library.active_story_id);
-        if (activeStory) {
-            const activeNarrative = (activeStory.narratives || []).find(n => n.id === library.active_narrative_id);
-            document.getElementById('story-title-input').value = activeNarrative ? `${activeStory.name}: ${activeNarrative.name}` : activeStory.name;
+        const state = StateManager.getState();
+        if (state && state.narrativeName) {
+            // [MODIFIED] Display only the narrative name in the main title inputs.
+            document.getElementById('story-title-input').value = state.narrativeName;
             const mobileTitle = document.getElementById('mobile-story-title-overlay');
-            if (mobileTitle) mobileTitle.value = activeNarrative ? `${activeStory.name}: ${activeNarrative.name}` : activeStory.name;
+            if (mobileTitle) mobileTitle.value = state.narrativeName;
         }
         this.renderCharacters(); 
         this.renderStaticEntries(); 
@@ -1537,7 +1628,17 @@ const UIManager = {
         const container = document.getElementById('static-entry-details-content'); 
         const entry = (state.static_entries || []).find(e => e.id === state.selectedStaticEntryId); 
         if (entry) { 
-            container.innerHTML = `<input type="text" value="${UTILITY.escapeHTML(entry.title)}" oninput="Controller.updateStaticEntryField('${entry.id}', 'title', this.value)" class="text-xl font-bold bg-black/30 p-2 w-full mb-4"><textarea oninput="Controller.updateStaticEntryField('${entry.id}', 'content', this.value)" class="w-full h-4/5 bg-black/30 p-2 resize-none">${UTILITY.escapeHTML(entry.content)}</textarea><div class="flex justify-end mt-4"><button onclick="Controller.deleteStaticEntry('${entry.id}')" class="text-sm bg-red-600/80 hover:bg-red-700/80 font-semibold py-2 px-3 rounded-lg">Delete</button></div>`; 
+            container.innerHTML = `
+            <div class="flex flex-col h-full">
+                <input type="text" value="${UTILITY.escapeHTML(entry.title)}" oninput="Controller.updateStaticEntryField('${entry.id}', 'title', this.value)" class="text-xl font-bold bg-black/30 p-2 w-full mb-4 flex-shrink-0">
+                <div class="relative flex-grow">
+                    <textarea oninput="Controller.updateStaticEntryField('${entry.id}', 'content', this.value)" class="w-full h-full bg-black/30 p-2 resize-none rounded-md">${UTILITY.escapeHTML(entry.content)}</textarea>
+                    <button onclick="Controller.generateStaticEntryContentAI(event, '${entry.id}')" class="absolute top-2 right-2 text-sky-400 hover:text-sky-300 p-1 bg-sky-600/80 rounded" title="Generate with AI">${this.getAIGenIcon()}</button>
+                </div>
+                <div class="flex justify-end mt-4 flex-shrink-0">
+                    <button onclick="Controller.deleteStaticEntry('${entry.id}')" class="text-sm bg-red-600/80 hover:bg-red-700/80 font-semibold py-2 px-3 rounded-lg">Delete</button>
+                </div>
+            </div>`; 
         } else { 
             container.innerHTML = `<div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.</div>`; 
         } 
@@ -1559,8 +1660,13 @@ const UIManager = {
                 <input type="text" value="${UTILITY.escapeHTML(entry.title)}" oninput="Controller.updateDynamicEntryField('${entry.id}', 'title', this.value)" class="text-xl font-bold bg-black/30 p-2 w-full mb-4">
                 <label class="font-bold mb-2">Triggers (Keywords, AND, XOR, % Chance)</label>
                 <input type="text" value="${UTILITY.escapeHTML(entry.triggers)}" oninput="Controller.updateDynamicEntryField('${entry.id}', 'triggers', this.value)" placeholder="e.g. house, cat AND dog, 25%" class="bg-black/30 p-2 w-full mb-4">
-                <label class="font-bold">Content</label>
-                <textarea oninput="Controller.updateDynamicEntryField('${entry.id}', 'content', this.value)" class="w-full flex-grow bg-black/30 p-2 resize-none">${UTILITY.escapeHTML(entry.content)}</textarea>
+                <div class="relative flex-grow flex flex-col">
+                    <label class="font-bold mb-2">Content</label>
+                    <div class="relative flex-grow">
+                        <textarea oninput="Controller.updateDynamicEntryField('${entry.id}', 'content', this.value)" class="w-full h-full bg-black/30 p-2 resize-none rounded-md">${UTILITY.escapeHTML(entry.content)}</textarea>
+                        <button onclick="Controller.generateDynamicEntryContentAI(event, '${entry.id}')" class="absolute top-2 right-2 text-sky-400 hover:text-sky-300 p-1 bg-sky-600/80 rounded" title="Generate with AI">${this.getAIGenIcon()}</button>
+                    </div>
+                </div>
                 <div class="flex justify-end mt-4"><button onclick="Controller.deleteDynamicEntry('${entry.id}')" class="text-sm bg-red-600/80 hover:bg-red-700/80 font-semibold py-2 px-3 rounded-lg">Delete</button></div>
             </div>`; 
         } else { 
@@ -1619,6 +1725,7 @@ const UIManager = {
                      <div class="action-btn-group flex ml-2 space-x-4">
                         <button onclick="Controller.copyMessage(${index})" class="text-gray-400 hover:text-white" title="Copy"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
                         <button onclick="Controller.openModal('edit-response-modal', ${index})" class="text-gray-400 hover:text-white" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                        <button onclick="Controller.deleteMessage(${index})" class="text-gray-400 hover:text-white" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                     </div>
                 </div>
                 <div class="bubble-body rounded-lg px-3 py-2" style="${bubbleStyle}">
@@ -1851,12 +1958,10 @@ const UIManager = {
         
         backgroundElement.style.backgroundImage = backgroundUrl ? `url('${backgroundUrl}')` : 'none';
         
-        // New appearance settings
         document.getElementById('app-container').style.backdropFilter = `blur(${state.backgroundBlur || 0}px)`;
         document.documentElement.style.setProperty('--chat-font-size', `${state.textSize || 16}px`);
         document.documentElement.style.setProperty('--bubble-image-size', `${state.bubbleImageSize || 100}px`);
 
-        // Helper to parse hex color
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
@@ -1874,7 +1979,6 @@ const UIManager = {
         document.documentElement.style.setProperty('--chat-text-color', state.chatTextColor);
         document.documentElement.style.setProperty('--chat-font-family', state.font);
 		
-		// Update title colors to match the chat text color
         const storyTitleInput = document.getElementById('story-title-input');
         const mobileStoryTitleOverlay = document.getElementById('mobile-story-title-overlay');
         if (storyTitleInput) storyTitleInput.style.color = state.chatTextColor;
@@ -1888,14 +1992,6 @@ const UIManager = {
         const { activeWorldMapTab, selectedMapTile, pendingMove } = Controller.RUNTIME;
         const { worldMap } = state;
         const container = document.getElementById('world-map-modal-content');
-
-        if (!worldMap || !worldMap.grid || worldMap.grid.length === 0) {
-            container.innerHTML = `<div class="h-full flex flex-col items-center justify-center p-6 text-center">
-                <p class="text-gray-400 mb-4">The world map is empty.</p>
-                <button id="generate-world-button" onclick="Controller.generateWorldMap()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">${this.getAIGenIcon()}</button>
-            </div>`;
-            return;
-        }
 
         let contentHTML = '';
         const isMobile = window.innerHeight > window.innerWidth;
@@ -1967,8 +2063,8 @@ const UIManager = {
                     let classList = ['aspect-square', 'rounded', 'bg-gray-800/80', 'hover:bg-gray-700/80', 'cursor-pointer', 'text-xs', 'p-1', 'overflow-hidden', 'leading-tight'];
                     
                     if (currentLocation.x === x && currentLocation.y === y) classList.push('ring-2', 'ring-green-400');
-                    if (destination.x === x && destination.y === y) classList.push('ring-2', 'ring-red-500');
-                    if (path.some(p => p.x === x && p.y === y)) classList.push('bg-sky-700/50');
+                    if (destination && destination.x === x && destination.y === y) classList.push('ring-2', 'ring-red-500');
+                    if (path && path.some(p => p.x === x && p.y === y)) classList.push('bg-sky-700/50');
                     if (selectedMapTile && selectedMapTile.coords.x === x && selectedMapTile.coords.y === y) classList.push('ring-2', 'ring-yellow-300');
 
                     mapGridHTML += `<div class="${classList.join(' ')}" onclick="Controller.selectMapTile(${x}, ${y})">${location ? UTILITY.escapeHTML(location.name) : ''}</div>`;
@@ -1982,7 +2078,13 @@ const UIManager = {
                         <div><label class="text-sm text-gray-400">Name</label><input type="text" value="${UTILITY.escapeHTML(selectedMapTile.name)}" oninput="Controller.updateLocationDetail('name', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"></div>
                         <div><label class="text-sm text-gray-400">Image URL</label><input type="text" value="${UTILITY.escapeHTML(selectedMapTile.imageUrl)}" oninput="Controller.updateLocationDetail('imageUrl', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"></div>
                         <div><label class="text-sm text-gray-400">Brief Description</label><textarea oninput="Controller.updateLocationDetail('description', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded h-20 resize-none">${UTILITY.escapeHTML(selectedMapTile.description)}</textarea></div>
-                        <div class="flex-grow flex flex-col"><label class="text-sm text-gray-400">Full Prompt</label><textarea oninput="Controller.updateLocationDetail('prompt', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded flex-grow resize-none">${UTILITY.escapeHTML(selectedMapTile.prompt)}</textarea></div>
+                        <div class="flex-grow flex flex-col">
+                            <label class="text-sm text-gray-400">Full Prompt</label>
+                            <div class="relative flex-grow">
+                                <textarea oninput="Controller.updateLocationDetail('prompt', this.value)" class="w-full h-full bg-black/30 border-gray-600 p-2 rounded resize-none">${UTILITY.escapeHTML(selectedMapTile.prompt)}</textarea>
+                                <button onclick="Controller.generateLocationPromptAI(event)" class="absolute top-2 right-2 text-sky-400 hover:text-sky-300 p-1 bg-sky-600/80 rounded" title="Generate with AI">${this.getAIGenIcon()}</button>
+                            </div>
+                        </div>
                         <div class="flex gap-2">
                            <button onclick="Controller.setDestination()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg">Set Destination</button>
                            <button onclick="if(confirm('This will immediately move you to this location. Proceed?')) { Controller.moveToLocation(${selectedMapTile.coords.x}, ${selectedMapTile.coords.y}); Controller.closeModal('world-map-modal'); }" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Jump To</button>
@@ -1991,9 +2093,9 @@ const UIManager = {
             }
 
             const gridLayoutClass = isMobile ? 'grid-cols-1' : 'grid-cols-3';
-            const detailsWrapperClass = isMobile ? 'h-64 overflow-y-auto' : '';
+            const detailsWrapperClass = isMobile ? 'h-64 overflow-y-auto' : 'flex flex-col';
 
-            contentHTML = `<div class="p-6 flex-grow grid ${gridLayoutClass} gap-6 h-full">
+            contentHTML = `<div class="p-6 flex-grow grid ${gridLayoutClass} gap-6 h-full min-h-0">
                 <div class="col-span-2 grid grid-cols-8 gap-1">${mapGridHTML}</div>
                 <div class="col-span-1 bg-black/30 rounded-lg p-4 ${detailsWrapperClass}">${detailsHTML}</div>
             </div>`;
@@ -2005,13 +2107,65 @@ const UIManager = {
                     <button id="world-map-tab-move" onclick="Controller.switchWorldMapTab('move')" class="py-3 px-4 font-semibold text-lg ${activeWorldMapTab === 'move' ? 'border-b-2 border-indigo-500 text-white' : 'border-b-2 border-transparent text-gray-400 hover:text-white'}">Move</button>
                     <button id="world-map-tab-worldmap" onclick="Controller.switchWorldMapTab('worldmap')" class="py-3 px-4 font-semibold text-lg ${activeWorldMapTab === 'worldmap' ? 'border-b-2 border-indigo-500 text-white' : 'border-b-2 border-transparent text-gray-400 hover:text-white'}">World Map</button>
                 </div>
-                <button id="generate-world-button" onclick="Controller.generateWorldMap()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-3 rounded-lg ml-4 flex-shrink-0">${this.getAIGenIcon()}</button>
+                <button id="generate-world-button" onclick="Controller.generateWorldMap(event)" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-3 rounded-lg ml-4 flex-shrink-0">${this.getAIGenIcon()}</button>
             </div>
             ${contentHTML}
             <div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end">
                 <button onclick="Controller.closeModal('world-map-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button>
             </div>`;
+
+        if (activeWorldMapTab === 'worldmap' && selectedMapTile) {
+            const detailsContainer = container.querySelector('.col-span-1');
+            detailsContainer.innerHTML += `
+                <hr class="border-gray-600 my-4">
+                <div class="flex-grow flex flex-col min-h-0">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-bold text-lg">Local Static Memory</h4>
+                        <button onclick="Controller.addLocalStaticEntry()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded-lg text-sm">Add</button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 flex-grow min-h-0">
+                        <div id="local-static-entries-list" class="col-span-1 bg-black/40 rounded-lg p-2 overflow-y-auto"></div>
+                        <div id="local-static-entry-details" class="col-span-2 flex flex-col"></div>
+                    </div>
+                </div>`;
+            this.renderLocalStaticEntriesList();
+            this.renderLocalStaticEntryDetails();
+        }
     },
+
+    renderLocalStaticEntriesList() {
+        const { selectedMapTile, selectedLocalStaticEntryId } = Controller.RUNTIME;
+        const container = document.getElementById('local-static-entries-list');
+        if (!container || !selectedMapTile) return;
+
+        const entries = selectedMapTile.local_static_entries || [];
+        container.innerHTML = entries.map(entry => `
+            <div onclick="Controller.selectLocalStaticEntry('${entry.id}')" 
+                 class="p-2 rounded-md cursor-pointer ${selectedLocalStaticEntryId === entry.id ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'}">
+                <h5 class="font-semibold truncate text-sm">${UTILITY.escapeHTML(entry.title)}</h5>
+            </div>
+        `).join('');
+    },
+
+    renderLocalStaticEntryDetails() {
+        const { selectedMapTile, selectedLocalStaticEntryId } = Controller.RUNTIME;
+        const container = document.getElementById('local-static-entry-details');
+        if (!container || !selectedMapTile) return;
+
+        const entry = (selectedMapTile.local_static_entries || []).find(e => e.id === selectedLocalStaticEntryId);
+
+        if (entry) {
+            container.innerHTML = `
+                <input type="text" value="${UTILITY.escapeHTML(entry.title)}" oninput="Controller.updateLocalStaticEntryField('${entry.id}', 'title', this.value)" class="font-bold bg-black/30 p-2 w-full mb-2 text-sm rounded-md">
+                <textarea oninput="Controller.updateLocalStaticEntryField('${entry.id}', 'content', this.value)" class="w-full flex-grow bg-black/30 p-2 resize-none text-sm rounded-md">${UTILITY.escapeHTML(entry.content)}</textarea>
+                <div class="flex justify-end mt-2">
+                    <button onclick="Controller.deleteLocalStaticEntry('${entry.id}')" class="text-xs bg-red-600/80 hover:bg-red-700/80 font-semibold py-1 px-2 rounded-lg">Delete</button>
+                </div>`;
+        } else {
+            container.innerHTML = `<div class="text-gray-500 flex items-center justify-center h-full text-sm">Select an entry.</div>`;
+        }
+    },
+
 
     openCharacterDetailModal(charId) {
         const state = StateManager.getState();
@@ -2130,9 +2284,63 @@ const UIManager = {
             selector.value = currentValue;
         }
     },
+
+    /**
+     * Displays a generic confirmation modal.
+     * @param {string} message - The message to display in the modal body.
+     * @param {function} onConfirmCallback - The function to execute when the confirm button is clicked.
+     */
+    showConfirmationModal(message, onConfirmCallback) {
+        const modal = document.getElementById('confirmation-modal');
+        const messageEl = document.getElementById('confirmation-modal-message');
+        const confirmBtn = document.getElementById('confirmation-modal-confirm-button');
+        
+        if (modal && messageEl && confirmBtn) {
+            messageEl.textContent = message;
+            
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+            newConfirmBtn.onclick = () => {
+                onConfirmCallback();
+                Controller.closeModal('confirmation-modal');
+            };
+            Controller.openModal('confirmation-modal');
+        } else {
+            console.error("Confirmation modal elements not found.");
+        }
+    },
+
+    /**
+     * Changes the primary action button to "Stop Generation" mode.
+     */
+    setButtonToStopMode() {
+        const button = document.getElementById('primary-action-btn');
+        if (!button) return;
+        button.onclick = () => Controller.stopGeneration();
+        button.title = "Stop Generation";
+        button.classList.remove('bg-indigo-600/50', 'hover:bg-indigo-600/80');
+        button.classList.add('bg-red-700/60', 'hover:bg-red-700/80');
+        button.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0h8v8H6V4z" clip-rule="evenodd" /></svg>`;
+    },
+
+    /**
+     * Reverts the primary action button to its default "Send / Write for Me" mode.
+     */
+    setButtonToSendMode() {
+        const button = document.getElementById('primary-action-btn');
+        if (!button) return;
+        button.onclick = () => Controller.handlePrimaryAction();
+        button.title = "Send / Write for Me";
+        button.classList.remove('bg-red-700/60', 'hover:bg-red-700/80');
+        button.classList.add('bg-indigo-600/50', 'hover:bg-indigo-600/80');
+        button.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>`;
+    },
 };
 
 
+
+    <!-- PASTE content of app.js HERE -->
 /**
  * =================================================================================================
  * Controller Module (The Handler)
@@ -2163,6 +2371,9 @@ const Controller = {
         activeWorldMapTab: 'move',
         selectedMapTile: null,
         pendingMove: null,
+        turnOfArrival: 0,
+        selectedLocalStaticEntryId: null,
+        activeRequestAbortController: null, // For aborting AI generation requests
     },
 
     // --- Story & Narrative Management ---
@@ -2189,7 +2400,7 @@ const Controller = {
             state: {
                 chat_history: [], messageCounter: 0,
                 static_entries: [{ id: UTILITY.uuid(), title: "World Overview", content: "A high-fantasy world." }],
-                worldMap: { grid: [], currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
+                worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
             }
         };
         
@@ -2244,7 +2455,6 @@ const Controller = {
             state: {}
         };
 
-        // If scenario has state, use it. Otherwise, create default.
         if (scenario.static_entries && scenario.worldMap) {
             newNarrative.state = {
                 chat_history: [],
@@ -2256,7 +2466,7 @@ const Controller = {
             newNarrative.state = {
                 chat_history: [], messageCounter: 0,
                 static_entries: [{ id: UTILITY.uuid(), title: "World Overview", content: "A high-fantasy world." }],
-                worldMap: { grid: [], currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
+                worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
             };
         }
         
@@ -2290,7 +2500,7 @@ const Controller = {
         const narrative = story.narratives.find(n => n.id === narrativeId);
         if (!story || !narrative) return;
         
-        const newNarrative = JSON.parse(JSON.stringify(narrative)); // Deep copy
+        const newNarrative = JSON.parse(JSON.stringify(narrative));
         newNarrative.id = UTILITY.uuid();
         newNarrative.name = `${narrative.name} (Copy)`;
         newNarrative.created_date = new Date().toISOString();
@@ -2302,17 +2512,18 @@ const Controller = {
     },
 
     deleteNarrative(storyId, narrativeId) {
-        if (!confirm("Are you sure you want to delete this narrative and all its history?")) return;
-        const library = StateManager.getLibrary();
-        const story = library.stories.find(s => s.id === storyId);
-        if (story) {
-            story.narratives = story.narratives.filter(n => n.id !== narrativeId);
-            if (library.active_narrative_id === narrativeId) {
-                library.active_narrative_id = null;
+        UIManager.showConfirmationModal('Are you sure you want to permanently delete this narrative and all its chat history?', () => {
+            const library = StateManager.getLibrary();
+            const story = library.stories.find(s => s.id === storyId);
+            if (story) {
+                story.narratives = story.narratives.filter(n => n.id !== narrativeId);
+                if (library.active_narrative_id === narrativeId) {
+                    library.active_narrative_id = null;
+                }
+                StateManager.saveLibrary();
+                UIManager.openStoryDetails(storyId);
             }
-            StateManager.saveLibrary();
-            UIManager.openStoryDetails(storyId);
-        }
+        });
     },
 
     duplicateScenario(storyId, scenarioId) {
@@ -2337,27 +2548,30 @@ const Controller = {
                 alert("You cannot delete the last scenario.");
                 return;
             }
-            if (!confirm("Are you sure you want to delete this scenario?")) return;
-            story.scenarios = story.scenarios.filter(sc => sc.id !== scenarioId);
-            StateManager.saveLibrary();
-            UIManager.openStoryDetails(storyId);
+            UIManager.showConfirmationModal('Are you sure you want to delete this scenario?', () => {
+                story.scenarios = story.scenarios.filter(sc => sc.id !== scenarioId);
+                StateManager.saveLibrary();
+                UIManager.openStoryDetails(storyId);
+            });
         }
     },
 
     deleteStory(storyId) {
-        const library = StateManager.getLibrary();
-        library.stories = library.stories.filter(s => s.id !== storyId);
-        StateManager.updateTagCache();
+        UIManager.showConfirmationModal('Are you sure you want to permanently delete this entire story, including all its narratives and scenarios?', () => {
+            const library = StateManager.getLibrary();
+            library.stories = library.stories.filter(s => s.id !== storyId);
+            StateManager.updateTagCache();
 
-        if (library.active_story_id === storyId) {
-            library.active_story_id = null;
-            library.active_narrative_id = null;
-            StateManager.saveLibrary();
-            window.location.reload();
-        } else {
-            StateManager.saveLibrary();
-            UIManager.renderLibraryInterface();
-        }
+            if (library.active_story_id === storyId) {
+                library.active_story_id = null;
+                library.active_narrative_id = null;
+                StateManager.saveLibrary();
+                window.location.reload();
+            } else {
+                StateManager.saveLibrary();
+                UIManager.renderLibraryInterface();
+            }
+        });
     },
 
     renameStory(storyId, newName) {
@@ -2368,9 +2582,7 @@ const Controller = {
             StateManager.saveLibrary();
             UIManager.renderLibraryInterface();
             if (story.id === library.active_story_id) {
-                document.getElementById('story-title-input').value = newName;
-                const mobileTitle = document.getElementById('mobile-story-title-overlay');
-                if (mobileTitle) mobileTitle.value = newName;
+                UIManager.renderAll();
             }
         }
     },
@@ -2439,6 +2651,7 @@ const Controller = {
             case 'world-map-modal':
                 this.RUNTIME.selectedMapTile = null;
                 this.RUNTIME.pendingMove = null;
+                this.RUNTIME.selectedLocalStaticEntryId = null;
                 this.switchWorldMapTab('move');
                 break;
             case 'settings-modal':
@@ -2548,23 +2761,30 @@ const Controller = {
             slider.addEventListener('change', () => StateManager.saveState());
         };
         
+        // Model Tab
         if(document.getElementById('gemini-api-key-input')) setListener('gemini-api-key-input', 'geminiApiKey'); 
         if(document.getElementById('openrouter-api-key-input')) setListener('openrouter-api-key-input', 'openRouterKey'); 
         if(document.getElementById('openrouter-model-input')) setListener('openrouter-model-input', 'openRouterModel'); 
-        if(document.getElementById('system-prompt-input')) setListener('system-prompt-input', 'system_prompt');
-        if(document.getElementById('event-master-prompt-input')) setListener('event-master-prompt-input', 'event_master_base_prompt');
-        if(document.getElementById('background-image-url')) setListener('background-image-url', 'backgroundImageURL', () => UIManager.applyStyling());
-        if(document.getElementById('chat-text-color')) setListener('chat-text-color', 'chatTextColor', () => UIManager.applyStyling());
-        
-        // Kobold Sliders
         if(document.getElementById('koboldcpp-min-p-slider')) setupSlider('koboldcpp-min-p-slider', 'koboldcpp-min-p-value', 'koboldcpp_min_p');
         if(document.getElementById('koboldcpp-dry-slider')) setupSlider('koboldcpp-dry-slider', 'koboldcpp-dry-value', 'koboldcpp_dry');
-        
-        // New Appearance Sliders
+
+        // Appearance Tab
+        if(document.getElementById('background-image-url')) setListener('background-image-url', 'backgroundImageURL', () => UIManager.applyStyling());
+        if(document.getElementById('chat-text-color')) setListener('chat-text-color', 'chatTextColor', () => UIManager.applyStyling());
         if(document.getElementById('blur-slider')) setupSlider('blur-slider', 'blur-value', 'backgroundBlur', () => UIManager.applyStyling());
         if(document.getElementById('text-size-slider')) setupSlider('text-size-slider', 'text-size-value', 'textSize', () => UIManager.applyStyling());
         if(document.getElementById('bubble-image-size-slider')) setupSlider('bubble-image-size-slider', 'bubble-image-size-value', 'bubbleImageSize', () => UIManager.applyStyling());
 
+        // Prompt Tab
+        if(document.getElementById('system-prompt-input')) setListener('system-prompt-input', 'system_prompt');
+        if(document.getElementById('event-master-prompt-input')) setListener('event-master-prompt-input', 'event_master_base_prompt');
+        if(document.getElementById('prompt-persona-gen-input')) setListener('prompt-persona-gen-input', 'prompt_persona_gen');
+        if(document.getElementById('prompt-world-map-gen-input')) setListener('prompt-world-map-gen-input', 'prompt_world_map_gen');
+        if(document.getElementById('prompt-location-gen-input')) setListener('prompt-location-gen-input', 'prompt_location_gen');
+        if(document.getElementById('prompt-entry-gen-input')) setListener('prompt-entry-gen-input', 'prompt_entry_gen');
+        if(document.getElementById('prompt-location-memory-gen-input')) setListener('prompt-location-memory-gen-input', 'prompt_location_memory_gen');
+
+        
         const fontSelector = document.getElementById('font-selector'); 
         if(fontSelector) {
             fontSelector.value = state.font; 
@@ -2602,9 +2822,12 @@ const Controller = {
             radio.addEventListener('change', (e) => this.setApiProvider(e.target.value));
         });
 
-         document.getElementById('gemini-settings').style.display = state.apiProvider === 'gemini' ? 'block' : 'none'; 
-         document.getElementById('openrouter-settings').style.display = state.apiProvider === 'openrouter' ? 'block' : 'none';
-         document.getElementById('koboldcpp-settings').style.display = state.apiProvider === 'koboldcpp' ? 'block' : 'none';
+        const geminiSettings = document.getElementById('gemini-settings');
+        const openrouterSettings = document.getElementById('openrouter-settings');
+        const koboldcppSettings = document.getElementById('koboldcpp-settings');
+        if (geminiSettings) geminiSettings.style.display = state.apiProvider === 'gemini' ? 'block' : 'none'; 
+        if (openrouterSettings) openrouterSettings.style.display = state.apiProvider === 'openrouter' ? 'block' : 'none';
+        if (koboldcppSettings) koboldcppSettings.style.display = state.apiProvider === 'koboldcpp' ? 'block' : 'none';
     },
     
     changeFont(font) { 
@@ -2627,6 +2850,10 @@ const Controller = {
 
     // --- Chat & AI Interaction ---
     handlePrimaryAction() { 
+        if (this.RUNTIME.activeRequestAbortController) {
+            this.stopGeneration();
+            return;
+        }
         if(!StateManager.getLibrary().active_narrative_id) { 
             alert("Load a narrative from the Story Library first."); 
             return; 
@@ -2637,7 +2864,7 @@ const Controller = {
     async handleRegen() {
         const state = StateManager.getState();
         if(!StateManager.getLibrary().active_narrative_id) { alert("Load a narrative from the Story Library first."); return; }
-        if (UIManager.RUNTIME.streamingInterval) return;
+        if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
         
         let selectedCharId = document.getElementById('ai-character-selector').value;
         if (selectedCharId === 'any') {
@@ -2656,11 +2883,12 @@ const Controller = {
     },
 
     async sendMessage() {
-        if (UIManager.RUNTIME.streamingInterval) return;
+        if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
         const state = StateManager.getState();
         const input = document.getElementById('chat-input');
         const userChar = state.characters.find(c => c.is_user);
         const messageContent = input.value.trim();
+        if (!messageContent) return;
         this.addMessageToHistory(userChar.id, messageContent);
         input.value = '';
         this.checkDynamicEntryTriggers();
@@ -2669,31 +2897,38 @@ const Controller = {
     },
 
     async writeForMe() {
-        if (UIManager.RUNTIME.streamingInterval) return;
+        if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
         const state = StateManager.getState();
         const userChar = state.characters.find(c => c.is_user); if (!userChar) return;
-        const btn = document.getElementById('primary-action-btn');
         const input = document.getElementById('chat-input');
-        const originalPlaceholder = input.placeholder;
-        btn.disabled = true;
-        input.placeholder = 'AI is writing...';
+        
+        UIManager.setButtonToStopMode();
+        this.RUNTIME.activeRequestAbortController = new AbortController();
+
         try {
             const prompt = PromptBuilder.buildPrompt(userChar.id, true);
-            input.value = await APIService.callAI(prompt);
+            input.value = await APIService.callAI(prompt, false, this.RUNTIME.activeRequestAbortController.signal);
         } catch (error) {
-            console.error("Write for Me failed:", error);
+            if (error.name === 'AbortError') {
+                console.log("Write For Me generation stopped by user.");
+            } else {
+                console.error("Write for Me failed:", error);
+            }
         } finally {
-            btn.disabled = false;
-            input.placeholder = originalPlaceholder;
+            UIManager.setButtonToSendMode();
+            this.RUNTIME.activeRequestAbortController = null;
         }
     },
 
     undoLastTurn() { 
-        if (UIManager.RUNTIME.streamingInterval) return;
+        if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
         const state = StateManager.getState();
         if (state.chat_history.length === 0) return; 
-        const lastMessage = state.chat_history.pop(); 
-        if (lastMessage.type === 'chat') state.messageCounter--; 
+        const lastMessage = state.chat_history[state.chat_history.length - 1]; 
+        if (lastMessage && lastMessage.type === 'chat') {
+            state.messageCounter--;
+        }
+        state.chat_history.pop();
         this.saveAndRender(); 
     },
 
@@ -2770,8 +3005,6 @@ const Controller = {
 
 		const scores = {};
 		pool.forEach(c => {
-			// If the character is a narrator, they start with 0 points.
-			// Otherwise, they get the standard 1 point.
 			scores[c.id] = c.is_narrator ? 0 : 1;
 		}); 
 		
@@ -2865,10 +3098,12 @@ const Controller = {
         }
         
         UIManager.showTypingIndicator(aiCharId);
+        UIManager.setButtonToStopMode();
+        this.RUNTIME.activeRequestAbortController = new AbortController();
 
         try {
             const prompt = PromptBuilder.buildPrompt(aiCharId);
-            const responseText = await APIService.callAI(prompt);
+            const responseText = await APIService.callAI(prompt, false, this.RUNTIME.activeRequestAbortController.signal);
             
             let analysis = { emotion: 'neutral', locationName: null };
             if (userMessage) {
@@ -2892,9 +3127,17 @@ const Controller = {
                 }
             }
 
-        } catch (error) { 
-            UIManager.hideTypingIndicator();
-            this.addMessageToHistory(aiCharId, `[Error: ${error.message}]`); 
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log("Generation stopped by user.");
+                UIManager.hideTypingIndicator();
+            } else {
+                UIManager.hideTypingIndicator();
+                this.addMessageToHistory(aiCharId, `[Error: ${error.message}]`); 
+            }
+        } finally {
+            UIManager.setButtonToSendMode();
+            this.RUNTIME.activeRequestAbortController = null;
         }
     },
     
@@ -3006,61 +3249,110 @@ const Controller = {
         const char = state.characters.find(c => c.id === charId);
         if (!char) return;
 
-        if (char.description && char.description.trim() !== '' && !confirm("This will overwrite the current persona. Are you sure?")) {
-            return;
-        }
+        UIManager.showConfirmationModal('This will overwrite the current persona with an AI-generated one. Are you sure?', async () => {
+            const newDescription = await this._generateContentForField(event, state.prompt_persona_gen, {
+                concept: char.description
+            });
+            
+            if (newDescription !== null) {
+                this.updateCharacterField(charId, 'description', newDescription);
+                const personaTextarea = document.getElementById(`persona-description-${charId}`);
+                if (personaTextarea) {
+                    personaTextarea.value = newDescription;
+                    const autoResize = () => { personaTextarea.style.height = 'auto'; personaTextarea.style.height = `${personaTextarea.scrollHeight}px`; };
+                    autoResize();
+                }
+            }
+        });
+    },
 
+    async generateModelInstructions(event, charId) {
+        UIManager.showConfirmationModal("This will overwrite the current model instructions. Are you sure?", async () => {
+            const state = StateManager.getState();
+            const char = state.characters.find(c => c.id === charId);
+            if (!char) return;
+
+            const staticKnowledge = (state.static_entries || []).map(e => `### ${e.title}\n${e.content}`).join('\n\n');
+            const prompt = `Based on the following character persona and world information, generate a concise set of model instructions for an AI roleplaying as this character. The instructions should guide the AI on how to speak, its personality, and key traits to embody.\n\n### Character Persona:\n${char.description}\n\n### World Static Knowledge:\n${staticKnowledge}\n\n### INSTRUCTIONS:`;
+            
+            const newInstructions = await this._generateContentForField(event, prompt, {});
+            
+            if (newInstructions !== null) {
+                this.updateCharacterField(charId, 'model_instructions', newInstructions);
+                UIManager.openCharacterDetailModal(charId);
+            }
+        });
+    },
+
+    async _generateContentForField(event, promptTemplate, context, isJson = false) {
         const button = event.target.closest('button');
+        if (!button) return null;
+
         const originalContent = button.innerHTML;
         button.disabled = true;
         button.innerHTML = '...';
-
+        
         try {
-            const prompt = `Embellish this character concept into a rich description. CONCEPT: "${char.description}"`;
-            const newDescription = await APIService.callAI(prompt);
-            this.updateCharacterField(charId, 'description', newDescription);
-            
-            // Directly update the textarea in the view
-            const personaTextarea = document.getElementById(`persona-description-${charId}`);
-            if (personaTextarea) {
-                personaTextarea.value = newDescription;
-                // Trigger auto-resize
-                const autoResize = () => { personaTextarea.style.height = 'auto'; personaTextarea.style.height = `${personaTextarea.scrollHeight}px`; };
-                autoResize();
+            let prompt = promptTemplate;
+            for (const key in context) {
+                prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), context[key]);
             }
-
+            return await APIService.callAI(prompt, isJson);
         } catch (error) {
-            alert(`AI Error: ${error.message}`);
+            console.error("AI Generation failed:", error);
+            alert(`AI generation failed: ${error.message}`);
+            return null;
         } finally {
             button.disabled = false;
             button.innerHTML = originalContent;
         }
     },
 
-    async generateModelInstructions(event, charId) {
-        if (!confirm("This will overwrite the current model instructions. Are you sure?")) return;
+    async generateLocationPromptAI(event) {
         const state = StateManager.getState();
-        const char = state.characters.find(c => c.id === charId);
-        if (!char) return;
+        const location = this.RUNTIME.selectedMapTile;
+        if (!location) return;
 
-        const button = event.target.closest('button');
-        const originalContent = button.innerHTML;
-        button.disabled = true;
-        button.innerHTML = '...';
+        const newContent = await this._generateContentForField(event, state.prompt_location_gen, {
+            name: location.name,
+            description: location.description
+        });
+        
+        if (newContent !== null) {
+            this.updateLocationDetail('prompt', newContent);
+            UIManager.renderWorldMapModal();
+        }
+    },
 
-        const staticKnowledge = (state.static_entries || []).map(e => `### ${e.title}\n${e.content}`).join('\n\n');
-        const prompt = `Based on the following character persona and world information, generate a concise set of model instructions for an AI roleplaying as this character. The instructions should guide the AI on how to speak, its personality, and key traits to embody.\n\n### Character Persona:\n${char.description}\n\n### World Static Knowledge:\n${staticKnowledge}\n\n### INSTRUCTIONS:`;
+    async generateStaticEntryContentAI(event, entryId) {
+        const state = StateManager.getState();
+        const entry = state.static_entries.find(e => e.id === entryId);
+        if (!entry) return;
 
-        try {
-            const newInstructions = await APIService.callAI(prompt);
-            this.updateCharacterField(charId, 'model_instructions', newInstructions);
-            UIManager.openCharacterDetailModal(charId);
-        } catch (e) {
-            console.error("Instruction generation failed:", e);
-            alert("Failed to generate instructions.");
-        } finally {
-            button.disabled = false;
-            button.innerHTML = originalContent;
+        const newContent = await this._generateContentForField(event, state.prompt_entry_gen, {
+            title: entry.title,
+            triggers: '' // No triggers for static entries
+        });
+
+        if (newContent !== null) {
+            this.updateStaticEntryField(entryId, 'content', newContent);
+            UIManager.renderStaticEntryDetails();
+        }
+    },
+
+    async generateDynamicEntryContentAI(event, entryId) {
+        const state = StateManager.getState();
+        const entry = state.dynamic_entries.find(e => e.id === entryId);
+        if (!entry) return;
+
+        const newContent = await this._generateContentForField(event, state.prompt_entry_gen, {
+            title: entry.title,
+            triggers: entry.triggers
+        });
+
+        if (newContent !== null) {
+            this.updateDynamicEntryField(entryId, 'content', newContent);
+            UIManager.renderDynamicEntryDetails();
         }
     },
 
@@ -3106,10 +3398,12 @@ const Controller = {
     },
 
     deleteCharacter(id) { 
-        const state = StateManager.getState();
-        state.characters = state.characters.filter(c => c.id !== id);
-        this.closeModal('character-detail-modal'); 
-        this.saveAndRender(); 
+        UIManager.showConfirmationModal('Are you sure you want to delete this character?', () => {
+            const state = StateManager.getState();
+            state.characters = state.characters.filter(c => c.id !== id);
+            this.closeModal('character-detail-modal'); 
+            this.saveAndRender(); 
+        });
     },
 
     updateCharacterField: debounce(function(id, field, value) { 
@@ -3123,41 +3417,30 @@ const Controller = {
                 const header = document.querySelector(`#character-detail-modal-content h2[data-char-id="${id}"]`);
                 if(header) header.textContent = value;
             }
-             // Refresh the character roster whenever a relevant field changes
             if (field === 'name' || field === 'short_description' || field === 'image_url' || field === 'tags') {
                 UIManager.renderCharacters();
             }
         } 
     }, 300),
 
-    /**
-     * Handles the selection of a local image file for a character's portrait.
-     * Reads the file and converts it to a Base64 data URL, then updates the character's state.
-     * @param {Event} event - The file input change event.
-     * @param {string} charId - The ID of the character to update.
-     */
     handleLocalImageUpload(event, charId) {
         const file = event.target.files[0];
         if (!file) {
             return;
         }
 
-        // Limit file size to 2MB to prevent performance issues with large Base64 strings
         if (file.size > 2 * 1024 * 1024) {
             alert("Error: Image file size should not exceed 2MB.");
-            event.target.value = ''; // Clear the file input
+            event.target.value = '';
             return;
         }
 
         const reader = new FileReader();
 
         reader.onload = (e) => {
-            const imageUrl = e.target.result; // This is the Base64 data URL
-            
-            // This function updates the character's data and refreshes the UI
+            const imageUrl = e.target.result;
             this.updateCharacterField(charId, 'image_url', imageUrl);
             
-            // To provide immediate feedback, we also update the text input field in the modal.
             const textInput = event.target.closest('div').querySelector('input[type="text"]');
             if (textInput) {
                 textInput.value = `[Local Image: ${file.name}]`;
@@ -3196,31 +3479,22 @@ const Controller = {
     }, 500),
 
     async generateTagsForCharacter(event, charId) {
-        if (!confirm("This will add to the current tags. Are you sure?")) return;
-        const state = StateManager.getState();
-        const char = state.characters.find(c => c.id === charId);
-        if (!char) return;
+        UIManager.showConfirmationModal("This will use AI to add to the current tags. Are you sure?", async () => {
+            const state = StateManager.getState();
+            const char = state.characters.find(c => c.id === charId);
+            if (!char) return;
 
-        const button = event.target.closest('button');
-        const originalContent = button.innerHTML;
-        button.disabled = true;
-        button.innerHTML = '...';
-
-        const prompt = `Analyze the following character. Generate 3 to 5 relevant, one-word, comma-separated tags.\n\nCHARACTER: ${char.name}\nDESCRIPTION: ${char.description}`;
-        try {
-            const tagsString = await APIService.callAI(prompt);
-            char.tags = (char.tags || []).concat(tagsString.split(',').map(t => t.trim().toLowerCase()));
-            char.tags = [...new Set(char.tags)]; // remove duplicates
-            StateManager.saveState();
-            UIManager.openCharacterDetailModal(charId); // Re-render the modal to show new tags
-            StateManager.updateTagCache();
-        } catch (e) {
-            console.error("Tag generation failed:", e);
-            alert("Failed to generate tags.");
-        } finally {
-            button.disabled = false;
-            button.innerHTML = originalContent;
-        }
+            const prompt = `Analyze the following character. Generate 3 to 5 relevant, one-word, comma-separated tags.\n\nCHARACTER: ${char.name}\nDESCRIPTION: ${char.description}`;
+            const tagsString = await this._generateContentForField(event, prompt, {});
+            
+            if (tagsString !== null) {
+                char.tags = (char.tags || []).concat(tagsString.split(',').map(t => t.trim().toLowerCase()));
+                char.tags = [...new Set(char.tags)];
+                StateManager.saveState();
+                UIManager.openCharacterDetailModal(charId);
+                StateManager.updateTagCache();
+            }
+        });
     },
 
     addExtraPortrait(charId) { const state = StateManager.getState(); const char = state.characters.find(c => c.id === charId); if(char) { if(!char.extra_portraits) char.extra_portraits = []; char.extra_portraits.push({emotion: 'happy', url: ''}); StateManager.saveState(); UIManager.openCharacterDetailModal(charId); } },
@@ -3305,10 +3579,24 @@ const Controller = {
     },
 
     openViewRawPromptModal() {
-        if (!StateManager.getLibrary().active_narrative_id) { alert("Please load a narrative first."); return; }
-        const selectedCharId = document.getElementById('ai-character-selector').value;
-        if (!selectedCharId) { alert("Please select an AI character from the dropdown first."); return; }
-        const prompt = PromptBuilder.buildPrompt(selectedCharId);
+        if (!StateManager.getLibrary().active_narrative_id) { 
+            alert("Please load a narrative first."); 
+            return; 
+        }
+        
+        let charToActId = document.getElementById('ai-character-selector').value;
+        
+        if (charToActId === 'any' || !charToActId) {
+            console.log("View Raw Prompt: 'Any' selected, determining next speaker.");
+            charToActId = this.determineNextSpeaker(false);
+        }
+
+        if (!charToActId) {
+            alert("Could not determine an AI character to generate a prompt for. Please ensure at least one AI character is active.");
+            return;
+        }
+
+        const prompt = PromptBuilder.buildPrompt(charToActId);
         document.getElementById('raw-prompt-content').textContent = prompt;
         this.openModal('view-raw-prompt-modal');
     },
@@ -3336,60 +3624,87 @@ const Controller = {
         document.body.removeChild(tempTextarea);
     },
     
-    // --- World Map Functions ---
-    async generateWorldMap() {
-        if (!confirm("This will overwrite the existing world map and may incur API costs. Are you sure?")) {
-            return;
-        }
-        const state = StateManager.getState();
-        
-        const btn = document.getElementById('generate-world-button');
-        btn.disabled = true;
-        btn.innerHTML = '...';
+    deleteMessage(index) {
+        UIManager.showConfirmationModal('Are you sure you want to permanently delete this message?', () => {
+            const state = StateManager.getState();
+            const messageToDelete = state.chat_history[index];
+            if (messageToDelete && messageToDelete.type === 'chat') {
+                state.messageCounter--;
+            }
+            state.chat_history.splice(index, 1);
+            this.saveAndRender();
+        });
+    },
 
-        try {
+    stopGeneration() {
+        if (this.RUNTIME.activeRequestAbortController) {
+            this.RUNTIME.activeRequestAbortController.abort();
+            console.log("Request aborted by user.");
+        }
+        
+        const state = StateManager.getState();
+        if (state.apiProvider === 'koboldcpp' && state.koboldcpp_url) {
+            fetch(`${state.koboldcpp_url}/api/v1/generate/stop`, { method: 'POST' })
+                .catch(err => console.error("Failed to send stop request to KoboldCPP:", err));
+        }
+
+        UIManager.hideTypingIndicator();
+        UIManager.setButtonToSendMode();
+        this.RUNTIME.activeRequestAbortController = null;
+    },
+
+    // --- World Map Functions ---
+    async generateWorldMap(event) {
+        UIManager.showConfirmationModal('This will overwrite the existing world map with an AI-generated one and may incur API costs. Are you sure?', async () => {
+            const state = StateManager.getState();
+            
             const context = {
                 characters: state.characters.map(c => `${c.name}: ${c.short_description}`).join('\n'),
                 static: (state.static_entries || []).map(e => `* ${e.title}: ${e.content}`).join('\n'),
-                dynamic: (state.dynamic_entries || []).map(e => `* ${e.title}: ${e.content}`).join('\n'),
                 recent: (state.chat_history || []).filter(m => m.type === 'chat').slice(-3).map(m => m.content).join('\n---\n'),
             };
-            const contextString = `CHARACTERS:\n${context.characters}\n\nSTATIC LORE:\n${context.static}\n\nDYNAMIC LORE:\n${context.dynamic}\n\nRECENT EVENTS:\n${context.recent}`;
 
-            const prompt = `Based on the following story context, generate a genre-appropriate 8x8 grid of interconnected fantasy locations. The central location (4,4) should be a neutral starting point. Attempt to include locations mentioned in the context.
-            CONTEXT:\n${contextString}\n\nRespond with a valid JSON object: { "grid": [ { "coords": {"x":int, "y":int}, "name": "string", "description": "string (one-line summary)", "prompt": "string (a rich, detailed paragraph for the AI)", "imageUrl": "" } ] }.
-            The grid must contain exactly 64 locations.`;
+            const newGridData = await this._generateContentForField(event, state.prompt_world_map_gen, context, true);
             
-            const response = await APIService.callAI(prompt, true);
-            const newWorld = JSON.parse(response);
-            if (newWorld.grid && newWorld.grid.length === 64) {
-                state.worldMap.grid = newWorld.grid;
-                state.worldMap.currentLocation = { x: 4, y: 4 };
-                state.worldMap.destination = { x: null, y: null };
-                state.worldMap.path = [];
-                this.RUNTIME.selectedMapTile = null;
-                StateManager.saveState();
-                UIManager.renderWorldMapModal();
-                UIManager.applyStyling(); 
-            } else {
-                throw new Error("Generated data is not a valid 64-item grid.");
+            if (newGridData) {
+                try {
+                    const newWorld = JSON.parse(newGridData);
+                    if (newWorld.grid && newWorld.grid.length > 0) {
+                        newWorld.grid.forEach(loc => loc.local_static_entries = []);
+                        state.worldMap.grid = newWorld.grid;
+                        state.worldMap.currentLocation = { x: 4, y: 4 };
+                        state.worldMap.destination = { x: null, y: null };
+                        state.worldMap.path = [];
+                        this.RUNTIME.selectedMapTile = null;
+                        StateManager.saveState();
+                        UIManager.renderWorldMapModal();
+                        UIManager.applyStyling(); 
+                    } else {
+                        throw new Error("Generated data is not a valid grid.");
+                    }
+                } catch (e) {
+                     console.error("World Map generation failed to parse JSON:", e);
+                     alert("Failed to generate world map. The AI returned an invalid format.");
+                }
             }
-        } catch (e) {
-            console.error("World Map generation failed:", e);
-            alert("Failed to generate world map. The AI may have returned an invalid format.");
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = UIManager.getAIGenIcon();
-        }
+        });
     },
 
     moveToLocation(x, y) {
         const state = StateManager.getState();
         const targetLocation = state.worldMap.grid.find(loc => loc.coords.x === x && loc.coords.y === y);
         if (targetLocation) {
-            state.worldMap.currentLocation = { x, y };
+            const previousLocationCoords = { ...state.worldMap.currentLocation };
+            const turnOfDeparture = state.messageCounter;
 
-            if (state.worldMap.destination.x !== null) {
+            if (this.RUNTIME.turnOfArrival !== null && turnOfDeparture > this.RUNTIME.turnOfArrival) {
+                 this.summarizeActivityForLocation(previousLocationCoords, this.RUNTIME.turnOfArrival);
+            }
+
+            state.worldMap.currentLocation = { x, y };
+            this.RUNTIME.turnOfArrival = state.messageCounter;
+
+            if (state.worldMap.destination && state.worldMap.destination.x !== null) {
                 state.worldMap.path = UTILITY.findPath(state.worldMap.grid, state.worldMap.currentLocation, state.worldMap.destination);
             } else {
                  state.worldMap.path = [];
@@ -3403,10 +3718,50 @@ const Controller = {
             
             const narrator = state.characters.find(c => c.is_narrator && c.is_active);
             if (narrator) {
-                this.triggerAIResponse(narrator.id, '', true); // Pass true for isAfterMove
+                this.triggerAIResponse(narrator.id, '', true);
             } else {
                 this.triggerAIResponse(null, '', true);
             }
+        }
+    },
+
+    async summarizeActivityForLocation(locationCoords, startTurn) {
+        try {
+            const state = StateManager.getState();
+            const endTurn = state.messageCounter;
+            
+            const relevantHistory = state.chat_history.slice(startTurn, endTurn).filter(msg => msg.type === 'chat' && !msg.isHidden);
+
+            if (relevantHistory.length === 0) {
+                console.log("No new chat activity to summarize for location:", locationCoords);
+                return;
+            }
+
+            const chatTranscript = relevantHistory.map(msg => {
+                const char = state.characters.find(c => c.id === msg.character_id);
+                return `${char ? char.name : 'Unknown'}: ${msg.content}`;
+            }).join('\n');
+            
+            const prompt = state.prompt_location_memory_gen.replace('{transcript}', chatTranscript);
+            const summaryContent = await APIService.callAI(prompt);
+
+            const currentState = StateManager.getState();
+            const location = currentState.worldMap.grid.find(loc => loc.coords.x === locationCoords.x && loc.coords.y === locationCoords.y);
+            if (location) {
+                if (!location.local_static_entries) {
+                    location.local_static_entries = [];
+                }
+                const newEntry = {
+                    id: UTILITY.uuid(),
+                    title: `Events from turn ${startTurn} to ${endTurn}`,
+                    content: summaryContent
+                };
+                location.local_static_entries.push(newEntry);
+                StateManager.saveState();
+                console.log("Location memory auto-generated for:", location.name);
+            }
+        } catch (error) {
+            console.error("Failed to auto-generate location memory:", error);
         }
     },
     
@@ -3414,6 +3769,7 @@ const Controller = {
         const state = StateManager.getState();
         const tile = state.worldMap.grid.find(loc => loc.coords.x === x && loc.coords.y === y);
         this.RUNTIME.selectedMapTile = tile || null;
+        this.RUNTIME.selectedLocalStaticEntryId = null;
         UIManager.renderWorldMapModal();
     },
 
@@ -3457,6 +3813,49 @@ const Controller = {
         }
     }, 500),
 
+    addLocalStaticEntry() {
+        const location = this.RUNTIME.selectedMapTile;
+        if (!location) return;
+        if (!location.local_static_entries) location.local_static_entries = [];
+        const newEntry = { id: UTILITY.uuid(), title: "New Local Entry", content: "" };
+        location.local_static_entries.push(newEntry);
+        this.RUNTIME.selectedLocalStaticEntryId = newEntry.id;
+        StateManager.saveState();
+        UIManager.renderLocalStaticEntriesList();
+        UIManager.renderLocalStaticEntryDetails();
+    },
+    
+    deleteLocalStaticEntry(entryId) {
+        const location = this.RUNTIME.selectedMapTile;
+        if (!location || !location.local_static_entries) return;
+        location.local_static_entries = location.local_static_entries.filter(e => e.id !== entryId);
+        if (this.RUNTIME.selectedLocalStaticEntryId === entryId) {
+            this.RUNTIME.selectedLocalStaticEntryId = null;
+        }
+        StateManager.saveState();
+        UIManager.renderLocalStaticEntriesList();
+        UIManager.renderLocalStaticEntryDetails();
+    },
+    
+    selectLocalStaticEntry(entryId) {
+        this.RUNTIME.selectedLocalStaticEntryId = entryId;
+        UIManager.renderLocalStaticEntriesList();
+        UIManager.renderLocalStaticEntryDetails();
+    },
+    
+    updateLocalStaticEntryField: debounce(function(entryId, field, value) {
+        const location = this.RUNTIME.selectedMapTile;
+        if (!location || !location.local_static_entries) return;
+        const entry = location.local_static_entries.find(e => e.id === entryId);
+        if (entry) {
+            entry[field] = value;
+            StateManager.saveState();
+            if (field === 'title') {
+                UIManager.renderLocalStaticEntriesList();
+            }
+        }
+    }, 300),
+
     elevateNarrativeToScenario(storyId, narrativeId) {
         const library = StateManager.getLibrary();
         const story = library.stories.find(s => s.id === storyId);
@@ -3477,7 +3876,7 @@ const Controller = {
         StateManager.saveLibrary();
         UIManager.openStoryDetails(storyId);
     },
-
+    
     // --- Import / Export ---
     async handleFileUpload(event) {
         const file = event.target.files[0];
@@ -3497,7 +3896,7 @@ const Controller = {
             alert(`Error importing file: ${err.message}`);
             console.error(err);
         } finally {
-            event.target.value = ''; // Reset file input
+            event.target.value = '';
         }
     },
     async importV2Card(file) {
@@ -3597,13 +3996,14 @@ const Controller = {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = e => {
-            if (!confirm('WARNING: This will replace your entire story library. Are you sure you want to continue?')) { return; }
-            try {
-                const importedLibrary = ImportExportService.parseLibraryFile(e.target.result);
-                StateManager.data.library = importedLibrary;
-                StateManager.saveLibrary();
-                window.location.reload();
-            } catch (err) { alert(`Error importing library: ${err.message}`); }
+            UIManager.showConfirmationModal('WARNING: This will replace your entire story library. Are you sure you want to continue?', () => {
+                try {
+                    const importedLibrary = ImportExportService.parseLibraryFile(e.target.result);
+                    StateManager.data.library = importedLibrary;
+                    StateManager.saveLibrary();
+                    window.location.reload();
+                } catch (err) { alert(`Error importing library: ${err.message}`); }
+            });
         };
         reader.readAsText(file);
     },
@@ -3642,40 +4042,53 @@ const app = {
         StateManager.loadActiveNarrative();
         const state = StateManager.getState();
         if (!state || Object.keys(state).length === 0) { 
-            const activeStory = library.stories.find(s => s.id === library.active_story_id);
+             const activeStory = library.stories.find(s => s.id === library.active_story_id);
              document.getElementById('story-title-input').value = activeStory ? activeStory.name : "No Story Loaded";
              document.getElementById('mobile-story-title-overlay').value = activeStory ? activeStory.name : "No Story Loaded";
              UIManager.renderChat();
         } else {
+            Controller.RUNTIME.turnOfArrival = state.messageCounter; // Initialize on load
             Controller._ensureCharacterColors();
             UIManager.applyStyling();
             UIManager.renderAll();
         }
         this.setupEventListeners();
+        UIManager.setButtonToSendMode(); // [NEW] Set initial state for the dynamic primary button
     },
     setupEventListeners() {
-        const library = StateManager.getLibrary();
         this.updateLayout();
         window.addEventListener('resize', debounce(() => this.updateLayout(), 100));
-        const storyTitleInput = document.getElementById('story-title-input');
-        storyTitleInput.addEventListener('input', debounce((e) => { Controller.renameStory(library.active_story_id, e.target.value); }, 500));
-        const mobileStoryTitleInput = document.getElementById('mobile-story-title-overlay');
-        mobileStoryTitleInput.addEventListener('input', debounce((e) => { Controller.renameStory(library.active_story_id, e.target.value); }, 500));
+        
+        const titleInputHandler = debounce((e) => { 
+            const state = StateManager.getState();
+            if(state) {
+                state.narrativeName = e.target.value;
+                StateManager.saveState();
+            }
+        }, 500);
+
+        document.getElementById('story-title-input').addEventListener('input', titleInputHandler);
+        document.getElementById('mobile-story-title-overlay').addEventListener('input', titleInputHandler);
+
         const hamburgerBtn = document.getElementById('hamburger-menu-button');
         if (hamburgerBtn) { hamburgerBtn.addEventListener('click', (e) => { e.stopPropagation(); Controller.toggleMobileMenu(); }); }
+        
         document.addEventListener('click', (e) => {
             const menu = document.getElementById('mobile-menu');
             const btn = document.getElementById('hamburger-menu-button');
             if (menu && !menu.classList.contains('hidden') && !menu.contains(e.target) && !btn.contains(e.target)) { Controller.toggleMobileMenu(); }
         });
+        
         const titleTrigger = document.getElementById('title-trigger-area');
         const mobileTitle = document.getElementById('mobile-story-title-overlay');
         const showTitle = () => { if(document.body.classList.contains('layout-vertical')) { clearTimeout(UIManager.RUNTIME.titleTimeout); mobileTitle.style.opacity = '1'; } };
         const hideTitle = (immediate = false) => { if(document.body.classList.contains('layout-vertical')) { clearTimeout(UIManager.RUNTIME.titleTimeout); if (document.activeElement !== mobileTitle) { if (immediate) { mobileTitle.style.opacity = '0'; } else { UIManager.RUNTIME.titleTimeout = setTimeout(() => { mobileTitle.style.opacity = '0'; }, 2500); } } } };
+        
         titleTrigger.addEventListener('mouseenter', showTitle);
         titleTrigger.addEventListener('mouseleave', () => hideTitle());
         titleTrigger.addEventListener('touchstart', (e) => { e.preventDefault(); if (mobileTitle.style.opacity === '1') { hideTitle(true); } else { showTitle(); hideTitle(); } });
-        document.getElementById('primary-action-btn').addEventListener('click', () => Controller.handlePrimaryAction());
+        
+        // [REMOVED] Redundant event listener for primary-action-btn. Behavior is now handled by onclick swapping.
         document.getElementById('regen-btn').addEventListener('click', () => Controller.handleRegen());
         document.getElementById('undo-btn').addEventListener('click', () => Controller.undoLastTurn());
     },
