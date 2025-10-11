@@ -357,6 +357,12 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
     border-radius: 0.75rem 0.75rem 0 0;
 }
 
+/* Styling for quoted dialogue in chat bubbles */
+.dialogue-quote {
+    color: var(--text-accent); /* Uses the theme's accent color (e.g., a light indigo) */
+    font-weight: 500;          /* Makes the text slightly bolder than normal */
+    font-style: italic;        /* Also italicizes dialogue to make it distinct */
+}
 
 	</style>
 </head>
@@ -447,7 +453,45 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
     <!-- PASTE content of modals.html HERE -->
 <!-- Modals -->
 <!-- Story Library Modal -->
-<div id="story-library-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('story-library-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-6xl relative flex flex-col max-h-[90vh]"><div class="p-6 border-b border-gray-700 flex justify-between items-center"><h2 class="text-2xl font-semibold">Story Library</h2><button onclick="Controller.createNewStory()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">New Story</button></div><div id="library-content-container" class="flex-grow flex min-h-0"></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-between items-center flex-wrap gap-4"><div class="flex items-center space-x-2"><button onclick="document.getElementById('unified-import-file').click()" class="bg-teal-600/80 hover:bg-teal-700/80 font-bold py-2 px-4 rounded-lg">Import File</button><input type="file" id="unified-import-file" class="hidden" accept=".json,.png,.zip,.byaf" onchange="Controller.handleFileUpload(event)"><button onclick="document.getElementById('import-library-file').click()" class="bg-cyan-600/80 hover:bg-cyan-700/80 font-bold py-2 px-4 rounded-lg">Import Library</button><input type="file" id="import-library-file" class="hidden" accept=".json" onchange="Controller.importLibrary(event)"></div><div class="flex items-center space-x-2"><button onclick="Controller.exportLibrary()" class="bg-emerald-600/80 hover:bg-emerald-700/80 font-bold py-2 px-4 rounded-lg">Export Library</button></div><button onclick="Controller.closeModal('story-library-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Close</button></div></div></div>
+<div id="story-library-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
+    <div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('story-library-modal')"></div>
+    <div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-6xl relative flex flex-col max-h-[90vh]">
+        <div class="p-6 border-b border-gray-700 flex justify-between items-center">
+            <h2 class="text-2xl font-semibold">Story Library</h2>
+            <div class="flex space-x-2">
+                <button onclick="Controller.openModal('io-hub-modal')" class="bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg">Import / Export</button>
+                <button onclick="Controller.createNewStory()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">New Story</button>
+            </div>
+        </div>
+        <div id="library-content-container" class="flex-grow flex min-h-0"></div>
+        <div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end">
+            <button onclick="Controller.closeModal('story-library-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- [NEW] Import/Export Hub Modal -->
+<div id="io-hub-modal" class="fixed inset-0 z-[60] items-center justify-center hidden">
+    <div class="modal-overlay absolute inset-0 bg-black/50" onclick="Controller.closeModal('io-hub-modal')"></div>
+    <div id="io-hub-modal-content" class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-4xl relative flex flex-col max-h-[90vh]">
+        <!-- Content injected by UIManager.renderIOHubModal -->
+    </div>
+</div>
+
+<!-- [NEW] Bulk Import Report Modal -->
+<div id="report-modal" class="fixed inset-0 z-[70] items-center justify-center hidden">
+    <div class="modal-overlay absolute inset-0 bg-black/60" onclick="Controller.closeModal('report-modal')"></div>
+    <div id="report-modal-content" class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-2xl relative flex flex-col max-h-[90vh]">
+        <!-- Content injected by UIManager.showBulkImportReport -->
+    </div>
+</div>
+
+<!-- [NEW] Loading Spinner Overlay -->
+<div id="loading-spinner" class="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex-col items-center justify-center hidden" style="display: none;">
+    <div class="w-16 h-16 border-4 border-t-indigo-500 border-gray-600 rounded-full animate-spin"></div>
+    <p id="spinner-message" class="mt-4 text-white font-semibold">Loading...</p>
+</div>
+
 
 <!-- Story Details Modal (for mobile view) -->
 <div id="story-details-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('story-details-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-2xl relative flex flex-col max-h-[90vh]"><div id="story-details-content-mobile" class="flex-grow flex flex-col min-h-0"></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="Controller.closeModal('story-details-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Back to Library</button></div></div></div>
@@ -554,7 +598,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
             <label class="text-gray-400 text-sm block mt-4 mb-2">Character Image Display</label><div class="flex space-x-4" id="character-image-display"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="none" checked><span>None</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="cinematic_overlay"><span>Cinematic</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="bubble"><span>Bubble</span></label></div>
         </div>
     </div>
-    <!-- [FIX] Replaced the Prompt tab content with individual, collapsible <details> sections for better organization. -->
+    <!-- Replaced the Prompt tab content with individual, collapsible <details> sections for better organization. -->
     <div id="settings-prompt-content" class="space-y-2">
         <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Core Prompts</summary><div class="p-4 space-y-4 bg-black/20 rounded-b-lg"><div><h3 class="text-base font-medium mb-2">System Prompt (Global Fallback)</h3><p class="text-gray-400 text-sm mb-2">Used by AI characters who don't have their own specific instructions.</p><textarea id="system-prompt-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><div><h3 class="text-base font-medium mb-2">Event Master Prompt</h3><p class="text-gray-400 text-sm mb-2">Define the base instruction for the Event Master, which injects surprise events.</p><textarea id="event-master-prompt-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></div></details>
         <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Persona Generation Prompt</summary><div class="p-4 bg-black/20 rounded-b-lg"><p class="text-gray-400 text-sm mb-2">Used by the AI button on a character's persona. Use <code>{concept}</code> for the existing text.</p><textarea id="prompt-persona-gen-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></details>
@@ -828,7 +872,11 @@ const StateManager = {
  */
 const APIService = {
     /**
-     * [MODIFIED] Added 'signal' parameter to handle request abortion for the stop generation feature.
+     * Calls the configured AI provider with a given prompt.
+     * @param {string} prompt - The prompt to send to the AI.
+     * @param {boolean} [isJson=false] - Whether to expect a JSON response.
+     * @param {AbortSignal|null} [signal=null] - An AbortSignal to cancel the request.
+     * @returns {Promise<string>} The AI's response text.
      */
     async callAI(prompt, isJson = false, signal = null) {
         const state = StateManager.getState();
@@ -1083,6 +1131,28 @@ const UTILITY = {
         
         return characters[characters.length - 1];
     },
+    /**
+     * [NEW] Checks if there is enough space in localStorage for an estimated import size.
+     * @param {number} estimatedSize - The estimated size of the import in bytes.
+     * @returns {boolean} - True if there is likely enough space, false otherwise.
+     */
+    checkLocalStorageQuota(estimatedSize) {
+        try {
+            const testKey = 'quota-check';
+            const existingDataSize = JSON.stringify(localStorage).length;
+            const availableSpace = (5 * 1024 * 1024) - existingDataSize; // Assuming 5MB limit
+            
+            if (estimatedSize > availableSpace) {
+                return false;
+            }
+            
+            localStorage.setItem(testKey, '1');
+            localStorage.removeItem(testKey);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
 };
 
 /**
@@ -1106,6 +1176,10 @@ const PromptBuilder = {
     buildPrompt(charToActId, isForUser = false) {
         const state = StateManager.getState();
         const charToAct = state.characters.find(c => c.id === charToActId);
+        if (!charToAct) {
+            console.error("PromptBuilder: Could not find character with ID:", charToActId);
+            return ""; // Return empty string to prevent errors
+        }
         const replacer = this._getReplacer(charToAct);
         const modelInstructions = charToAct.model_instructions || state.system_prompt;
 
@@ -1144,8 +1218,11 @@ const PromptBuilder = {
             system_prompt: replacer(modelInstructions),
             event_master_prompt: replacer(state.event_master_prompt),
             static_entries: (state.static_entries || []).map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`).join('\n\n'),
+            dynamic_entries: (state.dynamic_entries || [])
+                .filter(entry => entry.triggered_at_turn !== null)
+                .map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`).join('\n\n'),
             characters: (state.characters || []).filter(c => c.is_active).map(c => `[Character: ${c.name}]\nDescription: ${replacer(c.description)}`).join('\n\n'),
-            history: (state.chat_history || []).slice(-10),
+            history: (state.chat_history || []).filter(m => !m.isHidden).slice(-10),
             charToAct: charToAct,
             isForUser: isForUser,
             location_context: locationContext,
@@ -1167,7 +1244,19 @@ const PromptBuilder = {
         if (components.event_master_prompt) p += "--- SECRET EVENT MASTER INSTRUCTION ---\n" + components.event_master_prompt + "\n\n";
         if (components.location_context) p += "--- LOCATION CONTEXT ---\n" + components.location_context + "\n\n";
         p += "--- STATIC KNOWLEDGE ---\n" + components.static_entries + "\n\n";
+        if (components.dynamic_entries) p += "--- RECENTLY REVEALED DYNAMIC KNOWLEDGE ---\n" + components.dynamic_entries + "\n\n";
         p += "--- CHARACTERS ---\n" + components.characters + "\n\n";
+
+        const exampleDialogue = (state.chat_history || []).filter(m => m.isHidden);
+        if(exampleDialogue.length > 0){
+            p += "--- EXAMPLE DIALOGUE ---\n";
+            exampleDialogue.forEach(msg => {
+                const char = state.characters.find(c => c.id === msg.character_id);
+                if (char) p += `${char.name}: ${replacer(msg.content)}\n`;
+            });
+            p += "\n";
+        }
+        
         p += "--- RECENT CONVERSATION & EVENTS ---\n";
         components.history.forEach(msg => { 
             if (msg.type === 'chat') {
@@ -1175,6 +1264,8 @@ const PromptBuilder = {
                 if (char) p += `[Speaker: ${char.name}]\n${replacer(msg.content)}\n\n`;
             } else if (msg.type === 'lore_reveal') {
                 p += `[System Note: Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}\n\n`;
+            } else if (msg.type === 'system_event') {
+                 p += `[System Event: ${replacer(msg.content)}]\n`;
             }
         });
         p += "\n--- INSTRUCTION ---\n";
@@ -1191,6 +1282,7 @@ const PromptBuilder = {
         if (components.event_master_prompt) system.push("SECRET EVENT INSTRUCTION:\n" + components.event_master_prompt);
         if (components.location_context) system.push("LOCATION CONTEXT:\n" + components.location_context);
         system.push("STATIC KNOWLEDGE:\n" + components.static_entries);
+        if (components.dynamic_entries) system.push("DYNAMIC KNOWLEDGE:\n" + components.dynamic_entries);
         system.push("CHARACTERS:\n" + components.characters);
         const system_prompt_str = system.join('\n\n');
         
@@ -1203,8 +1295,8 @@ const PromptBuilder = {
             }
         }).filter(Boolean).join('\n');
 
-        let instruction = components.isForUser ? `Generate the next creative response for the user's character, ${components.charToAct.name}.` : `Generate the next response for ${components.charToAct.name}. Stay in character.`;
-        instruction += " Do not repeat the character's name in the response itself.";
+        let instruction = components.isForUser ? `Write the next chat message for the user's character, ${components.charToAct.name}.` : `Write the next chat message for ${components.charToAct.name}. Stay in character.`;
+        instruction += " Do not write any prefix like 'Character Name:'.";
 
         switch (template) {
             case 'mistral':
@@ -1226,117 +1318,580 @@ const PromptBuilder = {
 
 /**
  * =================================================================================================
+ * [NEW] ImageProcessor Module
+ * =================================================================================================
+ * Handles client-side image processing, such as resizing and format conversion.
+ */
+const ImageProcessor = {
+    /**
+     * Processes an image file, resizing it if necessary and converting it to a JPEG data URL.
+     * @param {File|Blob} imageFile - The image file to process.
+     * @returns {Promise<string>} A promise that resolves with a base64 data URL of the processed image.
+     */
+    async processImage(imageFile) {
+        return new Promise((resolve, reject) => {
+            const MAX_HEIGHT = 2000;
+            const QUALITY = 0.85; // JPEG quality
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    let { width, height } = img;
+                    
+                    if (height > MAX_HEIGHT) {
+                        const ratio = MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                        width *= ratio;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Convert to JPEG and resolve with the data URL
+                    resolve(canvas.toDataURL('image/jpeg', QUALITY));
+                };
+                img.onerror = (err) => reject(new Error('Failed to load image for processing.'));
+                img.src = e.target.result;
+            };
+            reader.onerror = (err) => reject(new Error('Failed to read image file.'));
+            reader.readAsDataURL(imageFile);
+        });
+    }
+};
+
+
+/**
+ * =================================================================================================
  * ImportExportService Module
  * =================================================================================================
+ * Manages all data conversion and file handling for importing and exporting stories.
  */
 const ImportExportService = {
-    formatStoryForExport(story) {
-        return JSON.stringify(story, null, 2);
-    },
-    formatLibraryForExport(library) {
-        return JSON.stringify(library, null, 2);
-    },
-    parseStoryFile(jsonString) {
-        const importedStory = JSON.parse(jsonString);
-        if (importedStory.characters && importedStory.scenarios && importedStory.narratives) {
-            const defaults = {
-                ...UTILITY.getDefaultApiSettings(),
-                ...UTILITY.getDefaultUiSettings(),
-                ...UTILITY.getDefaultSystemPrompts(),
-            };
-            const newStory = { ...defaults, ...importedStory, id: UTILITY.uuid() };
-            return newStory;
+    // --- Public High-Level API ---
+
+    /**
+     * Main entry point for file imports. Determines file type and routes to the correct parser.
+     * @param {File} file - The uploaded file object.
+     * @param {boolean} [skipImages=false] - If true, image processing will be skipped to save storage space.
+     * @returns {Promise<object>} A promise that resolves with a fully formed Ellipsis story object.
+     */
+    async parseUploadedFile(file, skipImages = false) {
+        const lowerCaseName = file.name.toLowerCase();
+        
+        if (lowerCaseName.endsWith('.png')) {
+            return this._parseV2Card(file, skipImages);
+        } else if (lowerCaseName.endsWith('.zip') || lowerCaseName.endsWith('.byaf')) {
+            return this._parseBYAF(file, skipImages);
+        } else if (lowerCaseName.endsWith('.json')) {
+            return this._parseEllipsisJSON(file);
         } else {
-            throw new Error('Invalid story file. Must be a valid story object.');
+            throw new Error("Unsupported file type. Please use .png, .byaf, .zip, or .json.");
         }
     },
-    parseLibraryFile(jsonString) {
-         const importedLibrary = JSON.parse(jsonString);
-         if (importedLibrary.stories && importedLibrary.hasOwnProperty('active_story_id')) {
-             return importedLibrary;
-         } else {
-             throw new Error('Invalid library file.');
-         }
+
+    /**
+     * Exports a narrative to a native Ellipsis JSON file.
+     * @param {object} story - The story object containing the narrative.
+     * @returns {Blob} A Blob containing the JSON data.
+     */
+    exportStoryAsJSON(story) {
+        const storyExport = JSON.parse(JSON.stringify(story));
+        return new Blob([JSON.stringify(storyExport, null, 2)], { type: 'application/json' });
     },
-    async parseBYAF(zipData, fileName) {
-        const zip = await JSZip.loadAsync(zipData);
-        
-        const manifestFile = zip.file('manifest.json');
-        if (!manifestFile) throw new Error("manifest.json not found.");
-        const manifestData = JSON.parse(await manifestFile.async('string'));
 
-        if (!manifestData.characters || manifestData.characters.length === 0) throw new Error("No character in manifest.");
-        
-        const charFilePath = manifestData.characters[0];
-        const charFileEntry = zip.file(charFilePath);
-        if (!charFileEntry) throw new Error(`Character file not found: ${charFilePath}`);
-        const byafCharData = JSON.parse(await charFileEntry.async('string'));
-
-        let byafScenarioData = {};
-        const scenarioPath = manifestData.scenarios && manifestData.scenarios.length > 0 ? manifestData.scenarios[0] : 'scenario.json';
-        const scenarioFileEntry = zip.file(scenarioPath);
-        if(scenarioFileEntry) {
-           byafScenarioData = JSON.parse(await scenarioFileEntry.async('string'));
+    /**
+     * Exports a narrative to the V2 PNG Card format.
+     * @param {object} story - The story object.
+     * @param {object} narrative - The narrative to export.
+     * @param {string} primaryCharId - The ID of the character to feature on the card.
+     * @returns {Promise<Blob>} A promise that resolves with a Blob of the final PNG file.
+     */
+    async exportStoryAsV2(story, narrative, primaryCharId) {
+        const primaryChar = story.characters.find(c => c.id === primaryCharId);
+        if (!primaryChar || !primaryChar.image_url) {
+            throw new Error("V2 export requires a primary character with a valid image URL.");
         }
-        
-        const characterName = byafCharData.name || "Unnamed Character";
-        const newStory = {
-            id: UTILITY.uuid(), name: byafScenarioData?.title || byafCharData.name || `Chat with ${characterName}`,
-            last_modified: new Date().toISOString(), created_date: new Date().toISOString(),
-            creator_notes: `[Imported from BYAF file: ${fileName}]`, tags: byafCharData.tags || [],
-            ...UTILITY.getDefaultApiSettings(), ...UTILITY.getDefaultUiSettings(), ...UTILITY.getDefaultSystemPrompts(),
-            characters: [], dynamic_entries: [], scenarios: [], narratives: []
-        };
 
-        const userChar = { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags:[] };
+        const v2Object = this._convertEllipsistoV2(story, narrative, primaryCharId);
         
-        const fullDescription = (byafCharData.description || byafCharData.persona || '').replace(/{character}/g, characterName);
-        const firstSentence = fullDescription.split('.')[0] + '.';
+        const response = await fetch(primaryChar.image_url);
+        if (!response.ok) throw new Error("Failed to fetch character image for V2 export.");
+        const imageBuffer = await response.arrayBuffer();
+        
+        return this._injectDataIntoPng(imageBuffer, v2Object);
+    },
+    
+    /**
+     * Exports a narrative to the BYAF format.
+     * @param {object} story - The story object.
+     * @param {object} narrative - The narrative to export.
+     * @param {string} primaryCharId - The ID of the primary character.
+     * @returns {Promise<Blob>} A promise that resolves with a Blob of the final .byaf (zip) file.
+     */
+    async exportStoryAsBYAF(story, narrative, primaryCharId) {
+        const primaryChar = story.characters.find(c => c.id === primaryCharId);
+        if (!primaryChar) throw new Error("BYAF export requires a selected primary character.");
 
-        const newCharacter = {
-            id: UTILITY.uuid(), name: characterName, description: fullDescription, short_description: firstSentence,
-            model_instructions: "Act as {character}. Be descriptive and engaging.",
-            image_url: '', extra_portraits: [], tags: byafCharData.tags || [], is_user: false, is_active: true
-        };
-
-        if (byafCharData.system_prompt) newCharacter.model_instructions = byafCharData.system_prompt.replace(/{character}/g, characterName);
-        if (byafScenarioData.formattingInstructions) newCharacter.model_instructions = byafScenarioData.formattingInstructions.replace(/{character}/g, characterName).replace(/{user}/g, userChar.name);
-        newStory.characters = [userChar, newCharacter];
-        
-        const firstMes = (byafScenarioData.firstMessages && byafScenarioData.firstMessages[0]?.text) || byafCharData.first_mes || `The story of ${characterName} begins.`;
-        const newScenario = { id: UTILITY.uuid(), name: "Imported Start", message: firstMes.replace(/{character}/g, characterName).replace(/{user}/g, userChar.name) };
-        newStory.scenarios.push(newScenario);
-        
-        const newNarrative = {
-            id: UTILITY.uuid(), name: "Imported Chat", last_modified: new Date().toISOString(),
-            state: {
-                chat_history: [], messageCounter: 0,
-                static_entries: byafScenarioData.narrative ? [{id: UTILITY.uuid(), title: "Initial Scene", content: byafScenarioData.narrative.replace(/{character}/g, characterName)}] : []
+        let imageBlob = null;
+        if (primaryChar.image_url) {
+            try {
+                const response = await fetch(primaryChar.image_url);
+                if (response.ok) imageBlob = await response.blob();
+            } catch (e) {
+                console.warn("Could not fetch image for BYAF export.", e);
             }
-        };
+        }
         
-        if (byafScenarioData.exampleMessages && byafScenarioData.exampleMessages[0]?.text) {
-            const exampleText = byafScenarioData.exampleMessages[0].text;
-            const charNameIdMap = {'#{character}:': newCharacter.id, '#{user}:': userChar.id};
-            const regex = /(#\{(?:character|user)\}:)([\s\S]*?)(?=#\{|$)/g;
+        const byafArchiveData = this._convertEllipsistoBYAF(story, narrative, primaryCharId);
+        const zip = new JSZip();
+
+        zip.file("manifest.json", JSON.stringify(byafArchiveData.manifest, null, 2));
+        const charFolder = zip.folder(`characters/${byafArchiveData.character.id}`);
+        charFolder.file("character.json", JSON.stringify(byafArchiveData.character, null, 2));
+        if (imageBlob) {
+            charFolder.file("images/profile.png", imageBlob);
+        }
+        zip.file(`scenarios/scenario1.json`, JSON.stringify(byafArchiveData.scenario, null, 2));
+        
+        return zip.generateAsync({ type: "blob" });
+    },
+
+
+    // --- Internal Parsing & Data Mapping Logic ---
+    
+    async _parseEllipsisJSON(file) {
+        const jsonString = await file.text();
+        const story = JSON.parse(jsonString);
+
+        // Basic validation
+        if (!story.id || !story.name || !story.characters) {
+            throw new Error("Invalid Ellipsis JSON file. Missing required fields.");
+        }
+        // Re-randomize IDs to prevent conflicts in the library
+        story.id = UTILITY.uuid();
+        (story.characters || []).forEach(c => c.id = UTILITY.uuid());
+        (story.scenarios || []).forEach(s => s.id = UTILITY.uuid());
+        (story.narratives || []).forEach(n => {
+            n.id = UTILITY.uuid();
+            (n.state?.static_entries || []).forEach(e => e.id = UTILITY.uuid());
+        });
+        (story.dynamic_entries || []).forEach(e => e.id = UTILITY.uuid());
+        
+        return story;
+    },
+
+    async _parseV2Card(file, skipImages) {
+        const arrayBuffer = await file.arrayBuffer();
+        const v2DataString = await this._extractV2Data(arrayBuffer);
+        if (!v2DataString) throw new Error("No character data found in PNG file.");
+        
+        const v2RawData = JSON.parse(this._b64_to_utf8(v2DataString));
+        const v2Data = v2RawData.data || v2RawData; // Handle both v1 and v2 spec
+
+        let imageUrl = '';
+        if (!skipImages) {
+            imageUrl = await ImageProcessor.processImage(file);
+        }
+
+        return this._convertV2toEllipsis(v2Data, imageUrl);
+    },
+
+    async _parseBYAF(file, skipImages) {
+        const zip = await JSZip.loadAsync(file);
+
+        const characterFile = zip.file(/character\.json$/i)[0];
+        const scenarioFile = zip.file(/scenario\d*\.json$/i)[0];
+        const imageFile = zip.file(/\.png$/i)[0];
+
+        if (!characterFile || !scenarioFile) {
+            throw new Error("Archive is missing character.json or scenario.json.");
+        }
+
+        const byafData = {
+            character: JSON.parse(await characterFile.async('string')),
+            scenario: JSON.parse(await scenarioFile.async('string')),
+        };
+
+        let imageUrl = '';
+        if (!skipImages && imageFile) {
+            const imageBlob = await imageFile.async('blob');
+            imageUrl = await ImageProcessor.processImage(imageBlob);
+        }
+
+        return this._convertBYAFtoEllipsis(byafData, imageUrl);
+    },
+
+    // --- Data Conversion Helpers (Import) ---
+
+	_convertV2toEllipsis(v2Data, imageUrl) {
+		const story = this._createEmptyEllipsisStory();
+		story.name = v2Data.name || "Imported Character";
+		story.tags = v2Data.tags || [];
+
+		// Create User and AI Character with corrected variable names
+		const userChar = { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {user} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', tags:[], is_narrator: false };
+		const aiChar = {
+			id: UTILITY.uuid(),
+			name: v2Data.name || "Imported Character",
+			description: (v2Data.description || "").replace(/{{char}}/g, v2Data.name || "Imported Character").replace(/{{user}}/g, "You"),
+			short_description: (v2Data.description || "").split('.')[0] + '.',
+			model_instructions: (v2Data.system_prompt || "Act as {character}. Be descriptive and engaging.").replace(/{{char}}/g, "{character}").replace(/{{user}}/g, "{user}"),
+			image_url: imageUrl,
+			extra_portraits: [],
+			tags: v2Data.tags || [],
+			is_user: false,
+			is_active: true,
+			is_narrator: false
+		};
+		story.characters = [userChar, aiChar];
+
+		// Map Lorebook -> Dynamic Entries
+		if (v2Data.character_book && v2Data.character_book.entries) {
+			story.dynamic_entries = v2Data.character_book.entries.map(entry => ({
+				id: UTILITY.uuid(),
+				title: (entry.keys || []).join(', ') || "Imported Lore",
+				triggers: (entry.keys || []).join(', '),
+				content: entry.content || "",
+				triggered_at_turn: null
+			}));
+		}
+		
+		const firstMes = (v2Data.first_mes || `The story of ${aiChar.name} begins.`).replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, userChar.name);
+		// Create Scenario and Narrative
+		const scenario = { id: UTILITY.uuid(), name: "Imported Start", message: firstMes };
+		story.scenarios.push(scenario);
+		
+		const narrative = this._createEmptyEllipsisNarrative("Imported Chat");
+		
+		// [FIX] Parse V2 multi-turn example dialogues
+		if (v2Data.mes_example) {
+			const charNameIdMap = { '{{user}}': userChar.id, '{{char}}': aiChar.id };
+			const regex = /({{user}}|{{char}}):([\s\S]*?)(?={{user}}:|{{char}}:|$)/g;
+			
+			// Clean the text block first
+			let cleanedText = v2Data.mes_example.replace(/<START>/g, '').trim();
+			
+			for (const match of cleanedText.matchAll(regex)) {
+				const speakerPrefix = match[1];
+				const messageContent = match[2].trim();
+				const speakerId = charNameIdMap[speakerPrefix];
+
+				if (speakerId && messageContent) {
+					narrative.state.chat_history.push({
+						character_id: speakerId,
+						content: messageContent,
+						type: 'chat',
+						isHidden: true
+					});
+				}
+			}
+		}
+
+		// [FIX] Add the first message to the chat history so it appears on load
+		if (firstMes) {
+			narrative.state.chat_history.push({
+				character_id: aiChar.id,
+				content: firstMes,
+				type: 'chat',
+				isHidden: false
+			});
+			narrative.state.messageCounter = 1;
+		}
+		
+		story.narratives.push(narrative);
+		return story;
+	},
+
+    _convertBYAFtoEllipsis(byafData, imageUrl) {
+        const { character, scenario } = byafData;
+        const story = this._createEmptyEllipsisStory();
+        story.name = character.displayName || character.name || "Imported Character";
+        story.tags = character.tags || [];
+
+        const userChar = { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', tags:[], is_narrator: false };
+        const aiChar = {
+            id: UTILITY.uuid(),
+            name: character.displayName || character.name,
+            description: character.persona || "",
+            short_description: (character.persona || "").split('.')[0] + '.',
+            model_instructions: scenario.formattingInstructions || "Act as {character}. Be descriptive and engaging.",
+            image_url: imageUrl,
+            extra_portraits: [],
+            tags: character.tags || [],
+            is_user: false,
+            is_active: true,
+            is_narrator: false
+        };
+        story.characters = [userChar, aiChar];
+
+        // Map Lore Items -> Dynamic Entries
+        if (character.loreItems) {
+            story.dynamic_entries = character.loreItems.map(item => ({
+                id: UTILITY.uuid(),
+                title: item.key || "Imported Lore",
+                triggers: item.key || "",
+                content: item.value || "",
+                triggered_at_turn: null
+            }));
+        }
+
+        const firstMes = (scenario.firstMessages && scenario.firstMessages[0]?.text) || `The story of ${aiChar.name} begins.`;
+        const newScenario = { id: UTILITY.uuid(), name: "Imported Start", message: firstMes };
+        story.scenarios.push(newScenario);
+
+        const narrative = this._createEmptyEllipsisNarrative("Imported Chat");
+		
+		 // Correctly map the BYAF scenario's 'narrative' field to a static entry
+		if (scenario.narrative) {
+			narrative.state.static_entries.push({
+				id: UTILITY.uuid(),
+				title: "Starting Scenario",
+				content: scenario.narrative
+			});
+		}
+	
+// [FIX] Parse multi-turn example dialogues from BYAF format
+    if (scenario.exampleMessages && scenario.exampleMessages.length > 0) {
+        const charNameIdMap = { '#{character}:': aiChar.id, '#{user}:': userChar.id };
+        const regex = /(#\{(?:character|user)\}:)([\s\S]*?)(?=#\{|$)/g;
+
+        scenario.exampleMessages.forEach(msg => {
+            const exampleText = msg.text || "";
             for (const match of exampleText.matchAll(regex)) {
-                if (charNameIdMap[match[1]] && match[2].trim()) {
-                    newNarrative.state.chat_history.push({ 
-                        character_id: charNameIdMap[match[1]], 
-                        content: match[2].trim().replace(/{character}/g, characterName).replace(/{user}/g, userChar.name), 
-                        type: 'chat', emotion: 'neutral', timestamp: new Date().toISOString(), isHidden: true
+                const speakerPrefix = match[1];
+                const messageContent = match[2].trim();
+                const speakerId = charNameIdMap[speakerPrefix];
+
+                if (speakerId && messageContent) {
+                    narrative.state.chat_history.push({
+                        character_id: speakerId,
+                        content: messageContent,
+                        type: 'chat',
+                        emotion: 'neutral',
+                        timestamp: new Date().toISOString(),
+                        isHidden: true
                     });
                 }
             }
+        });
+	}
+		
+		// Add the first message to the chat history so it appears on load
+		if (firstMes) {
+			narrative.state.chat_history.push({
+				character_id: aiChar.id,
+				content: firstMes,
+				type: 'chat',
+				emotion: 'neutral',
+				timestamp: new Date().toISOString(),
+				isHidden: false // Ensure it's a visible message
+			});
+			narrative.state.messageCounter = 1;
+		}
+	
+        story.narratives.push(narrative);
+        return story;
+    },
+
+    // --- Data Conversion Helpers (Export) ---
+
+    _convertEllipsistoV2(story, narrative, primaryCharId) {
+        const primaryChar = story.characters.find(c => c.id === primaryCharId);
+        const otherAiChars = story.characters.filter(c => !c.is_user && c.id !== primaryCharId);
+
+        // Merge descriptions
+        let fullDescription = primaryChar.description;
+        if (otherAiChars.length > 0) {
+            fullDescription += "\n\n--- Other Characters ---\n";
+            otherAiChars.forEach(char => {
+                fullDescription += `\nName: ${char.name}\nDescription: ${char.description}\n`;
+            });
         }
         
-        const firstSpeaker = newStory.characters.find(c => !c.is_user && c.is_active);
-        if(firstSpeaker) newNarrative.state.chat_history.push({ character_id: firstSpeaker.id, content: newScenario.message, type: 'chat', emotion: 'neutral', timestamp: new Date().toISOString() });
-        newNarrative.state.messageCounter = newNarrative.state.chat_history.filter(m => !m.isHidden).length;
-        newStory.narratives.push(newNarrative);
+        // Convert dynamic entries + world map to character_book
+        const dynamicEntries = story.dynamic_entries.map(entry => ({
+            keys: (entry.triggers || "").split(',').map(t => t.trim()).filter(Boolean),
+            content: entry.content,
+        }));
+        const worldMapEntries = (narrative.state.worldMap?.grid || [])
+            .filter(loc => loc.name)
+            .map(loc => ({
+                keys: [loc.name],
+                content: `Description: ${loc.description}\n\nPrompt: ${loc.prompt}`
+            }));
 
-        return newStory;
+        const firstMessage = (narrative.state.chat_history || []).find(m => !m.isHidden);
+
+        const v2Data = {
+            name: primaryChar.name,
+            description: fullDescription,
+            system_prompt: primaryChar.model_instructions,
+            first_mes: firstMessage ? firstMessage.content : "The story begins.",
+            mes_example: (narrative.state.chat_history || []).filter(m => m.isHidden).map(m => m.content).join('\n'),
+            tags: primaryChar.tags || [],
+            character_book: {
+                entries: [...dynamicEntries, ...worldMapEntries]
+            }
+        };
+
+        return { spec: 'chara_card_v2', data: v2Data };
     },
+    
+    _convertEllipsistoBYAF(story, narrative, primaryCharId) {
+        const primaryChar = story.characters.find(c => c.id === primaryCharId);
+        const now = new Date().toISOString();
+
+        const dynamicEntries = story.dynamic_entries.map(entry => ({
+            id: UTILITY.uuid(),
+            key: entry.triggers || "",
+            value: entry.content || "",
+        }));
+        const worldMapEntries = (narrative.state.worldMap?.grid || [])
+            .filter(loc => loc.name)
+            .map(loc => ({
+                id: UTILITY.uuid(),
+                key: loc.name,
+                value: `Description: ${loc.description}\n\nPrompt: ${loc.prompt}`
+            }));
+
+        const character = {
+            schemaVersion: 1,
+            name: primaryChar.name,
+            displayName: primaryChar.name,
+            images: [{ path: "images/profile.png", label: "" }],
+            createdAt: now, updatedAt: now,
+            id: UTILITY.uuid(),
+            isNSFW: false,
+            persona: primaryChar.description,
+            loreItems: [...dynamicEntries, ...worldMapEntries],
+            tags: primaryChar.tags || []
+        };
+
+        const firstMessage = (narrative.state.chat_history || []).find(m => !m.isHidden);
+        const scenario = {
+            schemaVersion: 1, title: narrative.name,
+            firstMessages: [{ text: firstMessage ? firstMessage.content : "", characterID: character.id }],
+            exampleMessages: (narrative.state.chat_history || []).filter(m => m.isHidden).map(m => ({ text: m.content, characterID: character.id })),
+            formattingInstructions: primaryChar.model_instructions,
+        };
+
+        const manifest = {
+            schemaVersion: 1, createdAt: now,
+            characters: [ `characters/${character.id}/character.json` ],
+            scenarios: [ `scenarios/scenario1.json` ]
+        };
+
+        return { manifest, character, scenario };
+    },
+
+    // --- Low-Level File and Helper Functions ---
+    
+    _createEmptyEllipsisStory() {
+        return {
+            id: UTILITY.uuid(),
+            name: "New Imported Story",
+            last_modified: new Date().toISOString(),
+            created_date: new Date().toISOString(),
+            ...UTILITY.getDefaultApiSettings(),
+            ...UTILITY.getDefaultUiSettings(),
+            ...UTILITY.getDefaultSystemPrompts(),
+            characters: [],
+            dynamic_entries: [],
+            scenarios: [],
+            narratives: []
+        };
+    },
+    
+    _createEmptyEllipsisNarrative(name) {
+        return {
+            id: UTILITY.uuid(), name: name,
+            last_modified: new Date().toISOString(),
+            state: {
+                chat_history: [], messageCounter: 0, static_entries: [],
+                worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: {x:null, y:null}, path:[] }
+            }
+        };
+    },
+
+    _b64_to_utf8(str) {
+        return decodeURIComponent(escape(atob(str)));
+    },
+
+    _utf8_to_b64(str) {
+        return btoa(unescape(encodeURIComponent(str)));
+    },
+
+    async _extractV2Data(arrayBuffer) {
+        const dataView = new DataView(arrayBuffer);
+        const PNG_SIGNATURE = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        for (let i = 0; i < PNG_SIGNATURE.length; i++) { if (dataView.getUint8(i) !== PNG_SIGNATURE[i]) throw new Error("Invalid PNG signature."); }
+        let offset = 8;
+        while (offset < arrayBuffer.byteLength) {
+            const length = dataView.getUint32(offset);
+            const type = String.fromCharCode.apply(null, new Uint8Array(arrayBuffer, offset + 4, 4));
+            if (['tEXt', 'zTXt'].includes(type)) {
+                let keywordEnd = -1;
+                for (let i = 0; i < length; i++) { if (dataView.getUint8(offset + 8 + i) === 0) { keywordEnd = i; break; } }
+                if (keywordEnd !== -1) {
+                    const keyword = new TextDecoder().decode(new Uint8Array(arrayBuffer, offset + 8, keywordEnd));
+                    if (keyword === 'chara') {
+                        if (type === 'tEXt') return new TextDecoder().decode(new Uint8Array(arrayBuffer, offset + 8 + keywordEnd + 1, length - keywordEnd - 1));
+                        if (type === 'zTXt') return new TextDecoder().decode(pako.inflate(new Uint8Array(arrayBuffer, offset + 8 + keywordEnd + 2, length - keywordEnd - 2)));
+                    }
+                }
+            }
+            if (type === 'IEND') break;
+            offset += 12 + length;
+        }
+        return null;
+    },
+
+    async _injectDataIntoPng(imageBuffer, v2Object) {
+        const _CRC_TABLE = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1); return c; });
+        const _crc32 = (bytes) => { let crc = -1; for (const byte of bytes) crc = (crc >>> 8) ^ _CRC_TABLE[(crc ^ byte) & 0xff]; return (crc ^ -1) >>> 0; };
+
+        const dataToInject = this._utf8_to_b64(JSON.stringify(v2Object));
+        const compressedData = pako.deflate(atob(dataToInject));
+        const keyword = 'chara';
+        const chunkData = new Uint8Array(keyword.length + 2 + compressedData.length);
+        
+        chunkData.set(new TextEncoder().encode(keyword));
+        chunkData[keyword.length] = 0; 
+        chunkData[keyword.length + 1] = 0;
+        chunkData.set(compressedData, keyword.length + 2);
+
+        const chunkType = new TextEncoder().encode('zTXt');
+        const dataWithChunkType = new Uint8Array(chunkType.length + chunkData.length);
+        dataWithChunkType.set(chunkType);
+        dataWithChunkType.set(chunkData, chunkType.length);
+        const crc = _crc32(dataWithChunkType);
+
+        const originalPng = new Uint8Array(imageBuffer);
+        let iendOffset = -1;
+        for (let i = 8; i < originalPng.length; i++) {
+            if (originalPng[i] === 73 && originalPng[i+1] === 69 && originalPng[i+2] === 78 && originalPng[i+3] === 68) {
+                iendOffset = i - 4; break;
+            }
+        }
+        if (iendOffset === -1) throw new Error('Could not find IEND chunk in image.');
+        
+        const newPngSize = iendOffset + 12 + chunkData.length + 12;
+        const newPng = new Uint8Array(newPngSize);
+        const newPngView = new DataView(newPng.buffer);
+
+        newPng.set(originalPng.slice(0, iendOffset));
+        newPngView.setUint32(iendOffset, chunkData.length);
+        newPng.set(chunkType, iendOffset + 4);
+        newPng.set(chunkData, iendOffset + 8);
+        newPngView.setUint32(iendOffset + 8 + chunkData.length, crc);
+        newPng.set(originalPng.slice(iendOffset, iendOffset + 12), iendOffset + 12 + chunkData.length);
+        
+        return new Blob([newPng], { type: 'image/png' });
+    }
 };
 
 
@@ -1358,14 +1913,20 @@ const UIManager = {
         activeCinematicBg: 1,
     },
     
+    /**
+     * Returns the SVG icon string for AI generation buttons.
+     * @returns {string} SVG HTML string.
+     */
     getAIGenIcon() {
         return `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 3.5a1.5 1.5 0 011.5 1.5V6a1.5 1.5 0 01-3 0V5A1.5 1.5 0 0110 3.5zM5.429 7.429a1.5 1.5 0 012.121 0l1.061 1.061a1.5 1.5 0 01-2.121 2.121L5.429 9.55a1.5 1.5 0 010-2.121zM14.571 7.429a1.5 1.5 0 010 2.121l-1.061 1.061a1.5 1.5 0 01-2.121-2.121l1.061-1.061a1.5 1.5 0 012.121 0zM10 16.5a1.5 1.5 0 01-1.5-1.5V14a1.5 1.5 0 013 0v1a1.5 1.5 0 01-1.5 1.5z"></path></svg>`;
     },
 
+    /**
+     * Renders all primary UI components. Called on initial load and after major state changes.
+     */
     renderAll() { 
         const state = StateManager.getState();
         if (state && state.narrativeName) {
-            // [MODIFIED] Display only the narrative name in the main title inputs.
             document.getElementById('story-title-input').value = state.narrativeName;
             const mobileTitle = document.getElementById('mobile-story-title-overlay');
             if (mobileTitle) mobileTitle.value = state.narrativeName;
@@ -1377,6 +1938,10 @@ const UIManager = {
         this.updateAICharacterSelector(); 
     },
 
+    /**
+     * Renders the main story library interface, including search, sort, and filter controls.
+     * @param {object} [filterState={}] - The current state of the filters (searchTerm, sortBy, filterTag).
+     */
     renderLibraryInterface(filterState = {}) {
         const library = StateManager.getLibrary();
         const container = document.getElementById('library-content-container');
@@ -1415,7 +1980,7 @@ const UIManager = {
                         <option value="created_date" ${sortBy === 'created_date' ? 'selected' : ''}>Created</option>
                     </select>
                     <select id="filter-by-tag" onchange="UIManager.renderLibraryInterface({searchTerm: document.querySelector('#library-content-container input[type=search]').value, sortBy: document.getElementById('sort-by').value, filterTag: this.value})" class="w-1/2 bg-black/30 p-2 rounded-lg border-gray-600">
-                        <option value="">Tag</option>
+                        <option value="">All Tags</option>
                         ${tagOptions}
                     </select>
                 </div>
@@ -1446,6 +2011,10 @@ const UIManager = {
         }
     },
 
+    /**
+     * Renders the detailed view for a selected story, showing its scenarios and narratives.
+     * @param {string} storyId - The ID of the story to display.
+     */
     openStoryDetails(storyId) {
         const library = StateManager.getLibrary();
         const story = library.stories.find(s => s.id === storyId);
@@ -1499,16 +2068,6 @@ const UIManager = {
                      <div class="flex space-x-2">
                         <button onclick="Controller.renameStoryPrompt('${story.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded-lg" title="Rename"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
                         <button onclick="Controller.duplicateStory('${story.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded-lg" title="Duplicate"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
-                        <div class="relative inline-block text-left">
-                            <button onclick="this.nextElementSibling.classList.toggle('hidden')" class="bg-green-600/80 hover:bg-green-700/80 text-white font-bold py-2 px-3 rounded-lg inline-flex items-center">Export As <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button>
-                            <div class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-gray-700 ring-1 ring-black ring-opacity-5 hidden z-10">
-                                <div class="py-1" role="menu" aria-orientation="vertical">
-                                    <a href="#" onclick="Controller.exportStoryAs('${story.id}', 'json'); this.closest('div.relative').classList.add('hidden');" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600">JSON</a>
-                                    <a href="#" onclick="Controller.exportStoryAs('${story.id}', 'v2'); this.closest('div.relative').classList.add('hidden');" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600">V2 PNG Card</a>
-                                    <a href="#" onclick="Controller.exportStoryAs('${story.id}', 'byaf'); this.closest('div.relative').classList.add('hidden');" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600">BYAF</a>
-                                </div>
-                            </div>
-                        </div>
                         <button onclick="Controller.deleteStory('${story.id}')" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-3 rounded-lg" title="Delete"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                      </div>
                 </div>
@@ -1525,6 +2084,11 @@ const UIManager = {
         }
     },
 
+    /**
+     * Starts an image carousel for the story details view.
+     * @param {Array} characters - The characters from the story.
+     * @param {string} containerId - The ID of the element to host the carousel.
+     */
     startCarousel(characters, containerId) {
         if (ModalManager.RUNTIME.carousel_interval) clearInterval(ModalManager.RUNTIME.carousel_interval);
         
@@ -1695,8 +2259,8 @@ const UIManager = {
 
         const processedContent = replacer(msg.content);
         const contentId = `message-content-${index}`;
-        const boldedContent = processedContent.replace(/(["“])([^"”]*)(["”])/g, '**$1$2$3**');
-        let contentHTML = marked.parse(boldedContent || '');
+		const styledContent = processedContent.replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`);
+		let contentHTML = marked.parse(styledContent || '');
         
         let bubbleStyle = '';
         let characterNameColor = '';
@@ -1778,12 +2342,12 @@ const UIManager = {
                     this.RUNTIME.activeCinematicBg = 1;
                 }
             } else if (!latestAiImageUrl && this.RUNTIME.lastCinematicImageUrl) {
-                // If no AI image is found in recent history, keep the last one visible
+				// If no AI image is found in recent history, keep the last one visible
                 const activeBg = document.getElementById(`cinematic-bg-${this.RUNTIME.activeCinematicBg}`);
                 if (activeBg) activeBg.style.backgroundImage = `url('${this.RUNTIME.lastCinematicImageUrl}')`;
             }
         } else {
-            // BUG FIX: Clear cinematic backgrounds if not in cinematic mode to fix lingering portraits
+			//Clear cinematic backgrounds if not in cinematic mode to fix lingering portraits
             const bg1 = document.getElementById('cinematic-bg-1');
             const bg2 = document.getElementById('cinematic-bg-2');
             if (bg1) {
@@ -2285,8 +2849,230 @@ const UIManager = {
         }
     },
 
+    // --- NEW & MODIFIED UI Functions for Import/Export ---
+
     /**
-     * Displays a generic confirmation modal.
+     * Renders the centralized Import/Export Hub modal.
+     */
+    renderIOHubModal() {
+        const modalContent = document.getElementById('io-hub-modal-content');
+        const library = StateManager.getLibrary();
+        const storyOptions = library.stories.map(s => `<option value="${s.id}">${UTILITY.escapeHTML(s.name)}</option>`).join('');
+
+        const hubHTML = `
+            <div class="p-6 border-b border-gray-700">
+                <h2 class="text-2xl font-semibold">Import / Export Hub</h2>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- === IMPORT COLUMN === -->
+                    <div class="space-y-6">
+                        <h3 class="text-xl font-bold border-b pb-2 border-gray-600">Import</h3>
+                        <div>
+                            <p class="text-sm text-gray-300 mb-2">Import a single Story from a V2 PNG, BYAF, or Ellipsis JSON file.</p>
+                            <label for="single-file-upload" class="cursor-pointer">
+                                <div class="border-2 border-dashed border-gray-500 rounded-lg p-6 text-center bg-black/20 hover:bg-black/40">
+                                    <p class="font-semibold text-indigo-300">Click to upload a file</p>
+                                    <p class="text-xs text-gray-400 mt-1">.png, .byaf, .zip, .json</p>
+                                </div>
+                            </label>
+                            <input id="single-file-upload" type="file" class="hidden" accept=".png,.byaf,.zip,.json" onchange="Controller.handleFileUpload(event)">
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-300 mb-2">Import an entire folder of V2 PNG or BYAF files at once.</p>
+                            <button onclick="Controller.handleBulkImport()" class="w-full mt-2 bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg">Select Folder to Import</button>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-300 mb-2">Replace your current library with an Ellipsis Library JSON file. <span class="font-bold text-red-400">Warning: This is a destructive action.</span></p>
+                            <label class="w-full mt-2 bg-red-800/80 hover:bg-red-900/80 text-white font-bold py-2 px-4 rounded-lg inline-block text-center cursor-pointer">
+                                <span>Import Library File</span>
+                                <input type="file" class="hidden" accept=".json" onchange="Controller.importLibrary(event)">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- === EXPORT COLUMN === -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-bold border-b pb-2 border-gray-600">Export</h3>
+                        <div>
+                            <label for="story-export-selector" class="block text-sm font-medium text-gray-300">1. Select Story to Export</label>
+                            <select id="story-export-selector" class="w-full mt-1 bg-black/30 p-2 rounded-lg border-gray-600" onchange="UIManager.populateNarrativeSelector()">
+                                <option value="">-- Select a Story --</option>
+                                ${storyOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="narrative-export-selector" class="block text-sm font-medium text-gray-300">2. Select Narrative</label>
+                            <select id="narrative-export-selector" class="w-full mt-1 bg-black/30 p-2 rounded-lg border-gray-600" onchange="UIManager.populateCharacterSelector()"></select>
+                        </div>
+                        <div id="character-export-selector-container" class="hidden">
+                            <label for="character-export-selector" class="block text-sm font-medium text-gray-300">3. Select Primary Character (for V2/BYAF)</label>
+                            <select id="character-export-selector" class="w-full mt-1 bg-black/30 p-2 rounded-lg border-gray-600"></select>
+                        </div>
+                        <div>
+                            <p class="block text-sm font-medium text-gray-300 mt-2">4. Choose Export Format</p>
+                            <div class="grid grid-cols-3 gap-2 mt-2">
+                                <button onclick="Controller.exportStoryAs('json')" class="bg-indigo-600/80 hover:bg-indigo-700/80 text-white font-bold py-2 px-3 rounded-lg">JSON</button>
+                                <button onclick="Controller.exportStoryAs('png')" class="bg-sky-600/80 hover:bg-sky-700/80 text-white font-bold py-2 px-3 rounded-lg">V2 PNG</button>
+                                <button onclick="Controller.exportStoryAs('byaf')" class="bg-emerald-600/80 hover:bg-emerald-700/80 text-white font-bold py-2 px-3 rounded-lg">BYAF</button>
+                            </div>
+                        </div>
+                         <hr class="border-gray-600 !mt-8">
+                        <div>
+                            <p class="text-sm text-gray-300 mb-2">Save a backup of your entire story library.</p>
+                            <button onclick="Controller.exportLibrary()" class="w-full mt-2 bg-gray-600/80 hover:bg-gray-700/80 text-white font-bold py-2 px-4 rounded-lg">Export Entire Library</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end">
+                <button onclick="Controller.closeModal('io-hub-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Close</button>
+            </div>
+        `;
+        modalContent.innerHTML = hubHTML;
+        this.populateNarrativeSelector();
+    },
+
+    /** Populates the narrative selector dropdown based on the selected story. */
+    populateNarrativeSelector() {
+        const storyId = document.getElementById('story-export-selector').value;
+        const narrativeSelector = document.getElementById('narrative-export-selector');
+        narrativeSelector.innerHTML = '';
+        if (storyId) {
+            const story = StateManager.getLibrary().stories.find(s => s.id === storyId);
+            if (story && story.narratives) {
+                narrativeSelector.innerHTML = story.narratives.map(n => `<option value="${n.id}">${UTILITY.escapeHTML(n.name)}</option>`).join('');
+            }
+        }
+        this.populateCharacterSelector();
+    },
+
+    /** Populates the character selector dropdown for V2/BYAF exports. */
+    populateCharacterSelector() {
+        const storyId = document.getElementById('story-export-selector').value;
+        const charContainer = document.getElementById('character-export-selector-container');
+        const charSelector = document.getElementById('character-export-selector');
+        charSelector.innerHTML = '';
+        if (storyId) {
+            const story = StateManager.getLibrary().stories.find(s => s.id === storyId);
+            const aiChars = story.characters.filter(c => !c.is_user);
+            if (aiChars.length > 0) {
+                charSelector.innerHTML = aiChars.map(c => `<option value="${c.id}">${UTILITY.escapeHTML(c.name)}</option>`).join('');
+                charContainer.classList.remove('hidden');
+            } else {
+                charContainer.classList.add('hidden');
+            }
+        } else {
+            charContainer.classList.add('hidden');
+        }
+    },
+
+    /**
+     * Displays a confirmation modal that returns a Promise, allowing for async/await usage.
+     * @param {string} message - The message to display.
+     * @returns {Promise<boolean>} - A promise that resolves to true if confirmed, false if canceled.
+     */
+    showConfirmationPromise(message) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('confirmation-modal');
+            const messageEl = document.getElementById('confirmation-modal-message');
+            const confirmBtn = document.getElementById('confirmation-modal-confirm-button');
+            const cancelBtn = modal.querySelector('button:not(#confirmation-modal-confirm-button)');
+            
+            messageEl.textContent = message;
+            
+            const confirmClickHandler = () => {
+                cleanup();
+                resolve(true);
+            };
+            const cancelClickHandler = () => {
+                cleanup();
+                resolve(false);
+            };
+
+            const cleanup = () => {
+                confirmBtn.removeEventListener('click', confirmClickHandler);
+                cancelBtn.removeEventListener('click', cancelClickHandler);
+                modal.querySelector('.modal-overlay').removeEventListener('click', cancelClickHandler);
+                Controller.closeModal('confirmation-modal');
+            };
+            
+            confirmBtn.addEventListener('click', confirmClickHandler, { once: true });
+            cancelBtn.addEventListener('click', cancelClickHandler, { once: true });
+            modal.querySelector('.modal-overlay').addEventListener('click', cancelClickHandler, { once: true });
+
+            Controller.openModal('confirmation-modal');
+        });
+    },
+
+    /** Displays a full-screen loading spinner with a message. */
+    showLoadingSpinner(message = 'Loading...') {
+        let spinner = document.getElementById('loading-spinner');
+        if (!spinner) {
+            spinner = document.createElement('div');
+            spinner.id = 'loading-spinner';
+            spinner.className = 'fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center';
+            spinner.innerHTML = `
+                <div class="w-16 h-16 border-4 border-t-indigo-500 border-gray-600 rounded-full animate-spin"></div>
+                <p id="spinner-message" class="mt-4 text-white font-semibold"></p>
+            `;
+            document.body.appendChild(spinner);
+        }
+        document.getElementById('spinner-message').textContent = message;
+        spinner.style.display = 'flex';
+    },
+
+    /** Hides the loading spinner. */
+    hideLoadingSpinner() {
+        const spinner = document.getElementById('loading-spinner');
+        if (spinner) {
+            spinner.style.display = 'none';
+        }
+    },
+
+    /**
+     * Displays a report modal after a bulk import is complete.
+     * @param {string[]} importedStoryNames - A list of names of successfully imported stories.
+     * @param {Array<{name: string, reason: string}>} failedFiles - A list of files that failed to import.
+     */
+    showBulkImportReport(importedStoryNames, failedFiles) {
+        const container = document.getElementById('report-modal-content');
+        let reportHTML = `
+            <div class="p-6 border-b border-gray-700"><h2 class="text-2xl font-semibold">Bulk Import Report</h2></div>
+            <div class="p-6 overflow-y-auto space-y-4">
+                <div>
+                    <h3 class="font-bold text-lg text-green-400">Success (${importedStoryNames.length})</h3>
+                    <ul class="list-disc list-inside text-sm mt-2 max-h-40 overflow-y-auto bg-black/20 p-2 rounded-md">
+                        ${importedStoryNames.map(name => `<li>${UTILITY.escapeHTML(name)}</li>`).join('') || '<li>No stories were imported successfully.</li>'}
+                    </ul>
+                </div>
+        `;
+
+        if (failedFiles.length > 0) {
+            const logContent = failedFiles.map(f => `File: ${f.name}\nReason: ${f.reason}\n---`).join('\n');
+            const logBlob = new Blob([logContent], { type: 'text/plain' });
+            const logUrl = URL.createObjectURL(logBlob);
+
+            reportHTML += `
+                <div>
+                    <h3 class="font-bold text-lg text-red-400">Failures (${failedFiles.length})</h3>
+                    <p class="text-sm mt-2">Some files could not be imported. <a href="${logUrl}" download="import_error_log.txt" class="text-indigo-400 hover:underline">Download Error Log</a> for details.</p>
+                </div>
+            `;
+        }
+        
+        reportHTML += `</div>
+            <div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end">
+                <button onclick="Controller.closeModal('report-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button>
+            </div>
+        `;
+        
+        container.innerHTML = reportHTML;
+        Controller.openModal('report-modal');
+    },
+
+    /**
+     * Displays a generic confirmation modal. (Kept for simple, non-async confirmations).
      * @param {string} message - The message to display in the modal body.
      * @param {function} onConfirmCallback - The function to execute when the confirm button is clicked.
      */
@@ -2322,6 +3108,12 @@ const UIManager = {
         button.classList.remove('bg-indigo-600/50', 'hover:bg-indigo-600/80');
         button.classList.add('bg-red-700/60', 'hover:bg-red-700/80');
         button.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0h8v8H6V4z" clip-rule="evenodd" /></svg>`;
+		
+        // [FIX] Use setTimeout to defer attaching the new event handler.
+        // This prevents a race condition where the initial click also triggers the stop function.
+        setTimeout(() => {
+            button.onclick = () => Controller.stopGeneration();
+        }, 0);
     },
 
     /**
@@ -2337,7 +3129,6 @@ const UIManager = {
         button.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>`;
     },
 };
-
 
 
     <!-- PASTE content of app.js HERE -->
@@ -2377,6 +3168,11 @@ const Controller = {
     },
 
     // --- Story & Narrative Management ---
+
+    /**
+     * Creates the initial default story and narrative when the app is launched for the first time.
+     * Ensures new users have a starting point.
+     */
     createDefaultStoryAndNarrative() {
         const library = StateManager.getLibrary();
 
@@ -2420,6 +3216,9 @@ const Controller = {
         window.location.reload(); 
     },
 
+    /**
+     * Creates a new, blank story in the library.
+     */
     createNewStory() {
         const library = StateManager.getLibrary();
         const newStory = {
@@ -2441,6 +3240,11 @@ const Controller = {
         UIManager.renderLibraryInterface();
     },
 
+    /**
+     * Creates a new narrative (chat session) from a selected scenario template.
+     * @param {string} storyId - The ID of the parent story.
+     * @param {string} scenarioId - The ID of the scenario to use as a template.
+     */
     createNarrativeFromScenario(storyId, scenarioId) {
         const library = StateManager.getLibrary();
         const story = library.stories.find(s => s.id === storyId);
@@ -2486,6 +3290,11 @@ const Controller = {
         this.loadNarrative(storyId, newNarrative.id);
     },
 
+    /**
+     * Loads a specific narrative, making it the active session, and reloads the application.
+     * @param {string} storyId - The ID of the story containing the narrative.
+     * @param {string} narrativeId - The ID of the narrative to load.
+     */
     loadNarrative(storyId, narrativeId) {
         const library = StateManager.getLibrary();
         library.active_story_id = storyId;
@@ -2494,6 +3303,11 @@ const Controller = {
         window.location.reload();
     },
 
+    /**
+     * Duplicates an existing narrative.
+     * @param {string} storyId - The ID of the parent story.
+     * @param {string} narrativeId - The ID of the narrative to duplicate.
+     */
     duplicateNarrative(storyId, narrativeId) {
         const library = StateManager.getLibrary();
         const story = library.stories.find(s => s.id === storyId);
@@ -2511,6 +3325,11 @@ const Controller = {
         UIManager.openStoryDetails(storyId);
     },
 
+    /**
+     * Deletes a narrative after user confirmation.
+     * @param {string} storyId - The ID of the parent story.
+     * @param {string} narrativeId - The ID of the narrative to delete.
+     */
     deleteNarrative(storyId, narrativeId) {
         UIManager.showConfirmationModal('Are you sure you want to permanently delete this narrative and all its chat history?', () => {
             const library = StateManager.getLibrary();
@@ -2526,6 +3345,11 @@ const Controller = {
         });
     },
 
+    /**
+     * Duplicates an existing scenario.
+     * @param {string} storyId - The ID of the parent story.
+     * @param {string} scenarioId - The ID of the scenario to duplicate.
+     */
     duplicateScenario(storyId, scenarioId) {
         const library = StateManager.getLibrary();
         const story = library.stories.find(s => s.id === storyId);
@@ -2540,6 +3364,11 @@ const Controller = {
         UIManager.openStoryDetails(storyId);
     },
     
+    /**
+     * Deletes a scenario after user confirmation.
+     * @param {string} storyId - The ID of the parent story.
+     * @param {string} scenarioId - The ID of the scenario to delete.
+     */
     deleteScenario(storyId, scenarioId) {
         const library = StateManager.getLibrary();
         const story = library.stories.find(s => s.id === storyId);
@@ -2556,6 +3385,10 @@ const Controller = {
         }
     },
 
+    /**
+     * Deletes an entire story and all its contents after user confirmation.
+     * @param {string} storyId - The ID of the story to delete.
+     */
     deleteStory(storyId) {
         UIManager.showConfirmationModal('Are you sure you want to permanently delete this entire story, including all its narratives and scenarios?', () => {
             const library = StateManager.getLibrary();
@@ -2574,6 +3407,11 @@ const Controller = {
         });
     },
 
+    /**
+     * Renames a story.
+     * @param {string} storyId - The ID of the story to rename.
+     * @param {string} newName - The new name for the story.
+     */
     renameStory(storyId, newName) {
         const library = StateManager.getLibrary();
         const story = library.stories.find(s => s.id === storyId);
@@ -2587,6 +3425,10 @@ const Controller = {
         }
     },
 
+    /**
+     * Prompts the user to enter a new name for a story.
+     * @param {string} storyId - The ID of the story.
+     */
     renameStoryPrompt(storyId) {
         const library = StateManager.getLibrary();
         const story = library.stories.find(s => s.id === storyId);
@@ -2599,6 +3441,10 @@ const Controller = {
         }
     },
 
+    /**
+     * Duplicates an entire story object.
+     * @param {string} storyId - The ID of the story to duplicate.
+     */
     duplicateStory(storyId) {
         const library = StateManager.getLibrary();
         const originalStory = library.stories.find(s => s.id === storyId);
@@ -2616,6 +3462,10 @@ const Controller = {
         UIManager.renderLibraryInterface();
     },
 
+    /**
+     * Updates the searchable text index for a story.
+     * @param {object} story - The story object to index.
+     */
     updateSearchIndex(story) {
         if (!story) return;
         let index = [story.name];
@@ -2632,11 +3482,16 @@ const Controller = {
 
     // --- Modal & UI State Management ---
 
+    /**
+     * Handles the opening of all modals, performing necessary setup for each.
+     * @param {string} modalId - The ID of the modal to open.
+     * @param {*} [contextId=null] - An optional context ID (e.g., character ID, message index).
+     */
     openModal(modalId, contextId = null) { 
         const library = StateManager.getLibrary();
         const state = StateManager.getState();
         
-        if ((modalId === 'knowledge-modal' || modalId === 'characters-modal' || modalId === 'settings-modal' || modalId === 'example-dialogue-modal' || modalId === 'character-detail-modal' || modalId === 'world-map-modal') && (!library.active_narrative_id || Object.keys(state).length === 0)) {
+        if ((modalId === 'knowledge-modal' || modalId === 'characters-modal' || modalId === 'settings-modal' || modalId === 'example-dialogue-modal' || modalId === 'character-detail-modal' || modalId === 'world-map-modal' || modalId === 'io-hub-modal') && (!library.active_story_id && modalId !== 'io-hub-modal')) {
              alert("Please load a narrative first.");
              return;
         }
@@ -2644,6 +3499,9 @@ const Controller = {
         switch(modalId) {
             case 'story-library-modal':
                 UIManager.renderLibraryInterface();
+                break;
+            case 'io-hub-modal':
+                UIManager.renderIOHubModal();
                 break;
             case 'knowledge-modal':
                 this.switchKnowledgeTab('static');
@@ -2671,6 +3529,7 @@ const Controller = {
         ModalManager.open(modalId);
     },
     
+    /** Closes a modal. */
     closeModal(modalId) { 
         ModalManager.close(modalId);
         if (modalId === 'character-detail-modal') {
@@ -2678,20 +3537,27 @@ const Controller = {
         }
     },
 
+    /** Toggles the mobile navigation menu. */
     toggleMobileMenu() {
         document.getElementById('mobile-menu').classList.toggle('hidden');
     },
 
+    /** Switches between static and dynamic tabs in the Knowledge modal. */
     switchKnowledgeTab(tabName) {
         this.RUNTIME.activeKnowledgeTab = tabName;
         UIManager.renderKnowledgeModalTabs();
     },
 
+    /** Switches between move and world map tabs in the World Map modal. */
     switchWorldMapTab(tabName) {
         this.RUNTIME.activeWorldMapTab = tabName;
         UIManager.renderWorldMapModal();
     },
 
+    /**
+     * Switches between tabs in the Settings modal and binds necessary event listeners.
+     * @param {string} tabName - The name of the tab to activate ('appearance', 'prompt', 'model').
+     */
     switchSettingsTab(tabName) {
         this.RUNTIME.activeSettingsTab = tabName;
         const tabs = ['appearance', 'prompt', 'model'];
@@ -2712,11 +3578,13 @@ const Controller = {
         this.bindSettingsListeners();
     },
 
+    /** Opens the settings modal directly to a specific tab. */
     openSettingsToTab(tabName) {
         this.openModal('settings-modal');
         this.switchSettingsTab(tabName);
     },
 
+    /** Prepares the settings modal content on first open. */
     prepareSettingsModal() {
         const container = document.getElementById('settings-content-container');
         if (container.innerHTML.trim() !== '...') return; // Already populated
@@ -2734,6 +3602,7 @@ const Controller = {
         container.style.minHeight = `${maxHeight}px`;
     },
 
+    /** Binds all event listeners for the interactive elements within the settings modal. */
     bindSettingsListeners() {
         const state = StateManager.getState();
         const setListener = (id, key, callback) => { 
@@ -2830,37 +3699,39 @@ const Controller = {
         if (koboldcppSettings) koboldcppSettings.style.display = state.apiProvider === 'koboldcpp' ? 'block' : 'none';
     },
     
+    /** Changes the chat font. */
     changeFont(font) { 
         StateManager.getState().font = font; 
         UIManager.applyStyling(); 
         StateManager.saveState(); 
     },
     
+    /** Sets the character image display mode. */
     setCharacterImageMode(mode) {
         StateManager.getState().characterImageMode = mode;
         StateManager.saveState();
         UIManager.renderChat();
     },
 
+    /** Sets the active AI provider. */
     setApiProvider(provider) { 
         StateManager.getState().apiProvider = provider; 
         this.bindSettingsListeners(); 
         StateManager.saveState(); 
     },
-
+	
     // --- Chat & AI Interaction ---
+    
+    /** Handles the primary user action button, which can be Send, Write for Me, or Stop Generation. */
     handlePrimaryAction() { 
-        if (this.RUNTIME.activeRequestAbortController) {
-            this.stopGeneration();
-            return;
-        }
-        if(!StateManager.getLibrary().active_narrative_id) { 
-            alert("Load a narrative from the Story Library first."); 
+        if (!StateManager.getLibrary().active_story_id) { 
+            UIManager.showConfirmationModal("Please load or create a story from the Story Library first.", () => this.openModal('story-library-modal')); 
             return; 
         } 
         document.getElementById('chat-input').value.trim() === '' ? this.writeForMe() : this.sendMessage(); 
     },
 
+    /** Handles the regenerate button click, re-triggering an AI response. */
     async handleRegen() {
         const state = StateManager.getState();
         if(!StateManager.getLibrary().active_narrative_id) { alert("Load a narrative from the Story Library first."); return; }
@@ -2882,6 +3753,7 @@ const Controller = {
         }
     },
 
+    /** Sends a user message from the chat input. */
     async sendMessage() {
         if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
         const state = StateManager.getState();
@@ -2896,6 +3768,7 @@ const Controller = {
         this.checkEventMaster();
     },
 
+    /** Triggers the AI to write a response for the user's character. */
     async writeForMe() {
         if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
         const state = StateManager.getState();
@@ -2920,6 +3793,7 @@ const Controller = {
         }
     },
 
+    /** Undoes the last message in the chat history. */
     undoLastTurn() { 
         if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
         const state = StateManager.getState();
@@ -2932,6 +3806,13 @@ const Controller = {
         this.saveAndRender(); 
     },
 
+    /**
+     * Adds a message to the active narrative's chat history.
+     * @param {string} id - The ID of the character sending the message.
+     * @param {string} content - The message content.
+     * @param {string} [type='chat'] - The type of message ('chat', 'system_event', etc.).
+     * @param {string} [emotion='neutral'] - The detected emotion for the message.
+     */
     addMessageToHistory(id, content, type = 'chat', emotion = 'neutral') {
         const state = StateManager.getState();
         if (UIManager.RUNTIME.streamingInterval) {
@@ -2954,6 +3835,10 @@ const Controller = {
         }
     },
 
+    /**
+     * Adds a system event message (e.g., "You have moved to...") to the chat history.
+     * @param {string} content - The content of the system message.
+     */
     addSystemMessageToHistory(content) {
         const state = StateManager.getState();
         state.chat_history.push({
@@ -2963,10 +3848,16 @@ const Controller = {
         StateManager.saveState();
     },
 
+    /** Displays the speaker scores modal for debugging. */
     showSpeakerScores(scoresData) {
         UIManager.renderSpeakerScoresModal(scoresData);
     },
 
+    /**
+     * Determines which AI character should speak next based on a weighted scoring algorithm.
+     * @param {boolean} [isAfterMove=false] - A flag indicating if the determination is happening after a map move.
+     * @returns {string|null} The ID of the character chosen to speak next.
+     */
     determineNextSpeaker(isAfterMove = false) {
         const state = StateManager.getState();
         let pool = state.characters.filter(c => !c.is_user && c.is_active);
@@ -3057,19 +3948,20 @@ const Controller = {
         return winner ? winner.id : pool[0]?.id || null;
     },
 
+    /**
+     * Constructs the prompt, calls the APIService, and handles the AI's response or any errors.
+     * @param {string|null} charId - The ID of the character to respond, or null to auto-determine.
+     * @param {string} [userMessage=''] - The content of the user's last message for analysis.
+     * @param {boolean} [isAfterMove=false] - Flag if this is a response after a map move.
+     */
     async triggerAIResponse(charId = null, userMessage = '', isAfterMove = false) {
         const state = StateManager.getState();
-    
         const activeAiChars = state.characters.filter(c => !c.is_user && c.is_active);
         if (activeAiChars.length === 0) {
-            let systemSpeaker = state.characters.find(c => c.is_narrator) || state.characters.find(c => !c.is_user);
-            if (!systemSpeaker) {
-                systemSpeaker = { id: 'system', name: 'System' };
-            }
             this.addMessageToHistory(systemSpeaker.id, "No active character. Ensure at least one character is active in the chat.");
             return;
         }
-    
+		
         const isModelConfigured = () => {
             switch (state.apiProvider) {
                 case 'gemini': return !!state.geminiApiKey;
@@ -3078,22 +3970,14 @@ const Controller = {
                 default: return false;
             }
         };
-    
         if (!isModelConfigured()) {
-            let systemSpeaker = state.characters.find(c => c.is_narrator) || activeAiChars[0];
-            this.addMessageToHistory(systemSpeaker.id, "The system does not have the required information on a model to respond.");
+            this.addMessageToHistory(activeAiChars[0].id, "The AI model is not configured. Please check your settings.");
             return;
         }
-    
         const selectedCharId = charId || document.getElementById('ai-character-selector').value;
-        let aiCharId = selectedCharId;
-
-        if (aiCharId === 'any') {
-            aiCharId = this.determineNextSpeaker(isAfterMove);
-        }
-        
+        let aiCharId = selectedCharId === 'any' ? this.determineNextSpeaker(isAfterMove) : selectedCharId;
         if (!aiCharId) {
-            console.log("AI response skipped: No eligible speaker determined. This may be intended if a narrator just spoke.");
+            console.log("AI response skipped: No eligible speaker determined.");
             return;
         }
         
@@ -3104,37 +3988,27 @@ const Controller = {
         try {
             const prompt = PromptBuilder.buildPrompt(aiCharId);
             const responseText = await APIService.callAI(prompt, false, this.RUNTIME.activeRequestAbortController.signal);
-            
             let analysis = { emotion: 'neutral', locationName: null };
             if (userMessage) {
-                try {
-                    analysis = await this.analyzeTurn(userMessage);
-                } catch (e) {
-                    console.error("Turn analysis failed:", e);
-                }
+                try { analysis = await this.analyzeTurn(userMessage); } 
+                catch (e) { console.error("Turn analysis failed:", e); }
             }
-            
             UIManager.hideTypingIndicator();
             UIManager.startStreamingResponse(aiCharId, responseText, analysis.emotion);
-
             if (analysis.locationName) {
                 const targetLocation = state.worldMap.grid.find(loc => loc.name.toLowerCase() === analysis.locationName.toLowerCase());
                 const currentLocationData = state.worldMap.grid.find(loc => loc.coords.x === state.worldMap.currentLocation.x && loc.coords.y === state.worldMap.currentLocation.y);
                 if (targetLocation && targetLocation.name !== currentLocationData?.name) {
-                    setTimeout(() => { 
-                        this.moveToLocation(targetLocation.coords.x, targetLocation.coords.y);
-                    }, 1500);
+                    setTimeout(() => { this.moveToLocation(targetLocation.coords.x, targetLocation.coords.y); }, 1500);
                 }
             }
-
         } catch (error) {
             if (error.name === 'AbortError') {
                 console.log("Generation stopped by user.");
-                UIManager.hideTypingIndicator();
             } else {
-                UIManager.hideTypingIndicator();
                 this.addMessageToHistory(aiCharId, `[Error: ${error.message}]`); 
             }
+            UIManager.hideTypingIndicator();
         } finally {
             UIManager.setButtonToSendMode();
             this.RUNTIME.activeRequestAbortController = null;
@@ -3143,6 +4017,9 @@ const Controller = {
     
     // --- Agent & Trigger Logic ---
 
+    /**
+     * Invokes an AI agent to analyze the recent conversation and suggest updates to the static knowledge base.
+     */
     async checkWorldInfoAgent() { 
         const state = StateManager.getState();
         if (!StateManager.getLibrary().active_narrative_id) { alert("Please load a narrative first."); return; }
@@ -3162,6 +4039,9 @@ const Controller = {
         } 
     },
     
+    /**
+     * Every few turns, invokes an AI agent to generate a secret, surprising event instruction for other AI characters.
+     */
     async checkEventMaster() { 
         const state = StateManager.getState();
         if (state.messageCounter > 0 && state.messageCounter % 6 === 0) try { 
@@ -3175,6 +4055,9 @@ const Controller = {
         } 
     },
     
+    /**
+     * Checks the last message against all dynamic entry triggers and activates any that match.
+     */
     checkDynamicEntryTriggers() {
         const state = StateManager.getState();
         const lastMessage = (state.chat_history || []).filter(m => m.type === 'chat').pop();
@@ -3207,6 +4090,11 @@ const Controller = {
         UIManager.renderDynamicEntries();
     },
 
+    /**
+     * Parses the trigger string from a dynamic entry into a structured format.
+     * @param {string} triggersStr - The raw trigger string (e.g., "house, cat AND dog, 25%").
+     * @returns {{groups: Array, chance: number}} - A structured object of triggers.
+     */
     parseTriggers(triggersStr) {
         if (!triggersStr) return { groups: [], chance: 0 };
         const parts = triggersStr.split(',').map(s => s.trim());
@@ -3222,6 +4110,8 @@ const Controller = {
     },
 
     // --- CRUD and Edit Functions ---
+
+    /** Opens the modal to edit a specific chat message. */
     openEditModal(index) {
         const state = StateManager.getState();
         const message = state.chat_history[index];
@@ -3236,6 +4126,7 @@ const Controller = {
         ModalManager.open('edit-response-modal');
     },
 
+    /** Saves the edited content of a chat message. */
     saveEditedResponse(index) {
         const state = StateManager.getState();
         const newContent = document.getElementById('edit-modal-input').value;
@@ -3244,6 +4135,7 @@ const Controller = {
         this.closeModal('edit-response-modal');
     },
 
+    /** Uses AI to enhance a character's persona description. */
     async enhancePersonaWithAI(event, charId) {
         const state = StateManager.getState();
         const char = state.characters.find(c => c.id === charId);
@@ -3266,6 +4158,7 @@ const Controller = {
         });
     },
 
+    /** Uses AI to generate model instructions based on a character's persona. */
     async generateModelInstructions(event, charId) {
         UIManager.showConfirmationModal("This will overwrite the current model instructions. Are you sure?", async () => {
             const state = StateManager.getState();
@@ -3284,6 +4177,7 @@ const Controller = {
         });
     },
 
+    /** Helper function to manage button state and call the AI service for content generation. */
     async _generateContentForField(event, promptTemplate, context, isJson = false) {
         const button = event.target.closest('button');
         if (!button) return null;
@@ -3308,6 +4202,7 @@ const Controller = {
         }
     },
 
+    /** Uses AI to generate a detailed prompt for a world map location. */
     async generateLocationPromptAI(event) {
         const state = StateManager.getState();
         const location = this.RUNTIME.selectedMapTile;
@@ -3324,6 +4219,7 @@ const Controller = {
         }
     },
 
+    /** Uses AI to generate content for a static knowledge entry. */
     async generateStaticEntryContentAI(event, entryId) {
         const state = StateManager.getState();
         const entry = state.static_entries.find(e => e.id === entryId);
@@ -3340,6 +4236,7 @@ const Controller = {
         }
     },
 
+    /** Uses AI to generate content for a dynamic knowledge entry. */
     async generateDynamicEntryContentAI(event, entryId) {
         const state = StateManager.getState();
         const entry = state.dynamic_entries.find(e => e.id === entryId);
@@ -3356,6 +4253,7 @@ const Controller = {
         }
     },
 
+    /** Uses AI to analyze user input for emotion and location keywords. */
     async analyzeTurn(text) {
         const state = StateManager.getState();
         const locationNames = (state.worldMap?.grid || []).map(loc => loc.name);
@@ -3382,6 +4280,7 @@ const Controller = {
         }
     },
     
+    /** Adds a new character to the roster. */
     addCharacter() { 
         const state = StateManager.getState();
         const aiCharCount = state.characters.filter(c => !c.is_user).length;
@@ -3397,6 +4296,7 @@ const Controller = {
         this.openModal('character-detail-modal', newChar.id);
     },
 
+    /** Deletes a character from the roster. */
     deleteCharacter(id) { 
         UIManager.showConfirmationModal('Are you sure you want to delete this character?', () => {
             const state = StateManager.getState();
@@ -3406,6 +4306,7 @@ const Controller = {
         });
     },
 
+    /** Updates a specific field of a character object (debounced). */
     updateCharacterField: debounce(function(id, field, value) { 
         const state = StateManager.getState();
         const char = state.characters.find(c => c.id === id); 
@@ -3423,6 +4324,7 @@ const Controller = {
         } 
     }, 300),
 
+    /** Handles the upload of a local image for a character portrait. */
     handleLocalImageUpload(event, charId) {
         const file = event.target.files[0];
         if (!file) {
@@ -3455,6 +4357,7 @@ const Controller = {
         reader.readAsDataURL(file);
     },
 
+    /** Updates a character's color scheme (debounced). */
     updateCharacterColor: debounce(function(charId, type, value) {
         const state = StateManager.getState();
         const char = state.characters.find(c => c.id === charId);
@@ -3468,6 +4371,7 @@ const Controller = {
         }
     }, 100),
 
+    /** Updates a character's tags (debounced). */
     updateCharacterTags: debounce(function(id, value) {
         const state = StateManager.getState();
         const char = state.characters.find(c => c.id === id);
@@ -3478,6 +4382,7 @@ const Controller = {
         }
     }, 500),
 
+    /** Uses AI to generate tags for a character based on their persona. */
     async generateTagsForCharacter(event, charId) {
         UIManager.showConfirmationModal("This will use AI to add to the current tags. Are you sure?", async () => {
             const state = StateManager.getState();
@@ -3878,136 +4783,236 @@ const Controller = {
     },
     
     // --- Import / Export ---
+
+    /**
+     * Handles a single file upload from the I/O Hub, routing it to the ImportExportService.
+     * @param {Event} event - The file input change event.
+     */
     async handleFileUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
-        const lowerCaseName = file.name.toLowerCase();
+
+        UIManager.showLoadingSpinner('Parsing file...');
         try {
-            if (lowerCaseName.endsWith('.png')) {
-                await this.importV2Card(file);
-            } else if (lowerCaseName.endsWith('.zip') || lowerCaseName.endsWith('.byaf')) {
-                await this.importBYAF(file);
-            } else if (lowerCaseName.endsWith('.json')) {
-                await this.importStory(file);
-            } else {
-                throw new Error("Unsupported file type.");
+            const newStory = await ImportExportService.parseUploadedFile(file);
+            
+            const library = StateManager.getLibrary();
+            const existingStory = library.stories.find(s => s.name.toLowerCase() === newStory.name.toLowerCase());
+            
+            if (existingStory) {
+                const now = new Date();
+                const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
+                newStory.name = `${newStory.name} - ${timestamp}`;
             }
+
+            library.stories.push(newStory);
+            this.updateSearchIndex(newStory);
+            StateManager.updateTagCache();
+            StateManager.saveLibrary();
+            UIManager.hideLoadingSpinner();
+            alert(`Story "${newStory.name}" imported successfully!`);
+            UIManager.renderLibraryInterface();
+            this.closeModal('io-hub-modal');
         } catch (err) {
+            UIManager.hideLoadingSpinner();
             alert(`Error importing file: ${err.message}`);
             console.error(err);
         } finally {
-            event.target.value = '';
+            event.target.value = ''; // Reset file input
         }
     },
-    async importV2Card(file) {
-        const arrayBuffer = await file.arrayBuffer();
-        const v2DataString = await PNGCardService.extractV2Data(arrayBuffer);
-        if (!v2DataString) throw new Error("No character data found in PNG.");
-        const v2RawData = JSON.parse(PNGCardService.b64_to_utf8(v2DataString));
-        const newStory = ImportExportService.parseV2CardData(v2RawData, new Blob([arrayBuffer], {type: 'image/png'}));
-        const library = StateManager.getLibrary();
-        library.stories.push(newStory);
-        StateManager.updateTagCache();
-        StateManager.saveLibrary();
-        alert(`'${newStory.name}' imported successfully!`);
-        UIManager.renderLibraryInterface();
-    },
-    async importStory(file) {
-        const jsonString = await file.text();
-        const newStory = ImportExportService.parseStoryFile(jsonString);
-        const library = StateManager.getLibrary();
-        library.stories.push(newStory);
-        StateManager.updateTagCache();
-        StateManager.saveLibrary();
-        alert(`'${newStory.name}' imported successfully!`);
-        UIManager.renderLibraryInterface();
-    },
-    async importBYAF(file) {
-        const zipData = await file.arrayBuffer();
-        const newStory = await ImportExportService.parseBYAF(zipData, file.name);
-        const library = StateManager.getLibrary();
-        library.stories.push(newStory);
-        this.updateSearchIndex(newStory);
-        StateManager.updateTagCache();
-        StateManager.saveLibrary();
-        alert(`'${newStory.name}' imported successfully! Loading now.`);
-        const newNarrative = newStory.narratives[0];
-        this.loadNarrative(newStory.id, newNarrative.id);
-    },
-    async exportStoryAs(storyId, format) {
-        const library = StateManager.getLibrary();
-        const storyToExp = library.stories.find(s => s.id === storyId);
-        if (!storyToExp) return alert("Could not find story to export.");
 
-        const storyName = storyToExp.name || 'Untitled_Story';
-        let blob;
-        let filename;
-
+    /**
+     * Initiates the bulk import process by opening a directory picker.
+     */
+    async handleBulkImport() {
+        if (!window.showDirectoryPicker) {
+            alert("Your browser does not support directory selection. Please use a modern browser like Chrome or Edge.");
+            return;
+        }
         try {
-            if (format === 'json') {
-                const data = ImportExportService.formatStoryForExport(storyToExp);
-                blob = new Blob([data], {type: 'application/json'});
-                filename = `${storyName.replace(/ /g, '_')}.json`;
-            } else if (format === 'v2') {
-                const mainChar = storyToExp.characters.find(c => !c.is_user && c.is_active);
-                if (!mainChar || !mainChar.image_url) throw new Error("V2 export requires an active AI character with a valid image URL.");
-                const response = await fetch(mainChar.image_url);
-                if (!response.ok) throw new Error("Failed to fetch character image for V2 export.");
-                const imageBuffer = await response.arrayBuffer();
-                const v2Object = ImportExportService.convertStoryToV2Data(storyToExp);
-                blob = await PNGCardService.injectDataIntoPng(imageBuffer, v2Object);
-                filename = `${storyName.replace(/ /g, '_')}.png`;
-            } else if (format === 'byaf') {
-                const mainChar = storyToExp.characters.find(c => !c.is_user && c.is_active);
-                let imageBlob = null;
-                if(mainChar && mainChar.image_url) {
-                    try {
-                        const response = await fetch(mainChar.image_url);
-                        if (response.ok) imageBlob = await response.blob();
-                    } catch (e) { console.warn("Could not fetch image for BYAF export.", e); }
+            const dirHandle = await window.showDirectoryPicker();
+            UIManager.showLoadingSpinner('Starting bulk import...');
+            
+            let processedFiles = 0;
+            const failedFiles = [];
+            const importedStoryNames = [];
+            const library = StateManager.getLibrary();
+            let totalSize = 0;
+
+            // First pass: Calculate total size for storage check
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file' && (entry.name.toLowerCase().endsWith('.png') || entry.name.toLowerCase().endsWith('.byaf') || entry.name.toLowerCase().endsWith('.zip'))) {
+                    const file = await entry.getFile();
+                    totalSize += file.size;
                 }
-                const zip = await ImportExportService.convertStoryToBYAFArchive(storyToExp, imageBlob);
-                blob = await zip.generateAsync({type: 'blob'});
-                filename = `${storyName.replace(/ /g, '_')}.byaf`;
             }
 
-            const url = URL.createObjectURL(blob); 
-            const a = document.createElement('a'); 
-            a.href = url; a.download = filename; 
-            a.click(); 
-            URL.revokeObjectURL(url);
-        } catch(e) {
-            alert(`Export failed: ${e.message}`);
-            console.error("Export error:", e);
+            const storageAvailable = UTILITY.checkLocalStorageQuota(totalSize);
+            if (!storageAvailable) {
+                const proceed = confirm("Warning: The selected folder may exceed your browser's storage limit. This could cause the import to fail or images to be excluded. Do you want to proceed without images?");
+                if (!proceed) {
+                     UIManager.hideLoadingSpinner();
+                     return;
+                }
+            }
+            
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind !== 'file') continue;
+                const lowerCaseName = entry.name.toLowerCase();
+
+                if (lowerCaseName.endsWith('.png') || lowerCaseName.endsWith('.byaf') || lowerCaseName.endsWith('.zip')) {
+                    UIManager.showLoadingSpinner(`Processing file ${++processedFiles}: ${entry.name}`);
+                    try {
+                        const file = await entry.getFile();
+                        const newStory = await ImportExportService.parseUploadedFile(file, !storageAvailable); // Pass flag to skip images
+                        
+                        const existingStory = library.stories.find(s => s.name.toLowerCase() === newStory.name.toLowerCase());
+                        if (existingStory) {
+                            const now = new Date();
+                            const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
+                            newStory.name = `${newStory.name} - ${timestamp}`;
+                        }
+
+                        library.stories.push(newStory);
+                        this.updateSearchIndex(newStory);
+                        importedStoryNames.push(newStory.name);
+
+                    } catch (err) {
+                        failedFiles.push({ name: entry.name, reason: err.message });
+                    }
+                }
+            }
+
+            StateManager.updateTagCache();
+            StateManager.saveLibrary();
+            UIManager.hideLoadingSpinner();
+            UIManager.showBulkImportReport(importedStoryNames, failedFiles);
+            UIManager.renderLibraryInterface();
+
+        } catch (err) {
+            UIManager.hideLoadingSpinner();
+            console.error("Bulk import failed:", err);
+            if (err.name !== 'AbortError') {
+                alert(`An error occurred during bulk import: ${err.message}`);
+            }
         }
     },
-    exportLibrary() {
-        const data = ImportExportService.formatLibraryForExport(StateManager.getLibrary());
-        const blob = new Blob([data], {type: 'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `ai_storyteller_library_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
+
+    /**
+     * Handles the export process based on user selections in the I/O Hub.
+     * @param {'json'|'png'|'byaf'} format - The desired export format.
+     */
+    async exportStoryAs(format) {
+        const storySelector = document.getElementById('story-export-selector');
+        const narrativeSelector = document.getElementById('narrative-export-selector');
+        const storyId = storySelector.value;
+        const narrativeId = narrativeSelector.value;
+
+        if (!storyId || !narrativeId) {
+            alert("Please select a story and a narrative to export.");
+            return;
+        }
+
+        if (format !== 'json') {
+            const proceed = await UIManager.showConfirmationPromise("Exporting to a non-Ellipsis format may result in data loss (e.g., extra characters, world map details). Continue?");
+            if (!proceed) return;
+        }
+
+        UIManager.showLoadingSpinner(`Exporting as ${format.toUpperCase()}...`);
+        try {
+            const library = StateManager.getLibrary();
+            const story = library.stories.find(s => s.id === storyId);
+            const narrative = story.narratives.find(n => n.id === narrativeId);
+            
+            let blob, filename;
+
+            switch(format) {
+                case 'json':
+                    ({ blob, filename } = await ImportExportService.exportStoryAsJSON(story, narrative));
+                    break;
+                case 'png':
+                    const charSelectorPNG = document.getElementById('character-export-selector');
+                    if (!charSelectorPNG.value) { throw new Error("Please select a primary character for PNG export."); }
+                    ({ blob, filename } = await ImportExportService.exportStoryAsV2(story, narrative, charSelectorPNG.value));
+                    break;
+                case 'byaf':
+                     const charSelectorBYAF = document.getElementById('character-export-selector');
+                    if (!charSelectorBYAF.value) { throw new Error("Please select a primary character for BYAF export."); }
+                    ({ blob, filename } = await ImportExportService.exportStoryAsBYAF(story, narrative, charSelectorBYAF.value));
+                    break;
+                default:
+                    throw new Error("Unsupported export format.");
+            }
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+
+        } catch (e) {
+            alert(`Export failed: ${e.message}`);
+            console.error("Export error:", e);
+        } finally {
+            UIManager.hideLoadingSpinner();
+        }
     },
+
+    /**
+     * Exports the entire story library as a single JSON file.
+     */
+    exportLibrary() {
+        UIManager.showLoadingSpinner('Exporting library...');
+        try {
+            const data = JSON.stringify(StateManager.getLibrary(), null, 2);
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ellipsis_library_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            alert(`Library export failed: ${e.message}`);
+        } finally {
+            UIManager.hideLoadingSpinner();
+        }
+    },
+
+    /**
+     * Imports and replaces the entire library from a JSON file.
+     * @param {Event} event - The file input change event.
+     */
     importLibrary(event) {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = e => {
-            UIManager.showConfirmationModal('WARNING: This will replace your entire story library. Are you sure you want to continue?', () => {
+        reader.onload = async (e) => {
+            const proceed = await UIManager.showConfirmationPromise('WARNING: This will permanently replace your entire story library. This action cannot be undone. Are you sure?');
+            if (proceed) {
+                UIManager.showLoadingSpinner('Importing library...');
                 try {
-                    const importedLibrary = ImportExportService.parseLibraryFile(e.target.result);
+                    const importedLibrary = JSON.parse(e.target.result);
+                    // Basic validation
+                    if (!importedLibrary.stories || !importedLibrary.hasOwnProperty('active_story_id')) {
+                        throw new Error("Invalid library file format.");
+                    }
                     StateManager.data.library = importedLibrary;
                     StateManager.saveLibrary();
-                    window.location.reload();
-                } catch (err) { alert(`Error importing library: ${err.message}`); }
-            });
+                    // Use a short delay to allow UI to update before reload
+                    setTimeout(() => window.location.reload(), 500);
+                } catch (err) { 
+                    UIManager.hideLoadingSpinner();
+                    alert(`Error importing library: ${err.message}`); 
+                }
+            }
         };
         reader.readAsText(file);
+        event.target.value = ''; // Reset file input
     },
-    
+
     // --- Helper & Utility Actions ---
     _ensureCharacterColors() {
         const state = StateManager.getState();
@@ -4053,8 +5058,10 @@ const app = {
             UIManager.renderAll();
         }
         this.setupEventListeners();
-        UIManager.setButtonToSendMode(); // [NEW] Set initial state for the dynamic primary button
+        UIManager.setButtonToSendMode();
     },
+
+    /** Sets up all global and persistent event listeners for the application. */
     setupEventListeners() {
         this.updateLayout();
         window.addEventListener('resize', debounce(() => this.updateLayout(), 100));
@@ -4088,10 +5095,11 @@ const app = {
         titleTrigger.addEventListener('mouseleave', () => hideTitle());
         titleTrigger.addEventListener('touchstart', (e) => { e.preventDefault(); if (mobileTitle.style.opacity === '1') { hideTitle(true); } else { showTitle(); hideTitle(); } });
         
-        // [REMOVED] Redundant event listener for primary-action-btn. Behavior is now handled by onclick swapping.
         document.getElementById('regen-btn').addEventListener('click', () => Controller.handleRegen());
         document.getElementById('undo-btn').addEventListener('click', () => Controller.undoLastTurn());
     },
+
+    /** Updates the body class based on screen orientation for responsive styling. */
     updateLayout() {
         if (window.innerHeight > window.innerWidth) { document.body.classList.add('layout-vertical'); document.body.classList.remove('layout-horizontal'); } 
         else { document.body.classList.add('layout-horizontal'); document.body.classList.remove('layout-vertical'); }
@@ -4101,10 +5109,6 @@ const app = {
 
 // Start the application once the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => app.init());
-
-
 	</script>
-
-    
 </body>
 </html>
