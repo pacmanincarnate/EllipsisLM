@@ -1564,47 +1564,65 @@ const ImportExportService = {
 		// Create Scenario and Narrative
 		const scenario = { id: UTILITY.uuid(), name: "Imported Start", message: firstMes };
 		story.scenarios.push(scenario);
+				
+		// [FIX] Create a scenario for the main first_mes AND each alternate_greeting
+		const allGreetings = [v2Data.first_mes || `The story of ${aiChar.name} begins.`];
+		if (Array.isArray(v2Data.alternate_greetings)) {
+			allGreetings.push(...v2Data.alternate_greetings);
+		}
+    
+		story.scenarios = []; // Clear the default empty scenario
+		allGreetings.forEach((greeting, index) => {
+			const scenarioName = index === 0 ? "Imported Start" : `Alternate Start ${index}`;
+			const messageContent = (greeting || "").replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, userChar.name);
+			
+			story.scenarios.push({
+				id: UTILITY.uuid(),
+				name: scenarioName,
+				message: messageContent
+			});
+		});
 		
 		const narrative = this._createEmptyEllipsisNarrative("Imported Chat");
-		
-		// [FIX] Parse V2 multi-turn example dialogues
-		if (v2Data.mes_example) {
-			const charNameIdMap = { '{{user}}': userChar.id, '{{char}}': aiChar.id };
-			const regex = /({{user}}|{{char}}):([\s\S]*?)(?={{user}}:|{{char}}:|$)/g;
-			
-			// Clean the text block first
-			let cleanedText = v2Data.mes_example.replace(/<START>/g, '').trim();
-			
-			for (const match of cleanedText.matchAll(regex)) {
-				const speakerPrefix = match[1];
-				const messageContent = match[2].trim();
-				const speakerId = charNameIdMap[speakerPrefix];
 
-				if (speakerId && messageContent) {
-					narrative.state.chat_history.push({
-						character_id: speakerId,
-						content: messageContent,
-						type: 'chat',
-						isHidden: true
-					});
+		// Parse V2 multi-turn example dialogues
+			if (v2Data.mes_example) {
+				const charNameIdMap = { '{{user}}': userChar.id, '{{char}}': aiChar.id };
+				const regex = /({{user}}|{{char}}):([\s\S]*?)(?={{user}}:|{{char}}:|$)/g;
+				
+				let cleanedText = v2Data.mes_example.replace(/<START>/g, '').trim();
+				
+				for (const match of cleanedText.matchAll(regex)) {
+					const speakerPrefix = match[1];
+					const messageContent = match[2].trim().replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, userChar.name);
+					const speakerId = charNameIdMap[speakerPrefix];
+
+					if (speakerId && messageContent) {
+						narrative.state.chat_history.push({
+							character_id: speakerId,
+							content: messageContent,
+							type: 'chat',
+							isHidden: true
+						});
+					}
 				}
 			}
-		}
 
-		// [FIX] Add the first message to the chat history so it appears on load
-		if (firstMes) {
-			narrative.state.chat_history.push({
-				character_id: aiChar.id,
-				content: firstMes,
-				type: 'chat',
-				isHidden: false
-			});
-			narrative.state.messageCounter = 1;
-		}
-		
-		story.narratives.push(narrative);
-		return story;
-	},
+			// Add the first message from the PRIMARY scenario to the chat history so it appears on load
+			const firstScenario = story.scenarios[0];
+			if (firstScenario && firstScenario.message) {
+				narrative.state.chat_history.push({
+					character_id: aiChar.id,
+					content: firstScenario.message,
+					type: 'chat',
+					isHidden: false
+				});
+				narrative.state.messageCounter = 1;
+			}
+			
+			story.narratives.push(narrative);
+			return story;
+		},
 
     _convertBYAFtoEllipsis(byafData, imageUrl) {
         const { character, scenario } = byafData;
@@ -5109,6 +5127,10 @@ const app = {
 
 // Start the application once the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => app.init());
+
+
 	</script>
+
+    
 </body>
 </html>
