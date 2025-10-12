@@ -64,7 +64,7 @@ body {
     color: #e5e7eb; 
 }
 
-/* [FIX] Global styles for form elements to ensure readability on dark backgrounds */
+/* Global styles for form elements to ensure readability on dark backgrounds */
 input, textarea, select {
     color: var(--text-primary);
     background-color: rgba(0,0,0,0.7);
@@ -172,7 +172,7 @@ input:checked + .toggle-bg:after {
 #chat-window h2, 
 #chat-window h3 { 
     font-weight: bold; 
-    margin-bottom: 0.5rem; 
+    margin-bottom: 0.0rem;
 }
 #chat-window h1 { font-size: 1.5em; } 
 #chat-window h2 { font-size: 1.25em; } 
@@ -194,7 +194,7 @@ input:checked + .toggle-bg:after {
 
 .chat-bubble-container {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1000px;
 }
 
 .bubble-header {
@@ -280,7 +280,9 @@ body.layout-vertical #chat-window { width: 99%; }
 body.layout-vertical #character-portrait-container { display: none; }
 body.layout-vertical #chat-input-container { 
     padding: 1rem; 
-    border-top: 1px solid var(--border-primary); 
+    border-top: 1px solid;
+	border-top-color: color-mix(in srgb, var(--chat-text-color) 50%, transparent);
+
 }
 
 /* Horizontal (Desktop) Layout Overrides */
@@ -342,7 +344,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #chat-window {
     width: 100%; /* Take full width since side portrait is gone */
 }
 
-/* BUG FIX: Make header float over cinematic background in horizontal mode */
+/* Make header float over cinematic background in horizontal mode */
 body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
     position: absolute;
     top: 0.5rem;      /* Match app-container padding */
@@ -359,9 +361,8 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
 
 /* Styling for quoted dialogue in chat bubbles */
 .dialogue-quote {
-    color: var(--text-accent); /* Uses the theme's accent color (e.g., a light indigo) */
+	filter: saturate(175%) opacity(75%) drop-shadow(1px 1px 5px black);
     font-weight: 500;          /* Makes the text slightly bolder than normal */
-    font-style: italic;        /* Also italicizes dialogue to make it distinct */
 }
 
 /* Push the first message bubble down from the top so that it's controls are accessible. */
@@ -425,7 +426,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
     <main class="flex-grow min-h-0 flex flex-col relative">
         <div id="title-trigger-area" class="absolute top-0 left-0 w-full h-16 z-40"></div>
          <!-- Chat Window & Portrait -->
-         <div id="chat-window-container" class="relative flex-grow flex min-h-0 mb-4 bg-black/30 rounded-lg overflow-hidden">
+         <div id="chat-window-container" class="relative flex-grow flex min-h-0 bg-black/30 rounded-lg overflow-hidden">
             <div id="cinematic-bg-1" class="absolute inset-0 bg-cover bg-no-repeat bg-center transition-opacity duration-1000 pointer-events-none opacity-0"></div>
             <div id="cinematic-bg-2" class="absolute inset-0 bg-cover bg-no-repeat bg-center transition-opacity duration-1000 pointer-events-none opacity-0"></div>
             <div id="chat-window" class="relative z-10 flex-grow p-4 overflow-y-auto"></div>
@@ -434,8 +435,9 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
          <!-- /Chat Window & Portrait -->
          
          <!-- Chat Input & Controls -->
-         <div id="chat-input-container" class="flex items-start space-x-2 sm:space-x-4">
-             <textarea id="chat-input" class="flex-grow bg-black/30 border border-gray-600 rounded-lg p-2 resize-none" placeholder="Enter your message..." rows="4"></textarea>
+         <div id="chat-input-container" class="flex items-start space-x-2 sm:space-x-4" style="padding: 1rem; border-top: 1px solid; border-top-color: 
+ color-mix(in srgb, var(--chat-text-color) 50%, transparent);">
+             <textarea id="chat-input" class="flex-grow bg-black/30 border border-gray-600 rounded-lg p-2 color: black" placeholder="Enter your message..." rows="4" style="color: var(--chat-text-color)" ></textarea>
              <div class="flex flex-col space-y-2">
                  <select id="ai-character-selector" class="bg-black/30 border border-gray-600 rounded-lg p-2 w-full mb-2"></select>
                  <div class="flex items-center justify-center space-x-1">
