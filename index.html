@@ -364,6 +364,10 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
     font-style: italic;        /* Also italicizes dialogue to make it distinct */
 }
 
+/* Push the first message bubble down from the top so that it's controls are accessible. */
+#chat-window .chat-bubble-container:first-child {
+    margin-top: 2rem; /* Adjust this value as needed */
+}
 	</style>
 </head>
 <body data-mode="none" class="bg-gray-900 min-h-screen flex flex-col">
@@ -419,7 +423,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
 
     <!-- Main Content Area -->
     <main class="flex-grow min-h-0 flex flex-col relative">
-        <div id="title-trigger-area" class="absolute top-0 left-0 w-full h-1/4 z-40"></div>
+        <div id="title-trigger-area" class="absolute top-0 left-0 w-full h-16 z-40"></div>
          <!-- Chat Window & Portrait -->
          <div id="chat-window-container" class="relative flex-grow flex min-h-0 mb-4 bg-black/30 rounded-lg overflow-hidden">
             <div id="cinematic-bg-1" class="absolute inset-0 bg-cover bg-no-repeat bg-center transition-opacity duration-1000 pointer-events-none opacity-0"></div>
@@ -5115,6 +5119,7 @@ const app = {
         
         document.getElementById('regen-btn').addEventListener('click', () => Controller.handleRegen());
         document.getElementById('undo-btn').addEventListener('click', () => Controller.undoLastTurn());
+		
     },
 
     /** Updates the body class based on screen orientation for responsive styling. */
