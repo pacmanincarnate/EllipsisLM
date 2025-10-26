@@ -237,7 +237,7 @@ input:checked + .toggle-bg:after {
 /* Style for scrolling memory lists */
 #static-entries-list, #dynamic-entries-list {
     overflow-y: auto;
-    max-height: 20rem; /* Corresponds to roughly 6-7 entries */
+    /* max-height: 20rem; Corresponds to roughly 6-7 entries */
     min-height: 0; /* Important for flex/grid children to respect max-height */
 }
 
@@ -428,11 +428,11 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
         <div id="title-trigger-area" class="absolute top-0 left-0 w-full h-16 z-40"></div>
          <!-- Chat Window & Portrait -->
          <div id="chat-window-container" class="relative flex-grow p-2 flex min-h-0 bg-black/30 rounded-lg overflow-hidden" style="
-    padding-bottom: revert;">
+    padding-bottom: revert; padding-top: revert;">
             <div id="cinematic-bg-1" class="absolute inset-0 bg-cover bg-no-repeat bg-center transition-opacity duration-1000 pointer-events-none opacity-0"></div>
             <div id="cinematic-bg-2" class="absolute inset-0 bg-cover bg-no-repeat bg-center transition-opacity duration-1000 pointer-events-none opacity-0"></div>
             <div id="chat-window" class="relative z-10 flex-grow overflow-y-auto"></div>
-            <div id="character-portrait-container" class="flex-shrink-0 flex-col justify-center items-center" style="padding-right 0.5rem;"></div>
+            <div id="character-portrait-container" class="flex-shrink-0 flex-col justify-center items-center" style="padding-right: 0.5rem;"></div>
          </div>
          <!-- /Chat Window & Portrait -->
          
@@ -516,7 +516,44 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
 </div>
 
 <!-- Knowledge Modal (Static & Dynamic) -->
-<div id="knowledge-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('knowledge-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative flex flex-col max-h-[90vh]"><div class="p-6 pb-0 flex justify-between items-center border-b border-gray-700"><div class="flex"><button id="knowledge-tab-static" onclick="Controller.switchKnowledgeTab('static')" class="py-3 px-4 font-semibold text-lg border-b-2 border-indigo-500 text-white">Static</button><button id="knowledge-tab-dynamic" onclick="Controller.switchKnowledgeTab('dynamic')" class="py-3 px-4 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">Dynamic</button></div><button id="knowledge-add-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg ml-4 flex-shrink-0">Add Entry</button></div><div class="p-6 overflow-y-auto flex-grow"><div id="knowledge-static-content"><div id="static-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div id="static-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4"></div><div id="static-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4"><div id="static-entry-details-content" class="h-full"><div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.</div></div></div></div></div><div id="knowledge-dynamic-content" class="hidden"><div id="dynamic-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div id="dynamic-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4"></div><div id="dynamic-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4"><div id="dynamic-entry-details-content" class="h-full"><div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.</div></div></div></div></div></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="Controller.closeModal('knowledge-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
+<div id="knowledge-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
+	<div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('knowledge-modal')">
+	</div>
+	<div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl relative flex flex-col h-[85vh]" style="width: 90%; max-width: 1200px;">
+		<div class="p-6 pb-0 flex justify-between items-center border-b border-gray-700">
+			<div class="flex">
+				<button id="knowledge-tab-static" onclick="Controller.switchKnowledgeTab('static')" class="py-3 px-4 font-semibold text-lg border-b-2 border-indigo-500 text-white">Static</button>
+				<button id="knowledge-tab-dynamic" onclick="Controller.switchKnowledgeTab('dynamic')" class="py-3 px-4 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">Dynamic</button>
+			</div>
+			<button id="knowledge-add-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg ml-4 flex-shrink-0">Add Entry</button>
+		</div>
+		<div class="p-6 overflow-y-auto flex-grow height: 100%">
+				<div id="knowledge-static-content" class style="height: 100%">
+					<div id="static-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+						<div id="static-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4"></div>
+						<div id="static-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4">
+							<div id="static-entry-details-content" class="h-full">
+								<div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			<div id="knowledge-dynamic-content" class="hidden" class style="height: 100%">
+				<div id="dynamic-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+					<div id="dynamic-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4 h-[26rem] md:h-full"></div>
+					<div id="dynamic-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4">
+						<div id="dynamic-entry-details-content" class="h-full">
+						<div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end">
+			<button onclick="Controller.closeModal('knowledge-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button>
+		</div>
+	</div>
+</div>
 
 <!-- World Map Modal -->
 <div id="world-map-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
@@ -596,7 +633,13 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
                 </div>
                 <div><label for="chat-text-color" class="text-gray-400 text-sm block mb-2">Chat Text Color</label><input type="color" id="chat-text-color" class="w-full rounded-lg p-1 h-10"></div>
             </div>
-            <label for="background-image-url" class="text-gray-400 text-sm block mt-4 mb-2">Background Image URL</label><input type="text" id="background-image-url" class="w-full rounded-lg p-2" placeholder="https://example.com/image.png">
+		<div>
+                <label for="background-image-upload" class="text-gray-400 text-sm block mb-2">Background Image</label>
+                <div class="flex space-x-2">
+                    <input type="file" id="background-image-upload" accept="image/*" class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
+                    <button id="background-image-clear" class="bg-red-600/80 hover:bg-red-700/80 text-white font-bold py-1 px-3 rounded-lg">Clear</button>
+                </div>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div><label for="bubble-opacity-slider" class="text-gray-400 text-sm block mb-2">Chat Bubble Opacity</label><div class="flex items-center space-x-4"><input type="range" id="bubble-opacity-slider" class="w-full" min="0" max="1" step="0.05"><span id="bubble-opacity-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div>
                 <div><label for="blur-slider" class="text-gray-400 text-sm block mb-2">Background Blur (px)</label><div class="flex items-center space-x-4"><input type="range" id="blur-slider" class="w-full" min="0" max="20" step="1"><span id="blur-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div>
@@ -627,6 +670,218 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
     <!-- PASTE content of modules.js HERE -->
 // Utility function to prevent a function from being called too frequently.
 const debounce = (func, wait) => { let timeout; return function(...args) { const context = this; clearTimeout(timeout); timeout = setTimeout(() => func.apply(context, args), wait); }; };
+
+/**
+ * DBService (resilient, fail-soft, self-initializing)
+ * - Never throws during app init; callers can await methods safely.
+ * - Gracefully handles blocked upgrades, missing IDB (private mode), and transient errors.
+ * - All public methods resolve to sensible defaults instead of rejecting.
+ */
+const DBService = {
+  db: null,
+  DB_NAME: "EllipsisDB",
+  STORE_NAME: "characterImages",
+  OPEN_TIMEOUT_MS: 3000, // soft guard so init can't hang the UI indefinitely
+
+  /**
+   * Open the database (version 1) and create the store if needed.
+   * Never rejects; resolves to true if usable, false if unavailable.
+   */
+  _open(version = 1) {
+    return new Promise((resolve) => {
+      try {
+        if (this.db) return resolve(true);
+        if (!("indexedDB" in window)) {
+          console.warn("IndexedDB not supported in this environment.");
+          return resolve(false);
+        }
+
+        const request = indexedDB.open(this.DB_NAME, version);
+
+        // Soft timeout so a blocked upgrade can't lock the app
+        const timeout = setTimeout(() => {
+          console.warn("IDB open timed out (likely blocked). Failing soft.");
+          // Let the app continue without image cache
+          resolve(false);
+        }, this.OPEN_TIMEOUT_MS);
+
+        request.onerror = (event) => {
+          clearTimeout(timeout);
+          console.warn("IndexedDB open error (fail-soft):", event?.target?.error);
+          resolve(false);
+        };
+
+        request.onblocked = () => {
+          clearTimeout(timeout);
+          console.warn(
+            "IndexedDB upgrade is blocked by another tab/window. Continuing without cache."
+          );
+          resolve(false);
+        };
+
+        request.onupgradeneeded = (event) => {
+          try {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+              db.createObjectStore(this.STORE_NAME);
+              console.log("Object store created:", this.STORE_NAME);
+            }
+          } catch (e) {
+            console.warn("onupgradeneeded failed (fail-soft):", e);
+          }
+        };
+
+        request.onsuccess = (event) => {
+          clearTimeout(timeout);
+          try {
+            this.db = event.target.result;
+            // Close politely if a future upgrade happens elsewhere
+            this.db.onversionchange = () => {
+              console.warn("IDB version change detected; closing DB.");
+              try { this.db.close(); } catch {}
+              this.db = null;
+            };
+            console.log("IndexedDB ready.");
+            resolve(true);
+          } catch (e) {
+            console.warn("IDB onsuccess handler failed (fail-soft):", e);
+            resolve(false);
+          }
+        };
+      } catch (err) {
+        console.warn("IDB _open threw (fail-soft):", err);
+        resolve(false);
+      }
+    });
+  },
+
+  /**
+   * Public init. Never throws; resolves to void.
+   */
+  async init() {
+    if (this.db) return;
+    const ok = await this._open(1);
+    if (!ok) {
+      // Keep running without a DB; callers will no-op gracefully.
+      return;
+    }
+  },
+
+  /**
+   * Ensure DB is ready. Returns boolean (true if usable).
+   */
+  async ensure() {
+    if (this.db) return true;
+    await this.init();
+    return !!this.db;
+  },
+
+  /**
+   * Save a Blob under a string key. Resolves boolean (success).
+   */
+  async saveImage(id, blob) {
+    if (!(await this.ensure())) return false;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction([this.STORE_NAME], "readwrite");
+        const store = tx.objectStore(this.STORE_NAME);
+
+        tx.onabort = () => resolve(false);
+        tx.onerror = () => resolve(false);
+
+        const req = store.put(blob, id);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+      } catch (e) {
+        console.warn("saveImage failed (fail-soft):", e);
+        resolve(false);
+      }
+    });
+  },
+
+  /**
+   * Fetch a Blob by id. Resolves Blob|null.
+   */
+  async getImage(id) {
+    if (!(await this.ensure())) return null;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction([this.STORE_NAME], "readonly");
+        const store = tx.objectStore(this.STORE_NAME);
+
+        tx.onabort = () => resolve(null);
+        tx.onerror = () => resolve(null);
+
+        const req = store.get(id);
+        req.onsuccess = () => resolve(req.result ?? null);
+        req.onerror = () => resolve(null);
+      } catch (e) {
+        console.warn("getImage failed (fail-soft):", e);
+        resolve(null);
+      }
+    });
+  },
+
+  /**
+   * Delete a key. Resolves boolean (success).
+   */
+  async deleteImage(id) {
+    if (!(await this.ensure())) return false;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction([this.STORE_NAME], "readwrite");
+        const store = tx.objectStore(this.STORE_NAME);
+
+        tx.onabort = () => resolve(false);
+        tx.onerror = () => resolve(false);
+
+        const req = store.delete(id);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+      } catch (e) {
+        console.warn("deleteImage failed (fail-soft):", e);
+        resolve(false);
+      }
+    });
+  },
+
+  /**
+   * Clear the store. Resolves boolean (success).
+   */
+  async clear() {
+    if (!(await this.ensure())) return false;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction([this.STORE_NAME], "readwrite");
+        const store = tx.objectStore(this.STORE_NAME);
+
+        tx.onabort = () => resolve(false);
+        tx.onerror = () => resolve(false);
+
+        const req = store.clear();
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+      } catch (e) {
+        console.warn("clear failed (fail-soft):", e);
+        resolve(false);
+      }
+    });
+  },
+
+  /**
+   * Close the DB handle.
+   */
+  close() {
+    try {
+      if (this.db) this.db.close();
+    } catch (e) {
+      console.warn("DB close failed (ignored):", e);
+    } finally {
+      this.db = null;
+    }
+  },
+}
+
 
 /**
  * =================================================================================================
@@ -1326,49 +1581,53 @@ const PromptBuilder = {
 
 /**
  * =================================================================================================
- * [NEW] ImageProcessor Module
+ * [10/17/2025 Edit] ImageProcessor Module
  * =================================================================================================
  * Handles client-side image processing, such as resizing and format conversion.
  */
 const ImageProcessor = {
     /**
      * Processes an image file, resizing it if necessary and converting it to a JPEG data URL.
-     * @param {File|Blob} imageFile - The image file to process.
-     * @returns {Promise<string>} A promise that resolves with a base64 data URL of the processed image.
      */
-    async processImage(imageFile) {
-        return new Promise((resolve, reject) => {
-            const MAX_HEIGHT = 2000;
-            const QUALITY = 0.85; // JPEG quality
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    let { width, height } = img;
-                    
-                    if (height > MAX_HEIGHT) {
-                        const ratio = MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                        width *= ratio;
-                    }
+	async processImageAsBlob(imageFile) { // Renamed for clarity
+		return new Promise((resolve, reject) => {
+			const MAX_HEIGHT = 2000;
+			const QUALITY = 0.85;
 
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const img = new Image();
+				img.onload = () => {
+					let { width, height } = img;
+					if (height > MAX_HEIGHT) {
+						const ratio = MAX_HEIGHT / height;
+						height = MAX_HEIGHT;
+						width *= ratio;
+					}
+					const canvas = document.createElement('canvas');
+					canvas.width = width;
+					canvas.height = height;
+					const ctx = canvas.getContext('2d');
+					ctx.drawImage(img, 0, 0, width, height);
 
-                    // Convert to JPEG and resolve with the data URL
-                    resolve(canvas.toDataURL('image/jpeg', QUALITY));
-                };
-                img.onerror = (err) => reject(new Error('Failed to load image for processing.'));
-                img.src = e.target.result;
-            };
-            reader.onerror = (err) => reject(new Error('Failed to read image file.'));
-            reader.readAsDataURL(imageFile);
-        });
-    }
+					// *** THIS IS THE KEY CHANGE ***
+					// Instead of toDataURL, we use toBlob.
+					canvas.toBlob((blob) => {
+						if (blob) {
+							resolve(blob);
+						} else {
+							reject(new Error('Canvas to Blob conversion failed.'));
+						}
+					}, 'image/jpeg', QUALITY);
+				};
+				img.onerror = (err) => reject(new Error('Failed to load image for processing.'));
+				img.src = e.target.result;
+			};
+			reader.onerror = (err) => reject(new Error('Failed to read image file.'));
+			reader.readAsDataURL(imageFile);
+		});
+	}
 };
 
 
@@ -1489,7 +1748,7 @@ const ImportExportService = {
         });
         (story.dynamic_entries || []).forEach(e => e.id = UTILITY.uuid());
         
-        return story;
+        return { story, imageBlob: null };
     },
 
     async _parseV2Card(file, skipImages) {
@@ -1500,12 +1759,11 @@ const ImportExportService = {
         const v2RawData = JSON.parse(this._b64_to_utf8(v2DataString));
         const v2Data = v2RawData.data || v2RawData; // Handle both v1 and v2 spec
 
-        let imageUrl = '';
-        if (!skipImages) {
-            imageUrl = await ImageProcessor.processImage(file);
-        }
-
-        return this._convertV2toEllipsis(v2Data, imageUrl);
+        let imageBlob = null;
+		if (!skipImages) {
+			imageBlob = await ImageProcessor.processImageAsBlob(file);
+		}
+		return { story: this._convertV2toEllipsis(v2Data), imageBlob };
     },
 
     async _parseBYAF(file, skipImages) {
@@ -1524,18 +1782,17 @@ const ImportExportService = {
             scenario: JSON.parse(await scenarioFile.async('string')),
         };
 
-        let imageUrl = '';
-        if (!skipImages && imageFile) {
-            const imageBlob = await imageFile.async('blob');
-            imageUrl = await ImageProcessor.processImage(imageBlob);
-        }
-
-        return this._convertBYAFtoEllipsis(byafData, imageUrl);
+		let imageBlob = null;
+		if (!skipImages && imageFile) {
+			const imageFileBlob = await imageFile.async('blob');
+			imageBlob = await ImageProcessor.processImageAsBlob(imageFileBlob);
+		}
+		return { story: this._convertBYAFtoEllipsis(byafData), imageBlob }; // Also correct the function call here
     },
 
     // --- Data Conversion Helpers (Import) ---
 
-	_convertV2toEllipsis(v2Data, imageUrl) {
+	_convertV2toEllipsis(v2Data) {
 		const story = this._createEmptyEllipsisStory();
 		story.name = v2Data.name || "Imported Character";
 		story.tags = v2Data.tags || [];
@@ -1548,7 +1805,7 @@ const ImportExportService = {
 			description: (v2Data.description || "").replace(/{{char}}/g, v2Data.name || "Imported Character").replace(/{{user}}/g, "You"),
 			short_description: (v2Data.description || "").split('.')[0] + '.',
 			model_instructions: (v2Data.system_prompt || "Act as {character}. Be descriptive and engaging.").replace(/{{char}}/g, "{character}").replace(/{{user}}/g, "{user}"),
-			image_url: imageUrl,
+			image_url: '',
 			extra_portraits: [],
 			tags: v2Data.tags || [],
 			is_user: false,
@@ -1573,7 +1830,7 @@ const ImportExportService = {
 		const scenario = { id: UTILITY.uuid(), name: "Imported Start", message: firstMes };
 		story.scenarios.push(scenario);
 				
-		// [FIX] Create a scenario for the main first_mes AND each alternate_greeting
+		// Create a scenario for the main first_mes AND each alternate_greeting
 		const allGreetings = [v2Data.first_mes || `The story of ${aiChar.name} begins.`];
 		if (Array.isArray(v2Data.alternate_greetings)) {
 			allGreetings.push(...v2Data.alternate_greetings);
@@ -1598,7 +1855,7 @@ const ImportExportService = {
 				const charNameIdMap = { '{{user}}': userChar.id, '{{char}}': aiChar.id };
 				const regex = /({{user}}|{{char}}):([\s\S]*?)(?={{user}}:|{{char}}:|$)/g;
 				
-				let cleanedText = v2Data.mes_example.replace(/<START>/g, '').trim();
+				let cleanedText = v2Data.mes_example.replace(/<START>/g).trim();
 				
 				for (const match of cleanedText.matchAll(regex)) {
 					const speakerPrefix = match[1];
@@ -1632,7 +1889,7 @@ const ImportExportService = {
 			return story;
 		},
 
-    _convertBYAFtoEllipsis(byafData, imageUrl) {
+    _convertBYAFtoEllipsis(byafData) {
         const { character, scenario } = byafData;
         const story = this._createEmptyEllipsisStory();
         story.name = character.displayName || character.name || "Imported Character";
@@ -1645,7 +1902,7 @@ const ImportExportService = {
             description: character.persona || "",
             short_description: (character.persona || "").split('.')[0] + '.',
             model_instructions: scenario.formattingInstructions || "Act as {character}. Be descriptive and engaging.",
-            image_url: imageUrl,
+            image_url: '',
             extra_portraits: [],
             tags: character.tags || [],
             is_user: false,
@@ -1718,10 +1975,10 @@ const ImportExportService = {
 			});
 			narrative.state.messageCounter = 1;
 		}
-	
-        story.narratives.push(narrative);
-        return story;
-    },
+
+		story.narratives.push(narrative);
+		return story;
+	},
 
     // --- Data Conversion Helpers (Export) ---
 
@@ -1937,6 +2194,7 @@ const UIManager = {
         titleTimeout: null,
         lastCinematicImageUrl: null,
         activeCinematicBg: 1,
+		globalBackgroundImageCache: null,
     },
     
     /**
@@ -2121,7 +2379,10 @@ const UIManager = {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        const images = (characters || []).map(c => c.image_url).filter(Boolean);
+		const images = (characters || [])
+		  .map(c => UIManager.getPortraitSrc(c))
+		  .filter(Boolean);
+
         if (images.length === 0) {
             container.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gray-900 text-gray-500">No character images</div>`;
             return;
@@ -2167,7 +2428,7 @@ const UIManager = {
             return `
                 <div onclick="Controller.openModal('character-detail-modal', '${char.id}')" 
                      class="char-roster-btn" 
-                     style="background-image: url('${char.image_url || 'https://placehold.co/600x800/111827/4b5563?text=?'}')">
+                     style="background-image: url('${UIManager.RUNTIME.characterImageCache[char.id] || char.image_url || 'https://placehold.co/600x800/111827/4b5563?text=?'}')">
                     <div class="char-roster-content text-white">
                         <h3 class="font-bold text-lg truncate">${UTILITY.escapeHTML(char.name)}</h3>
                         <p class="text-sm text-gray-300 italic truncate">${UTILITY.escapeHTML(char.short_description)}</p>
@@ -2220,7 +2481,7 @@ const UIManager = {
         if (entry) { 
             container.innerHTML = `
             <div class="flex flex-col h-full">
-                <input type="text" value="${UTILITY.escapeHTML(entry.title)}" oninput="Controller.updateStaticEntryField('${entry.id}', 'title', this.value)" class="text-xl font-bold bg-black/30 p-2 w-full mb-4 flex-shrink-0">
+				<input type="text" value="${UTILITY.escapeHTML(entry.title)}" oninput="Controller.updateStaticEntryField('${entry.id}', 'title', this.value)" onblur="UIManager.renderStaticEntries()" class="text-xl font-bold bg-black/30 p-2 w-full mb-4 flex-shrink-0">
                 <div class="relative flex-grow">
                     <textarea oninput="Controller.updateStaticEntryField('${entry.id}', 'content', this.value)" class="w-full h-full bg-black/30 p-2 resize-none rounded-md">${UTILITY.escapeHTML(entry.content)}</textarea>
                     <button onclick="Controller.generateStaticEntryContentAI(event, '${entry.id}')" class="absolute top-2 right-2 text-sky-400 hover:text-sky-300 p-1 bg-sky-600/80 rounded" title="Generate with AI">${this.getAIGenIcon()}</button>
@@ -2247,7 +2508,7 @@ const UIManager = {
         if (entry) { 
             container.innerHTML = `<div class="flex flex-col h-full">
                 <label class="font-bold">Title</label>
-                <input type="text" value="${UTILITY.escapeHTML(entry.title)}" oninput="Controller.updateDynamicEntryField('${entry.id}', 'title', this.value)" class="text-xl font-bold bg-black/30 p-2 w-full mb-4">
+				<input type="text" value="${UTILITY.escapeHTML(entry.title)}" oninput="Controller.updateDynamicEntryField('${entry.id}', 'title', this.value)" onblur="UIManager.renderDynamicEntries()" class="text-xl font-bold bg-black/30 p-2 w-full mb-4">
                 <label class="font-bold mb-2">Triggers (Keywords, AND, XOR, % Chance)</label>
                 <input type="text" value="${UTILITY.escapeHTML(entry.triggers)}" oninput="Controller.updateDynamicEntryField('${entry.id}', 'triggers', this.value)" placeholder="e.g. house, cat AND dog, 25%" class="bg-black/30 p-2 w-full mb-4">
                 <div class="relative flex-grow flex flex-col">
@@ -2291,9 +2552,12 @@ const UIManager = {
         let bubbleStyle = '';
         let characterNameColor = '';
 
-        if (state.characterImageMode === 'bubble' && character.image_url) {
-            contentHTML = `<img src="${character.image_url}" class="bubble-char-image">` + contentHTML;
-        }
+		const imgSrc = UIManager.getPortraitSrc(character, msg.emotion);
+		if (state.characterImageMode === 'bubble' && imgSrc) {
+		  contentHTML = `<img src="${imgSrc}" class="bubble-char-image">` + contentHTML;
+		}
+
+
 
         if (character.is_user) {
             bubbleStyle = `background-color: rgba(75, 85, 99, ${state.bubbleOpacity});`;
@@ -2337,56 +2601,50 @@ const UIManager = {
         document.body.dataset.mode = state.characterImageMode;
         this.updateSidePortrait();
 
-        if (state.characterImageMode === 'cinematic_overlay') {
-            let latestAiImageUrl = null;
-            // Iterate backwards to find the most recent AI character with an image
-            for (let i = state.chat_history.length - 1; i >= 0; i--) {
-                const msg = state.chat_history[i];
-                if (msg.type === 'chat' && !msg.isHidden) {
-                    const speaker = state.characters.find(c => c.id === msg.character_id);
-                    if (speaker && !speaker.is_user && speaker.image_url) {
-                        latestAiImageUrl = speaker.image_url;
-                        break;
-                    }
-                }
-            }
+		if (state.characterImageMode === 'cinematic_overlay') {
+		  let latestAiImageUrl = null;
 
-            if (latestAiImageUrl && latestAiImageUrl !== this.RUNTIME.lastCinematicImageUrl) {
-                this.RUNTIME.lastCinematicImageUrl = latestAiImageUrl;
-                const bg1 = document.getElementById('cinematic-bg-1');
-                const bg2 = document.getElementById('cinematic-bg-2');
-                
-                if (this.RUNTIME.activeCinematicBg === 1) {
-                    bg2.style.backgroundImage = `url('${latestAiImageUrl}')`;
-                    bg1.style.opacity = 0;
-                    bg2.style.opacity = 1;
-                    this.RUNTIME.activeCinematicBg = 2;
-                } else {
-                    bg1.style.backgroundImage = `url('${latestAiImageUrl}')`;
-                    bg1.style.opacity = 1;
-                    bg2.style.opacity = 0;
-                    this.RUNTIME.activeCinematicBg = 1;
-                }
-            } else if (!latestAiImageUrl && this.RUNTIME.lastCinematicImageUrl) {
-				// If no AI image is found in recent history, keep the last one visible
-                const activeBg = document.getElementById(`cinematic-bg-${this.RUNTIME.activeCinematicBg}`);
-                if (activeBg) activeBg.style.backgroundImage = `url('${this.RUNTIME.lastCinematicImageUrl}')`;
-            }
-        } else {
-			//Clear cinematic backgrounds if not in cinematic mode to fix lingering portraits
-            const bg1 = document.getElementById('cinematic-bg-1');
-            const bg2 = document.getElementById('cinematic-bg-2');
-            if (bg1) {
-                bg1.style.backgroundImage = 'none';
-                bg1.style.opacity = '0';
-            }
-            if (bg2) {
-                bg2.style.backgroundImage = 'none';
-                bg2.style.opacity = '0';
-            }
-            this.RUNTIME.lastCinematicImageUrl = null;
-            this.RUNTIME.activeCinematicBg = 1;
-        }
+		  for (let i = state.chat_history.length - 1; i >= 0; i--) {
+			const msg = state.chat_history[i];
+			if (msg.type !== 'chat' || msg.isHidden) continue;
+			const speaker = state.characters.find(c => c.id === msg.character_id);
+			if (speaker && !speaker.is_user) {
+			  const candidate = UIManager.getPortraitSrc(speaker, msg.emotion);
+			  if (candidate) { latestAiImageUrl = candidate; break; }
+			}
+		  }
+
+		  if (latestAiImageUrl && latestAiImageUrl !== this.RUNTIME.lastCinematicImageUrl) {
+			this.RUNTIME.lastCinematicImageUrl = latestAiImageUrl;
+			const bg1 = document.getElementById('cinematic-bg-1');
+			const bg2 = document.getElementById('cinematic-bg-2');
+
+			if (this.RUNTIME.activeCinematicBg === 1) {
+			  bg2.style.backgroundImage = `url('${latestAiImageUrl}')`;
+			  bg1.style.opacity = 0;
+			  bg2.style.opacity = 1;
+			  this.RUNTIME.activeCinematicBg = 2;
+			} else {
+			  bg1.style.backgroundImage = `url('${latestAiImageUrl}')`;
+			  bg1.style.opacity = 1;
+			  bg2.style.opacity = 0;
+			  this.RUNTIME.activeCinematicBg = 1;
+			}
+		  } else if (!latestAiImageUrl && this.RUNTIME.lastCinematicImageUrl) {
+			// Keep last one visible, as before
+			const activeBg = document.getElementById(`cinematic-bg-${this.RUNTIME.activeCinematicBg}`);
+			if (activeBg) activeBg.style.backgroundImage = `url('${this.RUNTIME.lastCinematicImageUrl}')`;
+		  }
+		} else {
+		  // existing clear logic unchanged
+		  const bg1 = document.getElementById('cinematic-bg-1');
+		  const bg2 = document.getElementById('cinematic-bg-2');
+		  if (bg1) { bg1.style.backgroundImage = 'none'; bg1.style.opacity = '0'; }
+		  if (bg2) { bg2.style.backgroundImage = 'none'; bg2.style.opacity = '0'; }
+		  this.RUNTIME.lastCinematicImageUrl = null;
+		  this.RUNTIME.activeCinematicBg = 1;
+		}
+
 
 
         document.getElementById('chat-window').innerHTML = (state.chat_history || []).map((msg, index) => this._createMessageHTML(msg, index)).join('');
@@ -2432,37 +2690,43 @@ const UIManager = {
         });
     },
 
-    updateSidePortrait() {
-        const portraitContainer = document.getElementById('character-portrait-container');
-        if(document.body.classList.contains('layout-vertical')) {
-            portraitContainer.innerHTML = '';
-            return;
-        }
-        
-        const state = StateManager.getState();
-        if (!state || !state.characters || !state.chat_history) {
-            portraitContainer.innerHTML = '';
-            return;
-        }
+	updateSidePortrait() {
+	  const portraitContainer = document.getElementById('character-portrait-container');
+	  if (document.body.classList.contains('layout-vertical')) {
+		if (portraitContainer) portraitContainer.innerHTML = '';
+		return;
+	  }
 
-        const lastChatMessages = (state.chat_history || []).filter(m => m.type === 'chat' && !m.isHidden && !state.characters.find(c=>c.id === m.character_id)?.is_user);
-        const lastSpeakerMsg = lastChatMessages.length > 0 ? lastChatMessages[lastChatMessages.length - 1] : null;
-        const lastSpeaker = lastSpeakerMsg ? state.characters.find(c => c.id === lastSpeakerMsg.character_id) : null;
-        
-        if (lastSpeaker && lastSpeaker.image_url) {
-             const lastEmotion = lastSpeakerMsg.emotion || 'neutral';
-             let portraitUrl = lastSpeaker.image_url;
-             if (lastEmotion !== 'neutral' && lastSpeaker.extra_portraits) {
-                 const emotionalPortrait = lastSpeaker.extra_portraits.find(p => p.emotion === lastEmotion);
-                 if (emotionalPortrait && emotionalPortrait.url) portraitUrl = emotionalPortrait.url;
-             }
-             portraitContainer.innerHTML = `<img src="${portraitUrl}" class="max-w-full max-h-full object-contain rounded-lg">`;
-        } else {
-            portraitContainer.innerHTML = '';
-        }
-    },
+	  const state = StateManager.getState();
+	  if (!portraitContainer || !state || !state.characters || !state.chat_history) {
+		if (portraitContainer) portraitContainer.innerHTML = '';
+		return;
+	  }
 
-    startStreamingResponse(charId, fullText, emotion) {
+	  // Last non-user chat message
+	  const lastChatMessages = (state.chat_history || [])
+		.filter(m => m.type === 'chat' && !m.isHidden && !state.characters.find(c => c.id === m.character_id)?.is_user);
+	  const lastSpeakerMsg = lastChatMessages.length ? lastChatMessages[lastChatMessages.length - 1] : null;
+	  const lastSpeaker = lastSpeakerMsg ? state.characters.find(c => c.id === lastSpeakerMsg.character_id) : null;
+
+	  if (!lastSpeaker) {
+		portraitContainer.innerHTML = '';
+		return;
+	  }
+
+	  const mood = lastSpeakerMsg?.emotion || 'neutral';
+	  const portraitUrl = UIManager.getPortraitSrc(lastSpeaker, mood);
+
+	  // If we truly have nothing usable (unlikely), clear the container
+	  if (!portraitUrl) {
+		portraitContainer.innerHTML = '';
+		return;
+	  }
+
+	  portraitContainer.innerHTML = `<img src="${portraitUrl}" class="max-w-full max-h-full object-contain rounded-lg">`;
+	},
+
+startStreamingResponse(charId, fullText, emotion) {
         if (this.RUNTIME.streamingInterval) clearInterval(this.RUNTIME.streamingInterval);
         const state = StateManager.getState();
 
@@ -2493,13 +2757,19 @@ const UIManager = {
                 const replacer = (text) => text.replace(/{character}/g, character.name).replace(/{user}/g, userChar.name);
                 let processedContent = replacer(state.chat_history[messageIndex].content);
                 
-                const boldedContent = processedContent.replace(/(["“])([^"”]*)(["”])/g, '**$1$2$3**');
-                let fullHTML = marked.parse(boldedContent);
+                // --- FIX ---
+                // Replaced the 'boldedContent' logic with the 'styledContent' logic
+                // to match the _createMessageHTML function.
+                const styledContent = processedContent.replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`);
+                let fullHTML = marked.parse(styledContent || '');
+                // --- END FIX ---
                 
-                if (state.characterImageMode === 'bubble' && character?.image_url) {
-                    fullHTML = `<img src="${character.image_url}" class="bubble-char-image">` + fullHTML;
-                }
-                
+				const imgSrc = UIManager.getPortraitSrc(character, state.chat_history[messageIndex].emotion);
+				
+				if (state.characterImageMode === 'bubble' && imgSrc) {
+				  fullHTML = `<img src="${imgSrc}" class="bubble-char-image">` + fullHTML;
+				}
+
                 messageContentEl.innerHTML = fullHTML;
                 
                 const chatWindow = document.getElementById('chat-window');
@@ -2515,7 +2785,7 @@ const UIManager = {
                 StateManager.saveState();
                 setTimeout(() => bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
             }
-        }, 5); 
+        }, 2); // Speed of streaming in inverse.
     },
     
     showTypingIndicator(charId, text="is thinking...") { 
@@ -2534,18 +2804,39 @@ const UIManager = {
         if (el) el.remove(); 
     },
     
-    applyStyling() { 
+applyStyling() { 
         const state = StateManager.getState();
         const backgroundElement = document.getElementById('global-background');
         
-        let backgroundUrl = state.backgroundImageURL || '';
+		let backgroundUrl = ''; // Default to no background
+
+        // 1. Check for a location-specific image first (highest priority)
         if (state.worldMap && state.worldMap.grid.length > 0) {
             const currentLoc = state.worldMap.grid.find(loc => loc.coords.x === state.worldMap.currentLocation.x && loc.coords.y === state.worldMap.currentLocation.y);
-            if (currentLoc && currentLoc.imageUrl) {
-                backgroundUrl = currentLoc.imageUrl;
+            if (currentLoc) {
+                // NEW: Check local cache first
+                const locationKey = `location::${currentLoc.coords.x},${currentLoc.coords.y}`;
+                UIManager.RUNTIME.worldImageCache = UIManager.RUNTIME.worldImageCache || {};
+                
+                if (UIManager.RUNTIME.worldImageCache[locationKey]) {
+                    backgroundUrl = UIManager.RUNTIME.worldImageCache[locationKey];
+                } 
+                // FALLBACK: Check legacy URL (if not a local key)
+                else if (currentLoc.imageUrl && !currentLoc.imageUrl.startsWith('local_idb_location')) {
+                    backgroundUrl = currentLoc.imageUrl;
+                }
             }
         }
         
+        // 2. If no location image, check for a user-uploaded local background
+        if (!backgroundUrl && UIManager.RUNTIME.globalBackgroundImageCache) {
+             backgroundUrl = UIManager.RUNTIME.globalBackgroundImageCache;
+        }
+        // 3. If no local background, fall back to a legacy URL (if it's not our keyword)
+        else if (!backgroundUrl && state.backgroundImageURL && state.backgroundImageURL !== 'local_idb_background') {
+            backgroundUrl = state.backgroundImageURL;
+        }
+
         backgroundElement.style.backgroundImage = backgroundUrl ? `url('${backgroundUrl}')` : 'none';
         
         document.getElementById('app-container').style.backdropFilter = `blur(${state.backgroundBlur || 0}px)`;
@@ -2593,8 +2884,20 @@ const UIManager = {
                 for (let x = currentLocation.x - 1; x <= currentLocation.x + 1; x++) {
                     const isCenter = x === currentLocation.x && y === currentLocation.y;
                     const location = worldMap.grid.find(loc => loc.coords.x === x && loc.coords.y === y);
-                    const bgImage = location?.imageUrl ? `background-image: url('${location.imageUrl}');` : '';
-                    let classList = ['aspect-square', 'rounded-lg', 'flex', 'items-end', 'p-2', 'text-white', 'relative', 'overflow-hidden', 'bg-cover', 'bg-center', 'transition-all'];
+					let imageSrc = '';
+                    if (location) {
+                        const locationKey = `location::${x},${y}`;
+                        UIManager.RUNTIME.worldImageCache = UIManager.RUNTIME.worldImageCache || {};
+                        
+                        if (UIManager.RUNTIME.worldImageCache[locationKey]) {
+                            // Use cached local image if available
+                            imageSrc = UIManager.RUNTIME.worldImageCache[locationKey];
+                        } else if (location.imageUrl && !location.imageUrl.startsWith('local_idb_location')) {
+                            // Fallback to legacy URL if it exists and isn't a local key
+                            imageSrc = location.imageUrl;
+                        }
+                    }
+                    const bgImage = imageSrc ? `background-image: url('${imageSrc}');` : '';                    let classList = ['aspect-square', 'rounded-lg', 'flex', 'items-end', 'p-2', 'text-white', 'relative', 'overflow-hidden', 'bg-cover', 'bg-center', 'transition-all'];
                     
                     if (isCenter) {
                         classList.push('bg-indigo-800/80', 'ring-2', 'ring-indigo-300');
@@ -2666,7 +2969,12 @@ const UIManager = {
                 detailsHTML = `
                     <div class="h-full flex flex-col space-y-3">
                         <div><label class="text-sm text-gray-400">Name</label><input type="text" value="${UTILITY.escapeHTML(selectedMapTile.name)}" oninput="Controller.updateLocationDetail('name', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"></div>
-                        <div><label class="text-sm text-gray-400">Image URL</label><input type="text" value="${UTILITY.escapeHTML(selectedMapTile.imageUrl)}" oninput="Controller.updateLocationDetail('imageUrl', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"></div>
+
+                        <div>
+                            <label class="text-sm text-gray-400 mt-2 block">Upload Local Image</label>
+                            <span class="text-xs text-gray-500 mb-2 block">Current: ${selectedMapTile.imageUrl.startsWith('local_idb_location') ? '[Local Image]' : (selectedMapTile.imageUrl ? '[Legacy URL]' : 'None')}</span>
+                            <input type="file" accept="image/*" onchange="Controller.handleWorldMapLocationImageUpload(event, ${selectedMapTile.coords.x}, ${selectedMapTile.coords.y})" class="mt-1 block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
+                        </div>
                         <div><label class="text-sm text-gray-400">Brief Description</label><textarea oninput="Controller.updateLocationDetail('description', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded h-20 resize-none">${UTILITY.escapeHTML(selectedMapTile.description)}</textarea></div>
                         <div class="flex-grow flex flex-col">
                             <label class="text-sm text-gray-400">Full Prompt</label>
@@ -2756,6 +3064,21 @@ const UIManager = {
         }
     },
 
+	getPortraitSrc(character, mood) {
+	  const cache = UIManager.RUNTIME.characterImageCache || {};
+
+	  const emoKey = mood ? `${character.id}::emotion::${mood}` : null;
+	  if (emoKey && cache[emoKey]) return cache[emoKey];
+
+	  // Base portrait (IDB-backed cache)
+	  if (cache[character.id]) return cache[character.id];
+
+	  // Legacy URL (pre-IDB)
+	  if (character.image_url) return character.image_url;
+
+	  // Placeholder
+	  return 'https://placehold.co/600x800/111827/4b5563?text=?';
+	},
 
     openCharacterDetailModal(charId) {
         const state = StateManager.getState();
@@ -2766,18 +3089,60 @@ const UIManager = {
         }
         const container = document.getElementById('character-detail-modal-content');
         
-        const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) => `
-            <div class="flex items-center space-x-2 mt-2">
-                <select onchange="Controller.updateExtraPortrait('${char.id}', ${index}, 'emotion', this.value)" class="w-1/3 bg-black/30 border-gray-600 rounded p-1 text-sm">
-                    <option value="happy" ${portrait.emotion === 'happy' ? 'selected' : ''}>Happy</option>
-                    <option value="sad" ${portrait.emotion === 'sad' ? 'selected' : ''}>Sad</option>
-                    <option value="angry" ${portrait.emotion === 'angry' ? 'selected' : ''}>Angry</option>
-                    <option value="surprised" ${portrait.emotion === 'surprised' ? 'selected' : ''}>Surprised</option>
-                </select>
-                <input type="text" value="${UTILITY.escapeHTML(portrait.url)}" oninput="Controller.updateExtraPortrait('${char.id}', ${index}, 'url', this.value)" class="w-2/3 bg-black/30 border-gray-600 p-1 text-sm" placeholder="URL...">
-                <button onclick="Controller.removeExtraPortrait('${char.id}', ${index})" class="text-red-400 hover:text-red-300">X</button>
+const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) => {
+          const emo = portrait.emotion || 'happy';
+          const fileInputId = `emo-file-${char.id}-${index}`;
+          const urlInputId  = `emo-url-${char.id}-${index}`;
+          const labelId     = `emo-label-${char.id}-${index}`;
+
+          // Determine current source to show a hint (cache -> “local”)
+          const cached = (UIManager.RUNTIME.characterImageCache || {})[`${char.id}::emotion::${emo}`];
+          const hint   = cached ? '[local image]' : (portrait.url ? '[url]' : '[none]');
+
+          return `
+            <div class="flex flex-col space-y-2 mt-2 p-2 rounded border border-gray-700/50">
+                <div class="flex items-center space-x-2">
+                    <select
+                        onchange="Controller.updateExtraPortrait('${char.id}', ${index}, 'emotion', this.value)"
+                        class="w-1/3 bg-black/30 border-gray-600 rounded p-1 text-sm"
+                    >
+                        <option value="happy" ${emo === 'happy' ? 'selected' : ''}>Happy</option>
+                        <option value="sad" ${emo === 'sad' ? 'selected' : ''}>Sad</option>
+                        <option value="angry" ${emo === 'angry' ? 'selected' : ''}>Angry</option>
+                        <option value="surprised" ${emo === 'surprised' ? 'selected' : ''}>Surprised</option>
+                        <option value="neutral" ${emo === 'neutral' ? 'selected' : ''}>Neutral</option>
+                    </select>
+                    <input
+                        id="${urlInputId}"
+                        type="text"
+                        value="${UTILITY.escapeHTML(portrait.url || '')}"
+                        oninput="Controller.updateExtraPortrait('${char.id}', ${index}, 'url', this.value)"
+                        class="w-2/3 bg-black/30 border-gray-600 p-1 text-sm"
+                        placeholder="Image URL (used if no local image)"
+                    >
+                    <button
+                        onclick="Controller.removeExtraPortrait('${char.id}', ${index})"
+                        class="text-red-400 hover:text-red-300"
+                        title="Remove portrait"
+                    >X</button>
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="text-sm text-gray-400" for="${fileInputId}">
+                        Upload local image for <span class="font-semibold">${emo}</span>:
+                    </label>
+                    <span id="${labelId}" class="text-xs text-gray-400">${hint}</span>
+                </div>
+                <input
+                    id="${fileInputId}"
+                    type="file"
+                    accept="image/*"
+                    onchange="Controller.handleLocalEmotionImageUpload(event, '${char.id}', ${index})"
+                    class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer"
+                >
             </div>
-        `).join('');
+          `;
+        }).join('');
+
         
         const tagsValue = (char.tags || []).join(', ');
 
@@ -3627,6 +3992,109 @@ const Controller = {
         });
         container.style.minHeight = `${maxHeight}px`;
     },
+	
+	/** Handles the upload of a local image for the global background. */
+    async handleBackgroundImageUpload(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) { // 5MB Limit
+            alert("Error: Image file size should not exceed 5MB.");
+            event.target.value = '';
+            return;
+        }
+
+        UIManager.showLoadingSpinner?.('Processing background image...');
+        let savedSuccessfully = false; // Flag to track DB save success
+
+        try {
+            const blob = await ImageProcessor.processImageAsBlob(file);
+            const key = 'global_background_image';
+
+            // --- MODIFICATION: Check saveImage result ---
+            savedSuccessfully = await DBService.saveImage(key, blob);
+
+            if (!savedSuccessfully) {
+                 // Throw an error if saving failed to stop execution and show alert
+                 throw new Error("Failed to save the image to the browser database (IndexedDB). This might happen in private browsing mode or if storage quota is exceeded.");
+            }
+            // --- END MODIFICATION ---
+
+            console.log("Image saved to IndexedDB successfully."); // Log success
+
+            // Live-cache update
+            const oldUrl = UIManager.RUNTIME.globalBackgroundImageCache;
+            if (oldUrl) URL.revokeObjectURL(oldUrl);
+            UIManager.RUNTIME.globalBackgroundImageCache = URL.createObjectURL(blob);
+
+            // Set state to use the new local image and save
+            const state = StateManager.getState();
+            state.backgroundImageURL = 'local_idb_background'; // Special keyword
+            console.log("Saving state with backgroundImageURL =", state.backgroundImageURL);
+            StateManager.saveState();
+
+            UIManager.applyStyling(); // Re-apply to show the new background
+
+            // Update the hint text
+            const bgHint = document.getElementById('background-image-hint');
+            if (bgHint) bgHint.textContent = 'Current: [Local Image]';
+
+        } catch (err) {
+            console.error("Error processing or saving background image:", err);
+            alert(`Upload failed: ${err.message}`); // Show the specific error
+
+            // --- ROLLBACK LOGIC (No change needed here, handled by throwing error) ---
+            // If save failed, the state/cache updates above won't run.
+            // We should ensure the hint reflects failure.
+             const bgHint = document.getElementById('background-image-hint');
+             const currentState = StateManager.getState()?.backgroundImageURL;
+             if (bgHint) {
+                 if(currentState === 'local_idb_background'){
+                     // This case shouldn't happen if error is thrown correctly, but as a safeguard:
+                     bgHint.textContent = 'Current: [Save Failed]';
+                 } else if (currentState) {
+                      bgHint.textContent = 'Current: [Legacy URL]';
+                 } else {
+                     bgHint.textContent = 'Current: None';
+                 }
+             }
+
+        } finally {
+            UIManager.hideLoadingSpinner?.();
+            // Clear the file input ONLY if the save was successful
+            if (savedSuccessfully) {
+                event.target.value = '';
+            }
+        }
+    },
+
+    /** Clears the locally stored background image. */
+async clearBackgroundImage() {
+        UIManager.showLoadingSpinner?.('Clearing background...');
+        try {
+            await DBService.deleteImage('global_background_image');
+
+            const oldUrl = UIManager.RUNTIME.globalBackgroundImageCache;
+            if (oldUrl) URL.revokeObjectURL(oldUrl);
+            UIManager.RUNTIME.globalBackgroundImageCache = null;
+
+            const state = StateManager.getState();
+            state.backgroundImageURL = ''; // Clear the state
+            StateManager.saveState();
+
+            UIManager.applyStyling(); // Re-apply to show the default background
+
+            // [NEW] Update the hint text
+            const bgHint = document.getElementById('background-image-hint');
+            if (bgHint) bgHint.textContent = 'Current: None';
+
+        } catch (err) {
+            console.error("Error clearing background image:", err);
+            alert("There was an error clearing the background.");
+        } finally {
+            UIManager.hideLoadingSpinner?.();
+        }
+    },
 
     /** Binds all event listeners for the interactive elements within the settings modal. */
     bindSettingsListeners() {
@@ -3657,14 +4125,27 @@ const Controller = {
         };
         
         // Model Tab
+		
         if(document.getElementById('gemini-api-key-input')) setListener('gemini-api-key-input', 'geminiApiKey'); 
         if(document.getElementById('openrouter-api-key-input')) setListener('openrouter-api-key-input', 'openRouterKey'); 
         if(document.getElementById('openrouter-model-input')) setListener('openrouter-model-input', 'openRouterModel'); 
         if(document.getElementById('koboldcpp-min-p-slider')) setupSlider('koboldcpp-min-p-slider', 'koboldcpp-min-p-value', 'koboldcpp_min_p');
         if(document.getElementById('koboldcpp-dry-slider')) setupSlider('koboldcpp-dry-slider', 'koboldcpp-dry-value', 'koboldcpp_dry');
+		
+		const bgHint = document.getElementById('background-image-hint');
+        if (bgHint) {
+            if (state.backgroundImageURL === 'local_idb_background') {
+                bgHint.textContent = 'Current: [Local Image]';
+            } else if (state.backgroundImageURL) {
+                bgHint.textContent = 'Current: [Legacy URL]';
+            } else {
+                bgHint.textContent = 'Current: None';
+            }
+        }
 
         // Appearance Tab
-        if(document.getElementById('background-image-url')) setListener('background-image-url', 'backgroundImageURL', () => UIManager.applyStyling());
+		document.getElementById('background-image-upload')?.addEventListener('change', (e) => Controller.handleBackgroundImageUpload(e));
+		document.getElementById('background-image-clear')?.addEventListener('click', () => Controller.clearBackgroundImage());
         if(document.getElementById('chat-text-color')) setListener('chat-text-color', 'chatTextColor', () => UIManager.applyStyling());
         if(document.getElementById('blur-slider')) setupSlider('blur-slider', 'blur-value', 'backgroundBlur', () => UIManager.applyStyling());
         if(document.getElementById('text-size-slider')) setupSlider('text-size-slider', 'text-size-value', 'textSize', () => UIManager.applyStyling());
@@ -4323,14 +4804,30 @@ const Controller = {
     },
 
     /** Deletes a character from the roster. */
-    deleteCharacter(id) { 
-        UIManager.showConfirmationModal('Are you sure you want to delete this character?', () => {
-            const state = StateManager.getState();
-            state.characters = state.characters.filter(c => c.id !== id);
-            this.closeModal('character-detail-modal'); 
-            this.saveAndRender(); 
-        });
-    },
+	deleteCharacter(id) {
+		UIManager.showConfirmationModal('Are you sure you want to delete this character?', () => {
+			const state = StateManager.getState();
+			state.characters = state.characters.filter(c => c.id !== id);
+			this.closeModal('character-detail-modal');
+			this.saveAndRender();
+			
+			DBService.deleteImage(id);
+
+			// Also remove any emotion portraits for this character
+			try {
+				// Scan the cache keys directly since the character is already removed from the state
+				Object.keys(UIManager.RUNTIME.characterImageCache || {}).forEach(k => {
+					if (k.startsWith(`${id}::emotion::`)) {
+						DBService.deleteImage(k).catch(() => {});
+						URL.revokeObjectURL(UIManager.RUNTIME.characterImageCache[k]);
+						delete UIManager.RUNTIME.characterImageCache[k];
+					}
+				});
+			} catch (e) {
+				console.warn('Could not clean emotion portraits for deleted character', e);
+			}
+		});
+	},
 
     /** Updates a specific field of a character object (debounced). */
     updateCharacterField: debounce(function(id, field, value) { 
@@ -4350,38 +4847,153 @@ const Controller = {
         } 
     }, 300),
 
-    /** Handles the upload of a local image for a character portrait. */
-    handleLocalImageUpload(event, charId) {
-        const file = event.target.files[0];
-        if (!file) {
-            return;
+/** Handles the upload of a local image for a world map location. */
+    async handleWorldMapLocationImageUpload(event, x, y) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) { // 5MB Limit
+        alert("Error: Image file size should not exceed 5MB.");
+        event.target.value = '';
+        return;
+      }
+      
+      // Create a unique key for this specific tile
+      const locationKey = `location::${x},${y}`;
+      UIManager.showLoadingSpinner?.('Processing location image...');
+
+      try {
+        const blob = await ImageProcessor.processImageAsBlob(file);
+        const saveSuccess = await DBService.saveImage(locationKey, blob);
+
+        if (!saveSuccess) {
+            throw new Error("Failed to save image to IndexedDB. This might be due to private browsing or storage limits.");
         }
 
-        if (file.size > 2 * 1024 * 1024) {
-            alert("Error: Image file size should not exceed 2MB.");
-            event.target.value = '';
-            return;
+        // Add to live cache
+        UIManager.RUNTIME.worldImageCache = UIManager.RUNTIME.worldImageCache || {};
+        const oldUrl = UIManager.RUNTIME.worldImageCache[locationKey];
+        if (oldUrl) URL.revokeObjectURL(oldUrl);
+        UIManager.RUNTIME.worldImageCache[locationKey] = URL.createObjectURL(blob);
+
+        // Update the model to use the local key and clear the legacy URL
+        const state = StateManager.getState();
+        const locationInGrid = state.worldMap.grid.find(loc => loc.coords.x === x && loc.coords.y === y);
+        if (locationInGrid) {
+            // Use a keyword to show it's local, not a real URL
+            locationInGrid.imageUrl = `local_idb_location::${x},${y}`;
+            StateManager.saveState();
         }
 
-        const reader = new FileReader();
+        // Refresh UI
+        UIManager.renderWorldMapModal(); // Re-render modal to update hint
+        UIManager.applyStyling(); // Apply new background if it's the current location
 
-        reader.onload = (e) => {
-            const imageUrl = e.target.result;
-            this.updateCharacterField(charId, 'image_url', imageUrl);
-            
-            const textInput = event.target.closest('div').querySelector('input[type="text"]');
-            if (textInput) {
-                textInput.value = `[Local Image: ${file.name}]`;
-            }
-        };
-        
-        reader.onerror = () => {
-            console.error("Error reading file.");
-            alert("There was an error reading the selected file.");
-        };
-
-        reader.readAsDataURL(file);
+      } catch (err) {
+        console.error("Error processing location image:", err);
+        alert(`Upload failed: ${err.message}`);
+      } finally {
+        UIManager.hideLoadingSpinner?.();
+        event.target.value = ''; // Clear file input
+      }
     },
+
+    /** Handles the upload of a local image for a character portrait. */
+	async handleLocalImageUpload(event, charId) {
+	  const file = event.target.files?.[0];
+	  if (!file) return;
+
+	  if (file.size > 5 * 1024 * 1024) {
+		alert("Error: Image file size should not exceed 5MB.");
+		event.target.value = '';
+		return;
+	  }
+
+	  UIManager.showLoadingSpinner?.('Processing image...');
+	  try {
+		const blob = await ImageProcessor.processImageAsBlob(file);
+		await DBService.saveImage(charId, blob);
+
+		// Live-cache update (no reload)
+		UIManager.RUNTIME.characterImageCache = UIManager.RUNTIME.characterImageCache || {};
+		const oldUrl = UIManager.RUNTIME.characterImageCache[charId];
+		if (oldUrl) URL.revokeObjectURL(oldUrl);
+		UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
+
+		// Normalize the model to IDB-backed (no external URL)
+		this.updateCharacterField(charId, 'image_url', '');
+
+		// Minimal, targeted repaints
+		UIManager.renderCharacters?.();           // roster tiles
+		const active = StateManager.getState?.();
+		if (active?.lastSpeakerId) {
+		  UIManager.updateSidePortrait?.();       // side portrait in horizontal mode
+		}
+		UIManager.refreshRecentMessages?.(10)     // if you have it
+		  ?? UIManager.renderChat?.();            // otherwise a small full chat repaint
+
+		// Optional UI text hint near the uploader
+		const textInput = event.target.closest('div')?.querySelector('input[type="text"]');
+		if (textInput) textInput.value = `[Image stored in browser]`;
+	  } catch (err) {
+		console.error("Error processing local image:", err);
+		alert("There was an error processing the image.");
+	  } finally {
+		UIManager.hideLoadingSpinner?.();
+	  }
+	},
+	
+/** Handles the upload of a local image for an emotional portrait. */
+    async handleLocalEmotionImageUpload(event, charId, index) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Error: Image file size should not exceed 5MB.");
+        event.target.value = '';
+        return;
+      }
+
+      const state = StateManager.getState();
+      const char = state.characters.find(c => c.id === charId);
+      if (!char || !Array.isArray(char.extra_portraits) || !char.extra_portraits[index]) return;
+
+      // Read the emotion from the model (source of truth)
+      const emotion = (char.extra_portraits[index].emotion || 'neutral').toLowerCase();
+      const emoKey = `${charId}::emotion::${emotion}`;
+
+      UIManager.showLoadingSpinner?.('Processing emotion image...');
+      try {
+        const blob = await ImageProcessor.processImageAsBlob(file);
+        await DBService.saveImage(emoKey, blob);
+
+        // Live-cache update (no reload)
+        UIManager.RUNTIME.characterImageCache = UIManager.RUNTIME.characterImageCache || {};
+        const oldUrl = UIManager.RUNTIME.characterImageCache[emoKey];
+        if (oldUrl) URL.revokeObjectURL(oldUrl);
+        UIManager.RUNTIME.characterImageCache[emoKey] = URL.createObjectURL(blob);
+
+        // Clear the URL (so getPortraitSrc prefers the local blob)
+        char.extra_portraits[index].url = '';
+        StateManager.saveState();
+
+        // Targeted UI refresh so the new image shows up immediately
+        const active = StateManager.getState();
+        UIManager.renderCharacters?.();
+        if (active?.lastSpeakerId) UIManager.updateSidePortrait?.();
+        UIManager.refreshRecentMessages?.(10) ?? UIManager.renderChat?.();
+
+        // Optional: hint in the nearby URL input box
+        const textInput = event.target.closest('div')?.querySelector('input[type="text"]');
+        if (textInput) textInput.value = `[Image stored in browser for "${emotion}"]`;
+      } catch (err) {
+        console.error("Error processing emotion image:", err);
+        alert("There was an error processing the emotion image.");
+      } finally {
+        UIManager.hideLoadingSpinner?.();
+      }
+    },
+
 
     /** Updates a character's color scheme (debounced). */
     updateCharacterColor: debounce(function(charId, type, value) {
@@ -4442,9 +5054,6 @@ const Controller = {
         if (entry) { 
             entry[field] = value; 
             StateManager.saveState(); 
-            if (field === 'title') {
-                UIManager.renderStaticEntries();
-            }
         } 
     }, 300),
 
@@ -4456,10 +5065,7 @@ const Controller = {
         const entry = state.dynamic_entries.find(e => e.id === id); 
         if (entry) { 
             entry[field] = value; 
-            StateManager.saveState(); 
-            if (field === 'title') {
-                UIManager.renderDynamicEntries();
-            }
+            StateManager.saveState();
         } 
     }, 300),
 
@@ -4819,26 +5425,28 @@ const Controller = {
         if (!file) return;
 
         UIManager.showLoadingSpinner('Parsing file...');
-        try {
-            const newStory = await ImportExportService.parseUploadedFile(file);
-            
-            const library = StateManager.getLibrary();
-            const existingStory = library.stories.find(s => s.name.toLowerCase() === newStory.name.toLowerCase());
-            
-            if (existingStory) {
-                const now = new Date();
-                const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
-                newStory.name = `${newStory.name} - ${timestamp}`;
-            }
+		try {
+			// parseUploadedFile now returns an object with story data and the optional image blob
+			const { story: newStory, imageBlob } = await ImportExportService.parseUploadedFile(file);
+			
+			const library = StateManager.getLibrary();
+			// ... (rest of the logic for checking for existing stories and renaming) ...
 
-            library.stories.push(newStory);
-            this.updateSearchIndex(newStory);
-            StateManager.updateTagCache();
-            StateManager.saveLibrary();
-            UIManager.hideLoadingSpinner();
-            alert(`Story "${newStory.name}" imported successfully!`);
-            UIManager.renderLibraryInterface();
-            this.closeModal('io-hub-modal');
+			library.stories.push(newStory);
+			
+			// Find the primary AI character to use their ID for saving the image
+			const primaryAiChar = newStory.characters.find(c => !c.is_user);
+			if (imageBlob && primaryAiChar) {
+				await DBService.saveImage(primaryAiChar.id, imageBlob);
+			}
+			
+			this.updateSearchIndex(newStory);
+			StateManager.updateTagCache();
+			StateManager.saveLibrary();
+			UIManager.hideLoadingSpinner();
+			alert(`Story "${newStory.name}" imported successfully!`);
+			UIManager.renderLibraryInterface();
+			this.closeModal('io-hub-modal');
         } catch (err) {
             UIManager.hideLoadingSpinner();
             alert(`Error importing file: ${err.message}`);
@@ -5066,31 +5674,233 @@ const Controller = {
  * and sets up the initial event listeners.
  */
 const app = {
-    init() {
-        StateManager.loadLibrary();
-        const library = StateManager.getLibrary();
-        if (library.stories.length === 0) { Controller.createDefaultStoryAndNarrative(); return; }
-        StateManager.loadActiveNarrative();
-        const state = StateManager.getState();
-        if (!state || Object.keys(state).length === 0) { 
-             const activeStory = library.stories.find(s => s.id === library.active_story_id);
-             document.getElementById('story-title-input').value = activeStory ? activeStory.name : "No Story Loaded";
-             document.getElementById('mobile-story-title-overlay').value = activeStory ? activeStory.name : "No Story Loaded";
-             UIManager.renderChat();
-        } else {
-            Controller.RUNTIME.turnOfArrival = state.messageCounter; // Initialize on load
-            Controller._ensureCharacterColors();
-            UIManager.applyStyling();
-            UIManager.renderAll();
-        }
-        this.setupEventListeners();
-        UIManager.setButtonToSendMode();
-    },
+  async init() {
+    // Load data first (from localStorage as you already do)
+    StateManager.loadLibrary();
+    const library = StateManager.getLibrary();
+    if (library.stories.length === 0) {
+      Controller.createDefaultStoryAndNarrative();
+      return;
+    }
+    StateManager.loadActiveNarrative();
+    const state = StateManager.getState();
 
-    /** Sets up all global and persistent event listeners for the application. */
-    setupEventListeners() {
-        this.updateLayout();
-        window.addEventListener('resize', debounce(() => this.updateLayout(), 100));
+    // --- Make the UI responsive immediately (listeners + layout + send-button state) ---
+    // Doing this early ensures you don't get stuck in vertical-only layout with dead buttons.
+    this.setupEventListeners();            // calls updateLayout() internally on load and on resize
+    UIManager.setButtonToSendMode();       // ensures the input button is in the correct mode
+
+    // --- Try IndexedDB, but DO NOT let it block the UI ---
+    let dbReady = false;
+    try {
+      await DBService.init();              // DBService is fail-soft; still guard with try/catch
+      dbReady = true;
+    } catch (e) {
+      console.warn("DB init failed; proceeding without image cache", e);
+    }
+
+    // Always have a cache object—even if DB isn't ready
+    UIManager.RUNTIME.characterImageCache = UIManager.RUNTIME.characterImageCache || {};
+
+    // --- One-time image migration from legacy image_url/LocalStorage into IndexedDB ---
+    // Define helpers locally so they don't leak globals.
+    async function migrateLegacyImagesToIDB(root) {
+      if (!root) return;
+
+      // Accept either an active narrative with characters, or the full library
+      const characters =
+        root.characters ? root.characters :
+        (root.stories && Array.isArray(root.stories))
+          ? root.stories.flatMap(s => s.characters || [])
+          : [];
+
+      if (!characters || characters.length === 0) return;
+
+      let changed = false;
+
+      for (const char of characters) {
+        try {
+          // If there is already a blob in IDB for this char, skip
+          const existing = await DBService.getImage(char.id);
+          if (existing) continue;
+
+          // If the character has a legacy inline/base64 or remote URL, try to fetch and store
+          const url = (char.image_url || '').trim();
+          if (!url) continue;
+
+          const blob = url.startsWith('data:')
+            ? dataURLToBlob(url)
+            : await fetch(url, { cache: 'no-store' }).then(r => (r.ok ? r.blob() : null));
+
+          if (blob) {
+            // Save under the base key = char.id (keeps compatibility with your current hydrator)
+            await DBService.saveImage(char.id, blob);
+
+            // Normalize model to IDB-backed
+            char.image_url = '';
+
+            // Live-cache for immediate UI usage
+            const oldUrl = UIManager.RUNTIME.characterImageCache[char.id];
+            if (oldUrl) URL.revokeObjectURL(oldUrl);
+            UIManager.RUNTIME.characterImageCache[char.id] = URL.createObjectURL(blob);
+
+            changed = true;
+          }
+        } catch (e) {
+          console.warn('Legacy image migration failed for char', char?.id, e);
+          // leave image_url as-is; renderers will still fall back to it if present
+        }
+      }
+
+      if (changed) {
+        StateManager.saveLibrary?.();
+        // Minimal repaint to reflect newly cached portraits
+        UIManager.renderCharacters?.();
+        const active = StateManager.getState?.();
+        if (active?.lastSpeakerId) {
+          UIManager.updateSidePortrait?.(active.lastSpeakerId);
+        }
+      }
+    }
+
+    function dataURLToBlob(dataUrl) {
+      const [header, data] = dataUrl.split(',');
+      const isBase64 = /;base64$/i.test(header);
+      const mime = (header.match(/data:(.*?)(;|$)/) || [])[1] || 'application/octet-stream';
+      const bytes = isBase64 ? atob(data) : decodeURIComponent(data);
+      const arr = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+      return new Blob([arr], { type: mime });
+    }
+
+    // Run migration only if DB is ready
+    if (dbReady) {
+      try {
+        await migrateLegacyImagesToIDB(
+          StateManager.StateManager.getState() || StateManager.getLibrary?.()
+        );
+      } catch (e) {
+        console.warn("Legacy image migration failed:", e);
+      }
+    }
+
+    // --- Optional: hydrate character portraits from IndexedDB if available ---
+    if (dbReady && state && state.characters) {
+      for (const char of state.characters) {
+        try {
+          const blob = await DBService.getImage(char.id);
+          if (blob) {
+            UIManager.RUNTIME.characterImageCache[char.id] = URL.createObjectURL(blob);
+          }
+        } catch (e) {
+          console.warn("getImage failed for", char.id, e);
+        }
+      }
+    }
+	
+// Also hydrate emotion portraits into cache
+    if (dbReady && state && state.characters) {
+      for (const char of state.characters) {
+        if (!Array.isArray(char.extra_portraits)) continue;
+        for (const p of char.extra_portraits) {
+          const emotion = (p.emotion || 'neutral').toLowerCase();
+          const emoKey = `${char.id}::emotion::${emotion}`;
+          try {
+            const blob = await DBService.getImage(emoKey);
+            if (blob) {
+              UIManager.RUNTIME.characterImageCache[emoKey] = URL.createObjectURL(blob);
+            }
+          } catch (e) {
+            console.warn("getImage failed for", emoKey, e);
+          }
+        }
+      }
+    }
+	
+// Hydrate global background image
+    if (dbReady && state) { // Check if DB is ready and state is loaded
+        let stateNeedsUpdate = false;
+        try {
+            const blob = await DBService.getImage('global_background_image');
+            if (blob) {
+                // Image FOUND in IDB
+                console.log("Found local background image in IDB during init.");
+                UIManager.RUNTIME.globalBackgroundImageCache = URL.createObjectURL(blob);
+                // Ensure state reflects reality
+                if (state.backgroundImageURL !== 'local_idb_background') {
+                    console.log("Correcting state: Setting backgroundImageURL to local_idb_background.");
+                    state.backgroundImageURL = 'local_idb_background';
+                    stateNeedsUpdate = true; // Mark state as changed
+                }
+            } else {
+                // Image NOT found in IDB
+                console.log("No local background image found in IDB during init.");
+                // If state mistakenly thinks there's a local image, clear it
+                if (state.backgroundImageURL === 'local_idb_background') {
+                    console.log("Correcting state: Clearing backgroundImageURL because local image is missing.");
+                    state.backgroundImageURL = '';
+                    stateNeedsUpdate = true; // Mark state as changed
+                }
+                // Clear cache just in case
+                UIManager.RUNTIME.globalBackgroundImageCache = null;
+            }
+        } catch (e) {
+            console.warn("Failed during IDB background image check/load", e);
+            // Fallback: If DB check fails, clear local flag if set, to avoid broken state
+            if (state.backgroundImageURL === 'local_idb_background') {
+                 state.backgroundImageURL = '';
+                 stateNeedsUpdate = true;
+            }
+        }
+        // Save state *only* if we made corrections during hydration
+        if (stateNeedsUpdate) {
+            console.log("Saving corrected state after background hydration.");
+            StateManager.saveState();
+        }
+    }
+
+// Hydrate world map location images
+    if (dbReady && state && state.worldMap && state.worldMap.grid) {
+      UIManager.RUNTIME.worldImageCache = UIManager.RUNTIME.worldImageCache || {};
+      for (const loc of state.worldMap.grid) {
+        // Only try to load images that are marked as local
+        if (loc.imageUrl && loc.imageUrl.startsWith('local_idb_location')) {
+          const locationKey = `location::${loc.coords.x},${loc.coords.y}`;
+          try {
+            const blob = await DBService.getImage(locationKey);
+            if (blob) {
+              UIManager.RUNTIME.worldImageCache[locationKey] = URL.createObjectURL(blob);
+            } else {
+              // Image missing from DB, correct the state
+              console.warn(`Correcting missing location image for ${locationKey}`);
+              loc.imageUrl = '';
+              stateNeedsUpdate = true; // Mark for saving
+            }
+          } catch (e) {
+            console.warn(`Failed to load location image ${locationKey} from IDB`, e);
+          }
+        }
+      }
+    }
+
+    // --- Render the app regardless of DB status (your original logic, unchanged) ---
+    if (!state || Object.keys(state).length === 0) {
+      const activeStory = library.stories.find(s => s.id === library.active_story_id);
+      document.getElementById('story-title-input').value = activeStory ? activeStory.name : "No Story Loaded";
+      document.getElementById('mobile-story-title-overlay').value = activeStory ? activeStory.name : "No Story Loaded";
+      UIManager.renderChat();
+    } else {
+      Controller.RUNTIME.turnOfArrival = state.messageCounter; // Initialize on load
+      Controller._ensureCharacterColors();
+      UIManager.applyStyling();
+      UIManager.renderAll();
+    }
+  },
+
+  /** Sets up all global and persistent event listeners for the application. */
+  setupEventListeners() {
+    this.updateLayout();
+    window.addEventListener('resize', debounce(() => this.updateLayout(), 100));
         
         const titleInputHandler = debounce((e) => { 
             const state = StateManager.getState();
@@ -5123,19 +5933,24 @@ const app = {
         
         document.getElementById('regen-btn').addEventListener('click', () => Controller.handleRegen());
         document.getElementById('undo-btn').addEventListener('click', () => Controller.undoLastTurn());
-		
-    },
+  },
 
-    /** Updates the body class based on screen orientation for responsive styling. */
-    updateLayout() {
-        if (window.innerHeight > window.innerWidth) { document.body.classList.add('layout-vertical'); document.body.classList.remove('layout-horizontal'); } 
-        else { document.body.classList.add('layout-horizontal'); document.body.classList.remove('layout-vertical'); }
-         UIManager.updateSidePortrait();
-    },
+  /** Updates the body class based on screen orientation for responsive styling. */
+  updateLayout() {
+    if (window.innerHeight > window.innerWidth) {
+      document.body.classList.add('layout-vertical');
+      document.body.classList.remove('layout-horizontal');
+    } else {
+      document.body.classList.add('layout-horizontal');
+      document.body.classList.remove('layout-vertical');
+    }
+    UIManager.updateSidePortrait();
+  },
 };
 
 // Start the application once the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => app.init());
+
 
 
 	</script>
