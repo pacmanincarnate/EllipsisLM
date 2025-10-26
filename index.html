@@ -5825,32 +5825,51 @@ async clearBackgroundImage() {
      * Handles a single file upload from the I/O Hub, routing it to the ImportExportService.
      * @param {Event} event - The file input change event.
      */
-    async handleFileUpload(event) {
+async handleFileUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         UIManager.showLoadingSpinner('Parsing file...');
 		try {
-			// parseUploadedFile now returns an object with story data and the optional image blob
 			const { story: newStory, imageBlob } = await ImportExportService.parseUploadedFile(file);
-			
+
 			const library = StateManager.getLibrary();
-			// ... (rest of the logic for checking for existing stories and renaming) ...
+            // Basic check if story name exists, handle potential duplicates
+            const existingStory = library.stories.find(s => s.name && newStory.name && s.name.toLowerCase() === newStory.name.toLowerCase());
+            if (existingStory) {
+                const now = new Date();
+				const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;                newStory.name = `${newStory.name} - ${timestamp}`;
+                 console.log(`Duplicate story name found. Renaming imported story to: ${newStory.name}`);
+            }
 
 			library.stories.push(newStory);
-			
-			// Find the primary AI character to use their ID for saving the image
-			const primaryAiChar = newStory.characters.find(c => !c.is_user);
-			if (imageBlob && primaryAiChar) {
-				await DBService.saveImage(primaryAiChar.id, imageBlob);
+
+			const primaryAiChar = newStory.characters?.find(c => !c.is_user);
+			if (imageBlob && primaryAiChar && primaryAiChar.id) {
+				const savedToDB = await DBService.saveImage(primaryAiChar.id, imageBlob);
+
+                if (savedToDB) {
+                    console.log(`Image saved to DB for ${primaryAiChar.id}, updating cache.`);
+                    // Ensure cache exists
+                    UIManager.RUNTIME.characterImageCache = UIManager.RUNTIME.characterImageCache || {};
+                    // Revoke old URL if replacing image for the same ID
+                    const oldUrl = UIManager.RUNTIME.characterImageCache[primaryAiChar.id];
+                    if (oldUrl) {
+                        URL.revokeObjectURL(oldUrl);
+                    }
+                    // Add new blob URL to cache
+                    UIManager.RUNTIME.characterImageCache[primaryAiChar.id] = URL.createObjectURL(imageBlob);
+                } else {
+                     console.warn(`Failed to save image to DB for ${primaryAiChar.id}, cache not updated.`);
+                }
 			}
-			
+
 			this.updateSearchIndex(newStory);
 			StateManager.updateTagCache();
 			StateManager.saveLibrary();
 			UIManager.hideLoadingSpinner();
 			alert(`Story "${newStory.name}" imported successfully!`);
-			UIManager.renderLibraryInterface();
+			UIManager.renderLibraryInterface(); // Re-render library after potential rename/add
 			this.closeModal('io-hub-modal');
         } catch (err) {
             UIManager.hideLoadingSpinner();
@@ -5879,34 +5898,40 @@ async clearBackgroundImage() {
             const library = StateManager.getLibrary();
             let totalSize = 0;
 
-            // First pass: Calculate total size for storage check
-            for await (const entry of dirHandle.values()) {
-                if (entry.kind === 'file' && (entry.name.toLowerCase().endsWith('.png') || entry.name.toLowerCase().endsWith('.byaf') || entry.name.toLowerCase().endsWith('.zip'))) {
-                    const file = await entry.getFile();
-                    totalSize += file.size;
-                }
-            }
-
             const storageAvailable = UTILITY.checkLocalStorageQuota(totalSize);
-            if (!storageAvailable) {
-                const proceed = confirm("Warning: The selected folder may exceed your browser's storage limit. This could cause the import to fail or images to be excluded. Do you want to proceed without images?");
-                if (!proceed) {
-                     UIManager.hideLoadingSpinner();
-                     return;
-                }
-            }
             
-            for await (const entry of dirHandle.values()) {
-                if (entry.kind !== 'file') continue;
+		for await (const entry of dirHandle.values()) {
+                // --- ADDED CHECKS ---
+                if (entry.kind !== 'file' || typeof entry.name !== 'string' || !entry.name) {
+                    // Skip if not a file, or if name isn't a non-empty string
+                    console.warn("Skipping directory entry:", entry);
+                    continue;
+                }
+                // --- END CHECKS ---
+
+                // Now it's safe to use .toLowerCase()
                 const lowerCaseName = entry.name.toLowerCase();
 
                 if (lowerCaseName.endsWith('.png') || lowerCaseName.endsWith('.byaf') || lowerCaseName.endsWith('.zip')) {
                     UIManager.showLoadingSpinner(`Processing file ${++processedFiles}: ${entry.name}`);
+                    let currentFileNameForError = entry.name; // Store name for potential error message
                     try {
                         const file = await entry.getFile();
-                        const newStory = await ImportExportService.parseUploadedFile(file, !storageAvailable); // Pass flag to skip images
-                        
-                        const existingStory = library.stories.find(s => s.name.toLowerCase() === newStory.name.toLowerCase());
+                        if (!file || typeof file.name !== 'string' || !file.name) {
+                             // Add a check for the File object itself, just in case
+                            throw new Error("Could not retrieve a valid File object from the directory entry.");
+                        }
+                        currentFileNameForError = file.name; // Update with potentially more accurate name
+
+                        const { story: newStory, imageBlob } = await ImportExportService.parseUploadedFile(file, !storageAvailable);
+
+                        if (!newStory || typeof newStory.name !== 'string') {
+                             // Check the result of parsing too
+                             throw new Error("File parsed, but did not result in a valid story object with a name.");
+                        }
+
+                        // Check for existing story (uses newStory.name)
+                        const existingStory = library.stories.find(s => s.name && s.name.toLowerCase() === newStory.name.toLowerCase());
                         if (existingStory) {
                             const now = new Date();
                             const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
@@ -5914,14 +5939,46 @@ async clearBackgroundImage() {
                         }
 
                         library.stories.push(newStory);
+
+                        // --- IMAGE SAVING (Needs primary char ID) ---
+                        const primaryAiChar = newStory.characters?.find(c => !c.is_user);
+                        if (imageBlob && primaryAiChar && primaryAiChar.id) {
+                            try {
+                                // Use await here to ensure saving attempt before continuing loop potentially
+                                const savedToDB = await DBService.saveImage(primaryAiChar.id, imageBlob);
+								if (savedToDB) {
+                                     console.log(`Bulk Import: Image saved to DB for ${primaryAiChar.id}, updating cache.`);
+                                    // Ensure cache exists
+                                    UIManager.RUNTIME.characterImageCache = UIManager.RUNTIME.characterImageCache || {};
+                                    // Revoke old URL if replacing image for the same ID (less likely in bulk import but good practice)
+                                    const oldUrl = UIManager.RUNTIME.characterImageCache[primaryAiChar.id];
+                                    if (oldUrl) {
+                                        URL.revokeObjectURL(oldUrl);
+                                    }
+                                    // Add new blob URL to cache
+                                    UIManager.RUNTIME.characterImageCache[primaryAiChar.id] = URL.createObjectURL(imageBlob);
+                                } else {
+                                     console.warn(`Bulk Import: Failed to save image to DB for ${primaryAiChar.id}, cache not updated.`);
+                                }
+                            } catch (dbSaveError) {
+                                 console.warn(`Failed to save image to DB for ${primaryAiChar.id} (${newStory.name}) during bulk import:`, dbSaveError);
+                                 // Continue import without the image
+                            }
+                        }
+                         // --- END IMAGE SAVING ---
+
                         this.updateSearchIndex(newStory);
                         importedStoryNames.push(newStory.name);
 
                     } catch (err) {
-                        failedFiles.push({ name: entry.name, reason: err.message });
+                        // --- SAFER ERROR LOGGING ---
+                        console.error(`Failed processing ${currentFileNameForError}:`, err);
+                        // Ensure err.message exists, provide fallback
+                        failedFiles.push({ name: currentFileNameForError, reason: (err && err.message) ? err.message : 'Unknown processing error' });
+                        // --- END SAFER LOGGING ---
                     }
                 }
-            }
+            } // End for await loop
 
             StateManager.updateTagCache();
             StateManager.saveLibrary();
