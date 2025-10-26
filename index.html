@@ -2161,46 +2161,152 @@ async exportStoryAsBYAF(story, narrative, primaryCharId) {
 
     // --- Data Conversion Helpers (Export) ---
 
-    _convertEllipsistoV2(story, narrative, primaryCharId) {
+_convertEllipsistoV2(story, narrative, primaryCharId) {
         const primaryChar = story.characters.find(c => c.id === primaryCharId);
+        // Find other AI characters (excluding user and primary)
         const otherAiChars = story.characters.filter(c => !c.is_user && c.id !== primaryCharId);
+        // Find the user character
+        const userChar = story.characters.find(c => c.is_user);
 
-        // Merge descriptions
-        let fullDescription = primaryChar.description;
+        if (!primaryChar) {
+            // Should have been caught earlier, but double-check
+            throw new Error("Primary character not found during V2 conversion.");
+        }
+
+        // --- Prepare Merged Description ---
+        let fullDescription = primaryChar.description || "";
         if (otherAiChars.length > 0) {
             fullDescription += "\n\n--- Other Characters ---\n";
             otherAiChars.forEach(char => {
-                fullDescription += `\nName: ${char.name}\nDescription: ${char.description}\n`;
+                fullDescription += `\nName: ${char.name || 'Unnamed Character'}\nDescription: ${char.description || '(No description)'}\n`;
             });
         }
-        
-        // Convert dynamic entries + world map to character_book
-        const dynamicEntries = story.dynamic_entries.map(entry => ({
-            keys: (entry.triggers || "").split(',').map(t => t.trim()).filter(Boolean),
-            content: entry.content,
-        }));
-        const worldMapEntries = (narrative.state.worldMap?.grid || [])
-            .filter(loc => loc.name)
-            .map(loc => ({
-                keys: [loc.name],
-                content: `Description: ${loc.description}\n\nPrompt: ${loc.prompt}`
-            }));
 
-        const firstMessage = (narrative.state.chat_history || []).find(m => !m.isHidden);
+        // --- Prepare Character Book Entries ---
+        const bookEntries = [];
+        let insertionCounter = 0; // Simple counter for insertion_order
 
-        const v2Data = {
-            name: primaryChar.name,
-            description: fullDescription,
-            system_prompt: primaryChar.model_instructions,
-            first_mes: firstMessage ? firstMessage.content : "The story begins.",
-            mes_example: (narrative.state.chat_history || []).filter(m => m.isHidden).map(m => m.content).join('\n'),
-            tags: primaryChar.tags || [],
-            character_book: {
-                entries: [...dynamicEntries, ...worldMapEntries]
+        // Map dynamic entries
+        (story.dynamic_entries || []).forEach(entry => {
+            bookEntries.push({
+                keys: (entry.triggers || entry.title || "").split(',').map(t => t.trim()).filter(Boolean),
+                content: entry.content || "",
+                enabled: true, // Mandatory field
+                insertion_order: insertionCounter++, // Mandatory field
+                extensions: {}, // Mandatory field
+                // Add other optional fields with defaults if desired (e.g., case_sensitive: false)
+                case_sensitive: false,
+            });
+        });
+
+        // Map world map locations
+        (narrative.state.worldMap?.grid || [])
+            .filter(loc => loc.name) // Only include locations with names
+            .forEach(loc => {
+                bookEntries.push({
+                    keys: [loc.name], // Use location name as the key
+                    content: `Location Description: ${loc.description || '(No description)'}\n\nLocation Prompt: ${loc.prompt || '(No prompt)'}`,
+                    enabled: true,
+                    insertion_order: insertionCounter++,
+                    extensions: {},
+                    case_sensitive: false,
+                });
+             });
+
+        // Map local static entries for the *current* location in the narrative state
+         const currentLocCoords = narrative.state.worldMap?.currentLocation;
+         if (currentLocCoords) {
+            const currentLocData = narrative.state.worldMap.grid.find(l => l.coords.x === currentLocCoords.x && l.coords.y === currentLocCoords.y);
+            if (currentLocData && currentLocData.local_static_entries) {
+                currentLocData.local_static_entries.forEach(entry => {
+                     bookEntries.push({
+                        keys: [(entry.title || "Local Lore").toLowerCase()], // Use title as key
+                        content: entry.content || "",
+                        enabled: true,
+                        insertion_order: insertionCounter++,
+                        extensions: {},
+                        case_sensitive: false,
+                    });
+                });
             }
+         }
+
+
+        // --- Prepare Example Messages ---
+        // Replace placeholders correctly for V2 format ({character} -> {{char}}, {user} -> {{user}})
+        const replacePlaceholdersV2 = (text) => {
+            if (typeof text !== 'string') return '';
+            let processed = text.replace(/{character}/gi, '{{char}}'); // Replace your format
+            processed = processed.replace(/{user}/gi, '{{user}}');     // Replace your format
+            // Ensure standard {{char}} and {{user}} are present if original was different
+            processed = processed.replace(/\{\{char\}\}/gi, '{{char}}');
+            processed = processed.replace(/\{\{user\}\}/gi, '{{user}}');
+            return processed;
+        }
+
+        // Map hidden messages to mes_example
+        const mesExample = (narrative.state.chat_history || [])
+            .filter(m => m.isHidden && m.type === 'chat')
+            .map(m => {
+                const speaker = story.characters.find(c => c.id === m.character_id);
+                if (speaker) {
+                     // Use V2 placeholders
+                    const prefix = speaker.is_user ? '{{user}}:' : '{{char}}:';
+                    return `${prefix}\n${replacePlaceholdersV2(m.content)}`;
+                }
+                return replacePlaceholdersV2(m.content); // Fallback if speaker somehow missing
+            })
+            .join('\n'); // V2 spec doesn't specify separator, newline seems common
+
+        // Find the first non-hidden message for first_mes
+        const firstMessageEntry = (narrative.state.chat_history || []).find(m => !m.isHidden && m.type === 'chat');
+        const firstMes = firstMessageEntry ? replacePlaceholdersV2(firstMessageEntry.content) : replacePlaceholdersV2(`The story of ${primaryChar.name} begins.`);
+
+
+        // --- Construct the V2 Data Object ---
+		// --- Prepare Scenario Field from Static Entries ---
+        const scenarioText = (narrative.state.static_entries || [])
+            .map(entry => `[${entry.title || 'Untitled Entry'}]\n${entry.content || '(No content)'}`)
+            .join('\n\n---\n\n'); // Use a clear separator between entries
+			
+        const v2Data = {
+            // V1 Fields (Required by convention within V2 data)
+            name: primaryChar.name || "",
+            description: replacePlaceholdersV2(fullDescription), // Ensure placeholders are V2 style
+            personality: "", // Add mandatory empty V1 field
+            scenario: replacePlaceholdersV2(scenarioText),
+            first_mes: firstMes,
+            mes_example: mesExample,
+
+            // V2 Fields
+            creator_notes: "", // Optional, default empty
+            system_prompt: replacePlaceholdersV2(primaryChar.model_instructions || ""), // Ensure V2 placeholders
+            post_history_instructions: "", // Optional, default empty
+            alternate_greetings: [], // Mandatory empty array
+            character_book: {
+                name: "", // Optional book name
+                description: "", // Optional book description
+                scan_depth: 100, // Example value, adjust if needed
+                token_budget: 2048, // Example value
+                recursive_scanning: false, // Default
+                extensions: {}, // Mandatory empty object
+                entries: bookEntries // Use the prepared entries array
+            },
+            tags: primaryChar.tags || [], // Mandatory (can be empty array)
+            creator: "", // Optional, default empty
+            character_version: "", // Optional, default empty
+            // --- CRITICAL: Add mandatory extensions object ---
+            extensions: {}
         };
 
-        return { spec: 'chara_card_v2', data: v2Data };
+        // --- Construct the Final V2 Object ---
+        const v2Object = {
+            spec: 'chara_card_v2',      // Mandatory
+            spec_version: '2.0',        // Mandatory
+            data: v2Data
+        };
+
+        return v2Object; // This object will be passed to _injectDataIntoPng
     },
     
 // MODIFIED: Added imageFilename parameter
@@ -2389,30 +2495,30 @@ async _injectDataIntoPng(imageBuffer, v2Object) {
         const _CRC_TABLE = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1); return c; });
         const _crc32 = (bytes) => { let crc = -1; for (const byte of bytes) crc = (crc >>> 8) ^ _CRC_TABLE[(crc ^ byte) & 0xff]; return (crc ^ -1) >>> 0; };
 
-        // --- Prepare data for zTXt chunk (Compressed) ---
+// --- Prepare data for zTXt chunk (Compressed) ---
         // 1. Stringify the V2 character data object
         const jsonDataString = JSON.stringify(v2Object);
         // 2. Base64 encode the JSON string
         const base64Data = this._utf8_to_b64(jsonDataString);
-        // 3. Compress the Base64 data using pako (DEFLATE)
-        // Note: pako.deflate input needs to be Uint8Array or similar, atob provides a raw string
-        const rawDataForCompression = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-        const compressedData = pako.deflate(rawDataForCompression);
-        // 4. Define the keyword
+        // 3. Get the raw bytes *of the Base64 string itself*
+        const base64Bytes = new TextEncoder().encode(base64Data);
+        // 4. Compress these bytes using pako (DEFLATE)
+        const compressedData = pako.deflate(base64Bytes);
+        // 5. Define the keyword
         const keyword = 'chara';
 
-        // 5. Create the chunk data for zTXt: keyword + null separator + compression method (0) + compressed data
+        // 6. Create the chunk data for zTXt: keyword + null separator + compression method (0) + compressed data
         const keywordBytes = new TextEncoder().encode(keyword);
         const chunkData = new Uint8Array(keywordBytes.length + 1 + 1 + compressedData.length);
 
         chunkData.set(keywordBytes);                      // Keyword: "chara"
         chunkData[keywordBytes.length] = 0;               // Null separator
         chunkData[keywordBytes.length + 1] = 0;           // Compression method (0 = DEFLATE)
-        chunkData.set(compressedData, keywordBytes.length + 2); // Compressed data
+        chunkData.set(compressedData, keywordBytes.length + 2); // Compressed data bytes
 
-        // 6. Define the chunk type as zTXt
+        // 7. Define the chunk type as zTXt
         const chunkType = new TextEncoder().encode('zTXt');
-        // --- End Data Preparation ---
+        // --- End Corrected Data Preparation ---
 
         // Prepare data for CRC calculation (Chunk Type + Chunk Data)
         const dataForCrc = new Uint8Array(chunkType.length + chunkData.length);
