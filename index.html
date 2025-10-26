@@ -502,7 +502,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
 
 
 <!-- Story Details Modal (for mobile view) -->
-<div id="story-details-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('story-details-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-2xl relative flex flex-col max-h-[90vh]"><div id="story-details-content-mobile" class="flex-grow flex flex-col min-h-0"></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="Controller.closeModal('story-details-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Back to Library</button></div></div></div>
+<div id="story-details-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('story-details-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl relative flex flex-col" style="width: 100%; max-width: 1200px; height: 100%;"><div id="story-details-content-mobile" class="flex-grow flex flex-col min-h-0"></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="Controller.closeModal('story-details-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Back to Library</button></div></div></div>
 
 <!-- Characters Modal -->
 <div id="characters-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('characters-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative flex flex-col max-h-[90vh]"><div class="p-6 border-b border-gray-700 flex justify-between items-center"><h2 class="text-2xl font-semibold">Character Roster</h2><button onclick="Controller.addCharacter()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Add Character</button></div><div class="p-6 overflow-y-auto"><div id="characters-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div></div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="Controller.closeModal('characters-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
@@ -510,7 +510,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
 <!-- Individual Character Detail Modal -->
 <div id="character-detail-modal" class="fixed inset-0 z-[60] items-center justify-center hidden">
     <div class="modal-overlay absolute inset-0 bg-black/50" onclick="Controller.closeModal('character-detail-modal')"></div>
-    <div id="character-detail-modal-content" class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 relative flex flex-col max-h-[90vh]">
+    <div id="character-detail-modal-content" class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl relative flex flex-col max-h-[90vh]" style="width: 95%; max-width: 1200px;">
         <!-- Content will be injected by JS -->
     </div>
 </div>
@@ -2736,7 +2736,7 @@ const UIManager = {
 
         const detailsHTML = `
             <div class="relative w-full h-full bg-black/20 overflow-hidden flex flex-col">
-                <div class="relative w-full aspect-video flex-shrink-0">
+                <div class="relative w-full aspect-video flex-shrink-0" style="height: 69%;">
                      <div id="details-carousel" class="w-full h-full"></div>
                      <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/80 via-black/30 to-transparent pointer-events-none z-10"></div>
                      <h3 class="absolute top-4 left-4 text-white text-2xl font-bold drop-shadow-lg z-20">${UTILITY.escapeHTML(story.name || 'Untitled Story')}</h3>
