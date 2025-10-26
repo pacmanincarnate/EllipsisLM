@@ -3094,7 +3094,7 @@ applyStyling() {
         }
     },
 
-	getPortraitSrc(character, mood) {
+getPortraitSrc(character, mood) {
 	  const cache = UIManager.RUNTIME.characterImageCache || {};
 
 	  const emoKey = mood ? `${character.id}::emotion::${mood}` : null;
@@ -3103,11 +3103,13 @@ applyStyling() {
 	  // Base portrait (IDB-backed cache)
 	  if (cache[character.id]) return cache[character.id];
 
-	  // Legacy URL (pre-IDB)
-	  if (character.image_url) return character.image_url;
+	  // Legacy URL (pre-IDB) - Make sure it's not our local keyword
+	  if (character.image_url && !character.image_url.startsWith('local_idb_')) {
+          return character.image_url;
+      }
 
-	  // Placeholder
-	  return 'https://placehold.co/600x800/111827/4b5563?text=?';
+	  // Return null instead of placeholder
+	  return null;
 	},
 
     openCharacterDetailModal(charId) {
