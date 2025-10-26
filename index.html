@@ -1615,11 +1615,16 @@ let locationContext = '';
  * =================================================================================================
  * Handles client-side image processing, such as resizing and format conversion.
  */
+/**
+ * =================================================================================================
+ * [10/17/2025 Edit] ImageProcessor Module
+ * =================================================================================================
+ * Handles client-side image processing, such as resizing and format conversion.
+ */
 const ImageProcessor = {
     /**
      * Processes an image file, resizing it if necessary and converting it to a JPEG data URL.
      */
-
 	async processImageAsBlob(imageFile) { // Renamed for clarity
 		return new Promise((resolve, reject) => {
 			const MAX_HEIGHT = 2000;
@@ -1641,15 +1646,13 @@ const ImageProcessor = {
 					const ctx = canvas.getContext('2d');
 					ctx.drawImage(img, 0, 0, width, height);
 
-					// *** THIS IS THE KEY CHANGE ***
-					// Instead of toDataURL, we use toBlob.
 					canvas.toBlob((blob) => {
 						if (blob) {
 							resolve(blob);
 						} else {
 							reject(new Error('Canvas to Blob conversion failed.'));
 						}
-					}, 'image/jpeg', QUALITY);
+					}, 'image/jpeg', QUALITY); // Still saves as JPEG initially
 				};
 				img.onerror = (err) => reject(new Error('Failed to load image for processing.'));
 				img.src = e.target.result;
@@ -1657,7 +1660,51 @@ const ImageProcessor = {
 			reader.onerror = (err) => reject(new Error('Failed to read image file.'));
 			reader.readAsDataURL(imageFile);
 		});
-	}
+	}, // <<< Make sure there is a comma here after the first function
+
+    /**
+     * Converts an image Blob (potentially JPEG) to a PNG Blob using a canvas.
+     * @param {Blob} imageBlob - The input image Blob.
+     * @returns {Promise<Blob>} A promise that resolves with the PNG Blob.
+     */
+    async convertBlobToPNGBlob(imageBlob) {
+        return new Promise((resolve, reject) => {
+            // Create an object URL from the input Blob
+            const imageUrl = URL.createObjectURL(imageBlob);
+            const img = new Image();
+
+            img.onload = () => {
+                // Image loaded successfully, now draw to canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth; // Use natural dimensions
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+
+                // IMPORTANT: Revoke the object URL *after* drawing to canvas
+                URL.revokeObjectURL(imageUrl);
+
+                // Convert canvas content to a PNG Blob
+                canvas.toBlob((pngBlob) => {
+                    if (pngBlob) {
+                        resolve(pngBlob); // Resolve the promise with the new PNG Blob
+                    } else {
+                        reject(new Error('Canvas to PNG Blob conversion failed.'));
+                    }
+                }, 'image/png'); // Specify PNG format
+            };
+
+            img.onerror = (err) => {
+                // Handle image loading errors
+                URL.revokeObjectURL(imageUrl); // Clean up even on error
+                reject(new Error('Failed to load image blob for PNG conversion. Could be invalid image data.'));
+            };
+
+            // Start loading the image from the object URL
+            img.src = imageUrl;
+        });
+    }
+
 };
 
 
@@ -1707,19 +1754,62 @@ const ImportExportService = {
      * @param {string} primaryCharId - The ID of the character to feature on the card.
      * @returns {Promise<Blob>} A promise that resolves with a Blob of the final PNG file.
      */
-    async exportStoryAsV2(story, narrative, primaryCharId) {
+async exportStoryAsV2(story, narrative, primaryCharId) {
         const primaryChar = story.characters.find(c => c.id === primaryCharId);
-        if (!primaryChar || !primaryChar.image_url) {
-            throw new Error("V2 export requires a primary character with a valid image URL.");
+        if (!primaryChar) {
+             throw new Error("V2 export requires a selected primary character.");
         }
 
+        let originalImageBlob = null; // Store the potentially non-PNG blob
+
+        // --- IMAGE FETCHING LOGIC (same as previous fix) ---
+        try {
+            originalImageBlob = await DBService.getImage(primaryChar.id);
+        } catch (dbError) {
+            console.warn(`Could not get image from IDB for ${primaryChar.id}:`, dbError);
+        }
+        if (!originalImageBlob && primaryChar.image_url && !primaryChar.image_url.startsWith('local_idb_')) {
+            try {
+                const response = await fetch(primaryChar.image_url);
+                if (response.ok) {
+                    originalImageBlob = await response.blob();
+                } else {
+                     console.warn(`Failed to fetch legacy image URL for ${primaryChar.id}: ${response.statusText}`);
+                }
+            } catch (fetchError) {
+                console.warn(`Error fetching legacy image URL for ${primaryChar.id}:`, fetchError);
+            }
+        }
+        // --- END IMAGE FETCHING LOGIC ---
+
+        if (!originalImageBlob) {
+            throw new Error("V2 export requires the primary character to have a valid image (either uploaded locally or via URL).");
+        }
+
+        // --- NEW: Convert the retrieved blob to PNG ---
+        let pngBlob;
+        try {
+            // Only convert if it's not already PNG
+            if (originalImageBlob.type === 'image/png') {
+                pngBlob = originalImageBlob;
+                console.log("Image is already PNG, skipping conversion.");
+            } else {
+                console.log(`Converting image from ${originalImageBlob.type} to PNG...`);
+                pngBlob = await ImageProcessor.convertBlobToPNGBlob(originalImageBlob);
+            }
+        } catch (conversionError) {
+            console.error("PNG Conversion failed:", conversionError);
+            throw new Error("Failed to convert character image to PNG format for export.");
+        }
+        // --- END NEW CONVERSION STEP ---
+
         const v2Object = this._convertEllipsistoV2(story, narrative, primaryCharId);
-        
-        const response = await fetch(primaryChar.image_url);
-        if (!response.ok) throw new Error("Failed to fetch character image for V2 export.");
-        const imageBuffer = await response.arrayBuffer();
-        
-        return this._injectDataIntoPng(imageBuffer, v2Object);
+
+        // Convert the *PNG* Blob to ArrayBuffer needed by _injectDataIntoPng
+        const pngImageBuffer = await pngBlob.arrayBuffer();
+
+        // Pass the PNG buffer to the injection function
+        return this._injectDataIntoPng(pngImageBuffer, v2Object);
     },
     
     /**
@@ -1729,31 +1819,90 @@ const ImportExportService = {
      * @param {string} primaryCharId - The ID of the primary character.
      * @returns {Promise<Blob>} A promise that resolves with a Blob of the final .byaf (zip) file.
      */
-    async exportStoryAsBYAF(story, narrative, primaryCharId) {
+async exportStoryAsBYAF(story, narrative, primaryCharId) {
         const primaryChar = story.characters.find(c => c.id === primaryCharId);
         if (!primaryChar) throw new Error("BYAF export requires a selected primary character.");
 
         let imageBlob = null;
-        if (primaryChar.image_url) {
+        let imageExtension = 'png'; // Default extension
+        let imageFilename = null; // Filename including extension, derived later
+
+        // --- IMAGE FETCHING LOGIC (Determine extension FIRST) ---
+        try {
+            const blob = await DBService.getImage(primaryChar.id);
+            if (blob) {
+                imageBlob = blob;
+                const typeParts = blob.type.split('/');
+                if (typeParts.length === 2 && ['png', 'jpeg', 'jpg', 'webp'].includes(typeParts[1])) {
+                    imageExtension = typeParts[1] === 'jpeg' ? 'jpg' : typeParts[1];
+                }
+                console.log(`BYAF Export: Found local image (${imageBlob.type}), using extension: ${imageExtension}`);
+            }
+        } catch (dbError) {
+            console.warn(`Could not get image from IDB for BYAF export ${primaryChar.id}:`, dbError);
+        }
+
+        if (!imageBlob && primaryChar.image_url && !primaryChar.image_url.startsWith('local_idb_')) {
             try {
                 const response = await fetch(primaryChar.image_url);
-                if (response.ok) imageBlob = await response.blob();
-            } catch (e) {
-                console.warn("Could not fetch image for BYAF export.", e);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    imageBlob = blob;
+                    let determinedExt = 'png'; // Default inside this block
+                     const contentType = response.headers.get('content-type');
+                     if (contentType) {
+                         const typeParts = contentType.split('/');
+                         if (typeParts.length === 2 && ['png', 'jpeg', 'jpg', 'webp'].includes(typeParts[1])) {
+                            determinedExt = typeParts[1] === 'jpeg' ? 'jpg' : typeParts[1];
+                         }
+                     } else {
+                         const urlParts = primaryChar.image_url.split('.').pop()?.toLowerCase();
+                         if (urlParts && ['png', 'jpg', 'jpeg', 'webp'].includes(urlParts)) {
+                             determinedExt = urlParts === 'jpeg' ? 'jpg' : urlParts;
+                         }
+                     }
+                     imageExtension = determinedExt; // Update the outer scope variable
+                     console.log(`BYAF Export: Fetched legacy image (${contentType || 'unknown type'}), using extension: ${imageExtension}`);
+                } else {
+                     console.warn(`Failed to fetch legacy image URL for BYAF export ${primaryChar.id}: ${response.statusText}`);
+                }
+            } catch (fetchError) {
+                console.warn(`Error fetching legacy image URL for BYAF export ${primaryChar.id}:`, fetchError);
             }
         }
-        
-        const byafArchiveData = this._convertEllipsistoBYAF(story, narrative, primaryCharId);
+        // --- END IMAGE FETCHING ---
+
+        // --- GENERATE FILENAME (using character ID) ---
+        if (imageBlob) {
+             // Use character ID for the filename base, similar to example
+            imageFilename = `${primaryChar.id}.${imageExtension}`;
+        }
+
+        // Call converter, passing the determined filename (or null if no image)
+        const byafArchiveData = this._convertEllipsistoBYAF(story, narrative, primaryCharId, imageFilename);
+
+        if (!byafArchiveData || !byafArchiveData.manifest || !byafArchiveData.character || !byafArchiveData.scenario) {
+            throw new Error("Failed to generate BYAF data structure (converter returned invalid data).");
+         }
+
         const zip = new JSZip();
 
         zip.file("manifest.json", JSON.stringify(byafArchiveData.manifest, null, 2));
-        const charFolder = zip.folder(`characters/${byafArchiveData.character.id}`);
+
+        // --- CRITICAL: Use the character's ORIGINAL ID for the folder path ---
+        const charFolder = zip.folder(`characters/${primaryChar.id}`);
         charFolder.file("character.json", JSON.stringify(byafArchiveData.character, null, 2));
-        if (imageBlob) {
-            charFolder.file("images/profile.png", imageBlob);
+
+        // Add the image blob if it exists, using the generated filename
+        if (imageBlob && imageFilename) {
+            charFolder.file(`images/${imageFilename}`, imageBlob);
+             console.log(`BYAF Export: Added image blob as images/${imageFilename}`);
+        } else {
+            console.log("BYAF Export: No image blob found or added.");
         }
+
         zip.file(`scenarios/scenario1.json`, JSON.stringify(byafArchiveData.scenario, null, 2));
-        
+
         return zip.generateAsync({ type: "blob" });
     },
 
@@ -2054,48 +2203,120 @@ const ImportExportService = {
         return { spec: 'chara_card_v2', data: v2Data };
     },
     
-    _convertEllipsistoBYAF(story, narrative, primaryCharId) {
+// MODIFIED: Added imageFilename parameter
+    _convertEllipsistoBYAF(story, narrative, primaryCharId, imageFilename = null) { // Expect full filename or null
         const primaryChar = story.characters.find(c => c.id === primaryCharId);
+        const userChar = story.characters.find(c => c.is_user); // Needed for example messages
+
+        if (!primaryChar) {
+             console.error("Primary character not found in _convertEllipsistoBYAF");
+             return { manifest: {}, character: {}, scenario: {} }; // Return empty structure on error
+        }
         const now = new Date().toISOString();
 
-        const dynamicEntries = story.dynamic_entries.map(entry => ({
-            id: UTILITY.uuid(),
-            key: entry.triggers || "",
+        // Map dynamic entries and world map locations
+        const loreItems = [
+            ...(story.dynamic_entries || []),
+            ...(narrative.state.worldMap?.grid || [])
+                .filter(loc => loc.name) // Ensure location has a name
+                .map(loc => ({ // Map grid locations to lore item structure
+                    id: UTILITY.uuid(), // Generate unique ID for the lore item itself
+                    title: loc.name,
+                    triggers: loc.name, // Use name as trigger key
+                    content: `Description: ${loc.description || '(no description)'}\n\nPrompt: ${loc.prompt || '(no prompt)'}`
+                }))
+        ].map((entry, index) => ({
+            id: entry.id || UTILITY.uuid(), // Use existing ID if available, else generate
+            // --- ADDED: Simple random string for order ---
+            order: Math.random().toString(36).substring(2, 12), // Placeholder order
+            key: entry.triggers || entry.title || `Imported Lore ${index + 1}`,
             value: entry.content || "",
+            createdAt: entry.created_date || now, // Use original creation date if possible
+            updatedAt: entry.last_modified || now // Use original modified date if possible
         }));
-        const worldMapEntries = (narrative.state.worldMap?.grid || [])
-            .filter(loc => loc.name)
-            .map(loc => ({
-                id: UTILITY.uuid(),
-                key: loc.name,
-                value: `Description: ${loc.description}\n\nPrompt: ${loc.prompt}`
-            }));
+
 
         const character = {
             schemaVersion: 1,
-            name: primaryChar.name,
-            displayName: primaryChar.name,
-            images: [{ path: "images/profile.png", label: "" }],
-            createdAt: now, updatedAt: now,
-            id: UTILITY.uuid(),
-            isNSFW: false,
-            persona: primaryChar.description,
-            loreItems: [...dynamicEntries, ...worldMapEntries],
+            name: primaryChar.name || "",
+            displayName: primaryChar.name || "", // Often used for a shorter/display name
+             // --- MODIFIED: Use the passed filename ---
+            images: imageFilename ? [{ path: `images/${imageFilename}`, label: "" }] : [],
+            createdAt: primaryChar.created_date || now, // Try to preserve original dates
+            updatedAt: primaryChar.last_modified || now,
+            // --- CRITICAL: Use the character's ORIGINAL ID ---
+            id: primaryChar.id,
+            isNSFW: false, // Assuming false
+            persona: primaryChar.description || "",
+            loreItems: loreItems,
             tags: primaryChar.tags || []
         };
 
-        const firstMessage = (narrative.state.chat_history || []).find(m => !m.isHidden);
+        const firstMessageEntry = (narrative.state.chat_history || []).find(m => !m.isHidden && m.type === 'chat');
+        // Use the actual first message content if found, otherwise a default
+        const firstMessageText = firstMessageEntry ? firstMessageEntry.content : `The story of ${primaryChar.name} begins.`;
+
+        // Filter for hidden messages and map them correctly
+        const exampleMessages = (narrative.state.chat_history || [])
+            .filter(m => m.isHidden && m.type === 'chat')
+            .map(m => {
+                const speaker = story.characters.find(c => c.id === m.character_id);
+                let byafFormattedText = m.content || ""; // Ensure content exists
+                let msgCharId = null;
+
+                // Add BYAF prefixes and set characterID appropriately
+                if (speaker) {
+                    if (speaker.is_user) {
+                        byafFormattedText = `#{user}:\n${byafFormattedText}`;
+                        // characterID should be null/absent for user messages in exampleMessages
+                    } else if (speaker.id === primaryChar.id) { // Only map the primary character
+                        byafFormattedText = `#{character}:\n${byafFormattedText}`;
+                         // --- CRITICAL: Use the character's ORIGINAL ID ---
+                        msgCharId = primaryChar.id;
+                    } else {
+                         // Optional: Handle other AI chars differently? For now, skip prefix/ID.
+                         // Or maybe add their name? Let's just include the text.
+                    }
+                }
+
+                return {
+                    text: byafFormattedText,
+                    characterID: msgCharId // Will be null for user or non-primary AI
+                };
+            })
+            // Optional: Filter out messages that didn't belong to user or primary AI, if desired
+            // .filter(m => m.text.startsWith('#{user}:') || m.text.startsWith('#{character}:'));
+
+        // --- ADDED: Missing fields with defaults ---
         const scenario = {
-            schemaVersion: 1, title: narrative.name,
-            firstMessages: [{ text: firstMessage ? firstMessage.content : "", characterID: character.id }],
-            exampleMessages: (narrative.state.chat_history || []).filter(m => m.isHidden).map(m => ({ text: m.content, characterID: character.id })),
-            formattingInstructions: primaryChar.model_instructions,
+            schemaVersion: 1,
+            title: narrative.name || "Exported Scenario", // Use narrative name or placeholder
+            canDeleteExampleMessages: true, // Default
+            exampleMessages: exampleMessages, // Use the correctly mapped array
+            model: "", // Default empty
+            temperature: 1.0, // Default
+            topP: 0.9, // Default
+            minP: 0.1, // Default
+             // --- CRITICAL: Use the character's ORIGINAL ID ---
+            firstMessages: [{ text: firstMessageText, characterID: primaryChar.id }],
+            formattingInstructions: primaryChar.model_instructions || "",
+            grammar: "", // Default empty
+            repeatPenalty: 1.05, // Default
+            repeatLastN: 256, // Default
+            topK: 30, // Default
+            minPEnabled: false, // Default - Match example (was true)
+             // Use static entry if exists, else empty string
+            narrative: (narrative.state.static_entries || []).find(e => e.title === "Starting Scenario")?.content || "",
+            promptTemplate: null, // Default
+            messages: [] // Default empty
         };
 
         const manifest = {
-            schemaVersion: 1, createdAt: now,
-            characters: [ `characters/${character.id}/character.json` ],
-            scenarios: [ `scenarios/scenario1.json` ]
+            schemaVersion: 1,
+            createdAt: now,
+            // --- CRITICAL: Use the character's ORIGINAL ID in the path ---
+            characters: [ `characters/${primaryChar.id}/character.json` ],
+            scenarios: [ `scenarios/scenario1.json` ] // Assuming only one scenario export
         };
 
         return { manifest, character, scenario };
@@ -2163,46 +2384,92 @@ const ImportExportService = {
         return null;
     },
 
-    async _injectDataIntoPng(imageBuffer, v2Object) {
+async _injectDataIntoPng(imageBuffer, v2Object) {
+        // Standard PNG CRC32 calculation table and function
         const _CRC_TABLE = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1); return c; });
         const _crc32 = (bytes) => { let crc = -1; for (const byte of bytes) crc = (crc >>> 8) ^ _CRC_TABLE[(crc ^ byte) & 0xff]; return (crc ^ -1) >>> 0; };
 
-        const dataToInject = this._utf8_to_b64(JSON.stringify(v2Object));
-        const compressedData = pako.deflate(atob(dataToInject));
+        // --- Prepare data for zTXt chunk (Compressed) ---
+        // 1. Stringify the V2 character data object
+        const jsonDataString = JSON.stringify(v2Object);
+        // 2. Base64 encode the JSON string
+        const base64Data = this._utf8_to_b64(jsonDataString);
+        // 3. Compress the Base64 data using pako (DEFLATE)
+        // Note: pako.deflate input needs to be Uint8Array or similar, atob provides a raw string
+        const rawDataForCompression = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+        const compressedData = pako.deflate(rawDataForCompression);
+        // 4. Define the keyword
         const keyword = 'chara';
-        const chunkData = new Uint8Array(keyword.length + 2 + compressedData.length);
-        
-        chunkData.set(new TextEncoder().encode(keyword));
-        chunkData[keyword.length] = 0; 
-        chunkData[keyword.length + 1] = 0;
-        chunkData.set(compressedData, keyword.length + 2);
 
+        // 5. Create the chunk data for zTXt: keyword + null separator + compression method (0) + compressed data
+        const keywordBytes = new TextEncoder().encode(keyword);
+        const chunkData = new Uint8Array(keywordBytes.length + 1 + 1 + compressedData.length);
+
+        chunkData.set(keywordBytes);                      // Keyword: "chara"
+        chunkData[keywordBytes.length] = 0;               // Null separator
+        chunkData[keywordBytes.length + 1] = 0;           // Compression method (0 = DEFLATE)
+        chunkData.set(compressedData, keywordBytes.length + 2); // Compressed data
+
+        // 6. Define the chunk type as zTXt
         const chunkType = new TextEncoder().encode('zTXt');
-        const dataWithChunkType = new Uint8Array(chunkType.length + chunkData.length);
-        dataWithChunkType.set(chunkType);
-        dataWithChunkType.set(chunkData, chunkType.length);
-        const crc = _crc32(dataWithChunkType);
+        // --- End Data Preparation ---
 
+        // Prepare data for CRC calculation (Chunk Type + Chunk Data)
+        const dataForCrc = new Uint8Array(chunkType.length + chunkData.length);
+        dataForCrc.set(chunkType);
+        dataForCrc.set(chunkData, chunkType.length);
+        const crc = _crc32(dataForCrc); // Calculate CRC
+
+        // --- Inject the chunk before IEND using proper chunk iteration ---
         const originalPng = new Uint8Array(imageBuffer);
-        let iendOffset = -1;
-        for (let i = 8; i < originalPng.length; i++) {
-            if (originalPng[i] === 73 && originalPng[i+1] === 69 && originalPng[i+2] === 78 && originalPng[i+3] === 68) {
-                iendOffset = i - 4; break;
+        const dataView = new DataView(originalPng.buffer);
+        let iendOffset = -1; // This will store the starting offset of the IEND chunk
+        let offset = 8;      // Start after PNG signature
+
+        while (offset < originalPng.length) {
+            // Read chunk length (data length) - 4 bytes, Big Endian
+            const length = dataView.getUint32(offset);
+            // Read chunk type - 4 bytes
+            const type = String.fromCharCode.apply(null, originalPng.slice(offset + 4, offset + 8));
+
+            if (type === 'IEND') {
+                iendOffset = offset; // Found the start of the IEND chunk
+                break;
             }
+
+            // Move to the next chunk: current offset + chunk header (8 bytes) + data length + CRC (4 bytes)
+            offset += 12 + length;
         }
-        if (iendOffset === -1) throw new Error('Could not find IEND chunk in image.');
-        
-        const newPngSize = iendOffset + 12 + chunkData.length + 12;
+
+
+        if (iendOffset === -1) {
+             console.error("Original PNG Data (first 50 bytes):", originalPng.slice(0, 50));
+             throw new Error('Could not find IEND chunk using proper iteration. The image data might be corrupted or not a valid PNG.');
+        }
+
+        // Calculate new PNG size: Original up to IEND + New Chunk (12 bytes header/CRC + data length) + IEND chunk (12 bytes)
+        const newChunkLength = chunkData.length;
+        const newPngSize = iendOffset + (12 + newChunkLength) + 12;
         const newPng = new Uint8Array(newPngSize);
         const newPngView = new DataView(newPng.buffer);
 
+        // 1. Copy original PNG data up to the point where IEND starts
         newPng.set(originalPng.slice(0, iendOffset));
-        newPngView.setUint32(iendOffset, chunkData.length);
-        newPng.set(chunkType, iendOffset + 4);
-        newPng.set(chunkData, iendOffset + 8);
-        newPngView.setUint32(iendOffset + 8 + chunkData.length, crc);
-        newPng.set(originalPng.slice(iendOffset, iendOffset + 12), iendOffset + 12 + chunkData.length);
-        
+
+        // 2. Write the new zTXt chunk
+        let writeOffset = iendOffset;
+        newPngView.setUint32(writeOffset, newChunkLength);      // Length of chunk data
+        writeOffset += 4;
+        newPng.set(chunkType, writeOffset);                     // Chunk Type ("zTXt")
+        writeOffset += chunkType.length;
+        newPng.set(chunkData, writeOffset);                     // Chunk Data (keyword \0 method \0 compressed_data)
+        writeOffset += chunkData.length;
+        newPngView.setUint32(writeOffset, crc);                 // CRC of Type+Data
+        writeOffset += 4;
+
+        // 3. Write the original IEND chunk (always 12 bytes: 0 length, "IEND" type, CRC)
+        newPng.set(originalPng.slice(iendOffset, iendOffset + 12), writeOffset);
+
         return new Blob([newPng], { type: 'image/png' });
     }
 };
@@ -5586,36 +5853,63 @@ async clearBackgroundImage() {
         }
 
         UIManager.showLoadingSpinner(`Exporting as ${format.toUpperCase()}...`);
-        try {
+try {
             const library = StateManager.getLibrary();
             const story = library.stories.find(s => s.id === storyId);
-            const narrative = story.narratives.find(n => n.id === narrativeId);
-            
+            // Find narrative within the correct story object from the library
+            const narrative = story?.narratives.find(n => n.id === narrativeId);
+            // Get primary character if needed, also from the correct story object
+            const charSelector = document.getElementById('character-export-selector');
+            const primaryCharId = (format === 'png' || format === 'byaf') ? charSelector?.value : null;
+            const primaryChar = primaryCharId ? story?.characters.find(c => c.id === primaryCharId) : null;
+
+
+            if (!story || !narrative) {
+                 throw new Error("Selected story or narrative not found.");
+            }
+             if ((format === 'png' || format === 'byaf') && !primaryChar) {
+                 throw new Error("Primary character selection is required for PNG/BYAF export and was not found.");
+             }
+
+
             let blob, filename;
 
             switch(format) {
                 case 'json':
-                    ({ blob, filename } = await ImportExportService.exportStoryAsJSON(story, narrative));
+                    // This service function returns the Blob directly
+                    blob = ImportExportService.exportStoryAsJSON(story);
+                    filename = `${story.name || 'story'}.json`; // Use story name for JSON export
                     break;
                 case 'png':
-                    const charSelectorPNG = document.getElementById('character-export-selector');
-                    if (!charSelectorPNG.value) { throw new Error("Please select a primary character for PNG export."); }
-                    ({ blob, filename } = await ImportExportService.exportStoryAsV2(story, narrative, charSelectorPNG.value));
+                    if (!primaryCharId) throw new Error("Please select a primary character for PNG export.");
+                    // This service function returns a Promise<Blob>
+                    blob = await ImportExportService.exportStoryAsV2(story, narrative, primaryCharId);
+                    filename = `${story.name || 'story'}_${primaryChar?.name || 'character'}.png`;
                     break;
                 case 'byaf':
-                     const charSelectorBYAF = document.getElementById('character-export-selector');
-                    if (!charSelectorBYAF.value) { throw new Error("Please select a primary character for BYAF export."); }
-                    ({ blob, filename } = await ImportExportService.exportStoryAsBYAF(story, narrative, charSelectorBYAF.value));
+                     if (!primaryCharId) throw new Error("Please select a primary character for BYAF export.");
+                     // This service function returns a Promise<Blob>
+                     blob = await ImportExportService.exportStoryAsBYAF(story, narrative, primaryCharId);
+                     filename = `${story.name || 'story'}_${primaryChar?.name || 'character'}.byaf`;
                     break;
                 default:
                     throw new Error("Unsupported export format.");
             }
 
+            // Ensure blob is actually a Blob before proceeding
+            if (!(blob instanceof Blob)) {
+                console.error("Export function did not return a Blob:", blob);
+                throw new Error(`Export process failed internally for format: ${format}. Expected a Blob.`);
+            }
+
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = filename;
+            // Sanitize filename (basic example, might need more robust sanitization)
+            a.download = filename.replace(/[/\\?%*:|"<>]/g, '-');
+            document.body.appendChild(a); // Append link to body for Firefox compatibility
             a.click();
+            document.body.removeChild(a); // Clean up link
             URL.revokeObjectURL(url);
 
         } catch (e) {
