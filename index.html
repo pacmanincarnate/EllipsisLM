@@ -368,7 +368,11 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
 
 /* Push the first message bubble down from the top so that it's controls are accessible. */
 #chat-window .chat-bubble-container:first-child {
-    margin-top: 2rem; /* Adjust this value as needed */
+    margin-top: 3rem; /* Adjust this value as needed */
+}
+
+#chat-window .chat-bubble-container:last-child {
+    margin-bottom: 1rem; /* Adjust this value as needed */
 }
 	</style>
 </head>
@@ -420,12 +424,12 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
     <!-- /Header -->
 
     <div id="mobile-header-elements">
-         <input type="text" id="mobile-story-title-overlay" class="text-xl font-bold text-white truncate text-center bg-transparent focus:bg-black/20 w-full">
+         <input type="text" id="mobile-story-title-overlay" class="text-xl font-bold text-white truncate text-center bg-transparent focus:bg-black/20 w-1/2">
     </div>
 
     <!-- Main Content Area -->
     <main class="flex-grow min-h-0 flex flex-col relative">
-        <div id="title-trigger-area" class="absolute top-0 left-0 w-full h-16 z-40"></div>
+        <div id="title-trigger-area" class="absolute top-0 left-0 w-full h-16 z-40" style="height: 2rem;"></div>
          <!-- Chat Window & Portrait -->
          <div id="chat-window-container" class="relative flex-grow p-2 flex min-h-0 bg-black/30 rounded-lg overflow-hidden" style="
     padding-bottom: revert; padding-top: revert;">
@@ -463,7 +467,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
 <!-- Story Library Modal -->
 <div id="story-library-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
     <div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('story-library-modal')"></div>
-    <div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-6xl relative flex flex-col max-h-[90vh]">
+    <div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl relative flex flex-col" style="width: 100%; max-height: 100%">
         <div class="p-6 border-b border-gray-700 flex justify-between items-center">
             <h2 class="text-2xl font-semibold">Story Library</h2>
             <div class="flex space-x-2">
@@ -2975,7 +2979,7 @@ const UIManager = {
         const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
         return `
-            <div class="chat-bubble-container ${msg.isNew ? 'new-message' : ''}" data-message-index="${index}" style="margin-bottom: 0rem;">
+            <div class="chat-bubble-container ${msg.isNew ? 'new-message' : ''}" data-message-index="${index}">
                 <div class="bubble-header">
                      <p class="font-bold text-sm" ${characterNameColor}>${UTILITY.escapeHTML(character.name)}</p>
                      <span class="timestamp text-xs text-gray-500">${timestamp}</span>
