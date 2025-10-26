@@ -1446,45 +1446,75 @@ const PromptBuilder = {
         const replacer = this._getReplacer(charToAct);
         const modelInstructions = charToAct.model_instructions || state.system_prompt;
 
-        let locationContext = '';
+let locationContext = '';
         if (state.worldMap && state.worldMap.grid.length > 0) {
             const { grid, currentLocation, path } = state.worldMap;
             const currentLoc = grid.find(l => l.coords.x === currentLocation.x && l.coords.y === currentLocation.y);
-            if (currentLoc) {
+
+            // --- 1. Add Current Location (only if name and prompt exist) ---
+            if (currentLoc && currentLoc.name && currentLoc.prompt) {
                 locationContext += `CURRENT LOCATION: ${currentLoc.name}\n${currentLoc.prompt}\n\n`;
 
+                // Add local static entries if they exist
                 if (currentLoc.local_static_entries && currentLoc.local_static_entries.length > 0) {
                     locationContext += "--- LOCATION-SPECIFIC KNOWLEDGE ---\n";
-                    locationContext += currentLoc.local_static_entries.map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`).join('\n\n') + "\n\n";
+                    locationContext += currentLoc.local_static_entries
+                        .map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`)
+                        .join('\n\n') + "\n\n";
                 }
+            } else if (currentLoc && currentLoc.name) {
+                 // Fallback if only name exists but prompt is missing (optional, remove if unwanted)
+                 locationContext += `CURRENT LOCATION: ${currentLoc.name}\n(No detailed description available.)\n\n`;
+            }
 
+            // --- 2. Add Adjacent Locations (only if they have name AND description) ---
+            if (currentLoc) { // Check currentLoc exists before checking neighbors
                 const directions = [
                     { dir: 'North', x: 0, y: -1 }, { dir: 'South', x: 0, y: 1 },
                     { dir: 'East', x: 1, y: 0 }, { dir: 'West', x: -1, y: 0 },
                     { dir: 'Northeast', x: 1, y: -1 }, { dir: 'Northwest', x: -1, y: -1 },
                     { dir: 'Southeast', x: 1, y: 1 }, { dir: 'Southwest', x: -1, y: 1 }
                 ];
-                let adjacentInfo = 'ADJACENT LOCATIONS:\n';
-                directions.forEach(({ dir, x, y }) => {
-                    const adjLoc = grid.find(l => l.coords.x === currentLocation.x + x && l.coords.y === currentLocation.y + y);
-                    if (adjLoc) adjacentInfo += `- (${dir}): ${adjLoc.name} - ${adjLoc.description}\n`;
-                });
-                locationContext += adjacentInfo;
+
+                const validAdjacentLocations = directions
+                    .map(({ dir, x, y }) => {
+                        const adjLoc = grid.find(l => l.coords.x === currentLocation.x + x && l.coords.y === currentLocation.y + y);
+                        // Require both name and description to be non-empty
+                        if (adjLoc && adjLoc.name && adjLoc.description) {
+                            return `- (${dir}): ${adjLoc.name} - ${adjLoc.description}`;
+                        }
+                        return null; // Ignore invalid/incomplete locations
+                    })
+                    .filter(Boolean); // Remove null entries
+
+                // Only add the section if there are valid neighbors
+                if (validAdjacentLocations.length > 0) {
+                    locationContext += 'ADJACENT LOCATIONS:\n';
+                    locationContext += validAdjacentLocations.join('\n') + '\n\n';
+                }
             }
+
+            // --- 3. Add Travel Path (only if path array exists and is not empty) ---
             if (path && path.length > 0) {
-                const pathNames = path.map(p => grid.find(l => l.coords.x === p.x && l.coords.y === p.y)?.name).filter(Boolean).join(' -> ');
-                locationContext += `\nTRAVEL PATH TO DESTINATION: ${pathNames}\n`;
+                const pathNames = path
+                    .map(p => grid.find(l => l.coords.x === p.x && l.coords.y === p.y)?.name)
+                    .filter(Boolean) // Filter out any potential undefined names
+                    .join(' -> ');
+                // Ensure pathNames isn't empty after filtering before adding
+                if (pathNames) {
+                    locationContext += `TRAVEL PATH TO DESTINATION: ${pathNames}\n`;
+                }
             }
         }
         
         const components = {
             system_prompt: replacer(modelInstructions),
             event_master_prompt: replacer(state.event_master_prompt),
-            static_entries: (state.static_entries || []).map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`).join('\n\n'),
+            static_entries: (state.static_entries || []).map(l => `### ${l.title}\n${replacer(l.content)}`).join('\n\n'),
             dynamic_entries: (state.dynamic_entries || [])
                 .filter(entry => entry.triggered_at_turn !== null)
-                .map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`).join('\n\n'),
-            characters: (state.characters || []).filter(c => c.is_active).map(c => `[Character: ${c.name}]\nDescription: ${replacer(c.description)}`).join('\n\n'),
+                .map(l => `### ${l.title}\n${replacer(l.content)}`).join('\n\n'),
+            characters: (state.characters || []).filter(c => c.is_active).map(c => `### Character: ${c.name}\n\n${replacer(c.description)}`).join('\n\n'),
             history: (state.chat_history || []).filter(m => !m.isHidden).slice(-10),
             charToAct: charToAct,
             isForUser: isForUser,
@@ -1505,14 +1535,14 @@ const PromptBuilder = {
         const state = StateManager.getState();
         let p = components.system_prompt + "\n\n";
         if (components.event_master_prompt) p += "--- SECRET EVENT MASTER INSTRUCTION ---\n" + components.event_master_prompt + "\n\n";
-        if (components.location_context) p += "--- LOCATION CONTEXT ---\n" + components.location_context + "\n\n";
-        p += "--- STATIC KNOWLEDGE ---\n" + components.static_entries + "\n\n";
-        if (components.dynamic_entries) p += "--- RECENTLY REVEALED DYNAMIC KNOWLEDGE ---\n" + components.dynamic_entries + "\n\n";
-        p += "--- CHARACTERS ---\n" + components.characters + "\n\n";
+        if (components.location_context) p += "## LOCATION CONTEXT\n" + components.location_context + "\n\n";
+        p += "## WORLD KNOWLEDGE\n" + components.static_entries + "\n\n";
+        if (components.dynamic_entries) p += "## RECENTLY REVEALED DYNAMIC KNOWLEDGE\n" + components.dynamic_entries + "\n\n";
+        p += "## CHARACTERS\n" + components.characters + "\n\n";
 
         const exampleDialogue = (state.chat_history || []).filter(m => m.isHidden);
         if(exampleDialogue.length > 0){
-            p += "--- EXAMPLE DIALOGUE ---\n";
+            p += "## EXAMPLE DIALOGUE\n";
             exampleDialogue.forEach(msg => {
                 const char = state.characters.find(c => c.id === msg.character_id);
                 if (char) p += `${char.name}: ${replacer(msg.content)}\n`;
@@ -1520,18 +1550,18 @@ const PromptBuilder = {
             p += "\n";
         }
         
-        p += "--- RECENT CONVERSATION & EVENTS ---\n";
+        p += "## RECENT CONVERSATION & EVENTS\n";
         components.history.forEach(msg => { 
             if (msg.type === 'chat') {
                 const char = state.characters.find(c => c.id === msg.character_id); 
-                if (char) p += `[Speaker: ${char.name}]\n${replacer(msg.content)}\n\n`;
+                if (char) p += `[${char.name}:]\n${replacer(msg.content)}\n\n`;
             } else if (msg.type === 'lore_reveal') {
                 p += `[System Note: Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}\n\n`;
             } else if (msg.type === 'system_event') {
                  p += `[System Event: ${replacer(msg.content)}]\n`;
             }
         });
-        p += "\n--- INSTRUCTION ---\n";
+        p += "\n### INSTRUCTION\n";
         p += components.isForUser ? `Generate the next creative response for the user's character, ${components.charToAct.name}.` : `Generate the next response for ${components.charToAct.name}. Stay in character.`;
         p += " Do not repeat the character's name in the response itself.\n[CHARACTER_TO_ACT]: " + components.charToAct.name;
         return p;
