@@ -1,66 +1,104 @@
 # ...Ellipsis LM
 
-## Core Functionality
-This is a self-contained web application for multi-character, AI-driven roleplaying and storytelling, designed to run entirely within a single HTML file. The interface is centered around a chat log where the user embodies one character and interacts with multiple AI-controlled characters.
+## Overview
+EllipsisLM is an open-source front-end for AI-powered roleplay. It runs as a single HTML file that can be saved locally and will store your entire library in your web browser’s local cache.
 
-**Multi-Character Interaction:** The user can create and manage a full cast of characters. Any character not designated as the "player" can be selected from a dropdown menu for the AI to respond as, allowing for dynamic scene changes and conversations.
+## Backend
+The app utilizes a Gemini API, OpenRouter API, or a local Koboldcpp instance. If you use Koboldcpp, none of your information leaves your computer. Koboldcpp is quick and easy to install, and it allows you to use the same GGUF-format models used in BY. OpenRouter offers a number of free models that you can use if you choose that route.
 
-**Standard Chat Controls:** The application includes essential controls for managing the flow of the story:
+### Mobile and desktop browser support
+The app is a single HTML file that requires no installation and works on mobile and desktop. To use on mobile, access it through the GitHub site. For desktop use, you can either use the GitHub site or download the HTML file (a download may be required for Koboldcpp support).
 
-**Send / Write for Me:** A primary action button that either sends the user's written message or, if the input is empty, uses the AI to generate a suggested response for the user's character.
+## Import and Export
+EllipsisLM includes ample import and export functionality, allowing for the import and export of V2 PNG cards, BYAF format cards, or the app’s own JSON format. There is an additional option to save your entire library, backing up everything at once. A special import option automatically imports every PNG or BYAF card from a folder, enabling a quick transition.
 
-**Regenerate:** Prompts the currently selected AI character to generate a new response, replacing its previous turn.
+## Stories, Scenarios, Narratives, Characters
+EllipsisLM stores your roleplays in a slightly unique format.
 
-**Undo:** Removes the most recent message from the chat log, whether it was from the user or the AI.
+### Stories
+Stories are the highest-level container for roleplay information. In BY and other front ends, Stories are akin to character cards.
 
-**Message Editing:** Every message in the chat history can be directly edited, allowing for corrections or retroactive changes to the narrative.
-## AI & Prompt Engineering
-The application provides extensive control over the AI's behavior and the context it receives.
+### Scenarios
+Scenarios are the different versions of a roleplay and serve as templates for each playthrough (Narratives). Scenarios can include unique memories, visual settings, characters, and first messages.
 
-**Multi-Provider Support:** Users can connect to different AI services by selecting their preferred provider and entering the corresponding API key. The app supports:
-- Google Gemini
-- OpenRouter (which provides access to a wide range of models)
-- A local KoboldCPP instance
-## System & Event Prompts:
+### Narratives
+Narratives start from a Scenario. These are your actual play-throughs and are stored uniquely from the templates. If you make changes to a narrative you really like, you can elevate it to a scenario template for future use.
 
-**System Prompt:** A global instruction field that sets the overall tone, genre, writing style, and rules for the AI's responses.
+## Story Library
+The story library presents you with a list of all of your stories. These can be filtered, searched, and sorted, allowing you to quickly find the story you are looking for. The intent is to replace the card organization with on-the-fly sorting using their data. Rather than putting all your elves into one folder, you can apply an elf tag to every character that is an elf and filter by that tag.
 
-**Event Master Prompt:** A secondary AI instruction that periodically triggers, injecting unexpected events or plot twists into the narrative to keep the story dynamic.
+## Characters
+A role-play can have any number of characters. You can add them through the character model. Each character contains a set of images, their own model instructions, and their persona, as well as tags and a brief description. Because you can have an unlimited number of characters, there are two unique toggles. One is to activate a character or to make it inactive. In a character name, the character can respond. The second toggle turns a character into a narrator. A narrator will periodically respond in the role-play, but never respond twice in a row. This allows for narration to occasionally interject movement in the story without the narrator taking over.
 
-**Raw Prompt Viewer:** For advanced users, a modal allows viewing the exact, fully constructed prompt that is sent to the AI for any given turn. This includes the system prompt, character descriptions, active knowledge entries, and recent chat history.
-## Content & World-Building
-The application is built around a robust system for creating and managing narrative content.
+## Roleplay Interface
+This is where you partake in your roleplay. The roleplay interface is similar to other front-end chat applications, with a few unique elements.
+## Generate/Write for me
+The generate button serves three functions. When you’ve written your response, click here to send that response and begin the generation of the following character response. If you don’t have a blank user response field, however, clicking this button will generate a new user response for you. Once a response is generated, this button turns into a stop button.
 
-**Story Library:** The entire application is session-based around "stories." Users can create, duplicate, rename, and delete multiple stories. Each story is a self-contained save state that includes its own unique cast of characters, knowledge base, settings, and chat history.
+### Character Drop Down
+Here you can select which character will respond, or choose “any” to let the system decide. This drop-down is only visible when there are more than two non-user characters.
 
-**Character Roster:** A dedicated modal allows for the detailed creation of characters. Each character has:
-- A name and detailed description/persona.
-- A primary image URL.
-- A set of secondary "emotional portraits" (e.g., happy, angry) that can be triggered by the AI's sentiment analysis of its own responses.
-- Knowledge Base (Static & Dynamic): This two-part system functions as the AI's memory and world bible.
- - Static: These are wiki-style entries containing core information (locations, history, rules) that are always included in the AI's context.
- - Dynamic: This is a lorebook system where entries are only injected into the context when specific conditions are met. Triggers can be a list of keywords or a percentage chance. It supports boolean logic, allowing keywords to be linked with AND (all words must be present) or OR (any word must be present) to trigger the entry.
-## Customization & User Interface
-The visual experience is highly customizable and responsive.
+### Regenerate
+The regenerate button will perform two functions, depending on which character is selected from the drop-down. If the same character that responded last is selected, the regenerate button will remove that response and write a new one. If a different character is selected than the last responded, the button will craft a new response for the selected character. This lets you control who responds when, while also letting you regenerate responses.
 
-**Responsive Layout:** The interface automatically adapts based on the screen's aspect ratio.
+## Location
+EllipsisLM includes an optional location system that can add a new dimension of complexity to your roleplay. The World map consists of an 8x8 grid. Each space can have a name, a short description, a long description, and a memory. As a creator, you can define each space in the map, or let the AI generate the map for you automatically. Then, your roleplay will take place in a location, with an understanding of the locations around you. If you move locations, the system will periodically try to determine where you are and make the jump. You can also manually change locations through the Location tab, or jump further using the world map. Additionally, since many roleplays involve a journey, you can set a destination, and the system will map the path between you and that location, giving you an idea of what your journey will entail and adding a level of immersion.
 
-**Horizontal View (Desktop):** A classic layout with the chat area occupying two-thirds of the screen and a dedicated panel for displaying a large character portrait on the right.
+## Knowledge
+### Static knowledge
+Static knowledge will always be in context. It is stored as a title and a description. You can manually manage and update these, or use the Update Static button to have the LLM automatically generate new knowledge. Use this for scenario, summarization, world-building, etc.
 
-**Vertical View (Mobile):** An immersive, full-screen chat experience. The outer framing is removed, and the story title becomes a temporary, editable overlay that appears on touch. The main menu is condensed into a floating, semi-transparent hamburger icon.
-## Appearance Settings:
+### Dynamic Knowledge 
+The EllipsisLM form of lorebook. Individual entries have a title, keywords, and description. These entries are entered into context when triggered by the keyword field. EllipsisLM supports basic keywords, AND/XOR logic between keywords, and a percentage chance, all through the keyword field. This allows you to easily create complex trigger conditions.
 
-**Theming:** Users can change the chat font, text color, bubble opacity, and set a global background image URL.
 
-**Image Modes:** Character images can be displayed in several ways: Cinematic (a large, centered background image), Bubble (a small, wrapped image inside the chat bubble), or None.
-## Data Management
-All data is stored locally in the browser, requiring no external server.
+## Agents
+### Event Master
+EllipsisLM includes a special agent that runs every 6 turns. This prompt exists outside of your roleplay and uses your current chat history and a customizable prompt. The response to this prompt is then inserted into the roleplay context in the background. The default use for this is to ask the LLM to come up with something logical but unexpected that could happen, to make the roleplay less predictable and static.
 
-**Import/Export:** Users have full control over their data.
-Individual stories can be exported to, and imported from, .json files.
-The entire library of all stories can be saved to, or completely replaced by, a single .json file.
+### Sentiment
+A separate LLM call can be used to determine the sentiment of the character, so that the system can change the character portrait if you have given it multiple sentiment images. It does this automatically every few turns.
 
-**BYAF Compatibility:** The app supports the "Build Your Own Adventure Format" standard, allowing users to import character and scenario data from .zip files.
+### AI-Generate
+Many fields in the app include a small icon that sends the field's context, along with a customizable prompt, to the model to generate information for that field. This can be used to automate the creation of a character persona, for instance, based on a basic description. Write out “Sarah is a brunette with a cat named Bob”, hit generate, and let the model draft a fleshed-out character description.
+
+### Static Memory Creation
+EllipsisLM can store static (always in context) memories automatically, based on the current chat context. The state determines what important events have occurred and creates new entries for them.
+
+### World Map Generation
+The model will attempt to create the 8x8 map of locations with descriptions, based on your static memory and a customizable prompt.
+
+## Interface Customization
+EllipsisLM offers several visual customization options.
+
+### Appearance settings
+Background image
+Character chat bubble color
+Text color, size, and font
+Chat Bubble opacity
+Background image blur
+
+### View Options
+**Default:** In vertical orientation, no character images are used. In horizontal orientation, a large character portrait floats to the right of the chat.
+**Cinematic:** character image fills the window height, and text is constrained to the bottom ⅓ of the screen.
+**Bubble (poorly named):** The character images are visible within the chat bubble, and their size is customizable.
+
+### Orientation
+EllipsisLM supports mobile and desktop, and the way this is accomplished offers expanded choices for everyone. When the window is taller than wide, it switches to a condensed ‘mobile’ mode with a more minimal UI. When the window is wider than it is tall, the interface spreads out for easier access and displays the character image.
+
+
+# Roadmap
+- [ ] Investigate alternative character response formats
+- [ ] Properly incorporate chatML syntax for koboldcpp
+- [ ] Implement thinking model support
+- [ ] Clarify Story Library as a separate component from other roleplay-specific controls.
+- [ ] Make the Event Master more customizable.
+- [ ] Add sequential dynamic knowledge.
+- [ ] Establish model settings outside of a narrative and make them persistent.
+- [ ] Find a way to make local download *really* easy.
+- [ ] Add a scroll bar in horizontal mode.
+- [ ] Adjust the background image to fit vertically.
+
 
 
 Try it now:
