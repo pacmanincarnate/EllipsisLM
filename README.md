@@ -3,14 +3,23 @@
 ## Overview
 EllipsisLM is an open-source front-end for AI-powered roleplay. It runs as a single HTML file that can be saved locally and will store your entire library in your web browser’s local cache.
 
+## Getting Started
+- Download the index.html file to your computer and open it in any browser.
+- Go to Import/Export to bring in a V2 Tavern Card PNG or BYAF character.
+- In your imported story card, create a new "Narrative" from the "Scenario" template (the plus sign)
+- Start the roleplay with the green up arrow button.
+- Go to settings and into the model tab. Input your Gemini or OpenRouter API and model selection, **or** select koboldcpp for local generation.
+- Start chatting!
+- (If you want to run local, go to https://github.com/LostRuins/koboldcpp/releases and download the latest koboldcpp release. Run the exe and select your model. Return to EllipsisLM.
+
 ## Backend
-The app utilizes a Gemini API, OpenRouter API, or a local Koboldcpp instance. If you use Koboldcpp, none of your information leaves your computer. Koboldcpp is quick and easy to install, and it allows you to use the same GGUF-format models used in BY. OpenRouter offers a number of free models that you can use if you choose that route.
+The app utilizes a Gemini API, OpenRouter API, or a local Koboldcpp instance. If you use Koboldcpp, none of your information leaves your computer. Koboldcpp is quick and easy to install, and it lets you use the same GGUF-format models as in BY. OpenRouter offers a number of free models that you can use if you choose that route.
 
 ### Mobile and desktop browser support
 The app is a single HTML file that requires no installation and works on mobile and desktop. To use on mobile, access it through the GitHub site. For desktop use, you can either use the GitHub site or download the HTML file (a download may be required for Koboldcpp support).
 
 ## Import and Export
-EllipsisLM includes ample import and export functionality, allowing for the import and export of V2 PNG cards, BYAF format cards, or the app’s own JSON format. There is an additional option to save your entire library, backing up everything at once. A special import option automatically imports every PNG or BYAF card from a folder, enabling a quick transition.
+EllipsisLM includes ample import and export functionality, allowing for the import and export of V2 PNG cards, BYAF format cards, or the app’s own JSON format. There is an additional option to save your entire library in a single backup. A special import option automatically imports every PNG or BYAF card from a folder, enabling a quick transition.
 
 ## Stories, Scenarios, Narratives, Characters
 EllipsisLM stores your roleplays in a slightly unique format.
