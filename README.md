@@ -107,6 +107,12 @@ EllipsisLM supports mobile and desktop, and the way this is accomplished offers 
 - [ ] Find a way to make local download *really* easy.
 - [ ] Add a scroll bar in horizontal mode.
 - [ ] Adjust the background image to fit vertically.
+- [ ] Improve positioning of dynamic knowledge in prompt.
+- [ ] Improve reliability of static knowledge generation. add periodic static knowledge gen; seems to be missing.
+- [ ] add field for story creator's note.
+- [ ] add field for story tags
+- [ ] adjust size of input field for knowledge in vertical format.
+- [ ] Make examplw dynamic knowledge entry not 100%.
 
 
 
