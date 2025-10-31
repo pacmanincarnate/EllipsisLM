@@ -113,6 +113,7 @@ EllipsisLM supports mobile and desktop, and the way this is accomplished offers 
 - [ ] add field for story tags
 - [ ] adjust size of input field for knowledge in vertical format.
 - [ ] Make examplw dynamic knowledge entry not 100%.
+- [ ] shift 'character is thinking' to the left to align with other bubbles.
 
 
 
