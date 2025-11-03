@@ -100,13 +100,13 @@ EllipsisLM supports mobile and desktop, and the way this is accomplished offers 
 - [ ] Investigate alternative character response formats
 - [ ] Properly incorporate chatML syntax for koboldcpp
 - [ ] Implement thinking model support
-- [x] Clarify Story Library as a separate component from other roleplay-specific controls.
+- [X] Clarify Story Library as a separate component from other roleplay-specific controls.
 - [ ] Make the Event Master more customizable.
 - [ ] Add sequential dynamic knowledge.
 - [ ] Establish model settings outside of a narrative and make them persistent.
 - [ ] Find a way to make local download *really* easy.
-- [x] Add a scroll bar in horizontal mode.
-- [x] Adjust the background image to fit vertically.
+- [X] Add a scroll bar in horizontal mode.
+- [X] Adjust the background image to fit vertically.
 - [ ] Improve positioning of dynamic knowledge in prompt.
 - [ ] Improve reliability of static knowledge generation. add periodic static knowledge gen; seems to be missing.
 - [ ] add field for story creator's note.
