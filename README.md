@@ -103,7 +103,7 @@ EllipsisLM supports mobile and desktop, and the way this is accomplished offers 
 - [X] Clarify Story Library as a separate component from other roleplay-specific controls.
 - [ ] Make the Event Master more customizable.
 - [ ] Add sequential dynamic knowledge.
-- [ ] Establish model settings outside of a narrative and make them persistent.
+- [X] Establish model settings outside of a narrative and make them persistent.
 - [ ] Find a way to make local download *really* easy.
 - [X] Add a scroll bar in horizontal mode.
 - [X] Adjust the background image to fit vertically.
