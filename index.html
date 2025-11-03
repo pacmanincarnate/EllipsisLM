@@ -399,9 +399,9 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
     <header class="mb-4 flex justify-between items-center" id="main-header">
         <!-- Desktop Header -->
         <div id="desktop-header" class="justify-between items-center w-full">
-            
+
             <div class="flex items-center space-x-2">
-                <button onclick="Controller.openModal('story-library-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg border-2 border-sky-500" title="Story Library"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path><path d="M4 6h16M4 12h16M4 18h7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M18 18v-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M15 12h6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+				<button onclick="Controller.openModal('story-library-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"  title="Story Library" style="border-color: color-mix(in srgb, var(--chat-text-color) 50%, transparent); border-width: 2px;"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path><path d="M4 6h16M4 12h16M4 18h7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M18 18v-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M15 12h6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
                 
                 <input type="text" id="story-title-input" class="text-2xl font-bold bg-transparent text-white p-1 rounded focus:outline-none focus:bg-black/20 w-96">
             </div>
@@ -423,6 +423,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
                 </button>
                 <div id="mobile-menu" class="hidden absolute right-0 mt-2 w-56 bg-gray-800/90 backdrop-blur-md rounded-lg shadow-xl z-50">
                     <a href="#" onclick="Controller.openModal('story-library-modal'); Controller.toggleMobileMenu(); return false;" class="block px-4 py-3 text-white hover:bg-gray-700">Story Library</a>
+					<div class="px-4 py-2 text-gray-400 text-sm font-bold border-t border-gray-700">Narrative Settings</div>
                     <a href="#" onclick="Controller.openModal('characters-modal'); Controller.toggleMobileMenu(); return false;" class="block px-4 py-3 text-white hover:bg-gray-700">Characters</a>
                     <a href="#" onclick="Controller.openModal('world-map-modal'); Controller.toggleMobileMenu(); return false;" class="block px-4 py-3 text-white hover:bg-gray-700">World Map</a>
                     <a href="#" onclick="Controller.openModal('knowledge-modal'); Controller.toggleMobileMenu(); return false;" class="block px-4 py-3 text-white hover:bg-gray-700">Knowledge</a>
@@ -677,8 +678,10 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
         <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Location Memory Summary</summary><div class="p-4 bg-black/20 rounded-b-lg"><p class="text-gray-400 text-sm mb-2">Used to auto-summarize events when you leave a location. Use <code>{transcript}</code>.</p><textarea id="prompt-location-memory-gen-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></details>
         <div class="flex space-x-2 pt-4"><button onclick="Controller.openViewRawPromptModal()" class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw Prompt</button><button onclick="Controller.openModal('example-dialogue-modal')" class="bg-sky-600/80 hover:bg-sky-500/80 text-white font-bold py-2 px-4 rounded-lg">Edit Example Dialogue</button></div>
     </div>
-    <div id="settings-model-content" class="space-y-6">
-        <div><h3 class="text-lg font-medium mb-2">AI Provider</h3><div class="flex space-x-4"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="gemini" onchange="Controller.setApiProvider('gemini')"><span>Gemini</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="openrouter" onchange="Controller.setApiProvider('openrouter')"><span>OpenRouter</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="koboldcpp" onchange="Controller.setApiProvider('koboldcpp')"><span>KoboldCPP</span></label></div></div><div id="gemini-settings"><h3 class="text-lg font-medium">Gemini API Settings</h3><p class="text-gray-400 text-sm mb-2">Required for text generation.</p><input type="password" id="gemini-api-key-input" class="w-full rounded-lg p-2" placeholder="Enter Gemini API key"></div><div id="openrouter-settings"><h3 class="text-lg font-medium">OpenRouter API Settings</h3><p class="text-gray-400 text-sm mb-2">Your key and the model name.</p><input type="password" id="openrouter-api-key-input" class="w-full rounded-lg p-2" placeholder="Enter OpenRouter API key"><input type="text" id="openrouter-model-input" class="mt-2 w-full rounded-lg p-2" placeholder="Enter model name"></div><div id="koboldcpp-settings"><h3 class="text-lg font-medium">KoboldCPP Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is running with the <strong>--cors</strong> flag.</p><div><label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label><select id="koboldcpp-template-selector" class="w-full rounded-lg p-2"><option value="none">None (Raw Text)</option><option value="mistral">Mistral</option><option value="chatml">ChatML</option><option value="alpaca">Alpaca</option></select></div><div><label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-min-p-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-min-p-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div><div><label for="koboldcpp-dry-slider" class="text-gray-400 text-sm block mt-4 mb-2">DRY (Repetition Penalty)</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-dry-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-dry-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div></div>
+<div id="settings-model-content" class="space-y-6">
+        <p class="text-sm text-amber-300 bg-amber-900/50 p-3 rounded-lg -mt-2 mb-4"><strong>Note:</strong> These model settings are persistent and apply globally to all stories.</p>
+        
+        <div><h3 class="text-lg font-medium mb-2">AI Provider</h3><div class="flex space-x-4"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="gemini" onchange="Controller.setApiProvider('gemini')"><span>Gemini</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="openrouter" onchange="Controller.setApiProvider('openrouter')"><span>OpenRouter</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="koboldcpp" onchange="Controller.setApiProvider('koboldcpp')"><span>KoboldCPP</span></label></div></div><div id="gemini-settings"><h3 class="text-lg font-medium">Gemini API Settings</h3><p class="text-gray-400 text-sm mb-2">Required for text generation.</p><input type="password" id="gemini-api-key-input" class="w-full rounded-lg p-2" placeholder="Enter Gemini API key"></div><div id="openrouter-settings"><h3 class="text-lg font-medium">OpenRouter API Settings</h3><p class="text-gray-400 text-sm mb-2">Your key and the model name.</p><input type="password" id="openrouter-api-key-input" class="w-full rounded-lg p-2" placeholder="Enter OpenRouter API key"><input type="text" id="openrouter-model-input" class="mt-2 w-full rounded-lg p-2" placeholder="Enter model name"></div><div id="koboldcpp-settings"><h3 class="text-lg font-medium">KoboldCPP Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is running with default URL.</p><div><label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label><select id="koboldcpp-template-selector" class="w-full rounded-lg p-2"><option value="none">None (Raw Text)</option><option value="mistral">Mistral</option><option value="chatml">ChatML</option><option value="alpaca">Alpaca</option></select></div><div><label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-min-p-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-min-p-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div><div><label for="koboldcpp-dry-slider" class="text-gray-400 text-sm block mt-4 mb-2">DRY (Repetition Penalty)</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-dry-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-dry-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div></div>
     </div>
 </div>
 
@@ -912,13 +915,14 @@ const DBService = {
  */
 const StateManager = {
     // Private data store. Should not be accessed directly from outside this module.
-    data: {
+data: {
         library: {
             active_story_id: null,
             active_narrative_id: null,
             stories: [],
             tag_cache: []
         },
+        globalSettings: {},
         // This holds the state of the *currently active* narrative.
         // It's a combination of story-level settings and narrative-specific data.
         activeNarrativeState: {},
@@ -926,6 +930,36 @@ const StateManager = {
 
     CONSTANTS: {
         LIBRARY_KEY: 'aiStorytellerLibrary',
+		GLOBAL_SETTINGS_KEY: 'aiStorytellerGlobalSettings',
+    },
+
+/**
+     * Loads the global app settings (like API keys) from localStorage.
+     */
+    loadGlobalSettings() {
+        let parsedSettings = {};
+        const defaults = UTILITY.getDefaultApiSettings();
+        try {
+            const savedSettingsJSON = localStorage.getItem(this.CONSTANTS.GLOBAL_SETTINGS_KEY);
+            if (savedSettingsJSON) {
+                parsedSettings = JSON.parse(savedSettingsJSON);
+            }
+        } catch (error) {
+            console.error("Failed to parse global settings, using defaults.", error);
+            parsedSettings = {};
+        }
+        
+        // Merge defaults to ensure all keys exist
+        this.data.globalSettings = { ...defaults, ...parsedSettings };
+        // Note: You could add a one-time migration here to pull settings 
+        // from the user's most recent story if parsedSettings is empty.
+    },
+    
+    /**
+     * Persists the global app settings to localStorage.
+     */
+    saveGlobalSettings() {
+        localStorage.setItem(this.CONSTANTS.GLOBAL_SETTINGS_KEY, JSON.stringify(this.data.globalSettings));
     },
 
     // --- Public Getters ---
@@ -999,10 +1033,15 @@ const StateManager = {
                             };
                         }
                     });
-                    
+					
+					// <-- START: Optional Cleanup -->
+                    // You can also delete the old keys from the story data to clean it up.
+					const modelKeys = Object.keys(UTILITY.getDefaultApiSettings());
+					modelKeys.forEach(key => delete newStory[key]);
+					
                     return newStory;
                 });
-                
+ 
                 this.data.library = parsedLibrary;
                 if (!this.data.library.tag_cache) this.data.library.tag_cache = [];
                 if (!this.data.library.active_narrative_id) this.data.library.active_narrative_id = null;
@@ -1014,6 +1053,8 @@ const StateManager = {
         } else {
             this.data.library = { active_story_id: null, active_narrative_id: null, stories: [], tag_cache: [] };
         }
+		
+		this.loadGlobalSettings();
     },
     
     /**
@@ -1046,9 +1087,15 @@ const StateManager = {
             const storySettings = { ...activeStory };
             delete storySettings.narratives;
             delete storySettings.scenarios;
+			
+			// <-- START: Remove old model keys from story settings -->
+            const modelKeys = Object.keys(UTILITY.getDefaultApiSettings());
+            modelKeys.forEach(key => delete storySettings[key]);
+            // <-- END: Remove old model keys -->
             
             this.data.activeNarrativeState = {
                 ...storySettings,
+				...this.data.globalSettings,
                 ...activeNarrative.state,
                 narrativeName: activeNarrative.name
             };
@@ -1108,13 +1155,13 @@ const StateManager = {
                 activeStory.system_prompt = currentState.system_prompt;
                 activeStory.event_master_base_prompt = currentState.event_master_base_prompt;
                 activeStory.event_master_prompt = currentState.event_master_prompt;
-                activeStory.apiProvider = currentState.apiProvider;
-                activeStory.geminiApiKey = currentState.geminiApiKey;
-                activeStory.openRouterKey = currentState.openRouterKey;
-                activeStory.openRouterModel = currentState.openRouterModel;
-                activeStory.koboldcpp_template = currentState.koboldcpp_template;
-                activeStory.koboldcpp_min_p = currentState.koboldcpp_min_p;
-                activeStory.koboldcpp_dry = currentState.koboldcpp_dry;
+                //activeStory.apiProvider = currentState.apiProvider;
+                //activeStory.geminiApiKey = currentState.geminiApiKey;
+                //activeStory.openRouterKey = currentState.openRouterKey;
+                //activeStory.openRouterModel = currentState.openRouterModel;
+                //activeStory.koboldcpp_template = currentState.koboldcpp_template;
+                //activeStory.koboldcpp_min_p = currentState.koboldcpp_min_p;
+                //activeStory.koboldcpp_dry = currentState.koboldcpp_dry;
 
                 activeStory.prompt_persona_gen = currentState.prompt_persona_gen;
                 activeStory.prompt_world_map_gen = currentState.prompt_world_map_gen;
@@ -4522,29 +4569,71 @@ async clearBackgroundImage() {
     /** Binds all event listeners for the interactive elements within the settings modal. */
     bindSettingsListeners() {
         const state = StateManager.getState();
+		const globalSettings = StateManager.data.globalSettings; // <-- GET GLOBAL SETTINGS
+		
+		// <-- DEFINE MODEL KEYS -->
+        const modelSettingKeys = [
+            'geminiApiKey', 'openRouterKey', 'openRouterModel', 
+            'koboldcpp_url', 'koboldcpp_template', 'koboldcpp_min_p', 'koboldcpp_dry'
+        ];
+		
         const setListener = (id, key, callback) => { 
             const input = document.getElementById(id); 
             if (!input) return;
-            input.value = state[key] !== undefined ? state[key] : '';
+			
+			// <-- READ FROM GLOBAL OR STATE -->
+            const isGlobal = modelSettingKeys.includes(key);
+            input.value = isGlobal 
+                ? (globalSettings[key] !== undefined ? globalSettings[key] : '')
+                : (state[key] !== undefined ? state[key] : '');
+				
             const debouncedCallback = debounce(function(e) { 
                 state[key] = e.target.value; 
-                StateManager.saveState();
+
+				// <-- SAVE TO GLOBAL OR STATE -->
+                if (isGlobal) {
+                    globalSettings[key] = e.target.value;
+                    StateManager.saveGlobalSettings();
+                } else {
+                    StateManager.saveState();
+                }
+
                 if(callback) callback();
             }.bind(this), 500);
-            input.addEventListener('input', debouncedCallback); 
+            input.addEventListener('input', debouncedCallback);
         };
+		
         const setupSlider = (sliderId, valueId, stateKey, callback = null) => {
             const slider = document.getElementById(sliderId);
             const valueDisplay = document.getElementById(valueId);
             if (!slider || !valueDisplay) return;
-            slider.value = state[stateKey];
+			
+			// <-- READ FROM GLOBAL OR STATE -->
+            const isGlobal = modelSettingKeys.includes(stateKey);
+            const currentValue = isGlobal ? globalSettings[stateKey] : state[stateKey];
+            slider.value = currentValue;
             valueDisplay.textContent = slider.value;
+            
             slider.addEventListener('input', (e) => {
-                state[stateKey] = parseFloat(e.target.value);
+                const newValue = parseFloat(e.target.value);
+                state[stateKey] = newValue; // Always update live state
                 valueDisplay.textContent = e.target.value;
+                
+                // <-- UPDATE GLOBAL IF NEEDED -->
+                if (isGlobal) {
+                    globalSettings[stateKey] = newValue;
+                }
                 if(callback) callback();
             });
-            slider.addEventListener('change', () => StateManager.saveState());
+            
+            // <-- SAVE TO GLOBAL OR STATE -->
+            slider.addEventListener('change', () => {
+                if (isGlobal) {
+                    StateManager.saveGlobalSettings();
+                } else {
+                    StateManager.saveState();
+                }
+            });
         };
         
         // Model Tab
@@ -4554,6 +4643,7 @@ async clearBackgroundImage() {
         if(document.getElementById('openrouter-model-input')) setListener('openrouter-model-input', 'openRouterModel'); 
         if(document.getElementById('koboldcpp-min-p-slider')) setupSlider('koboldcpp-min-p-slider', 'koboldcpp-min-p-value', 'koboldcpp_min_p');
         if(document.getElementById('koboldcpp-dry-slider')) setupSlider('koboldcpp-dry-slider', 'koboldcpp-dry-value', 'koboldcpp_dry');
+		if(document.getElementById('koboldcpp-url-input')) setListener('koboldcpp-url-input', 'koboldcpp_url');
 		
 		const bgHint = document.getElementById('background-image-hint');
         if (bgHint) {
@@ -4644,11 +4734,12 @@ async clearBackgroundImage() {
     },
 
     /** Sets the active AI provider. */
-    setApiProvider(provider) { 
-        StateManager.getState().apiProvider = provider; 
-        this.bindSettingsListeners(); 
-        StateManager.saveState(); 
-    },
+	setApiProvider(provider) { 
+			StateManager.getState().apiProvider = provider; // Updates live state
+			StateManager.data.globalSettings.apiProvider = provider; // Updates global state
+			this.bindSettingsListeners(); 
+			StateManager.saveGlobalSettings(); // <-- SAVE GLOBALLY
+	},
 	
     // --- Chat & AI Interaction ---
     
@@ -6458,6 +6549,10 @@ const app = {
 // Start the application once the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => app.init());
 
+
+
 	</script>
+
+    
 </body>
 </html>
