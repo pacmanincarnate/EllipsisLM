@@ -86,7 +86,14 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* --- Scrollbar Styling --- */
-::-webkit-scrollbar { width: 8px; }
+/* --- Visible Chat Scrollbar (Horizontal) --- */
+body.layout-horizontal #chat-window::-webkit-scrollbar-track {
+    background: rgba(31, 41, 55, 0.5); /* dark-gray-800 at 50% opacity */
+}
+body.layout-horizontal #chat-window::-webkit-scrollbar-thumb {
+    background: rgba(31, 41, 55, 0.5);
+}
+::-webkit-scrollbar { width: 12px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { 
     background: var(--scrollbar-thumb); 
@@ -301,12 +308,14 @@ body[data-mode="cinematic_overlay"] #cinematic-bg-2 {
     position: fixed;
     inset: 0;
     z-index: 0;
-    background-size: cover;
+    background-size: contain; /* Changed from 'cover' */
     background-position: center;
+    background-repeat: no-repeat; /* Added to prevent tiling */
 }
 body[data-mode="cinematic_overlay"] #app-container {
     background: transparent;
     backdrop-filter: none; /* Prevents containing the fixed-position background */
+	padding: 0rem;
 }
 body[data-mode="cinematic_overlay"] main {
     display: flex;
@@ -348,7 +357,7 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #chat-window {
 /* Make header float over cinematic background in horizontal mode */
 body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
     position: absolute;
-    top: 0.5rem;      /* Match app-container padding */
+    top: 0.0rem;      /* Match app-container padding */
     left: 0.5rem;
     right: 0.5rem;
     z-index: 50;      /* Ensure it's on top of other elements */
@@ -390,14 +399,19 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
     <header class="mb-4 flex justify-between items-center" id="main-header">
         <!-- Desktop Header -->
         <div id="desktop-header" class="justify-between items-center w-full">
-            <input type="text" id="story-title-input" class="text-2xl font-bold bg-transparent text-white p-1 rounded focus:outline-none focus:bg-black/20 w-1/2">
+            
+            <div class="flex items-center space-x-2">
+                <button onclick="Controller.openModal('story-library-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg border-2 border-sky-500" title="Story Library"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path><path d="M4 6h16M4 12h16M4 18h7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M18 18v-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M15 12h6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+                
+                <input type="text" id="story-title-input" class="text-2xl font-bold bg-transparent text-white p-1 rounded focus:outline-none focus:bg-black/20 w-96">
+            </div>
+
             <div class="flex space-x-2">
-                 <button onclick="Controller.openModal('story-library-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Story Library"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path><path d="M4 6h16M4 12h16M4 18h7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M18 18v-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M15 12h6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
                  <button onclick="Controller.openModal('characters-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Characters"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A5.965 5.965 0 0112 13a5.965 5.965 0 013 1.803"></path></svg></button>
                  <button onclick="Controller.openModal('world-map-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="World Map"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m-6 4v.01"></path></svg></button>
                  <button onclick="Controller.openModal('knowledge-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Knowledge"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253z"></path></svg></button>
                  <button onclick="Controller.checkWorldInfoAgent()" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Update Static Memory"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg></button>
-                 <button onclick="Controller.openModal('settings-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Settings"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066 2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                 <button onclick="Controller.openModal('settings-modal')" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Settings"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066 2.573c-.94-1.543.826 3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
             </div>
         </div>
 
@@ -3984,7 +3998,7 @@ const Controller = {
                 { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags:[], is_narrator: false }, 
                 { id: UTILITY.uuid(), name: "Narrator", description: "Describes the world.", short_description: "The storyteller.", model_instructions: "Act as a world-class storyteller.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags:[], color: this.CONSTANTS.CHARACTER_COLORS[0], is_narrator: true }
             ], 
-            dynamic_entries: [{id: UTILITY.uuid(), title: "Example Lorebook Entry", triggers: "example, 100%", content: "This is a sample dynamic lore entry.", triggered_at_turn: null }],
+            dynamic_entries: [{id: UTILITY.uuid(), title: "Example Lorebook Entry", triggers: "example, .01%", content: "This is a sample dynamic lore entry.", triggered_at_turn: null }],
             selectedStaticEntryId: null, selectedDynamicEntryId: null,
             scenarios: [{ id: UTILITY.uuid(), name: "Default Start", message: "The story begins..." }],
             narratives: []
@@ -6444,10 +6458,6 @@ const app = {
 // Start the application once the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => app.init());
 
-
-
 	</script>
-
-    
 </body>
 </html>
