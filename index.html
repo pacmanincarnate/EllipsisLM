@@ -308,9 +308,10 @@ body[data-mode="cinematic_overlay"] #cinematic-bg-2 {
     position: fixed;
     inset: 0;
     z-index: 0;
-    background-size: contain; /* Changed from 'cover' */
-    background-position: center;
-    background-repeat: no-repeat; /* Added to prevent tiling */
+    background-size: auto 100%; /* Sets height to 100%, width scales automatically */
+    /* This centers the image horizontally, so it crops from the sides: */
+    background-position: center top; 
+    background-repeat: no-repeat;
 }
 body[data-mode="cinematic_overlay"] #app-container {
     background: transparent;
