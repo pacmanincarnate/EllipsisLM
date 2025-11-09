@@ -97,23 +97,26 @@ EllipsisLM supports mobile and desktop, and the way this is accomplished offers 
 
 
 # Roadmap
+## Complete
+- [X] Clarify Story Library as a separate component from other roleplay-specific controls. (11/3/25)
+- [X] Establish model settings outside of a narrative and make them persistent. (11/3/25)
+- [X] Add a scroll bar in horizontal mode. (11/3/25)
+- [X] Adjust the background image to fit vertically. (11/3/25)
+- [X] Improve positioning of dynamic knowledge in prompt. (11/9/25)
+- [X] Make example dynamic knowledge entry not 100%. (11/9/25)
+- [X] shift 'character is thinking' to the left to align with other bubbles. (11/9/25)
+## To Do
 - [ ] Investigate alternative character response formats
-- [ ] Properly incorporate chatML syntax for koboldcpp
+- [ ] Properly incorporate Llama 3 syntax for koboldcpp
 - [ ] Implement thinking model support
-- [X] Clarify Story Library as a separate component from other roleplay-specific controls.
 - [ ] Make the Event Master more customizable.
 - [ ] Add sequential dynamic knowledge.
-- [X] Establish model settings outside of a narrative and make them persistent.
 - [ ] Find a way to make local download *really* easy.
-- [X] Add a scroll bar in horizontal mode.
-- [X] Adjust the background image to fit vertically.
-- [ ] Improve positioning of dynamic knowledge in prompt.
-- [ ] Improve reliability of static knowledge generation. add periodic static knowledge gen; seems to be missing.
+- [ ] Improve reliability of static knowledge generation. Add periodic static knowledge gen; seems to be missing.
 - [ ] add field for story creator's note.
 - [ ] add field for story tags
 - [ ] adjust size of input field for knowledge in vertical format.
-- [ ] Make examplw dynamic knowledge entry not 100%.
-- [ ] shift 'character is thinking' to the left to align with other bubbles.
+- [ ] Fix keyboard overlap on Android.
 
 
 
