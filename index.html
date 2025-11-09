@@ -268,6 +268,15 @@ input:checked + .toggle-bg:after {
     to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes pulseOpacity {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.typing-bubble-pulse {
+    animation: pulseOpacity 1.5s ease-in-out infinite;
+}
+
 .chat-bubble-container.new-message {
     animation: fadeIn var(--transition-medium);
 }
@@ -1502,6 +1511,27 @@ const PromptBuilder = {
             return processedText;
         };
     },
+	
+	_getSmartHistorySlice(history, chatMessageCount) {
+            let chatCount = 0;
+            let startIndex = history.length; // Default to all if history is shorter
+            
+            for (let i = history.length - 1; i >= 0; i--) {
+                startIndex = i; // Mark the start of the slice
+                const msg = history[i];
+
+                // Only count visible chat messages toward the quota
+                if (msg.type === 'chat' && !msg.isHidden) {
+                    chatCount++;
+                }
+
+                if (chatCount >= chatMessageCount) {
+                    break; // We found our 10th chat message
+                }
+            }
+            return history.slice(startIndex);
+	},	
+	
     buildPrompt(charToActId, isForUser = false) {
         const state = StateManager.getState();
         const charToAct = state.characters.find(c => c.id === charToActId);
@@ -1512,7 +1542,7 @@ const PromptBuilder = {
         const replacer = this._getReplacer(charToAct);
         const modelInstructions = charToAct.model_instructions || state.system_prompt;
 
-let locationContext = '';
+	let locationContext = '';
         if (state.worldMap && state.worldMap.grid.length > 0) {
             const { grid, currentLocation, path } = state.worldMap;
             const currentLoc = grid.find(l => l.coords.x === currentLocation.x && l.coords.y === currentLocation.y);
@@ -1577,12 +1607,9 @@ let locationContext = '';
             system_prompt: replacer(modelInstructions),
             event_master_prompt: replacer(state.event_master_prompt),
             static_entries: (state.static_entries || []).map(l => `### ${l.title}\n${replacer(l.content)}`).join('\n\n'),
-            dynamic_entries: (state.dynamic_entries || [])
-                .filter(entry => entry.triggered_at_turn !== null)
-                .map(l => `### ${l.title}\n${replacer(l.content)}`).join('\n\n'),
+
             characters: (state.characters || []).filter(c => c.is_active).map(c => `### Character: ${c.name}\n\n${replacer(c.description)}`).join('\n\n'),
-            history: (state.chat_history || []).filter(m => !m.isHidden).slice(-10),
-            charToAct: charToAct,
+			history: this._getSmartHistorySlice(state.chat_history || [], 10),            charToAct: charToAct,
             isForUser: isForUser,
             location_context: locationContext,
         };
@@ -1617,14 +1644,18 @@ let locationContext = '';
         }
         
         p += "## RECENT CONVERSATION & EVENTS\n";
-        components.history.forEach(msg => { 
+		components.history.forEach(msg => { 
+            // Skip example dialogue (which is 'chat' AND 'isHidden')
+            if (msg.type === 'chat' && msg.isHidden) return;
+
             if (msg.type === 'chat') {
                 const char = state.characters.find(c => c.id === msg.character_id); 
                 if (char) p += `[${char.name}:]\n${replacer(msg.content)}\n\n`;
             } else if (msg.type === 'lore_reveal') {
-                p += `[System Note: Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}\n\n`;
+                // This is the new part for inline knowledge
+                p += `[System Note:\n${replacer(msg.content)}]\n\n`;
             } else if (msg.type === 'system_event') {
-                 p += `[System Event: ${replacer(msg.content)}]\n`;
+                 p += `[System Event: ${replacer(msg.content)}]\n\n`; // Added \n for spacing
             }
         });
         p += "\n### INSTRUCTION\n";
@@ -1646,26 +1677,50 @@ let locationContext = '';
         const system_prompt_str = system.join('\n\n');
         
         const history_str = components.history.map(msg => {
+			// Skip example dialogue
+            if (msg.type === 'chat' && msg.isHidden) return null;
+
             if (msg.type === 'chat') {
                 const char = state.characters.find(c => c.id === msg.character_id); 
                 if (char) return `${char.is_user ? 'user' : 'assistant'}:${char.name}:\n${replacer(msg.content)}`;
             } else if (msg.type === 'lore_reveal') {
                 return `system:Dynamic Entry Revealed - ${msg.title}:\n${replacer(msg.content)}`;
+            } else if (msg.type === 'system_event') {
+                return `system:System Event:\n${replacer(msg.content)}`;
             }
+            return null; // Fallback for other types
         }).filter(Boolean).join('\n');
 
         let instruction = components.isForUser ? `Write the next chat message for the user's character, ${components.charToAct.name}.` : `Write the next chat message for ${components.charToAct.name}. Stay in character.`;
         instruction += " Do not write any prefix like 'Character Name:'.";
 
-        switch (template) {
+switch (template) {
             case 'mistral':
                 return `<s>[INST] ${system_prompt_str}\n\n${history_str}\n\n${instruction} [/INST]`;
             case 'chatml':
                 const history_chatml = components.history.map(msg => {
-                    const role = msg.type === 'lore_reveal' ? 'system' : (state.characters.find(c=>c.id === msg.character_id)?.is_user ? 'user' : 'assistant');
-                    const content = msg.type === 'lore_reveal' ? `[Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}` : `${state.characters.find(c=>c.id === msg.character_id)?.name}:\n${replacer(msg.content)}`;
+                    // Skip example dialogue
+                    if (msg.type === 'chat' && msg.isHidden) return null;
+
+                    let role = 'system';
+                    let content = '';
+
+                    if (msg.type === 'chat') {
+                        const char = state.characters.find(c => c.id === msg.character_id);
+                        if (!char) return null;
+                        role = char.is_user ? 'user' : 'assistant';
+                        content = `${char.name}:\n${replacer(msg.content)}`;
+                    } else if (msg.type === 'lore_reveal') {
+                        content = `[Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}`;
+                    } else if (msg.type === 'system_event') {
+                        content = `[System Event: ${replacer(msg.content)}]`;
+                    } else {
+                        return null;
+                    }
+                    
                     return `<|im_start|>${role}\n${content}<|im_end|>`;
-                }).join('\n');
+                }).filter(Boolean).join('\n');
+                
                 return `<|im_start|>system\n${system_prompt_str}<|im_end|>\n${history_chatml}\n<|im_start|>user\n${instruction}<|im_end|>\n<|im_start|>assistant\n${components.charToAct.name}:\n`;
             case 'alpaca':
                  return `### Instruction:\n${system_prompt_str}\n\n${history_str}\n\n${instruction}\n\n### Response:\n`;
@@ -2047,7 +2102,7 @@ async exportStoryAsBYAF(story, narrative, primaryCharId) {
 		const aiChar = {
 			id: UTILITY.uuid(),
 			name: v2Data.name || "Imported Character",
-			description: (v2Data.description || "").replace(/{{char}}/g, v2Data.name || "Imported Character").replace(/{{user}}/g, "You"),
+			description: (v2Data.description || "").replace(/{{char}}/g, v2Data.name || "Imported Character").replace(/{{user}}/g, "{user}"),
 			short_description: (v2Data.description || "").split('.')[0] + '.',
 			model_instructions: (v2Data.system_prompt || "Act as {character}. Be descriptive and engaging.").replace(/{{char}}/g, "{character}").replace(/{{user}}/g, "{user}"),
 			image_url: '',
@@ -2070,8 +2125,7 @@ async exportStoryAsBYAF(story, narrative, primaryCharId) {
 			}));
 		}
 		
-		const firstMes = (v2Data.first_mes || `The story of ${aiChar.name} begins.`).replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, userChar.name);
-		// Create Scenario and Narrative
+		const firstMes = (v2Data.first_mes || `The story of ${aiChar.name} begins.`).replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, "{user}");		// Create Scenario and Narrative
 		const scenario = { id: UTILITY.uuid(), name: "Imported Start", message: firstMes };
 		story.scenarios.push(scenario);
 				
@@ -2084,7 +2138,7 @@ async exportStoryAsBYAF(story, narrative, primaryCharId) {
 		story.scenarios = []; // Clear the default empty scenario
 		allGreetings.forEach((greeting, index) => {
 			const scenarioName = index === 0 ? "Imported Start" : `Alternate Start ${index}`;
-			const messageContent = (greeting || "").replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, userChar.name);
+			const messageContent = (greeting || "").replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, "{user}");
 			
 			story.scenarios.push({
 				id: UTILITY.uuid(),
@@ -2104,7 +2158,7 @@ async exportStoryAsBYAF(story, narrative, primaryCharId) {
 				
 				for (const match of cleanedText.matchAll(regex)) {
 					const speakerPrefix = match[1];
-					const messageContent = match[2].trim().replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, userChar.name);
+					const messageContent = match[2].trim().replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, "{user}");
 					const speakerId = charNameIdMap[speakerPrefix];
 
 					if (speakerId && messageContent) {
@@ -3257,13 +3311,25 @@ startStreamingResponse(charId, fullText, emotion) {
         }, 2); // Speed of streaming in inverse.
     },
     
-    showTypingIndicator(charId, text="is thinking...") { 
+showTypingIndicator(charId, text="is thinking...") { 
         this.hideTypingIndicator(); 
         const chatWindow=document.getElementById('chat-window'); 
         const name = (StateManager.getState().characters || []).find(c => c.id === charId)?.name || 'System'; 
         const indicator = document.createElement('div'); 
         indicator.id = 'typing-indicator'; 
-        indicator.innerHTML = `<div class="mb-4 flex flex-col items-start"><p class="font-bold text-sm mb-1">${UTILITY.escapeHTML(name)}</p><div class="p-3 bg-gray-700/80 rounded-lg"><p class="italic">${text}</p></div></div>`; 
+
+        // --- MODIFICATION ---
+        // Use the same container as chat bubbles for correct alignment and width
+        indicator.className = 'chat-bubble-container'; 
+        indicator.innerHTML = `
+            <div class="mb-4 flex flex-col items-start">
+                <p class="font-bold text-sm mb-1">${UTILITY.escapeHTML(name)}</p>
+                <div class="p-3 bg-gray-700/80 rounded-lg typing-bubble-pulse">
+                    <p class="italic">${text}</p>
+                </div>
+            </div>`;
+        // --- END MODIFICATION ---
+            
         chatWindow.appendChild(indicator); 
         chatWindow.scrollTop = chatWindow.scrollHeight; 
     },
@@ -5080,36 +5146,74 @@ async clearBackgroundImage() {
     /**
      * Checks the last message against all dynamic entry triggers and activates any that match.
      */
-    checkDynamicEntryTriggers() {
+checkDynamicEntryTriggers() {
         const state = StateManager.getState();
-        const lastMessage = (state.chat_history || []).filter(m => m.type === 'chat').pop();
+        // Get the last message that wasn't a lore reveal
+        const lastMessage = (state.chat_history || []).filter(m => m.type !== 'lore_reveal').pop();
         if (!lastMessage) return;
+
         const content = lastMessage.content.toLowerCase();
+        let stateChanged = false;
 
         (state.dynamic_entries || []).forEach(entry => {
-            if (entry.triggered_at_turn !== null && (state.messageCounter - entry.triggered_at_turn > 10)) {
-                entry.triggered_at_turn = null;
-            }
+            // 1. Check for triggers
+            const { groups, chance } = this.parseTriggers(entry.triggers);
+            const keywordMatch = groups.some(group => {
+                switch (group.type) {
+                    case 'OR': return content.includes(group.keywords[0]);
+                    case 'AND': return group.keywords.every(kw => content.includes(kw));
+                    case 'XOR': const [f, s] = [content.includes(group.keywords[0]), content.includes(group.keywords[1])]; return (f && !s) || (!f && s);
+                    default: return false;
+                }
+            });
 
-            if (entry.triggered_at_turn === null) {
-                const { groups, chance } = this.parseTriggers(entry.triggers);
-                const keywordMatch = groups.some(group => {
-                    switch (group.type) {
-                        case 'OR': return content.includes(group.keywords[0]);
-                        case 'AND': return group.keywords.every(kw => content.includes(kw));
-                        case 'XOR': const [f, s] = [content.includes(group.keywords[0]), content.includes(group.keywords[1])]; return (f && !s) || (!f && s);
-                        default: return false;
+            // 2. If triggered:
+            if (keywordMatch || (Math.random() * 100 < chance)) {
+                
+                // 3. De-duplicate: Look-behind 20 messages and remove existing entry
+                // This is the efficient tweak to your "scan all history" request.
+                const searchWindowStart = Math.max(0, state.chat_history.length - 20);
+                let foundIndex = -1;
+
+                for (let i = state.chat_history.length - 1; i >= searchWindowStart; i--) {
+                    const msg = state.chat_history[i];
+                    // We need a stable ID to find the entry
+                    if (msg.type === 'lore_reveal' && msg.dynamic_entry_id === entry.id) {
+                        foundIndex = i;
+                        break;
                     }
+                }
+
+                if (foundIndex !== -1) {
+                    state.chat_history.splice(foundIndex, 1);
+                    console.log(`Removed old dynamic entry: ${entry.title}`);
+                    stateChanged = true;
+                }
+
+                // 4. Add the new entry inline (at the end of the history)
+                state.chat_history.push({ 
+                    type: 'lore_reveal', 
+                    title: entry.title, 
+                    content: entry.content,
+                    dynamic_entry_id: entry.id, // Stable identifier for de-duplication
+                    timestamp: new Date().toISOString(),
+                    isHidden: true // Mark as invisible for the UI
                 });
-                if (keywordMatch || (Math.random() * 100 < chance)) {
-                    entry.triggered_at_turn = state.messageCounter;
-                    state.chat_history.push({ type: 'lore_reveal', title: entry.title, content: entry.content });
-                    console.log(`Dynamic Entry triggered: ${entry.title}`);
+                console.log(`Dynamic Entry triggered and added inline: ${entry.title}`);
+                stateChanged = true;
+
+                // 5. Clean up the old 'triggered_at_turn' property so it doesn't show as "ACTIVE" in the UI
+                if (entry.triggered_at_turn !== null) {
+                    entry.triggered_at_turn = null;
                 }
             }
         });
-        StateManager.saveState();
-        UIManager.renderDynamicEntries();
+
+        if (stateChanged) {
+            StateManager.saveState();
+            // We still call this to clear any "ACTIVE" tags from the UI
+            UIManager.renderDynamicEntries(); 
+        }
     },
 
     /**
@@ -6196,16 +6300,66 @@ try {
     /**
      * Exports the entire story library as a single JSON file.
      */
+	/**
+     * Exports the entire story library as a single JSON file, stripping embedded images.
+     */
     exportLibrary() {
         UIManager.showLoadingSpinner('Exporting library...');
         try {
-            const data = JSON.stringify(StateManager.getLibrary(), null, 2);
+            // 1. Get a deep copy of the library to modify safely
+            const libraryCopy = JSON.parse(JSON.stringify(StateManager.getLibrary()));
+
+            // 2. Helper function to clean URLs
+            const cleanUrl = (url) => {
+                if (typeof url === 'string' && url.startsWith('data:image/')) {
+                    return ''; // Strip vestigial embedded image data
+                }
+                return url; // Keep external URLs and local_idb keywords
+            };
+
+            // 3. Iterate and clean all known image URL fields
+            (libraryCopy.stories || []).forEach(story => {
+                story.backgroundImageURL = cleanUrl(story.backgroundImageURL);
+
+                (story.characters || []).forEach(char => {
+                    char.image_url = cleanUrl(char.image_url);
+                    (char.extra_portraits || []).forEach(portrait => {
+                        portrait.url = cleanUrl(portrait.url);
+                    });
+                });
+
+                (story.narratives || []).forEach(narrative => {
+                    if (narrative.state && narrative.state.worldMap && narrative.state.worldMap.grid) {
+                        narrative.state.worldMap.grid.forEach(loc => {
+                            loc.imageUrl = cleanUrl(loc.imageUrl);
+                        });
+						// Now, filter the grid to remove any "blank" locations
+						narrative.state.worldMap.grid = narrative.state.worldMap.grid.filter(loc => {
+							const hasName = loc.name && loc.name.trim() !== "";
+							const hasDesc = loc.description && loc.description.trim() !== "";
+							const hasPrompt = loc.prompt && loc.prompt.trim() !== "";
+                            const hasImage = loc.imageUrl && loc.imageUrl.trim() !== "";
+                            const hasEntries = loc.local_static_entries && loc.local_static_entries.length > 0;
+                            
+                            // Keep the location if ANY of these are true
+                            return hasName || hasDesc || hasPrompt || hasImage || hasEntries;
+                        });						
+                    }
+                });
+            });
+
+            // 4. Stringify the cleaned copy
+            const data = JSON.stringify(libraryCopy, null, 2);
+            
+            // 5. Create and download the blob
             const blob = new Blob([data], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `ellipsis_library_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a); // Added for Firefox compatibility
             a.click();
+            document.body.removeChild(a); // Clean up
             URL.revokeObjectURL(url);
         } catch (e) {
             alert(`Library export failed: ${e.message}`);
