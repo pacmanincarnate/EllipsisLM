@@ -12,6 +12,9 @@ EllipsisLM is an open-source front-end for AI-powered roleplay. It runs as a sin
 - Start chatting!
 - (If you want to run local, go to https://github.com/LostRuins/koboldcpp/releases and download the latest koboldcpp release. Run the exe and select your model. Return to EllipsisLM.
 
+Try it now:
+https://pacmanincarnate.github.io/EllipsisLM/
+
 ## Backend
 The app utilizes a Gemini API, OpenRouter API, or a local Koboldcpp instance. If you use Koboldcpp, none of your information leaves your computer. Koboldcpp is quick and easy to install, and it lets you use the same GGUF-format models as in BY. OpenRouter offers a number of free models that you can use if you choose that route.
 
@@ -119,8 +122,7 @@ EllipsisLM supports mobile and desktop, and the way this is accomplished offers 
 - [ ] Find a way to make local download *really* easy.
 - [ ] Improve reliability of static knowledge generation.
 - [ ] adjust size of input field for knowledge in vertical format.
-
-
-Try it now:
-https://pacmanincarnate.github.io/EllipsisLM/
+- [ ] Add more information to story details and clean up layout.
+- [ ] Clean up UI for sequential Dynamic Knowledge.
+- [ ] Add more UI color options for markdown.
 
