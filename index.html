@@ -2863,7 +2863,8 @@ async exportStoryAsBYAF(story, narrative, primaryCharId) {
 				id: UTILITY.uuid(),
 				title: (entry.keys || []).join(', ') || "Imported Lore",
 				triggers: (entry.keys || []).join(', '),
-				content: entry.content || "",
+				content_fields: [entry.content || ""], // <-- FIX
+                current_index: 0,                    // <-- FIX
 				triggered_at_turn: null
 			}));
 		}
@@ -2953,13 +2954,14 @@ async exportStoryAsBYAF(story, narrative, primaryCharId) {
         };
         story.characters = [userChar, aiChar];
 
-        // Map Lore Items -> Dynamic Entries
+		// Map Lore Items -> Dynamic Entries
         if (character.loreItems) {
             story.dynamic_entries = character.loreItems.map(item => ({
                 id: UTILITY.uuid(),
                 title: item.key || "Imported Lore",
                 triggers: item.key || "",
-                content: item.value || "",
+                content_fields: [item.value || ""], // <-- FIX
+                current_index: 0,                   // <-- FIX
                 triggered_at_turn: null
             }));
         }
@@ -4926,77 +4928,34 @@ const Controller = {
     // --- Story & Narrative Management ---
 
     /**
-     * Creates the initial default story and narrative when the app is launched for the first time.
-     * Ensures new users have a starting point.
-     */
-    createDefaultStoryAndNarrative() {
-        const library = StateManager.getLibrary();
-
-        const newStory = {
-            id: UTILITY.uuid(), name: "My First Story", last_modified: new Date().toISOString(), created_date: new Date().toISOString(), creator_notes: "", tags: [],
-            search_index: "my first story",
-			...UTILITY.getDefaultStorySettings(),
-            ...UTILITY.getDefaultApiSettings(), ...UTILITY.getDefaultUiSettings(), ...UTILITY.getDefaultSystemPrompts(),
-            characters: [
-                { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags:[], is_narrator: false }, 
-                { id: UTILITY.uuid(), name: "Narrator", description: "Describes the world.", short_description: "The storyteller.", model_instructions: "Act as a world-class storyteller.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags:[], color: this.CONSTANTS.CHARACTER_COLORS[0], is_narrator: true }
-            ], 
-            dynamic_entries: [{id: UTILITY.uuid(), title: "Example Lorebook Entry", triggers: "example, .01%", content: "This is a sample dynamic lore entry.", triggered_at_turn: null }],
-            selectedStaticEntryId: null, selectedDynamicEntryId: null,
-            scenarios: [{ id: UTILITY.uuid(), name: "Default Start", message: "The story begins..." }],
-            narratives: []
-        };
-        
-        const defaultScenario = newStory.scenarios[0];
-        const newNarrative = {
-            id: UTILITY.uuid(), name: `${defaultScenario.name} - Chat`, last_modified: new Date().toISOString(),
-            state: {
-                chat_history: [], messageCounter: 0,
-                static_entries: [{ id: UTILITY.uuid(), title: "World Overview", content: "A high-fantasy world." }],
-                worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
-            }
-        };
-        
-        const firstSpeaker = newStory.characters.find(c => !c.is_user);
-        newNarrative.state.chat_history.push({
-            character_id: firstSpeaker.id, content: defaultScenario.message, type: 'chat', emotion: 'neutral', timestamp: new Date().toISOString(),
-        });
-        newNarrative.state.messageCounter = 1;
-
-        newStory.narratives.push(newNarrative);
-        
-        library.stories.push(newStory);
-        library.active_story_id = newStory.id;
-        library.active_narrative_id = newNarrative.id;
-
-        StateManager.saveLibrary();
-        window.location.reload(); 
-    },
-
-    /**
      * Creates a new, blank story in the library.
      */
-    createNewStory() {
-        const library = StateManager.getLibrary();
-        const newStory = {
-            id: UTILITY.uuid(), name: "New Story", last_modified: new Date().toISOString(), created_date: new Date().toISOString(), 
-            ...UTILITY.getDefaultStorySettings(), // <-- ADD THIS
-            search_index: "new story",
-            ...UTILITY.getDefaultApiSettings(), ...UTILITY.getDefaultUiSettings(), ...UTILITY.getDefaultSystemPrompts(),
-            characters: [
-                { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags:[], is_narrator: false }, 
-                { id: UTILITY.uuid(), name: "Narrator", description: "Describes the world.", short_description: "The storyteller.", model_instructions: "Act as a world-class storyteller.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags:[], color: this.CONSTANTS.CHARACTER_COLORS[0], is_narrator: true }
-            ], 
-            dynamic_entries: [{id: UTILITY.uuid(), title: "Example Lorebook Entry", triggers: "example, 100%", content: "This is a sample dynamic lore entry.", triggered_at_turn: null }],
-            selectedStaticEntryId: null, selectedDynamicEntryId: null,
-            scenarios: [{ id: UTILITY.uuid(), name: "Default Start", message: "The story begins..." }],
-            narratives: []
-        };
-        library.stories.push(newStory);
-        library.active_story_id = null;
-        library.active_narrative_id = null;
-        StateManager.saveLibrary();
-        UIManager.renderLibraryInterface();
+	async createNewStory() {
+        UIManager.showLoadingSpinner('Creating new story...');
+        try {
+            // 1. Call the service to create and save the story in the DB
+            // This function already exists in StoryService and works correctly
+            const newStory = await StoryService.createNewStory();
+
+            // 2. Add the new story (which is a stub) to the in-memory library
+            const library = StateManager.getLibrary();
+            library.stories.push(newStory);
+
+            // 3. Clear active session (this was correct)
+            library.active_story_id = null;
+            library.active_narrative_id = null;
+            StateManager.saveLibrary(); // Saves the (cleared) active IDs
+
+            // 4. Refresh the UI and open the details for the new story
+            UIManager.renderLibraryInterface();
+            UIManager.openStoryDetails(newStory.id);
+            
+        } catch (e) {
+            console.error("Failed to create new story:", e);
+            alert("Error: Could not create a new story in the database.");
+        } finally {
+            UIManager.hideLoadingSpinner();
+        }
     },
 
     /**
@@ -5004,49 +4963,34 @@ const Controller = {
      * @param {string} storyId - The ID of the parent story.
      * @param {string} scenarioId - The ID of the scenario to use as a template.
      */
-    createNarrativeFromScenario(storyId, scenarioId) {
-        const library = StateManager.getLibrary();
-        const story = library.stories.find(s => s.id === storyId);
-        const scenario = story.scenarios.find(sc => sc.id === scenarioId);
-        if (!story || !scenario) return;
+	async createNarrativeFromScenario(storyId, scenarioId) {
+        UIManager.showLoadingSpinner('Creating new narrative...');
+        try {
+            // 1. Call the StoryService to do all the database work
+            const newNarrative = await StoryService.createNarrativeFromScenario(storyId, scenarioId);
 
-        const newNarrative = {
-            id: UTILITY.uuid(),
-            name: `${scenario.name} - Chat`,
-            created_date: new Date().toISOString(),
-            last_modified: new Date().toISOString(),
-            state: {}
-        };
-
-        if (scenario.static_entries && scenario.worldMap) {
-            newNarrative.state = {
-                chat_history: [],
-                messageCounter: 0,
-                static_entries: JSON.parse(JSON.stringify(scenario.static_entries)),
-                worldMap: JSON.parse(JSON.stringify(scenario.worldMap))
-            };
-        } else {
-            newNarrative.state = {
-                chat_history: [], messageCounter: 0,
-                static_entries: [{ id: UTILITY.uuid(), title: "World Overview", content: "A high-fantasy world." }],
-                worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
-            };
-        }
-        
-        const firstMessage = scenario.message;
-        if (firstMessage) {
-            const firstSpeaker = story.characters.find(c => !c.is_user && c.is_active);
-            if (firstSpeaker) {
-                newNarrative.state.chat_history.push({
-                    character_id: firstSpeaker.id, content: firstMessage, type: 'chat',
-                    emotion: 'neutral', timestamp: new Date().toISOString(), isNew: true
+            // 2. Update the in-memory library stub
+            const library = StateManager.getLibrary();
+            const storyInLibrary = library.stories.find(s => s.id === storyId);
+            if (storyInLibrary) {
+                // Add the new stub to the in-memory list
+                storyInLibrary.narratives.push({
+                    id: newNarrative.id,
+                    name: newNarrative.name,
+                    last_modified: newNarrative.last_modified
                 });
-                newNarrative.state.messageCounter = 1;
+                storyInLibrary.last_modified = new Date().toISOString(); // Reflect the change
             }
+            
+            // 3. Load the new narrative
+            // This function just sets localStorage and reloads the page
+            this.loadNarrative(storyId, newNarrative.id);
+
+        } catch (error) {
+            UIManager.hideLoadingSpinner();
+            console.error("Failed to create narrative from scenario:", error);
+            alert(`Error: ${error.message}`);
         }
-        if(!story.narratives) story.narratives = [];
-        story.narratives.push(newNarrative);
-        this.loadNarrative(storyId, newNarrative.id);
     },
 
     /**
@@ -5067,158 +5011,278 @@ const Controller = {
      * @param {string} storyId - The ID of the parent story.
      * @param {string} narrativeId - The ID of the narrative to duplicate.
      */
-    duplicateNarrative(storyId, narrativeId) {
-        const library = StateManager.getLibrary();
-        const story = library.stories.find(s => s.id === storyId);
-        const narrative = story.narratives.find(n => n.id === narrativeId);
-        if (!story || !narrative) return;
-        
-        const newNarrative = JSON.parse(JSON.stringify(narrative));
-        newNarrative.id = UTILITY.uuid();
-        newNarrative.name = `${narrative.name} (Copy)`;
-        newNarrative.created_date = new Date().toISOString();
-        newNarrative.last_modified = new Date().toISOString();
-        
-        story.narratives.push(newNarrative);
-        StateManager.saveLibrary();
-        UIManager.openStoryDetails(storyId);
-    },
+	async deleteNarrative(storyId, narrativeId) {
+        const proceed = await UIManager.showConfirmationPromise('Are you sure you want to permanently delete this narrative and all its chat history?');
+        if (!proceed) return;
 
-    /**
-     * Deletes a narrative after user confirmation.
-     * @param {string} storyId - The ID of the parent story.
-     * @param {string} narrativeId - The ID of the narrative to delete.
-     */
-    deleteNarrative(storyId, narrativeId) {
-        UIManager.showConfirmationModal('Are you sure you want to permanently delete this narrative and all its chat history?', () => {
+        UIManager.showLoadingSpinner('Deleting narrative...');
+        try {
+            // 1. Call the service to delete from DB and update parent story
+            const updatedStory = await StoryService.deleteNarrative(storyId, narrativeId);
+
+            // 2. Update the in-memory library
             const library = StateManager.getLibrary();
-            const story = library.stories.find(s => s.id === storyId);
-            if (story) {
-                story.narratives = story.narratives.filter(n => n.id !== narrativeId);
-                if (library.active_narrative_id === narrativeId) {
-                    library.active_narrative_id = null;
-                }
-                StateManager.saveLibrary();
-                UIManager.openStoryDetails(storyId);
+            const storyInLibrary = library.stories.find(s => s.id === storyId);
+            if (storyInLibrary) {
+                // Replace the stub list with the new one from the service
+                storyInLibrary.narratives = updatedStory.narratives;
+                storyInLibrary.last_modified = updatedStory.last_modified;
             }
-        });
-    },
 
-    /**
-     * Duplicates an existing scenario.
-     * @param {string} storyId - The ID of the parent story.
-     * @param {string} scenarioId - The ID of the scenario to duplicate.
-     */
-    duplicateScenario(storyId, scenarioId) {
-        const library = StateManager.getLibrary();
-        const story = library.stories.find(s => s.id === storyId);
-        const scenario = story.scenarios.find(sc => sc.id === scenarioId);
-        if (!story || !scenario) return;
-        
-        const newScenario = JSON.parse(JSON.stringify(scenario));
-        newScenario.id = UTILITY.uuid();
-        newScenario.name = `${scenario.name} (Copy)`;
-        story.scenarios.push(newScenario);
-        StateManager.saveLibrary();
-        UIManager.openStoryDetails(storyId);
-    },
-    
-    /**
-     * Deletes a scenario after user confirmation.
-     * @param {string} storyId - The ID of the parent story.
-     * @param {string} scenarioId - The ID of the scenario to delete.
-     */
-    deleteScenario(storyId, scenarioId) {
-        const library = StateManager.getLibrary();
-        const story = library.stories.find(s => s.id === storyId);
-        if (story) {
-            if (story.scenarios.length <= 1) {
-                alert("You cannot delete the last scenario.");
-                return;
-            }
-            UIManager.showConfirmationModal('Are you sure you want to delete this scenario?', () => {
-                story.scenarios = story.scenarios.filter(sc => sc.id !== scenarioId);
+            // 3. Clear active ID if it was deleted
+            if (library.active_narrative_id === narrativeId) {
+                library.active_narrative_id = null;
+                library.active_story_id = null;
+                StateManager.saveLibrary(); // Saves the cleared IDs
+                window.location.reload(); // Reload to "no story"
+            } else {
                 StateManager.saveLibrary();
-                UIManager.openStoryDetails(storyId);
-            });
+                UIManager.openStoryDetails(storyId); // Refresh details view
+            }
+        } catch (e) {
+            console.error("Failed to delete narrative:", e);
+            alert(`Error: ${e.message}`);
+        } finally {
+            UIManager.hideLoadingSpinner();
         }
     },
 
-    /**
-     * Deletes an entire story and all its contents after user confirmation.
-     * @param {string} storyId - The ID of the story to delete.
-     */
-    deleteStory(storyId) {
-        UIManager.showConfirmationModal('Are you sure you want to permanently delete this entire story, including all its narratives and scenarios?', () => {
+    async duplicateNarrative(storyId, narrativeId) {
+        UIManager.showLoadingSpinner('Duplicating narrative...');
+        try {
+            // 1. Get the story and narrative to duplicate
+            const story = await DBService.getStory(storyId);
+            const narrative = await DBService.getNarrative(narrativeId);
+            if (!story || !narrative) throw new Error("Story or Narrative not found in database.");
+
+            // 2. Create the new narrative
+            const newNarrative = JSON.parse(JSON.stringify(narrative));
+            newNarrative.id = UTILITY.uuid();
+            newNarrative.name = `${narrative.name} (Copy)`;
+            newNarrative.last_modified = new Date().toISOString();
+            
+            // 3. Save the new narrative
+            await DBService.saveNarrative(newNarrative);
+
+            // 4. Update the parent story's stub list
+            story.narratives.push({ id: newNarrative.id, name: newNarrative.name, last_modified: newNarrative.last_modified });
+            story.last_modified = new Date().toISOString();
+            await DBService.saveStory(story);
+
+            // 5. Update the in-memory library stub
+            const library = StateManager.getLibrary();
+            const storyInLibrary = library.stories.find(s => s.id === storyId);
+            if (storyInLibrary) {
+                storyInLibrary.narratives = story.narratives; // Use the updated stub list
+                storyInLibrary.last_modified = story.last_modified;
+            }
+            
+            UIManager.openStoryDetails(storyId); // Refresh details
+        } catch (e) {
+            console.error("Failed to duplicate narrative:", e);
+            alert(`Error: ${e.message}`);
+        } finally {
+            UIManager.hideLoadingSpinner();
+        }
+    },
+
+	async deleteScenario(storyId, scenarioId) {
+        const story = await DBService.getStory(storyId); // Get full story
+        if (!story) return;
+
+        if (story.scenarios.length <= 1) {
+            alert("You cannot delete the last scenario.");
+            return;
+        }
+
+        const proceed = await UIManager.showConfirmationPromise('Are you sure you want to delete this scenario?');
+        if (!proceed) return;
+
+        try {
+            story.scenarios = story.scenarios.filter(sc => sc.id !== scenarioId);
+            story.last_modified = new Date().toISOString();
+            await DBService.saveStory(story); // Save updated story
+
+            // Update in-memory stub
+            const library = StateManager.getLibrary();
+            const storyInLibrary = library.stories.find(s => s.id === storyId);
+            if (storyInLibrary) {
+                storyInLibrary.scenarios = story.scenarios;
+                storyInLibrary.last_modified = story.last_modified;
+            }
+            
+            UIManager.openStoryDetails(storyId); // Refresh UI
+        } catch (e) {
+            console.error("Failed to delete scenario:", e);
+            alert(`Error: ${e.message}`);
+        }
+    },
+
+    async duplicateScenario(storyId, scenarioId) {
+        UIManager.showLoadingSpinner('Duplicating scenario...');
+        try {
+            const story = await DBService.getStory(storyId); // Get full story
+            const scenario = story.scenarios.find(sc => sc.id === scenarioId);
+            if (!story || !scenario) throw new Error("Story or Scenario not found.");
+            
+            const newScenario = JSON.parse(JSON.stringify(scenario));
+            newScenario.id = UTILITY.uuid();
+            newScenario.name = `${scenario.name} (Copy)`;
+            story.scenarios.push(newScenario);
+            story.last_modified = new Date().toISOString();
+            
+            await DBService.saveStory(story); // Save updated story
+
+            // Update in-memory stub
+            const library = StateManager.getLibrary();
+            const storyInLibrary = library.stories.find(s => s.id === storyId);
+            if (storyInLibrary) {
+                storyInLibrary.scenarios = story.scenarios;
+                storyInLibrary.last_modified = story.last_modified;
+            }
+            
+            UIManager.openStoryDetails(storyId); // Refresh UI
+        } catch (e) {
+            console.error("Failed to duplicate scenario:", e);
+            alert(`Error: ${e.message}`);
+        } finally {
+            UIManager.hideLoadingSpinner();
+        }
+    },
+
+	async deleteStory(storyId) {
+        const proceed = await UIManager.showConfirmationPromise('Are you sure you want to permanently delete this entire story, including all its narratives and scenarios?');
+        if (!proceed) return;
+
+        UIManager.showLoadingSpinner('Deleting story...');
+        try {
+            // 1. Call the service to delete everything from DB
+            await StoryService.deleteStory(storyId);
+
+            // 2. Update the in-memory library
             const library = StateManager.getLibrary();
             library.stories = library.stories.filter(s => s.id !== storyId);
             StateManager.updateTagCache();
 
+            // 3. Handle active session
             if (library.active_story_id === storyId) {
                 library.active_story_id = null;
                 library.active_narrative_id = null;
-                StateManager.saveLibrary();
+                StateManager.saveLibrary(); // Save cleared IDs
                 window.location.reload();
             } else {
                 StateManager.saveLibrary();
-                UIManager.renderLibraryInterface();
+                UIManager.renderLibraryInterface(); // Refresh library list
             }
-        });
-    },
-
-    /**
-     * Renames a story.
-     * @param {string} storyId - The ID of the story to rename.
-     * @param {string} newName - The new name for the story.
-     */
-    renameStory(storyId, newName) {
-        const library = StateManager.getLibrary();
-        const story = library.stories.find(s => s.id === storyId);
-        if(story) {
-            story.name = newName;
-            StateManager.saveLibrary();
-            UIManager.renderLibraryInterface();
-            if (story.id === library.active_story_id) {
-                UIManager.renderAll();
-            }
+        } catch (e) {
+            console.error("Failed to delete story:", e);
+            alert(`Error: ${e.message}`);
+        } finally {
+            UIManager.hideLoadingSpinner();
         }
     },
 
-    /**
-     * Prompts the user to enter a new name for a story.
-     * @param {string} storyId - The ID of the story.
-     */
-    renameStoryPrompt(storyId) {
+    // This function is no longer needed, as renameStoryPrompt calls the service directly
+    // renameStory(storyId, newName) { ... }
+
+    async renameStoryPrompt(storyId) {
         const library = StateManager.getLibrary();
         const story = library.stories.find(s => s.id === storyId);
         if (story) {
             const currentName = story.name || '';
             const newName = prompt("Enter new name for the story:", currentName);
-            if (newName && newName.trim() !== '') {
-                this.renameStory(storyId, newName.trim());
+            if (newName && newName.trim() !== '' && newName.trim() !== currentName) {
+                UIManager.showLoadingSpinner('Renaming...');
+                try {
+                    // 1. Call service to update DB
+                    const updatedStory = await StoryService.updateStoryField(storyId, 'name', newName.trim());
+
+                    // 2. Update in-memory stub
+                    story.name = updatedStory.name;
+                    story.last_modified = updatedStory.last_modified;
+                    this.updateSearchIndex(story); // Update search index
+                    
+                    // 3. Refresh UI
+                    UIManager.renderLibraryInterface(); // Refresh list
+                    UIManager.openStoryDetails(storyId); // Refresh details
+
+                    // 4. Update active state if it's the current story
+                    if (library.active_story_id === storyId) {
+                         const activeState = StateManager.getState();
+                         if (activeState) activeState.name = updatedStory.name;
+                         // Update UI title bars
+                         document.getElementById('story-title-input').value = updatedStory.name;
+                         document.getElementById('mobile-story-title-overlay').value = updatedStory.name;
+                    }
+
+                } catch (e) {
+                    console.error("Failed to rename story:", e);
+                    alert(`Error: ${e.message}`);
+                } finally {
+                    UIManager.hideLoadingSpinner();
+                }
             }
         }
     },
 
-    /**
-     * Duplicates an entire story object.
-     * @param {string} storyId - The ID of the story to duplicate.
-     */
-    duplicateStory(storyId) {
-        const library = StateManager.getLibrary();
-        const originalStory = library.stories.find(s => s.id === storyId);
-        if (!originalStory) return;
+    async duplicateStory(storyId) {
+        UIManager.showLoadingSpinner('Duplicating story...');
+        try {
+            // 1. Get all data for the original story
+            const originalStory = await DBService.getStory(storyId);
+            if (!originalStory) throw new Error("Original story not found in database.");
 
-        const newStory = JSON.parse(JSON.stringify(originalStory));
-        newStory.id = UTILITY.uuid();
-        newStory.name = `${originalStory.name || 'Untitled Story'} (Copy)`;
-        newStory.last_modified = new Date().toISOString();
-        newStory.created_date = new Date().toISOString();
-        
-        this.updateSearchIndex(newStory);
-        library.stories.push(newStory);
-        StateManager.saveLibrary();
-        UIManager.renderLibraryInterface();
+            const originalNarrativeStubs = originalStory.narratives || [];
+            const originalNarratives = await Promise.all(
+                originalNarrativeStubs.map(stub => DBService.getNarrative(stub.id))
+            );
+            
+            // 2. Create new story object with new IDs
+            const newStory = JSON.parse(JSON.stringify(originalStory));
+            newStory.id = UTILITY.uuid();
+            newStory.name = `${originalStory.name || 'Untitled Story'} (Copy)`;
+            newStory.last_modified = new Date().toISOString();
+            newStory.created_date = new Date().toISOString();
+            
+            // 3. Create new narratives with new IDs
+            const newNarratives = [];
+            const newNarrativeStubs = [];
+            
+            for (const narrative of originalNarratives) {
+                if (!narrative) continue; // Skip if a narrative was missing
+                const newNarrative = JSON.parse(JSON.stringify(narrative));
+                newNarrative.id = UTILITY.uuid();
+                // Optionally rename narratives, e.g., newNarrative.name = `${narrative.name} (Copy)`;
+                newNarratives.push(newNarrative);
+                newNarrativeStubs.push({ id: newNarrative.id, name: newNarrative.name, last_modified: newNarrative.last_modified });
+            }
+            
+            // 4. Update new story with new narrative stubs
+            newStory.narratives = newNarrativeStubs;
+            
+            // 5. Create new IDs for scenarios, characters, entries
+            (newStory.scenarios || []).forEach(s => s.id = UTILITY.uuid());
+            (newStory.characters || []).forEach(c => c.id = UTILITY.uuid());
+            (newStory.dynamic_entries || []).forEach(e => e.id = UTILITY.uuid());
+            
+            // 6. Save all new data to DB
+            await DBService.saveStory(newStory);
+            await Promise.all(newNarratives.map(n => DBService.saveNarrative(n)));
+
+            // 7. Update in-memory library
+            this.updateSearchIndex(newStory);
+            const library = StateManager.getLibrary();
+            library.stories.push(newStory);
+            StateManager.updateTagCache();
+            
+            UIManager.renderLibraryInterface(); // Refresh list
+
+        } catch (e) {
+            console.error("Failed to duplicate story:", e);
+            alert(`Error: ${e.message}`);
+        } finally {
+            UIManager.hideLoadingSpinner();
+        }
     },
 
     /**
@@ -6329,23 +6393,6 @@ checkDynamicEntryTriggers() {
         }
     },
 
-    /** Uses AI to generate content for a dynamic knowledge entry. */
-    async generateDynamicEntryContentAI(event, entryId) {
-        const state = StateManager.getState();
-        const entry = state.dynamic_entries.find(e => e.id === entryId);
-        if (!entry) return;
-
-        const newContent = await this._generateContentForField(event, state.prompt_entry_gen, {
-            title: entry.title,
-            triggers: entry.triggers
-        });
-
-        if (newContent !== null) {
-            this.updateDynamicEntryField(entryId, 'content', newContent);
-            UIManager.renderDynamicEntryDetails();
-        }
-    },
-
     /** Uses AI to analyze user input for emotion and location keywords. */
     async analyzeTurn(text) {
         const state = StateManager.getState();
@@ -7153,25 +7200,46 @@ checkDynamicEntryTriggers() {
         }
     }, 300),
 
-    elevateNarrativeToScenario(storyId, narrativeId) {
-        const library = StateManager.getLibrary();
-        const story = library.stories.find(s => s.id === storyId);
-        const narrative = story.narratives.find(n => n.id === narrativeId);
-        if (!story || !narrative) return;
-        
-        const firstMessage = narrative.state.chat_history.find(m => !m.isHidden && m.type === 'chat');
+	async elevateNarrativeToScenario(storyId, narrativeId) {
+        UIManager.showLoadingSpinner('Elevating to scenario...');
+        try {
+            // 1. Get the full data
+            const story = await DBService.getStory(storyId);
+            const narrative = await DBService.getNarrative(narrativeId);
+            if (!story || !narrative) throw new Error("Story or Narrative not found in database.");
 
-        const newScenario = {
-            id: UTILITY.uuid(),
-            name: `${narrative.name} (Scenario)`,
-            message: firstMessage ? firstMessage.content : "The story continues...",
-            static_entries: JSON.parse(JSON.stringify(narrative.state.static_entries || [])),
-            worldMap: JSON.parse(JSON.stringify(narrative.state.worldMap || {})),
-        };
+            // 2. Find the first *visible* message
+            const firstMessage = (narrative.state.chat_history || []).find(m => !m.isHidden && m.type === 'chat');
 
-        story.scenarios.push(newScenario);
-        StateManager.saveLibrary();
-        UIManager.openStoryDetails(storyId);
+            // 3. Create the new scenario
+            const newScenario = {
+                id: UTILITY.uuid(),
+                name: `${narrative.name} (Scenario)`,
+                message: firstMessage ? firstMessage.content : "The story continues...",
+                static_entries: JSON.parse(JSON.stringify(narrative.state.static_entries || [])),
+                worldMap: JSON.parse(JSON.stringify(narrative.state.worldMap || {})),
+            };
+
+            // 4. Add new scenario to story and save
+            story.scenarios.push(newScenario);
+            story.last_modified = new Date().toISOString();
+            await DBService.saveStory(story);
+
+            // 5. Update in-memory stub
+            const library = StateManager.getLibrary();
+            const storyInLibrary = library.stories.find(s => s.id === storyId);
+            if (storyInLibrary) {
+                storyInLibrary.scenarios = story.scenarios;
+                storyInLibrary.last_modified = story.last_modified;
+            }
+
+            UIManager.openStoryDetails(storyId); // Refresh UI
+        } catch (e) {
+            console.error("Failed to elevate narrative:", e);
+            alert(`Error: ${e.message}`);
+        } finally {
+            UIManager.hideLoadingSpinner();
+        }
     },
     
     // --- Import / Export ---
@@ -7186,46 +7254,66 @@ async handleFileUpload(event) {
 
         UIManager.showLoadingSpinner('Parsing file...');
 		try {
-			const { story: newStory, imageBlob } = await ImportExportService.parseUploadedFile(file);
+            const { story: newStory, imageBlob } = await ImportExportService.parseUploadedFile(file);
+            const library = StateManager.getLibrary();
 
-			const library = StateManager.getLibrary();
-            // Basic check if story name exists, handle potential duplicates
+            // --- START OF NEW/FIXED LOGIC ---
+
+            // 1. Check for name conflicts (this part was already correct)
             const existingStory = library.stories.find(s => s.name && newStory.name && s.name.toLowerCase() === newStory.name.toLowerCase());
             if (existingStory) {
                 const now = new Date();
-				const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;                newStory.name = `${newStory.name} - ${timestamp}`;
-                 console.log(`Duplicate story name found. Renaming imported story to: ${newStory.name}`);
+                const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
+                newStory.name = `${newStory.name} - ${timestamp}`;
+                console.log(`Duplicate story name found. Renaming imported story to: ${newStory.name}`);
             }
 
-			library.stories.push(newStory);
+            // 2. Separate narratives from the story object
+            const narratives = newStory.narratives || [];
+            
+            // 3. Create stubs for the story object
+            const narrativeStubs = narratives.map(n => ({ id: n.id, name: n.name, last_modified: n.last_modified }));
+            newStory.narratives = narrativeStubs;
 
-			const primaryAiChar = newStory.characters?.find(c => !c.is_user);
-			if (imageBlob && primaryAiChar && primaryAiChar.id) {
-				const savedToDB = await DBService.saveImage(primaryAiChar.id, imageBlob);
+            // 4. Save the story (metadata) and all its narratives (heavy data)
+            await DBService.saveStory(newStory);
+            if (narratives.length > 0) {
+                await Promise.all(narratives.map(n => DBService.saveNarrative(n)));
+            }
+            
+            // 5. Add the new story (with stubs) to the in-memory library
+            library.stories.push(newStory);
+
+            // --- END OF NEW/FIXED LOGIC ---
+
+            // 6. Save the image (this part was already correct)
+            const primaryAiChar = newStory.characters?.find(c => !c.is_user);
+            if (imageBlob && primaryAiChar && primaryAiChar.id) {
+                const savedToDB = await DBService.saveImage(primaryAiChar.id, imageBlob);
 
                 if (savedToDB) {
                     console.log(`Image saved to DB for ${primaryAiChar.id}, updating cache.`);
-                    // Ensure cache exists
                     UIManager.RUNTIME.characterImageCache = UIManager.RUNTIME.characterImageCache || {};
-                    // Revoke old URL if replacing image for the same ID
                     const oldUrl = UIManager.RUNTIME.characterImageCache[primaryAiChar.id];
                     if (oldUrl) {
                         URL.revokeObjectURL(oldUrl);
                     }
-                    // Add new blob URL to cache
                     UIManager.RUNTIME.characterImageCache[primaryAiChar.id] = URL.createObjectURL(imageBlob);
                 } else {
                      console.warn(`Failed to save image to DB for ${primaryAiChar.id}, cache not updated.`);
                 }
-			}
+            }
 
-			this.updateSearchIndex(newStory);
-			StateManager.updateTagCache();
-			StateManager.saveLibrary();
-			UIManager.hideLoadingSpinner();
-			alert(`Story "${newStory.name}" imported successfully!`);
-			UIManager.renderLibraryInterface(); // Re-render library after potential rename/add
-			this.closeModal('io-hub-modal');
+            // 7. Update caches and UI (this part was already correct)
+            this.updateSearchIndex(newStory);
+            StateManager.updateTagCache();
+            // saveLibrary() is fine, it just saves active IDs to localStorage
+            StateManager.saveLibrary(); 
+            UIManager.hideLoadingSpinner();
+            alert(`Story "${newStory.name}" imported successfully!`);
+            UIManager.renderLibraryInterface();
+            this.closeModal('io-hub-modal');
+
         } catch (err) {
             UIManager.hideLoadingSpinner();
             alert(`Error importing file: ${err.message}`);
@@ -7545,6 +7633,63 @@ const app = {
     }
     // --- END OF MIGRATION LOGIC ---
 	
+	// --- [NEW] ONE-TIME MIGRATION FOR DYNAMIC ENTRIES --- [REMOVE THIS CODE LATER]
+    const dynamicEntryMigrationFlag = 'v3_dynamic_entry_migration_complete';
+    if (!localStorage.getItem(dynamicEntryMigrationFlag)) {
+        console.log("Running one-time migration for dynamic entries...");
+        UIManager.showLoadingSpinner("Updating data structure...");
+
+        try {
+            // 1. Fetch ALL stories directly from the database
+            const allStories = await DBService.getAllStories();
+            let storiesToUpdate = [];
+
+            for (const story of allStories) {
+                let storyWasModified = false;
+                
+                if (story.dynamic_entries && Array.isArray(story.dynamic_entries)) {
+                    // 2. Iterate through each dynamic entry
+                    for (const entry of story.dynamic_entries) {
+                        
+                        // 3. Check if it's the old model (has 'content' and not 'content_fields')
+                        if (entry.content !== undefined && entry.content_fields === undefined) {
+                            
+                            // 4. Perform the migration
+                            console.log(`Migrating entry: ${entry.title} in story: ${story.name}`);
+                            entry.content_fields = [entry.content || ""]; // Create array from old string
+                            entry.current_index = 0;                     // Add new required field
+                            delete entry.content;                        // Delete old, invalid field
+                            
+                            storyWasModified = true;
+                        }
+                    }
+                }
+                
+                if (storyWasModified) {
+                    // 5. Add the modified story to the update queue
+                    storiesToUpdate.push(story);
+                }
+            }
+
+            // 6. Save all modified stories back to the database
+            if (storiesToUpdate.length > 0) {
+                console.log(`Saving ${storiesToUpdate.length} updated stories...`);
+                await Promise.all(storiesToUpdate.map(story => DBService.saveStory(story)));
+            }
+
+            // 7. Set the flag so it doesn't run again
+            localStorage.setItem(dynamicEntryMigrationFlag, 'true');
+            console.log("Dynamic entry migration complete.");
+
+        } catch (err) {
+            console.error("Critical error during dynamic entry migration:", err);
+            alert("An error occurred while updating your story data. Some entries might still be in the old format.");
+        } finally {
+            UIManager.hideLoadingSpinner(); // Always hide spinner
+        }
+    }
+    // --- END OF NEW MIGRATION ---	
+	
 	// Load data first (NOW reads from IDB via StateManager)
     await StateManager.loadLibrary();
     
@@ -7842,6 +7987,7 @@ const app = {
 
 // Start the application once the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => app.init());
+
 	</script>
 </body>
 </html>
