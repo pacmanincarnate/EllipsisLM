@@ -105,19 +105,20 @@ EllipsisLM supports mobile and desktop, and the way this is accomplished offers 
 - [X] Improve positioning of dynamic knowledge in prompt. (11/9/25)
 - [X] Make example dynamic knowledge entry not 100%. (11/9/25)
 - [X] shift 'character is thinking' to the left to align with other bubbles. (11/9/25)
+- [X] Add sequential dynamic knowledge. (11/10/25)
+- [X] Add periodic static knowledge gen; seems to be missing. (11/10/25)
+- [X] add field for story creator's note.
+- [X] add field for story tags
+- [X] Add possible fix for Android keyboard overlap.
+
 ## To Do
 - [ ] Investigate alternative character response formats
 - [ ] Properly incorporate Llama 3 syntax for koboldcpp
 - [ ] Implement thinking model support
 - [ ] Make the Event Master more customizable.
-- [ ] Add sequential dynamic knowledge.
 - [ ] Find a way to make local download *really* easy.
-- [ ] Improve reliability of static knowledge generation. Add periodic static knowledge gen; seems to be missing.
-- [ ] add field for story creator's note.
-- [ ] add field for story tags
+- [ ] Improve reliability of static knowledge generation.
 - [ ] adjust size of input field for knowledge in vertical format.
-- [ ] Fix keyboard overlap on Android.
-
 
 
 Try it now:
