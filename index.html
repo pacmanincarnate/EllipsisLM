@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Ellipsis LM</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     
     <!-- PWA and iOS Home Screen Support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -296,10 +295,18 @@ body.layout-vertical #chat-window-container { justify-content: center; border-ra
 body.layout-vertical #chat-window { width: 99%; }
 body.layout-vertical #character-portrait-container { display: none; }
 body.layout-vertical #chat-input-container { 
-    padding: 1rem; 
+    padding-top: 1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+
+    /* We use calc() to add your original 1rem padding
+      to the OS's reported safe-area-inset-bottom.
+      This is 0px on desktop but has a value on mobile.
+    */
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+
     border-top: 1px solid;
 	border-top-color: color-mix(in srgb, var(--chat-text-color) 50%, transparent);
-
 }
 
 /* Horizontal (Desktop) Layout Overrides */
@@ -711,7 +718,6 @@ const debounce = (func, wait) => { let timeout; return function(...args) { const
 const DBService = {
   db: null,
   DB_NAME: "EllipsisDB",
-  STORE_NAME: "characterImages",
   OPEN_TIMEOUT_MS: 3000, // soft guard so init can't hang the UI indefinitely
 
   /**
@@ -750,12 +756,29 @@ const DBService = {
           resolve(false);
         };
 
-        request.onupgradeneeded = (event) => {
+		request.onupgradeneeded = (event) => {
           try {
             const db = event.target.result;
-            if (!db.objectStoreNames.contains(this.STORE_NAME)) {
-              db.createObjectStore(this.STORE_NAME);
-              console.log("Object store created:", this.STORE_NAME);
+            
+            // 1. Create/check characterImages store
+            if (!db.objectStoreNames.contains("characterImages")) {
+              db.createObjectStore("characterImages");
+              console.log("Object store created: characterImages");
+            }
+
+            // 2. Create stories store (metadata)
+            // We will use the story 'id' (a UUID) as the keyPath.
+            // This tells IDB to use the 'id' field on the object as its primary key.
+            if (!db.objectStoreNames.contains("stories")) {
+              db.createObjectStore("stories", { keyPath: "id" });
+              console.log("Object store created: stories");
+            }
+
+            // 3. Create narratives store (heavy data)
+            // We will also use the narrative 'id' as the keyPath.
+            if (!db.objectStoreNames.contains("narratives")) {
+              db.createObjectStore("narratives", { keyPath: "id" });
+              console.log("Object store created: narratives");
             }
           } catch (e) {
             console.warn("onupgradeneeded failed (fail-soft):", e);
@@ -791,7 +814,7 @@ const DBService = {
    */
   async init() {
     if (this.db) return;
-    const ok = await this._open(1);
+    const ok = await this._open(2);
     if (!ok) {
       // Keep running without a DB; callers will no-op gracefully.
       return;
@@ -813,9 +836,9 @@ const DBService = {
   async saveImage(id, blob) {
     if (!(await this.ensure())) return false;
     return new Promise((resolve) => {
-      try {
-        const tx = this.db.transaction([this.STORE_NAME], "readwrite");
-        const store = tx.objectStore(this.STORE_NAME);
+		try {
+		  const tx = this.db.transaction(["characterImages"], "readwrite");
+		  const store = tx.objectStore("characterImages");
 
         tx.onabort = () => resolve(false);
         tx.onerror = () => resolve(false);
@@ -836,9 +859,9 @@ const DBService = {
   async getImage(id) {
     if (!(await this.ensure())) return null;
     return new Promise((resolve) => {
-      try {
-        const tx = this.db.transaction([this.STORE_NAME], "readonly");
-        const store = tx.objectStore(this.STORE_NAME);
+		try {
+		  const tx = this.db.transaction(["characterImages"], "readonly");
+		  const store = tx.objectStore("characterImages");
 
         tx.onabort = () => resolve(null);
         tx.onerror = () => resolve(null);
@@ -859,9 +882,9 @@ const DBService = {
   async deleteImage(id) {
     if (!(await this.ensure())) return false;
     return new Promise((resolve) => {
-      try {
-        const tx = this.db.transaction([this.STORE_NAME], "readwrite");
-        const store = tx.objectStore(this.STORE_NAME);
+		try {
+		  const tx = this.db.transaction(["characterImages"], "readwrite");
+		  const store = tx.objectStore("characterImages");
 
         tx.onabort = () => resolve(false);
         tx.onerror = () => resolve(false);
@@ -882,9 +905,9 @@ const DBService = {
   async clear() {
     if (!(await this.ensure())) return false;
     return new Promise((resolve) => {
-      try {
-        const tx = this.db.transaction([this.STORE_NAME], "readwrite");
-        const store = tx.objectStore(this.STORE_NAME);
+	try {
+	  const tx = this.db.transaction(["characterImages"], "readwrite");
+	  const store = tx.objectStore("characterImages");
 
         tx.onabort = () => resolve(false);
         tx.onerror = () => resolve(false);
@@ -911,7 +934,799 @@ const DBService = {
       this.db = null;
     }
   },
-}
+  // ===================================================================
+  // NEW CRUD METHODS FOR STORIES & NARRATIVES
+  // These are "dumb" functions. They only do one job, which is
+  // why we will build a StoryService to orchestrate them.
+  // ===================================================================
+
+  /**
+   * Saves or updates a single story object in the 'stories' store.
+   * @param {object} story - The story object (metadata only).
+   * @returns {Promise<boolean>} True on success, false on failure.
+   */
+  async saveStory(story) {
+    if (!(await this.ensure())) return false;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction(["stories"], "readwrite");
+        const store = tx.objectStore("stories");
+        // 'put' will add or update the record based on its keyPath ('id')
+        const req = store.put(story);
+        req.onsuccess = () => resolve(true);
+        req.onerror = (e) => {
+          console.warn("saveStory failed (fail-soft):", e.target.error);
+          resolve(false);
+        };
+        tx.onabort = () => resolve(false);
+        tx.onerror = () => resolve(false);
+      } catch (e) {
+        console.warn("saveStory threw (fail-soft):", e);
+        resolve(false);
+      }
+    });
+  },
+
+  /**
+   * Retrieves a single story by its ID.
+   * @param {string} storyId
+   * @returns {Promise<object|null>} The story object or null.
+   */
+  async getStory(storyId) {
+    if (!(await this.ensure())) return null;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction(["stories"], "readonly");
+        const store = tx.objectStore("stories");
+        const req = store.get(storyId);
+        req.onsuccess = () => resolve(req.result ?? null);
+        req.onerror = () => resolve(null);
+        tx.onabort = () => resolve(null);
+        tx.onerror = () => resolve(null);
+      } catch (e) {
+        console.warn("getStory threw (fail-soft):", e);
+        resolve(null);
+      }
+    });
+  },
+
+  /**
+   * Retrieves ALL stories from the 'stories' store.
+   * This is for the main library view.
+   * @returns {Promise<Array<object>>} An array of story objects.
+   */
+  async getAllStories() {
+    if (!(await this.ensure())) return [];
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction(["stories"], "readonly");
+        const store = tx.objectStore("stories");
+        const req = store.getAll(); // Efficiently gets all records
+        req.onsuccess = () => resolve(req.result ?? []);
+        req.onerror = () => resolve([]);
+        tx.onabort = () => resolve([]);
+        tx.onerror = () => resolve([]);
+      } catch (e) {
+        console.warn("getAllStories threw (fail-soft):", e);
+        resolve([]);
+      }
+    });
+  },
+
+  /**
+   * Deletes a single story by its ID.
+   * @param {string} storyId
+   * @returns {Promise<boolean>} True on success.
+   */
+  async deleteStory(storyId) {
+    if (!(await this.ensure())) return false;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction(["stories"], "readwrite");
+        const store = tx.objectStore("stories");
+        const req = store.delete(storyId);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+        tx.onabort = () => resolve(false);
+        tx.onerror = () => resolve(false);
+      } catch (e) {
+        console.warn("deleteStory threw (fail-soft):", e);
+        resolve(false);
+      }
+    });
+  },
+
+  /**
+   * Saves or updates a single narrative object in the 'narratives' store.
+   * @param {object} narrative - The narrative object (with chat history).
+   * @returns {Promise<boolean>} True on success.
+   */
+  async saveNarrative(narrative) {
+    if (!(await this.ensure())) return false;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction(["narratives"], "readwrite");
+        const store = tx.objectStore("narratives");
+        const req = store.put(narrative);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+        tx.onabort = () => resolve(false);
+        tx.onerror = () => resolve(false);
+      } catch (e) {
+        console.warn("saveNarrative threw (fail-soft):", e);
+        resolve(false);
+      }
+    });
+  },
+
+  /**
+   * Retrieves a single narrative by its ID.
+   * @param {string} narrativeId
+   * @returns {Promise<object|null>} The narrative object or null.
+   */
+  async getNarrative(narrativeId) {
+    if (!(await this.ensure())) return null;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction(["narratives"], "readonly");
+        const store = tx.objectStore("narratives");
+        const req = store.get(narrativeId);
+        req.onsuccess = () => resolve(req.result ?? null);
+        req.onerror = () => resolve(null);
+        tx.onabort = () => resolve(null);
+        tx.onerror = () => resolve(null);
+      } catch (e) {
+        console.warn("getNarrative threw (fail-soft):", e);
+        resolve(null);
+      }
+    });
+  },
+
+  /**
+   * Retrieves ALL narratives from the 'narratives' store.
+   * @returns {Promise<Array<object>>} An array of narrative objects.
+   */
+  async getAllNarratives() {
+    if (!(await this.ensure())) return [];
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction(["narratives"], "readonly");
+        const store = tx.objectStore("narratives");
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result ?? []);
+        req.onerror = () => resolve([]);
+        tx.onabort = () => resolve([]);
+        tx.onerror = () => resolve([]);
+      } catch (e) {
+        console.warn("getAllNarratives threw (fail-soft):", e);
+        resolve([]);
+      }
+    });
+  },
+
+  /**
+   * Deletes a single narrative by its ID.
+   * @param {string} narrativeId
+   * @returns {Promise<boolean>} True on success.
+   */
+  async deleteNarrative(narrativeId) {
+    if (!(await this.ensure())) return false;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction(["narratives"], "readwrite");
+        const store = tx.objectStore("narratives");
+        const req = store.delete(narrativeId);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+        tx.onabort = () => resolve(false);
+        tx.onerror = () => resolve(false);
+      } catch (e) {
+        console.warn("deleteNarrative threw (fail-soft):", e);
+        resolve(false);
+      }
+    });
+  },
+  
+  
+
+  /**
+   * A generic helper to get all [key, value] pairs from any store.
+   * We will use this to export all images.
+   * @param {string} storeName - The name of the object store.
+   * @returns {Promise<Array<[string, any]>>} An array of [key, value] tuples.
+   */
+  async getAllEntries(storeName) {
+    if (!(await this.ensure())) return [];
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction([storeName], "readonly");
+        const store = tx.objectStore(storeName);
+        const entries = [];
+        const req = store.openCursor();
+        
+        req.onsuccess = (event) => {
+          const cursor = event.target.result;
+          if (cursor) {
+            entries.push([cursor.key, cursor.value]);
+            cursor.continue();
+          } else {
+            resolve(entries);
+          }
+        };
+        req.onerror = () => resolve([]);
+        tx.onabort = () => resolve([]);
+        tx.onerror = () => resolve([]);
+      } catch (e) {
+        console.warn(`getAllEntries (${storeName}) threw (fail-soft):`, e);
+        resolve([]);
+      }
+    });
+  },
+
+  /**
+   * Clears all data from a specific object store.
+   * We will use this for a clean import.
+   * @param {string} storeName - The name of the object store to clear.
+   * @returns {Promise<boolean>} True on success.
+   */
+  async clearStore(storeName) {
+    if (!(await this.ensure())) return false;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction([storeName], "readwrite");
+        const store = tx.objectStore(storeName);
+        const req = store.clear();
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+        tx.onabort = () => resolve(false);
+        tx.onerror = () => resolve(false);
+      } catch (e) {
+        console.warn(`clearStore (${storeName}) threw (fail-soft):`, e);
+        resolve(false);
+      }
+    });
+  }
+};
+
+/**
+ * =================================================================================================
+ * [NEW] StoryService Module (The Data Abstraction Layer)
+ * =================================================================================================
+ * This module is the single source of truth for all complex data orchestration.
+ * The Controller calls this service, and this service calls DBService.
+ * This keeps all database logic in one place and out of the Controller.
+ */
+const StoryService = {
+
+    /**
+     * Loads the full data needed to start the application.
+     * Fetches all story stubs for the library AND the full data for the active session.
+     * @returns {Promise<object>} An object containing { storyStubs, activeStory, activeNarrative }
+     */
+    async loadApplicationData() {
+        console.log("StoryService: Loading application data...");
+        // 1. Get the list of story stubs for the library view
+        const storyStubs = await DBService.getAllStories();
+        
+        // 2. Get the active session IDs from localStorage
+        const activeStoryId = localStorage.getItem('active_story_id');
+        const activeNarrativeId = localStorage.getItem('active_narrative_id');
+        
+        let activeStory = null;
+        let activeNarrative = null;
+
+        // 3. If there is an active session, fetch the FULL data for it
+        if (activeStoryId && activeNarrativeId) {
+            console.log(`StoryService: Found active session. Story: ${activeStoryId}, Narrative: ${activeNarrativeId}`);
+            // We get these in parallel for speed
+            const storyPromise = DBService.getStory(activeStoryId);
+            const narrativePromise = DBService.getNarrative(activeNarrativeId);
+            
+            const [story, narrative] = await Promise.all([storyPromise, narrativePromise]);
+            
+            if (story && narrative) {
+                activeStory = story;
+                activeNarrative = narrative;
+            } else {
+                // Data mismatch (e.g., story exists but narrative was deleted)
+                // Clear the bad IDs to prevent a broken state
+                console.warn("StoryService: Active session data mismatch. Clearing active IDs.");
+                localStorage.removeItem('active_story_id');
+                localStorage.removeItem('active_narrative_id');
+            }
+        } else {
+            console.log("StoryService: No active session found.");
+        }
+        
+        return { storyStubs, activeStory, activeNarrative };
+    },
+
+    /**
+     * Saves the entire active state by splitting it into its
+     * respective database tables ('stories' and 'narratives').
+     * @param {object} currentState - The full activeNarrativeState object from StateManager.
+     * @param {Array<object>} narrativeStubs - The current list of stubs for this story.
+     */
+    async saveActiveState(currentState, narrativeStubs) {
+        if (!currentState || !currentState.id || !currentState.narrativeId) {
+            console.warn("StoryService: saveActiveState skipped (invalid state).");
+            return; 
+        }
+
+        // 1. Create the 'story' object (metadata)
+        // This object contains all story-level settings and data.
+        const storyData = {
+            id: currentState.id,
+            name: currentState.name,
+            last_modified: new Date().toISOString(),
+            created_date: currentState.created_date,
+            creator_notes: currentState.creator_notes,
+            tags: currentState.tags,
+            // UI settings
+            font: currentState.font,
+            backgroundImageURL: currentState.backgroundImageURL,
+            bubbleOpacity: currentState.bubbleOpacity,
+            chatTextColor: currentState.chatTextColor,
+            characterImageMode: currentState.characterImageMode,
+            backgroundBlur: currentState.backgroundBlur,
+            textSize: currentState.textSize,
+            bubbleImageSize: currentState.bubbleImageSize,
+            // Prompts
+            system_prompt: currentState.system_prompt,
+            event_master_base_prompt: currentState.event_master_base_prompt,
+            event_master_prompt: currentState.event_master_prompt, 
+            prompt_persona_gen: currentState.prompt_persona_gen,
+            prompt_world_map_gen: currentState.prompt_world_map_gen,
+            prompt_location_gen: currentState.prompt_location_gen,
+            prompt_entry_gen: currentState.prompt_entry_gen,
+            prompt_location_memory_gen: currentState.prompt_location_memory_gen,
+            // Story-level Data
+            characters: currentState.characters,
+            dynamic_entries: currentState.dynamic_entries,
+            scenarios: currentState.scenarios,
+            // We MUST store the list of narrative stubs
+            narratives: narrativeStubs || []
+        };
+
+        // 2. Create the 'narrative' object (heavy data)
+        // This contains only the data for this specific chat session.
+        const narrativeData = {
+            id: currentState.narrativeId,
+            name: currentState.narrativeName,
+            last_modified: new Date().toISOString(),
+            // The 'state' property holds the heavy chat history and map
+            state: {
+                chat_history: currentState.chat_history,
+                messageCounter: currentState.messageCounter,
+                static_entries: currentState.static_entries,
+                worldMap: currentState.worldMap
+            }
+        };
+
+        // 3. Save both to IDB in parallel
+        await Promise.all([
+            DBService.saveStory(storyData),
+            DBService.saveNarrative(narrativeData)
+        ]);
+    },
+
+    /**
+     * Creates the very first story and narrative for a new user.
+     * @returns {Promise<object>} { newStory, newNarrative }
+     */
+    async createDefaultStoryAndNarrative() {
+        // 1. Create the Story object (metadata)
+        const newStory = {
+            id: UTILITY.uuid(), name: "My First Story", last_modified: new Date().toISOString(), created_date: new Date().toISOString(),
+            ...UTILITY.getDefaultApiSettings(), ...UTILITY.getDefaultUiSettings(), ...UTILITY.getDefaultSystemPrompts(), ...UTILITY.getDefaultStorySettings(),
+            characters: [
+                { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags:[], is_narrator: false }, 
+                { id: UTILITY.uuid(), name: "Narrator", description: "Describes the world.", short_description: "The storyteller.", model_instructions: "Act as a world-class storyteller.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags:[], color: { base: '#334155', bold: '#94a3b8' }, is_narrator: true }
+            ], 
+            dynamic_entries: [{id: UTILITY.uuid(), title: "Example Lorebook Entry", triggers: "example, .01%", content_fields: ["This is a sample dynamic lore entry."], current_index: 0, triggered_at_turn: null }],
+            scenarios: [{ id: UTILITY.uuid(), name: "Default Start", message: "The story begins..." }],
+            narratives: [] // This will be populated with a stub
+        };
+        
+        // 2. Create the Narrative object (heavy data)
+        const defaultScenario = newStory.scenarios[0];
+        const newNarrative = {
+            id: UTILITY.uuid(), name: `${defaultScenario.name} - Chat`, last_modified: new Date().toISOString(),
+            state: {
+                chat_history: [], messageCounter: 0,
+                static_entries: [{ id: UTILITY.uuid(), title: "World Overview", content: "A high-fantasy world." }],
+                worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
+            }
+        };
+        
+        // 3. Add first message to narrative
+        const firstSpeaker = newStory.characters.find(c => !c.is_user);
+        newNarrative.state.chat_history.push({
+            character_id: firstSpeaker.id, content: defaultScenario.message, type: 'chat', emotion: 'neutral', timestamp: new Date().toISOString(),
+        });
+        newNarrative.state.messageCounter = 1;
+
+        // 4. Add the narrative stub to the story's list
+        newStory.narratives.push({ id: newNarrative.id, name: newNarrative.name });
+
+        // 5. Save both to IndexedDB
+        await DBService.saveStory(newStory);
+        await DBService.saveNarrative(newNarrative);
+        
+        // 6. Return the new objects
+        return { newStory, newNarrative };
+    },
+
+    /**
+     * Creates a new, blank story and saves it to the database.
+     * @returns {Promise<object>} The new story object (stub).
+     */
+    async createNewStory() {
+        const newStory = {
+            id: UTILITY.uuid(), name: "New Story", last_modified: new Date().toISOString(), created_date: new Date().toISOString(),
+            ...UTILITY.getDefaultApiSettings(), ...UTILITY.getDefaultUiSettings(), ...UTILITY.getDefaultSystemPrompts(), ...UTILITY.getDefaultStorySettings(),
+            search_index: "new story",
+            characters: [
+                { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags:[], is_narrator: false }, 
+                { id: UTILITY.uuid(), name: "Narrator", description: "Describes the world.", short_description: "The storyteller.", model_instructions: "Act as a world-class storyteller.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags:[], color: { base: '#334155', bold: '#94a3b8' }, is_narrator: true }
+            ], 
+            dynamic_entries: [{id: UTILITY.uuid(), title: "Example Lorebook Entry", triggers: "example, 100%", content_fields: ["This is a sample dynamic lore entry."], current_index: 0, triggered_at_turn: null }],
+            scenarios: [{ id: UTILITY.uuid(), name: "Default Start", message: "The story begins..." }],
+            narratives: [] // No narratives created by default
+        };
+        
+        await DBService.saveStory(newStory);
+        return newStory;
+    },
+
+    /**
+     * Deletes a story and ALL its associated data (narratives, images).
+     * This is the orchestration logic.
+     * @param {string} storyId - The ID of the story to delete.
+     */
+    async deleteStory(storyId) {
+        // 1. Get the story object to find its children
+        const story = await DBService.getStory(storyId);
+        if (!story) return; // Story already deleted
+
+        // 2. Delete all associated Narratives
+        const deleteNarrativePromises = (story.narratives || []).map(n_stub => 
+            DBService.deleteNarrative(n_stub.id)
+        );
+        
+        // 3. Delete all associated Images
+        const deleteImagePromises = (story.characters || []).map(c => {
+            // Delete base image
+            const baseDelete = DBService.deleteImage(c.id);
+            // Delete all emotion images
+            const emotionDeletes = (c.extra_portraits || []).map(p => {
+                const emoKey = `${c.id}::emotion::${p.emotion}`;
+                return DBService.deleteImage(emoKey);
+            });
+            return Promise.all([baseDelete, ...emotionDeletes]);
+        });
+        
+        // TODO: Also delete "locationImages" if you implement that
+
+        // 4. Wait for all children to be deleted
+        await Promise.all([...deleteNarrativePromises, ...deleteImagePromises]);
+
+        // 5. Delete the Story itself
+        await DBService.deleteStory(storyId);
+    },
+
+    /**
+     * Deletes just one narrative from the database and updates its parent story.
+     * @param {string} storyId - The parent story ID.
+     * @param {string} narrativeId - The narrative to delete.
+     * @returns {Promise<object>} The updated story object.
+     */
+    async deleteNarrative(storyId, narrativeId) {
+        // 1. Get the parent story
+        const story = await DBService.getStory(storyId);
+        if (!story) throw new Error("Parent story not found.");
+
+        // 2. Delete the narrative itself from its store
+        await DBService.deleteNarrative(narrativeId);
+        
+        // 3. Update the parent story's list of narrative stubs
+        story.narratives = story.narratives.filter(n => n.id !== narrativeId);
+        
+        // 4. Save the updated story
+        await DBService.saveStory(story);
+        return story; // Return the updated story
+    },
+
+    /**
+     * Creates a new narrative from a scenario and saves all data.
+     * @param {string} storyId
+     * @param {string} scenarioId
+     * @returns {Promise<object>} The newly created (and saved) narrative object.
+     */
+    async createNarrativeFromScenario(storyId, scenarioId) {
+        // 1. Get the full story
+        const story = await DBService.getStory(storyId);
+        if (!story) throw new Error("Story not found");
+        
+        // 2. Find the scenario to use as a template
+        const scenario = story.scenarios.find(sc => sc.id === scenarioId);
+        if (!scenario) throw new Error("Scenario not found");
+
+        // 3. Create the new full narrative object
+        const newNarrative = {
+            id: UTILITY.uuid(),
+            name: `${scenario.name} - Chat`,
+            last_modified: new Date().toISOString(),
+            state: {
+                chat_history: [],
+                messageCounter: 0,
+                // Deep copy state from scenario if it exists
+                static_entries: scenario.static_entries ? JSON.parse(JSON.stringify(scenario.static_entries)) : [{ id: UTILITY.uuid(), title: "World Overview", content: "A high-fantasy world." }],
+                worldMap: scenario.worldMap ? JSON.parse(JSON.stringify(scenario.worldMap)) : { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
+            }
+        };
+
+        // 4. Add the first message from the scenario
+        const firstMessage = scenario.message;
+        if (firstMessage) {
+            const firstSpeaker = story.characters.find(c => !c.is_user && c.is_active);
+            if (firstSpeaker) {
+                newNarrative.state.chat_history.push({
+                    character_id: firstSpeaker.id, content: firstMessage, type: 'chat',
+                    emotion: 'neutral', timestamp: new Date().toISOString(), isNew: true
+                });
+                newNarrative.state.messageCounter = 1;
+            }
+        }
+        
+        // 5. Save the new narrative to its store
+        await DBService.saveNarrative(newNarrative);
+        
+        // 6. Add the *stub* of the new narrative to the story's list
+        story.narratives.push({ id: newNarrative.id, name: newNarrative.name });
+        
+        // 7. Save the updated story
+        await DBService.saveStory(story);
+        
+        return newNarrative; // Return the new narrative
+    },
+
+    /**
+     * Updates a single field on a story object (e.g., name, tags).
+     * @param {string} storyId
+     * @param {string} field - The key to update (e.g., 'name', 'creator_notes')
+     * @param {*} value - The new value.
+     * @returns {Promise<object>} The updated story object.
+     */
+    async updateStoryField(storyId, field, value) {
+        // 1. Get the full story object
+        const story = await DBService.getStory(storyId);
+        if (!story) throw new Error("Story not found.");
+
+        // 2. Update the field
+        story[field] = value;
+        story.last_modified = new Date().toISOString();
+        
+        // 3. Save the updated story back to the DB
+        await DBService.saveStory(story);
+        return story;
+    },
+
+    /**
+     * Exports the entire library (all stories, narratives, and images)
+     * from IndexedDB into a single ZIP file.
+     * @returns {Promise<Blob>} A promise that resolves with the ZIP blob.
+     */
+    async exportLibraryAsZip() {
+        console.log("StoryService: Starting library export...");
+        const zip = new JSZip();
+        
+        // 1. Create folders in the zip
+        const dataFolder = zip.folder("data");
+        const imageFolder = zip.folder("images");
+
+        // 2. Get all data from IndexedDB
+        const stories = await DBService.getAllStories();
+        const narratives = await DBService.getAllNarratives();
+        const images = await DBService.getAllEntries("characterImages"); 
+        // TODO: Also get "locationImages" from their store if you add one
+        // const locationImages = await DBService.getAllEntries("locationImages");
+
+        // 3. Add JSON data to the zip
+        dataFolder.file("stories.json", JSON.stringify(stories, null, 2));
+        dataFolder.file("narratives.json", JSON.stringify(narratives, null, 2));
+        
+        // 4. Add all images to the zip
+        if (images.length > 0) {
+          images.forEach(([key, blob]) => {
+            // The key (e.g., character ID) becomes the filename
+            imageFolder.file(key, blob);
+          });
+        }
+        // if (locationImages.length > 0) { ... }
+
+        console.log(`StoryService: Exporting ${stories.length} stories, ${narratives.length} narratives, and ${images.length} images.`);
+
+        // 5. Generate the final ZIP blob
+        return zip.generateAsync({
+          type: "blob",
+          compression: "DEFLATE",
+          compressionOptions: {
+            level: 6 // A good balance of speed and size
+          }
+        });
+    },
+
+    /**
+     * Imports a library from a ZIP file, completely replacing the
+     * existing library in IndexedDB.
+     * @param {File} file - The .zip file to import.
+     * @returns {Promise<void>}
+     */
+    async importLibraryFromZip(file) {
+        console.log("StoryService: Starting library import from ZIP...");
+        
+        // 1. Load the ZIP file
+        const zip = await JSZip.loadAsync(file);
+
+        // 2. Clear all existing data from the database
+        // We run these in parallel for speed
+        await Promise.all([
+          DBService.clearStore("stories"),
+          DBService.clearStore("narratives"),
+          DBService.clearStore("characterImages")
+          // TODO: Also clear "locationImages"
+        ]);
+        console.log("StoryService: Existing database cleared.");
+
+        // 3. Import JSON data
+        // --- Import Stories ---
+        const storiesFile = zip.file("data/stories.json");
+        if (storiesFile) {
+          const stories = JSON.parse(await storiesFile.async("string"));
+          // Save each story one by one. Promise.all is fastest.
+          await Promise.all(stories.map(story => DBService.saveStory(story)));
+          console.log(`StoryService: Imported ${stories.length} stories.`);
+        }
+
+        // --- Import Narratives ---
+        const narrativesFile = zip.file("data/narratives.json");
+        if (narrativesFile) {
+          const narratives = JSON.parse(await narrativesFile.async("string"));
+          await Promise.all(narratives.map(narrative => DBService.saveNarrative(narrative)));
+          console.log(`StoryService: Imported ${narratives.length} narratives.`);
+        }
+
+        // 4. Import Images
+        const imageFolder = zip.folder("images");
+        if (imageFolder) {
+          const imageFiles = [];
+          imageFolder.forEach((relativePath, file) => {
+            // relativePath is the filename (e.g., character ID)
+            imageFiles.push({ key: relativePath, file: file });
+          });
+
+          // Process them all in parallel
+          await Promise.all(imageFiles.map(async (img) => {
+            const blob = await img.file.async("blob");
+            // The key is the filename, which is our ID
+            await DBService.saveImage(img.key, blob);
+          }));
+          console.log(`StoryService: Imported ${imageFiles.length} images.`);
+        }
+        
+        console.log("StoryService: Library import complete.");
+    },
+
+    /**
+     * Builds a context string for a story, fetching data as needed.
+     * This is used by AI generation functions.
+     * @param {string} storyId
+     * @returns {Promise<string>} The context string.
+     */
+    async buildStoryContext(storyId) {
+        // 1. Get the full story object
+        const story = await DBService.getStory(storyId);
+        if (!story) return "No story found.";
+
+        let context = `Story Name: ${story.name}\n`;
+        context += `Creator's Note: ${story.creator_notes || 'N/A'}\n`;
+
+        // 2. Add character data
+        context += "Characters:\n";
+        (story.characters || []).forEach(c => {
+            context += `- ${c.name}: ${c.short_description}\n`;
+        });
+        
+        // 3. Get sample lore from the *first narrative*
+        if (story.narratives && story.narratives.length > 0) {
+            // Fetch the full narrative object from its store
+            const firstNarrative = await DBService.getNarrative(story.narratives[0].id);
+            if (firstNarrative && firstNarrative.state) {
+                context += "\nWorld Lore (Sample):\n";
+                (firstNarrative.state.static_entries || []).slice(0, 5).forEach(e => {
+                    context += `- ${e.title}: ${e.content.substring(0, 100)}...\n`;
+                });
+            }
+        }
+        
+        // 4. Add dynamic lore
+        if (story.dynamic_entries && story.dynamic_entries.length > 0) {
+            context += "\nDynamic Lore (Sample):\n";
+            story.dynamic_entries.slice(0, 5).forEach(e => {
+                context += `- ${e.title} (Triggers: ${e.triggers})\n`;
+            });
+        }
+        return context;
+    },
+
+    /**
+     * Runs the silent static update agent.
+     * @param {string} narrativeId - The active narrative to scan.
+     * @param {Array<object>} existingStaticEntries - The current list of static entries.
+     * @param {Array<object>} characters - The list of characters.
+     * @returns {Promise<number>} The number of new entries added.
+     */
+    async runSilentStaticUpdate(narrativeId, existingStaticEntries, characters) {
+        // 1. Get the full narrative data
+        const narrative = await DBService.getNarrative(narrativeId);
+        if (!narrative || !narrative.state) {
+            console.warn("Silent update skipped: No active narrative data.");
+            return 0;
+        }
+
+        // 2. Get last 20 messages (approx 10 user turns)
+        const recentChat = (narrative.state.chat_history || [])
+            .filter(m => m.type === 'chat')
+            .slice(-20);
+
+        if (recentChat.length < 1) {
+            console.log("Silent update skipped: No recent chat.");
+            return 0;
+        }
+
+        // 3. Build the transcript
+        let chatTranscript = "";
+        recentChat.forEach(msg => {
+            const c = (characters || []).find(i => i.id === msg.character_id);
+            if (c) chatTranscript += `${c.name}: ${msg.content}\n`;
+        });
+
+        // 4. Build the prompt
+        const prompt = `
+You are an AI Archivist. Your job is to read a chat transcript and identify NEW facts, character developments, or world-building details that are NOT already covered in the existing static knowledge.
+Respond with a valid JSON object: { "new_entries": [{"title": "A concise title", "content": "A detailed paragraph summarizing the new fact."}] } or { "new_entries": [] } if nothing new was established.
+
+EXISTING STATIC KNOWLEDGE (Do NOT repeat info from here):
+${JSON.stringify(existingStaticEntries.map(e => e.title))}
+
+CHAT TRANSCRIPT:
+${chatTranscript}
+
+Respond with JSON:
+`;
+        // 5. Call the AI
+        const updatesJson = await APIService.callAI(prompt, true);
+        const updates = JSON.parse(updatesJson);
+
+        // 6. Process the results
+        if (updates.new_entries && updates.new_entries.length > 0) {
+            let addedCount = 0;
+            updates.new_entries.forEach(item => {
+                // Check for duplicates
+                if (item.title && !existingStaticEntries.some(e => e.title.toLowerCase() === item.title.toLowerCase())) {
+                    existingStaticEntries.push({ id: UTILITY.uuid(), ...item });
+                    addedCount++;
+                }
+            });
+            // The calling function (Controller) is responsible for saving the state
+            return addedCount;
+        }
+        return 0; // No new entries
+    },
+
+}; // <-- This is the final closing brace for StoryService	
+
 
 
 /**
@@ -939,8 +1754,9 @@ data: {
     },
 
     CONSTANTS: {
-        LIBRARY_KEY: 'aiStorytellerLibrary',
 		GLOBAL_SETTINGS_KEY: 'aiStorytellerGlobalSettings',
+		ACTIVE_STORY_ID_KEY: 'active_story_id',
+        ACTIVE_NARRATIVE_ID_KEY: 'active_narrative_id',
     },
 
 /**
@@ -992,143 +1808,89 @@ data: {
      * Performs data migration for older story formats to ensure compatibility.
      * This is the first step in the application's data lifecycle.
      */
-    loadLibrary() {
-        const savedLibraryJSON = localStorage.getItem(this.CONSTANTS.LIBRARY_KEY);
-        if (savedLibraryJSON) {
-            try {
-                let parsedLibrary = JSON.parse(savedLibraryJSON);
+	async loadLibrary() {
+        // 1. Load non-story global settings (e.g., API keys)
+        this.loadGlobalSettings();
 
-                // Define default settings for migration purposes using the new UTILITY module.
-                const defaults = {
-                    ...UTILITY.getDefaultApiSettings(),
-                    ...UTILITY.getDefaultUiSettings(),
-                    ...UTILITY.getDefaultSystemPrompts(),
+        try {
+            // 2. Call the StoryService to get all data
+            const { storyStubs, activeStory, activeNarrative } = await StoryService.loadApplicationData();
+
+            // 3. Populate the in-memory library with story stubs
+            this.data.library.stories = storyStubs || [];
+            this.data.library.active_story_id = activeStory ? activeStory.id : null;
+            this.data.library.active_narrative_id = activeNarrative ? activeNarrative.id : null;
+
+            // 4. Populate the activeNarrativeState if data was returned
+            if (activeStory && activeNarrative) {
+                this.data.activeNarrativeState = {
+                    ...activeStory,                // Story settings
+                    ...this.data.globalSettings,   // Global settings
+                    ...activeNarrative.state,      // Narrative state (chat history, etc)
+                    narrativeId: activeNarrative.id, // <-- Store the narrative ID
+                    narrativeName: activeNarrative.name
                 };
 
-                // Migrate each story to the latest format, adding new fields if they don't exist.
-                parsedLibrary.stories = (parsedLibrary.stories || []).map(story => {
-                    const newStory = { ...defaults, ...story };
-
-                    if (newStory.characters) {
-                        newStory.characters = newStory.characters.map(char => {
-                            const newChar = { ...char };
-                            if (typeof char.short_description === 'undefined') {
-                                newChar.short_description = char.is_user ? "The main character." : "A brief summary of the character.";
-                            }
-                            if (typeof char.model_instructions === 'undefined') {
-                                if (char.is_user) {
-                                    newChar.model_instructions = "Write a response for {character} in a creative and descriptive style.";
-                                } else {
-                                    newChar.model_instructions = newStory.system_prompt || "Act as {character}. Be descriptive and engaging.";
-                                }
-                            }
-                            if (typeof newChar.is_narrator === 'undefined') {
-                                newChar.is_narrator = false;
-                            }
-                            if (typeof char.color === 'string') {
-                                newChar.color = { base: char.color, bold: '#FFFFFF' }; 
-                            }
-                            return newChar;
-                        });
-                    }
-                    
-                    // [MIGRATION] Ensure world map data exists and is valid
-                    (newStory.narratives || []).forEach(narrative => {
-                        if (narrative.state && (!narrative.state.worldMap || !narrative.state.worldMap.grid || narrative.state.worldMap.grid.length === 0)) {
-                            narrative.state.worldMap = { 
-                                grid: UTILITY.createDefaultMapGrid(), 
-                                currentLocation: { x: 4, y: 4 }, 
-                                destination: { x: null, y: null }, 
-                                path: [] 
-                            };
-                        }
-                    });
-					
-					// <-- START: Optional Cleanup -->
-                    // You can also delete the old keys from the story data to clean it up.
-					const modelKeys = Object.keys(UTILITY.getDefaultApiSettings());
-					modelKeys.forEach(key => delete newStory[key]);
-					
-                    return newStory;
-                });
- 
-                this.data.library = parsedLibrary;
-                if (!this.data.library.tag_cache) this.data.library.tag_cache = [];
-                if (!this.data.library.active_narrative_id) this.data.library.active_narrative_id = null;
-
-            } catch (error) {
-                console.error("Failed to parse library from localStorage.", error);
-                this.data.library = { active_story_id: null, active_narrative_id: null, stories: [], tag_cache: [] };
+                // [MIGRATION] Keep your existing migration check
+                // any loaded narrative has a valid world map.
+                if (!this.data.activeNarrativeState.worldMap || !this.data.activeNarrativeState.worldMap.grid || this.data.activeNarrativeState.worldMap.grid.length === 0) {
+                     this.data.activeNarrativeState.worldMap = { 
+                        grid: UTILITY.createDefaultMapGrid(), 
+                        currentLocation: { x: 4, y: 4 }, 
+                        destination: { x: null, y: null }, 
+                        path: [] 
+                    };
+                }
+            } else {
+                this.data.activeNarrativeState = {};
             }
-        } else {
-            this.data.library = { active_story_id: null, active_narrative_id: null, stories: [], tag_cache: [] };
+        } catch (error) {
+            console.error("Failed to load application data.", error);
+            this.data.library = { stories: [], tag_cache: [] };
+            this.data.activeNarrativeState = {};
         }
 		
-		this.loadGlobalSettings();
+		// 5. Rebuild tag cache (this logic is fine, just remove save)
+        this.updateTagCache(); 
     },
     
     /**
-     * Persists the current state of the entire library to localStorage.
-     * This should be called after any significant data mutation.
+     * Persists the *active session IDs* to localStorage.
+     * The full state is saved via saveState().
      */
     saveLibrary() {
-        localStorage.setItem(this.CONSTANTS.LIBRARY_KEY, JSON.stringify(this.data.library));
+        try {
+            // This function now ONLY saves the active session IDs
+            localStorage.setItem(this.CONSTANTS.ACTIVE_STORY_ID_KEY, this.data.library.active_story_id);
+            localStorage.setItem(this.CONSTANTS.ACTIVE_NARRATIVE_ID_KEY, this.data.library.active_narrative_id);
+        } catch (e) {
+            console.error("Failed to save active session IDs to localStorage.", e);
+        }
     },
     
     /**
-     * Loads the currently active narrative into the `activeNarrativeState`.
+     * Loads the active narrative. This is now just a helper
+     * to set the active IDs and reload the page.
      */
     loadActiveNarrative() {
-        const { active_story_id, active_narrative_id, stories } = this.data.library;
+        // The *actual* loading happens in loadLibrary() on page init.
+        // This function's job is to set the IDs and trigger that reload.
+        const { active_story_id, active_narrative_id } = this.data.library;
         
         if (!active_story_id || !active_narrative_id) {
             this.data.activeNarrativeState = {};
             return;
         }
         
-        const activeStory = stories.find(s => s.id === active_story_id);
-        if (!activeStory) {
-            this.data.activeNarrativeState = {};
-            return;
-        }
-        
-        const activeNarrative = (activeStory.narratives || []).find(n => n.id === active_narrative_id);
-        if (activeNarrative) {
-            const storySettings = { ...activeStory };
-            delete storySettings.narratives;
-            delete storySettings.scenarios;
-			
-			// <-- START: Remove old model keys from story settings -->
-            const modelKeys = Object.keys(UTILITY.getDefaultApiSettings());
-            modelKeys.forEach(key => delete storySettings[key]);
-            // <-- END: Remove old model keys -->
-            
-            this.data.activeNarrativeState = {
-                ...storySettings,
-				...this.data.globalSettings,
-                ...activeNarrative.state,
-                narrativeName: activeNarrative.name
-            };
-
-            // [MIGRATION] Ensure loaded narrative has a valid world map.
-            if (!this.data.activeNarrativeState.worldMap || !this.data.activeNarrativeState.worldMap.grid || this.data.activeNarrativeState.worldMap.grid.length === 0) {
-                 this.data.activeNarrativeState.worldMap = { 
-                    grid: UTILITY.createDefaultMapGrid(), 
-                    currentLocation: { x: 4, y: 4 }, 
-                    destination: { x: null, y: null }, 
-                    path: [] 
-                };
-            }
-
-        } else {
-            this.data.activeNarrativeState = {};
-        }
+        // This is the only part that's still relevant
+        localStorage.setItem(this.CONSTANTS.ACTIVE_STORY_ID_KEY, active_story_id);
+        localStorage.setItem(this.CONSTANTS.ACTIVE_NARRATIVE_ID_KEY, active_narrative_id);
     },
 
     /**
-     * Saves the `activeNarrativeState` back into the library.
+     * Saves the `activeNarrativeState` back into IndexedDB via the StoryService.
      */
-    saveState() {
+    async saveState() {
         const { active_story_id, active_narrative_id, stories } = this.data.library;
         const currentState = this.data.activeNarrativeState;
 
@@ -1136,52 +1898,22 @@ data: {
             console.warn("Attempted to save state without an active story/narrative.");
             return;
         }
-        
-        const activeStory = stories.find(s => s.id === active_story_id);
-        if (activeStory) {
-            const narrativeIndex = (activeStory.narratives || []).findIndex(n => n.id === active_narrative_id);
-            if (narrativeIndex !== -1) {
-                const narrativeState = {
-                    chat_history: currentState.chat_history,
-                    messageCounter: currentState.messageCounter,
-                    static_entries: currentState.static_entries,
-                    worldMap: currentState.worldMap
-                };
-                
-                activeStory.narratives[narrativeIndex].state = narrativeState;
-                activeStory.narratives[narrativeIndex].name = currentState.narrativeName; // Save narrative name
-                activeStory.narratives[narrativeIndex].last_modified = new Date().toISOString();
-                
-                activeStory.characters = currentState.characters;
-                activeStory.dynamic_entries = currentState.dynamic_entries;
-                activeStory.font = currentState.font;
-                activeStory.backgroundImageURL = currentState.backgroundImageURL;
-                activeStory.bubbleOpacity = currentState.bubbleOpacity;
-                activeStory.chatTextColor = currentState.chatTextColor;
-                activeStory.characterImageMode = currentState.characterImageMode;
-                activeStory.backgroundBlur = currentState.backgroundBlur;
-                activeStory.textSize = currentState.textSize;
-                activeStory.bubbleImageSize = currentState.bubbleImageSize;
-                activeStory.system_prompt = currentState.system_prompt;
-                activeStory.event_master_base_prompt = currentState.event_master_base_prompt;
-                activeStory.event_master_prompt = currentState.event_master_prompt;
-                //activeStory.apiProvider = currentState.apiProvider;
-                //activeStory.geminiApiKey = currentState.geminiApiKey;
-                //activeStory.openRouterKey = currentState.openRouterKey;
-                //activeStory.openRouterModel = currentState.openRouterModel;
-                //activeStory.koboldcpp_template = currentState.koboldcpp_template;
-                //activeStory.koboldcpp_min_p = currentState.koboldcpp_min_p;
-                //activeStory.koboldcpp_dry = currentState.koboldcpp_dry;
 
-                activeStory.prompt_persona_gen = currentState.prompt_persona_gen;
-                activeStory.prompt_world_map_gen = currentState.prompt_world_map_gen;
-                activeStory.prompt_location_gen = currentState.prompt_location_gen;
-                activeStory.prompt_entry_gen = currentState.prompt_entry_gen;
-                activeStory.prompt_location_memory_gen = currentState.prompt_location_memory_gen;
+        try {
+            // Find the narrative stubs for the current story
+            const storyStubs = (stories.find(s => s.id === active_story_id) || {}).narratives || [];
+            
+            // Pass the full state and the stubs to the service
+            await StoryService.saveActiveState(currentState, storyStubs);
 
-                activeStory.last_modified = new Date().toISOString();
-                this.saveLibrary();
+            // Update the in-memory library list's last_modified date
+            const storyInLibrary = this.data.library.stories.find(s => s.id === active_story_id);
+            if (storyInLibrary) {
+                storyInLibrary.last_modified = new Date().toISOString();
             }
+
+        } catch (e) {
+            console.error("Failed to save state via StoryService:", e);
         }
     },
 
@@ -1192,6 +1924,7 @@ data: {
         const allTags = new Set();
         this.data.library.stories.forEach(story => {
             if (story.tags) story.tags.forEach(tag => allTags.add(tag));
+            // We can still scan characters, as they are part of the story stub
             if (story.characters) {
                 story.characters.forEach(char => {
                     if (char.tags) char.tags.forEach(tag => allTags.add(tag));
@@ -1199,7 +1932,7 @@ data: {
             }
         });
         this.data.library.tag_cache = Array.from(allTags).sort();
-        this.saveLibrary();
+        // REMOVED saveLibrary() call. This is just an in-memory cache.
     },
 };
 
@@ -1348,6 +2081,13 @@ const UTILITY = {
             backgroundBlur: 5, textSize: 16, bubbleImageSize: 100,
         };
     },
+	
+	getDefaultStorySettings() {
+        return {
+            creator_notes: "",
+            tags: [],
+        };
+    },
     getDefaultSystemPrompts() {
         return {
             system_prompt: 'You are a master storyteller. Follow instructions precisely.',
@@ -1357,7 +2097,9 @@ const UTILITY = {
             prompt_world_map_gen: "Based on the following story context, generate a genre-appropriate 8x8 grid of interconnected fantasy locations. The central location (4,4) should be a neutral starting point. Attempt to include locations mentioned in the context.\nCONTEXT:\nCHARACTERS:\n{characters}\n\nSTATIC LORE:\n{static}\n\nRECENT EVENTS:\n{recent}\n\nRespond with a valid JSON object: { \"grid\": [ { \"coords\": {\"x\":int, \"y\":int}, \"name\": \"string\", \"description\": \"string (one-line summary)\", \"prompt\": \"string (a rich, detailed paragraph for the AI)\", \"imageUrl\": \"\" } ] }. The grid must contain exactly 64 locations.",
             prompt_location_gen: "Generate a rich, detailed, and evocative paragraph-long prompt for a fantasy location named '{name}' which is briefly described as '{description}'. This prompt will be given to an AI storyteller to describe the scene.",
             prompt_entry_gen: "Generate a detailed and informative encyclopedia-style entry for a lore topic titled '{title}'. If relevant, use the following triggers as context: '{triggers}'.",
-            prompt_location_memory_gen: "You are an archivist. Read the following chat transcript that occurred at a specific location. Summarize the key events, character developments, and important facts into a concise, single paragraph. This will serve as a memory for what happened at that location.\n\nTRANSCRIPT:\n{transcript}"
+            prompt_location_memory_gen: "You are an archivist. Read the following chat transcript that occurred at a specific location. Summarize the key events, character developments, and important facts into a concise, single paragraph. This will serve as a memory for what happened at that location.\n\nTRANSCRIPT:\n{transcript}",
+			prompt_story_notes_gen: "Based on the following story context (characters, lore), generate a brief, 1-2 sentence creator's note or 'blurb' for this story to show in a library.\n\nCONTEXT:\n{context}",
+            prompt_story_tags_gen: "Based on the following story context (characters, lore), generate 3-5 relevant, one-word, comma-separated tags for this story (e.g., fantasy, sci-fi, mystery, horror, romance).\n\nCONTEXT:\n{context}"
         };
     },
     createDefaultMapGrid() {
@@ -2102,6 +2844,7 @@ async exportStoryAsBYAF(story, narrative, primaryCharId) {
 		const aiChar = {
 			id: UTILITY.uuid(),
 			name: v2Data.name || "Imported Character",
+			...UTILITY.getDefaultStorySettings(),
 			description: (v2Data.description || "").replace(/{{char}}/g, v2Data.name || "Imported Character").replace(/{{user}}/g, "{user}"),
 			short_description: (v2Data.description || "").split('.')[0] + '.',
 			model_instructions: (v2Data.system_prompt || "Act as {character}. Be descriptive and engaging.").replace(/{{char}}/g, "{character}").replace(/{{user}}/g, "{user}"),
@@ -2862,6 +3605,24 @@ const UIManager = {
                      <h3 class="absolute top-4 left-4 text-white text-2xl font-bold drop-shadow-lg z-20">${UTILITY.escapeHTML(story.name || 'Untitled Story')}</h3>
                 </div>
                 <div class="p-6 flex-grow overflow-y-auto space-y-6 min-h-0">
+                     
+                     <div class="space-y-4 -mt-2">
+                        <div>
+                            <label class="text-sm text-gray-400">Creator's Note</label>
+                            <div class="relative">
+                                <textarea oninput="Controller.updateStoryField('${story.id}', 'creator_notes', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded resize-none h-20">${UTILITY.escapeHTML(story.creator_notes || '')}</textarea>
+                                <button onclick="Controller.generateStoryNotesAI(event, '${story.id}')" class="absolute top-2 right-2 text-sky-400 hover:text-sky-300 p-1 bg-sky-600/80 rounded" title="Generate with AI">${this.getAIGenIcon()}</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-400">Tags (comma-separated)</label>
+                            <div class="relative">
+                                <input type="text" value="${UTILITY.escapeHTML((story.tags || []).join(', '))}" oninput="Controller.updateStoryTags('${story.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded">
+                                <button onclick="Controller.generateStoryTagsAI(event, '${story.id}')" class="absolute top-1/2 right-2 -translate-y-1/2 text-sky-400 hover:text-sky-300 p-1 bg-sky-600/80 rounded" title="Generate with AI">${this.getAIGenIcon()}</button>
+                            </div>
+                        </div>
+                     </div>
+                     <hr class="border-gray-600">
                      <div>
                         <h4 class="font-bold text-lg mb-2 text-indigo-300">Scenarios (Templates)</h4>
                         <div class="space-y-2">${scenariosHTML || '<p class="text-sm text-gray-400">No scenarios in this story.</p>'}</div>
@@ -3024,24 +3785,65 @@ const UIManager = {
         this.renderDynamicEntryDetails(); 
     },
     
-    renderDynamicEntryDetails() { 
+renderDynamicEntryDetails() { 
         const state = StateManager.getState();
         const container = document.getElementById('dynamic-entry-details-content'); 
         const entry = (state.dynamic_entries || []).find(e => e.id === state.selectedDynamicEntryId); 
-        if (entry) { 
+        
+        if (entry) {
+            // 1. Map over the content_fields array to generate a textarea for each
+            const contentFieldsHTML = (entry.content_fields || [""]).map((content, index) => {
+                // The last field gets a "sticky" note
+                const isLastField = index === entry.content_fields.length - 1;
+                const stickyNote = isLastField 
+                    ? `<span class="text-xs text-gray-400 italic ml-4">This entry will be used for all future triggers.</span>`
+                    : '';
+
+                return `
+                    <div class="bg-black/20 p-3 rounded-lg">
+                        <label class="font-bold mb-2 flex justify-between items-center">
+                            <span>Step ${index + 1}</span>
+                            ${stickyNote}
+                        </label>
+                        <div class="relative">
+                            <textarea 
+                                oninput="Controller.updateDynamicContentField('${entry.id}', ${index}, this.value)" 
+                                class="w-full h-24 bg-gray-900/80 border-gray-600 p-2 resize-y rounded-md"
+                            >${UTILITY.escapeHTML(content)}</textarea>
+                            <button 
+                                onclick="Controller.generateDynamicEntryContentAI(event, '${entry.id}', ${index})" 
+                                class="absolute top-2 right-2 text-sky-400 hover:text-sky-300 p-1 bg-sky-600/80 rounded" 
+                                title="Generate with AI"
+                            >${this.getAIGenIcon()}</button>
+                        </div>
+                    </div>
+                `;
+            }).join('<hr class="border-gray-700/50 my-2">'); // Separator
+
+            // 2. Build the final HTML
             container.innerHTML = `<div class="flex flex-col h-full">
                 <label class="font-bold">Title</label>
 				<input type="text" value="${UTILITY.escapeHTML(entry.title)}" oninput="Controller.updateDynamicEntryField('${entry.id}', 'title', this.value)" onblur="UIManager.renderDynamicEntries()" class="text-xl font-bold bg-black/30 p-2 w-full mb-4">
+                
                 <label class="font-bold mb-2">Triggers (Keywords, AND, XOR, % Chance)</label>
                 <input type="text" value="${UTILITY.escapeHTML(entry.triggers)}" oninput="Controller.updateDynamicEntryField('${entry.id}', 'triggers', this.value)" placeholder="e.g. house, cat AND dog, 25%" class="bg-black/30 p-2 w-full mb-4">
+                
                 <div class="relative flex-grow flex flex-col">
-                    <label class="font-bold mb-2">Content</label>
-                    <div class="relative flex-grow">
-                        <textarea oninput="Controller.updateDynamicEntryField('${entry.id}', 'content', this.value)" class="w-full h-full bg-black/30 p-2 resize-none rounded-md">${UTILITY.escapeHTML(entry.content)}</textarea>
-                        <button onclick="Controller.generateDynamicEntryContentAI(event, '${entry.id}')" class="absolute top-2 right-2 text-sky-400 hover:text-sky-300 p-1 bg-sky-600/80 rounded" title="Generate with AI">${this.getAIGenIcon()}</button>
+                    <label class="font-bold mb-2">Content Sequence</label>
+                    <div class="space-y-2">
+                        ${contentFieldsHTML}
                     </div>
+                    <button 
+                        onclick="Controller.addDynamicContentField('${entry.id}')" 
+                        class="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg text-sm w-full"
+                    >
+                        + Add Content Field
+                    </button>
                 </div>
-                <div class="flex justify-end mt-4"><button onclick="Controller.deleteDynamicEntry('${entry.id}')" class="text-sm bg-red-600/80 hover:bg-red-700/80 font-semibold py-2 px-3 rounded-lg">Delete</button></div>
+
+                <div class="flex justify-end mt-4">
+                    <button onclick="Controller.deleteDynamicEntry('${entry.id}')" class="text-sm bg-red-600/80 hover:bg-red-700/80 font-semibold py-2 px-3 rounded-lg">Delete Entry</button>
+                </div>
             </div>`; 
         } else { 
             container.innerHTML = `<div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.</div>`; 
@@ -3782,20 +4584,34 @@ const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) =>
     /**
      * Renders the centralized Import/Export Hub modal.
      */
+/**
+     * Renders the centralized Import/Export Hub modal.
+     * [REVISED] This now points the main library I/O buttons to
+     * the new ZIP-based Controller functions.
+     */
     renderIOHubModal() {
+        // Get the container for the modal content
         const modalContent = document.getElementById('io-hub-modal-content');
+        
+        // Get all stories from the StateManager's in-memory list for the dropdown
         const library = StateManager.getLibrary();
-        const storyOptions = library.stories.map(s => `<option value="${s.id}">${UTILITY.escapeHTML(s.name)}</option>`).join('');
+        const storyOptions = library.stories
+            .map(s => `<option value="${s.id}">${UTILITY.escapeHTML(s.name)}</option>`)
+            .join('');
 
+        // Define the inner HTML for the modal
         const hubHTML = `
             <div class="p-6 border-b border-gray-700">
                 <h2 class="text-2xl font-semibold">Import / Export Hub</h2>
             </div>
             <div class="p-6 overflow-y-auto">
                 <div class="grid md:grid-cols-2 gap-8">
+                    
                     <!-- === IMPORT COLUMN === -->
                     <div class="space-y-6">
                         <h3 class="text-xl font-bold border-b pb-2 border-gray-600">Import</h3>
+                        
+                        <!-- Single Story Import (Unchanged) -->
                         <div>
                             <p class="text-sm text-gray-300 mb-2">Import a single Story from a V2 PNG, BYAF, or Ellipsis JSON file.</p>
                             <label for="single-file-upload" class="cursor-pointer">
@@ -3806,15 +4622,20 @@ const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) =>
                             </label>
                             <input id="single-file-upload" type="file" class="hidden" accept=".png,.byaf,.zip,.json" onchange="Controller.handleFileUpload(event)">
                         </div>
+
+                        <!-- Bulk Import (Unchanged) -->
                         <div>
                             <p class="text-sm text-gray-300 mb-2">Import an entire folder of V2 PNG or BYAF files at once.</p>
                             <button onclick="Controller.handleBulkImport()" class="w-full mt-2 bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg">Select Folder to Import</button>
                         </div>
+
+                        <!-- [REVISED] Full Library Import -->
                         <div>
-                            <p class="text-sm text-gray-300 mb-2">Replace your current library with an Ellipsis Library JSON file. <span class="font-bold text-red-400">Warning: This is a destructive action.</span></p>
+                            <p class="text-sm text-gray-300 mb-2">Replace your current library with an Ellipsis Library ZIP file. <span class="font-bold text-red-400">Warning: This is a destructive action.</span></p>
                             <label class="w-full mt-2 bg-red-800/80 hover:bg-red-900/80 text-white font-bold py-2 px-4 rounded-lg inline-block text-center cursor-pointer">
-                                <span>Import Library File</span>
-                                <input type="file" class="hidden" accept=".json" onchange="Controller.importLibrary(event)">
+                                <span>Import Library (ZIP)</span>
+                                <!-- We accept .zip and point to the new Controller.importLibrary function -->
+                                <input type="file" class="hidden" accept=".zip" onchange="Controller.importLibrary(event)">
                             </label>
                         </div>
                     </div>
@@ -3822,6 +4643,8 @@ const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) =>
                     <!-- === EXPORT COLUMN === -->
                     <div class="space-y-4">
                         <h3 class="text-xl font-bold border-b pb-2 border-gray-600">Export</h3>
+                        
+                        <!-- Single Story/Narrative Export (Unchanged) -->
                         <div>
                             <label for="story-export-selector" class="block text-sm font-medium text-gray-300">1. Select Story to Export</label>
                             <select id="story-export-selector" class="w-full mt-1 bg-black/30 p-2 rounded-lg border-gray-600" onchange="UIManager.populateNarrativeSelector()">
@@ -3845,10 +4668,13 @@ const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) =>
                                 <button onclick="Controller.exportStoryAs('byaf')" class="bg-emerald-600/80 hover:bg-emerald-700/80 text-white font-bold py-2 px-3 rounded-lg">BYAF</button>
                             </div>
                         </div>
+                         
+                         <!-- [REVISED] Full Library Export -->
                          <hr class="border-gray-600 !mt-8">
                         <div>
-                            <p class="text-sm text-gray-300 mb-2">Save a backup of your entire story library.</p>
-                            <button onclick="Controller.exportLibrary()" class="w-full mt-2 bg-gray-600/80 hover:bg-gray-700/80 text-white font-bold py-2 px-4 rounded-lg">Export Entire Library</button>
+                            <p class="text-sm text-gray-300 mb-2">Save a backup of your entire library, including all images.</p>
+                            <!-- This button now points to the new Controller.exportLibrary function -->
+                            <button onclick="Controller.exportLibrary()" class="w-full mt-2 bg-gray-600/80 hover:bg-gray-700/80 text-white font-bold py-2 px-4 rounded-lg">Export Library (ZIP)</button>
                         </div>
                     </div>
                 </div>
@@ -3857,6 +4683,8 @@ const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) =>
                 <button onclick="Controller.closeModal('io-hub-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Close</button>
             </div>
         `;
+        
+        // Set the modal content and populate the first dropdown
         modalContent.innerHTML = hubHTML;
         this.populateNarrativeSelector();
     },
@@ -4107,6 +4935,7 @@ const Controller = {
         const newStory = {
             id: UTILITY.uuid(), name: "My First Story", last_modified: new Date().toISOString(), created_date: new Date().toISOString(), creator_notes: "", tags: [],
             search_index: "my first story",
+			...UTILITY.getDefaultStorySettings(),
             ...UTILITY.getDefaultApiSettings(), ...UTILITY.getDefaultUiSettings(), ...UTILITY.getDefaultSystemPrompts(),
             characters: [
                 { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags:[], is_narrator: false }, 
@@ -4150,7 +4979,9 @@ const Controller = {
     createNewStory() {
         const library = StateManager.getLibrary();
         const newStory = {
-            id: UTILITY.uuid(), name: "New Story", last_modified: new Date().toISOString(), created_date: new Date().toISOString(), creator_notes: "", tags: [], search_index: "new story",
+            id: UTILITY.uuid(), name: "New Story", last_modified: new Date().toISOString(), created_date: new Date().toISOString(), 
+            ...UTILITY.getDefaultStorySettings(), // <-- ADD THIS
+            search_index: "new story",
             ...UTILITY.getDefaultApiSettings(), ...UTILITY.getDefaultUiSettings(), ...UTILITY.getDefaultSystemPrompts(),
             characters: [
                 { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags:[], is_narrator: false }, 
@@ -4398,6 +5229,7 @@ const Controller = {
         if (!story) return;
         let index = [story.name];
         if (story.tags) index.push(...story.tags);
+		if (story.creator_notes) index.push(story.creator_notes);
         if (story.characters) {
             story.characters.forEach(char => {
                 index.push(char.name);
@@ -4407,6 +5239,70 @@ const Controller = {
         }
         story.search_index = index.join(' ').toLowerCase();
     },
+	
+	/**
+     * Exports the entire story library (stories, narratives, images) as a single ZIP file.
+     * [REVISED] This now calls the StoryService to build a zip from IndexedDB.
+     */
+    async exportLibrary() {
+        UIManager.showLoadingSpinner('Exporting entire library...');
+        try {
+            // 1. Call the StoryService to get the ZIP blob
+            const zipBlob = await StoryService.exportLibraryAsZip();
+            
+            // 2. Create and download the blob
+            const url = URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ellipsis_library_backup_${new Date().toISOString().split('T')[0]}.zip`;
+            document.body.appendChild(a); // Added for Firefox compatibility
+            a.click();
+            document.body.removeChild(a); // Clean up
+            URL.revokeObjectURL(url);
+
+        } catch (e) {
+            console.error("Library export failed:", e);
+            alert(`Library export failed: ${e.message}`);
+        } finally {
+            UIManager.hideLoadingSpinner();
+        }
+    },
+
+    /**
+     * Imports and replaces the entire library from an Ellipsis Library ZIP file.
+     * [REVISED] This now calls the StoryService to import from a ZIP to IndexedDB.
+     * @param {Event} event - The file input change event.
+     */
+    async importLibrary(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Reset the file input so the same file can be loaded again
+        event.target.value = '';
+
+        try {
+            // 1. Get confirmation from the user
+            const proceed = await UIManager.showConfirmationPromise('WARNING: This will permanently replace your entire story library with the contents of the ZIP file. This action cannot be undone. Are you sure?');
+            
+            if (proceed) {
+                UIManager.showLoadingSpinner('Importing library... Do not close this tab.');
+                
+                // 2. Call the StoryService to handle the import
+                await StoryService.importLibraryFromZip(file);
+                
+                // 3. Success!
+                UIManager.hideLoadingSpinner();
+                alert("Library imported successfully! The application will now reload.");
+                
+                // 4. Use a short delay to allow UI to update before reload
+                setTimeout(() => window.location.reload(), 500);
+            }
+        } catch (err) { 
+            UIManager.hideLoadingSpinner();
+            console.error("Error importing library:", err);
+            alert(`Error importing library: ${err.message}`); 
+        }
+    },	
 
     // --- Modal & UI State Management ---
 
@@ -4458,10 +5354,40 @@ const Controller = {
     },
     
     /** Closes a modal. */
-    closeModal(modalId) { 
+	closeModal(modalId) { 
         ModalManager.close(modalId);
         if (modalId === 'character-detail-modal') {
             UIManager.renderCharacters();
+        }
+
+        // --- NEW CLEANUP LOGIC ---
+        // When the knowledge modal is closed, we clean up any
+        // empty content fields from our dynamic entries.
+        if (modalId === 'knowledge-modal') {
+            const state = StateManager.getState();
+            if (state.dynamic_entries) {
+                state.dynamic_entries.forEach(entry => {
+                    if (entry.content_fields) {
+                        // 1. Filter out any fields that are just empty space
+                        entry.content_fields = entry.content_fields.filter(field => field.trim() !== "");
+                        
+                        // 2. (Edge Case) If filtering removed all fields, add one back
+                        //    An entry must always have at least one field.
+                        if (entry.content_fields.length === 0) {
+                            entry.content_fields.push("");
+                        }
+
+                        // 3. (Edge Case) Clamp the index
+                        //    If we removed fields, the index might be out of bounds.
+                        //    We reset it to the last valid index.
+                        if (entry.current_index >= entry.content_fields.length) {
+                            entry.current_index = entry.content_fields.length - 1;
+                        }
+                    }
+                });
+                // Save the cleaned-up state
+                StateManager.saveState();
+            }
         }
     },
 
@@ -4843,17 +5769,39 @@ async clearBackgroundImage() {
 
     /** Sends a user message from the chat input. */
     async sendMessage() {
+        // 1. Check if AI is already running
         if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
+        
+        // 2. Get state and user input
         const state = StateManager.getState();
         const input = document.getElementById('chat-input');
         const userChar = state.characters.find(c => c.is_user);
         const messageContent = input.value.trim();
         if (!messageContent) return;
+        
+        // 3. Add user message to history
         this.addMessageToHistory(userChar.id, messageContent);
-        input.value = '';
+        input.value = ''; // Clear input
+        
+        // 4. Check for dynamic triggers
         this.checkDynamicEntryTriggers();
+        
+        // 5. Trigger the AI's response
         await this.triggerAIResponse(null, messageContent);
+        
+        // 6. Check for the Event Master
         this.checkEventMaster();
+
+        // 7. --- THIS IS THE NEW, CORRECTLY PLACED TRIGGER ---
+        // Check if the counter is a multiple of 10.
+        // We get the state again in case it was modified.
+        const currentState = StateManager.getState(); 
+        if (currentState.messageCounter > 0 && currentState.messageCounter % 10 === 0) {
+            console.log(`User turn ${currentState.messageCounter}: Triggering automatic static memory update.`);
+            // We call a new, silent function to avoid popups.
+            this.triggerSilentStaticUpdate(); 
+        }
+        // NO stray }, here
     },
 
     /** Triggers the AI to write a response for the user's character. */
@@ -5189,12 +6137,31 @@ checkDynamicEntryTriggers() {
                     console.log(`Removed old dynamic entry: ${entry.title}`);
                     stateChanged = true;
                 }
+				// --- NEW SEQUENTIAL LOGIC ---
+                // 1. Get the current index, defaulting to 0
+                const contentIndex = entry.current_index || 0;
+                
+                // 2. Get the content from the specific field
+                const contentToReveal = entry.content_fields[contentIndex];
 
+                // 3. Increment the index for the *next* trigger
+                let nextIndex = contentIndex + 1;
+
+                // 4. Check if we've reached the end. If so, stick to the last field.
+                if (nextIndex >= entry.content_fields.length) {
+                    nextIndex = entry.content_fields.length - 1;
+                }
+                
+                // 5. Save the new index back to the entry
+                entry.current_index = nextIndex;
+                // --- END SEQUENTIAL LOGIC ---
+				
+				
                 // 4. Add the new entry inline (at the end of the history)
                 state.chat_history.push({ 
                     type: 'lore_reveal', 
                     title: entry.title, 
-                    content: entry.content,
+                    content: contentToReveal,
                     dynamic_entry_id: entry.id, // Stable identifier for de-duplication
                     timestamp: new Date().toISOString(),
                     isHidden: true // Mark as invisible for the UI
@@ -5465,6 +6432,114 @@ checkDynamicEntryTriggers() {
             }
         } 
     }, 300),
+	/**
+     * Updates a specific field of a story object (debounced).
+     * REFACTORED: Now calls StoryService.
+     */
+    updateStoryField: debounce(async function(storyId, field, value) {
+        try {
+            // 1. Call the service to update the DB
+            const updatedStory = await StoryService.updateStoryField(storyId, field, value);
+
+            // 2. Update the in-memory stub
+            const library = StateManager.getLibrary();
+            const storyInLibrary = library.stories.find(s => s.id === storyId);
+            if (storyInLibrary) {
+                storyInLibrary[field] = updatedStory[field];
+                storyInLibrary.last_modified = updatedStory.last_modified;
+            }
+
+            // 3. Update search index if needed
+            if (field === 'creator_notes') {
+                this.updateSearchIndex(storyInLibrary);
+            }
+        } catch (e) {
+            console.error(`Failed to update story field ${field}:`, e);
+            alert("Error: Could not save story update.");
+        }
+    }, 300),
+
+	/**
+     * Updates a story's tags (debounced).
+     * REFACTORED: Now calls StoryService.
+     */
+    updateStoryTags: debounce(async function(storyId, value) {
+        const tags = value.split(',').map(t => t.trim()).filter(Boolean);
+        try {
+            // 1. Call the service to update the DB
+            const updatedStory = await StoryService.updateStoryField(storyId, 'tags', tags);
+
+            // 2. Update the in-memory stub
+            const library = StateManager.getLibrary();
+            const storyInLibrary = library.stories.find(s => s.id === storyId);
+            if (storyInLibrary) {
+                storyInLibrary.tags = updatedStory.tags;
+                storyInLibrary.last_modified = updatedStory.last_modified;
+            }
+
+            // 3. Update search and tag cache
+            this.updateSearchIndex(storyInLibrary);
+            StateManager.updateTagCache();
+
+        } catch (e) {
+            console.error("Failed to update story tags:", e);
+            alert("Error: Could not save story tags.");
+        }
+    }, 500),
+
+	/**
+     * Uses AI to generate a creator's note for a story.
+     * REFACTORED: Now calls StoryService for context.
+     */
+    async generateStoryNotesAI(event, storyId) {
+        const state = StateManager.getState();
+        const globalPrompts = state.id ? state : UTILITY.getDefaultSystemPrompts();
+        const promptTemplate = globalPrompts.prompt_story_notes_gen;
+
+        // 1. Get context from the StoryService
+        const context = await StoryService.buildStoryContext(storyId);
+        
+        // 2. Call the AI
+        const newNotes = await this._generateContentForField(event, promptTemplate, { context });
+        
+        if (newNotes !== null) {
+            // 3. Save the update (this function is now refactored and works)
+            this.updateStoryField(storyId, 'creator_notes', newNotes);
+            
+            // Re-render the details view
+            UIManager.openStoryDetails(storyId);
+        }
+    },
+
+	/**
+     * Uses AI to generate tags for a story.
+     * REFACTORED: Now calls StoryService for context.
+     */
+    async generateStoryTagsAI(event, storyId) {
+        const state = StateManager.getState();
+        const globalPrompts = state.id ? state : UTILITY.getDefaultSystemPrompts();
+        const promptTemplate = globalPrompts.prompt_story_tags_gen;
+        
+        // 1. Get context from the StoryService
+        const context = await StoryService.buildStoryContext(storyId);
+
+        // 2. Call the AI
+        const tagsString = await this._generateContentForField(event, promptTemplate, { context });
+        
+        if (tagsString !== null) {
+            const library = StateManager.getLibrary();
+            const storyInLibrary = library.stories.find(s => s.id === storyId);
+            const newTags = tagsString.split(',').map(t => t.trim().toLowerCase());
+            const combinedTags = [...new Set([...(storyInLibrary.tags || []), ...newTags])];
+            
+            // 3. Save the update (this function is now refactored and works)
+            this.updateStoryTags(storyId, combinedTags.join(', '));
+            
+            // Re-render the details view
+            UIManager.openStoryDetails(storyId);
+        }
+    },
+
 
 /** Handles the upload of a local image for a world map location. */
     async handleWorldMapLocationImageUpload(event, x, y) {
@@ -5676,16 +6751,59 @@ checkDynamicEntryTriggers() {
         } 
     }, 300),
 
-    addDynamicEntry() { const state = StateManager.getState(); const newEntry = {id: UTILITY.uuid(), title: "New Dynamic Entry", triggers: "", content: "", triggered_at_turn: null }; state.dynamic_entries.push(newEntry); state.selectedDynamicEntryId = newEntry.id; this.saveAndRenderDynamicEntries(); },
+	addDynamicEntry() { 
+        const state = StateManager.getState(); 
+        // Create the new entry with the new data structure
+        const newEntry = {
+            id: UTILITY.uuid(), 
+            title: "New Dynamic Entry", 
+            triggers: "", 
+            content_fields: [""], // Start with one empty content field
+            current_index: 0,    // Start at index 0
+            triggered_at_turn: null 
+        };
+        state.dynamic_entries.push(newEntry); 
+        state.selectedDynamicEntryId = newEntry.id; 
+        this.saveAndRenderDynamicEntries(); 
+    },
     deleteDynamicEntry(id) { const state = StateManager.getState(); state.dynamic_entries = state.dynamic_entries.filter(e => e.id !== id); if(state.selectedDynamicEntryId === id) state.selectedDynamicEntryId = null; this.saveAndRenderDynamicEntries(); },
-    selectDynamicEntry(id) { StateManager.getState().selectedDynamicEntryId = id; UIManager.renderDynamicEntries(); },
+	selectDynamicEntry(id) { StateManager.getState().selectedDynamicEntryId = id; UIManager.renderDynamicEntries(); },
+    
+    /**
+     * Updates top-level fields for a dynamic entry (title, triggers).
+     */
     updateDynamicEntryField: debounce(function(id, field, value) { 
         const state = StateManager.getState();
         const entry = state.dynamic_entries.find(e => e.id === id); 
-        if (entry) { 
+        if (entry && (field === 'title' || field === 'triggers')) { 
             entry[field] = value; 
             StateManager.saveState();
         } 
+    }, 300),
+
+    /**
+     * [NEW] Adds a new, empty content field to a dynamic entry.
+     */
+    addDynamicContentField(entryId) {
+        const state = StateManager.getState();
+        const entry = state.dynamic_entries.find(e => e.id === entryId);
+        if (entry) {
+            entry.content_fields.push("");
+            StateManager.saveState();
+            UIManager.renderDynamicEntryDetails(); // Re-render just the details pane
+        }
+    },
+
+    /**
+     * [NEW] Updates a specific content field in the sequence (debounced).
+     */
+    updateDynamicContentField: debounce(function(entryId, index, value) {
+        const state = StateManager.getState();
+        const entry = state.dynamic_entries.find(e => e.id === entryId);
+        if (entry && entry.content_fields[index] !== undefined) {
+            entry.content_fields[index] = value;
+            StateManager.saveState();
+        }
     }, 300),
 
     addExampleDialogueTurn() {
@@ -5699,6 +6817,29 @@ checkDynamicEntryTriggers() {
         StateManager.saveState();
         UIManager.renderExampleDialogueModal();
     },
+	
+	/** * Uses AI to generate content for a dynamic knowledge entry.
+     * [MODIFIED] Now accepts an index to update a specific field.
+     */
+    async generateDynamicEntryContentAI(event, entryId, index) { // <-- Added index
+        const state = StateManager.getState();
+        const entry = state.dynamic_entries.find(e => e.id === entryId);
+        if (!entry || entry.content_fields[index] === undefined) return;
+
+        const newContent = await this._generateContentForField(event, state.prompt_entry_gen, {
+            title: entry.title,
+            triggers: entry.triggers
+        });
+
+        if (newContent !== null) {
+            // Update the specific field in the array
+            entry.content_fields[index] = newContent;
+            StateManager.saveState();
+            // Re-render the details to show the new content
+            UIManager.renderDynamicEntryDetails();
+        }
+    },
+	
     deleteExampleDialogueTurn(originalIndex) {
         const state = StateManager.getState();
         state.chat_history.splice(originalIndex, 1);
@@ -6297,109 +7438,6 @@ try {
         }
     },
 
-    /**
-     * Exports the entire story library as a single JSON file.
-     */
-	/**
-     * Exports the entire story library as a single JSON file, stripping embedded images.
-     */
-    exportLibrary() {
-        UIManager.showLoadingSpinner('Exporting library...');
-        try {
-            // 1. Get a deep copy of the library to modify safely
-            const libraryCopy = JSON.parse(JSON.stringify(StateManager.getLibrary()));
-
-            // 2. Helper function to clean URLs
-            const cleanUrl = (url) => {
-                if (typeof url === 'string' && url.startsWith('data:image/')) {
-                    return ''; // Strip vestigial embedded image data
-                }
-                return url; // Keep external URLs and local_idb keywords
-            };
-
-            // 3. Iterate and clean all known image URL fields
-            (libraryCopy.stories || []).forEach(story => {
-                story.backgroundImageURL = cleanUrl(story.backgroundImageURL);
-
-                (story.characters || []).forEach(char => {
-                    char.image_url = cleanUrl(char.image_url);
-                    (char.extra_portraits || []).forEach(portrait => {
-                        portrait.url = cleanUrl(portrait.url);
-                    });
-                });
-
-                (story.narratives || []).forEach(narrative => {
-                    if (narrative.state && narrative.state.worldMap && narrative.state.worldMap.grid) {
-                        narrative.state.worldMap.grid.forEach(loc => {
-                            loc.imageUrl = cleanUrl(loc.imageUrl);
-                        });
-						// Now, filter the grid to remove any "blank" locations
-						narrative.state.worldMap.grid = narrative.state.worldMap.grid.filter(loc => {
-							const hasName = loc.name && loc.name.trim() !== "";
-							const hasDesc = loc.description && loc.description.trim() !== "";
-							const hasPrompt = loc.prompt && loc.prompt.trim() !== "";
-                            const hasImage = loc.imageUrl && loc.imageUrl.trim() !== "";
-                            const hasEntries = loc.local_static_entries && loc.local_static_entries.length > 0;
-                            
-                            // Keep the location if ANY of these are true
-                            return hasName || hasDesc || hasPrompt || hasImage || hasEntries;
-                        });						
-                    }
-                });
-            });
-
-            // 4. Stringify the cleaned copy
-            const data = JSON.stringify(libraryCopy, null, 2);
-            
-            // 5. Create and download the blob
-            const blob = new Blob([data], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `ellipsis_library_backup_${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a); // Added for Firefox compatibility
-            a.click();
-            document.body.removeChild(a); // Clean up
-            URL.revokeObjectURL(url);
-        } catch (e) {
-            alert(`Library export failed: ${e.message}`);
-        } finally {
-            UIManager.hideLoadingSpinner();
-        }
-    },
-
-    /**
-     * Imports and replaces the entire library from a JSON file.
-     * @param {Event} event - The file input change event.
-     */
-    importLibrary(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const proceed = await UIManager.showConfirmationPromise('WARNING: This will permanently replace your entire story library. This action cannot be undone. Are you sure?');
-            if (proceed) {
-                UIManager.showLoadingSpinner('Importing library...');
-                try {
-                    const importedLibrary = JSON.parse(e.target.result);
-                    // Basic validation
-                    if (!importedLibrary.stories || !importedLibrary.hasOwnProperty('active_story_id')) {
-                        throw new Error("Invalid library file format.");
-                    }
-                    StateManager.data.library = importedLibrary;
-                    StateManager.saveLibrary();
-                    // Use a short delay to allow UI to update before reload
-                    setTimeout(() => window.location.reload(), 500);
-                } catch (err) { 
-                    UIManager.hideLoadingSpinner();
-                    alert(`Error importing library: ${err.message}`); 
-                }
-            }
-        };
-        reader.readAsText(file);
-        event.target.value = ''; // Reset file input
-    },
-
     // --- Helper & Utility Actions ---
     _ensureCharacterColors() {
         const state = StateManager.getState();
@@ -6428,14 +7466,148 @@ try {
  */
 const app = {
   async init() {
-    // Load data first (from localStorage as you already do)
-    StateManager.loadLibrary();
-    const library = StateManager.getLibrary();
-    if (library.stories.length === 0) {
-      Controller.createDefaultStoryAndNarrative();
+  
+// --- NEW: ONE-TIME MIGRATION LOGIC ---
+    
+    // 1. Init the DB service first. Must be version 2.
+    let dbReady = false;
+    try {
+      await DBService.init(); // This will try to open version 2
+      dbReady = true;
+    } catch (e) {
+      console.error("CRITICAL: DBService failed to init. App cannot start.", e);
+      alert("Error: Your browser's database failed to start. The app cannot load.");
       return;
     }
-    StateManager.loadActiveNarrative();
+
+    // 2. Check if migration has already been run.
+    const migrationFlag = 'v2_idb_migration_complete';
+    if (!localStorage.getItem(migrationFlag)) {
+        console.log("No migration flag found. Checking for old localStorage data...");
+        
+        // 3. Try to get the old library data
+        const oldLibraryJSON = localStorage.getItem('aiStorytellerLibrary');
+        
+        if (oldLibraryJSON) {
+            console.log("Old library data found. Starting migration to IndexedDB...");
+            UIManager.showLoadingSpinner("Upgrading database... Please wait.");
+            
+            try {
+                const parsedLibrary = JSON.parse(oldLibraryJSON);
+                
+                if (parsedLibrary.stories && parsedLibrary.stories.length > 0) {
+                    for (const story of parsedLibrary.stories) {
+                        // a. Split the story into metadata and narratives
+                        const narrativeStubs = [];
+                        
+                        if (story.narratives && story.narratives.length > 0) {
+                            for (const narrative of story.narratives) {
+                                // Save the full narrative object to IDB
+                                await DBService.saveNarrative(narrative);
+                                // Create a stub for the story object
+                                narrativeStubs.push({ id: narrative.id, name: narrative.name });
+                            }
+                        }
+                        
+                        // b. Create the new story metadata object
+                        const storyData = { ...story };
+                        delete storyData.narratives; // Remove heavy data
+                        storyData.narratives = narrativeStubs; // Replace with light stubs
+                        
+                        // c. Save the story metadata object to IDB
+                        await DBService.saveStory(storyData);
+                    }
+                }
+                
+                // 4. Set the active IDs from the old library
+                localStorage.setItem('active_story_id', parsedLibrary.active_story_id || null);
+                localStorage.setItem('active_narrative_id', parsedLibrary.active_narrative_id || null);
+
+                // 5. Migration successful! Set flag and clean up.
+                console.log(`Migration complete! Moved ${parsedLibrary.stories.length} stories.`);
+                localStorage.setItem(migrationFlag, 'true');
+                localStorage.removeItem('aiStorytellerLibrary'); // Clean up old 5MB+ key
+                
+            } catch (e) {
+                console.error("Migration failed:", e);
+                UIManager.hideLoadingSpinner(); // Make sure spinner hides on fail
+                alert("An error occurred while upgrading your database. Old data may not be available.");
+                localStorage.setItem(migrationFlag, 'failed'); // Avoid re-running a failed migration
+            }
+        } else {
+            // No old data, just set the flag.
+            console.log("No old library data found. Setting migration flag.");
+            localStorage.setItem(migrationFlag, 'true');
+        }
+        
+        // We always hide spinner, even if no migration was needed
+        UIManager.hideLoadingSpinner(); 
+    }
+    // --- END OF MIGRATION LOGIC ---
+	
+	// Load data first (NOW reads from IDB via StateManager)
+    await StateManager.loadLibrary();
+    
+    const library = StateManager.getLibrary();
+	
+    if (library.stories.length === 0) {
+      // This is now an async function
+      const { newStory, newNarrative } = await StoryService.createDefaultStoryAndNarrative();
+      // Manually set the active session and reload
+      localStorage.setItem('active_story_id', newStory.id);
+      localStorage.setItem('active_narrative_id', newNarrative.id);
+      window.location.reload();
+      return; // The create function reloads the page
+    }
+	
+	// --- [NEW] HYDRATE ALL IMAGES ---
+    // We run this *after* loading the library stubs and *before* loading the active state.
+    // This populates the cache for the entire library, fixing the Story Library bug.
+    if (dbReady && library.stories && library.stories.length > 0) {
+        console.log(`Hydrating images for ${library.stories.length} stories...`);
+        UIManager.RUNTIME.characterImageCache = UIManager.RUNTIME.characterImageCache || {};
+        
+        // Loop over ALL stories in the library
+        for (const story of library.stories) {
+            if (!story.characters) continue;
+            
+            // Loop over ALL characters in each story
+            for (const char of story.characters) {
+                try {
+                    // 1. Hydrate base portrait
+                    // We check if it's already cached to avoid duplicate DB calls/blob URLs
+                    if (!UIManager.RUNTIME.characterImageCache[char.id]) {
+                        const blob = await DBService.getImage(char.id);
+                        if (blob) {
+                            UIManager.RUNTIME.characterImageCache[char.id] = URL.createObjectURL(blob);
+                        }
+                    }
+
+                    // 2. Hydrate emotion portraits
+                    if (Array.isArray(char.extra_portraits)) {
+                        for (const p of char.extra_portraits) {
+                            const emotion = (p.emotion || 'neutral').toLowerCase();
+                            const emoKey = `${char.id}::emotion::${emotion}`;
+                            if (!UIManager.RUNTIME.characterImageCache[emoKey]) {
+                                const blob = await DBService.getImage(emoKey);
+                                if (blob) {
+                                    UIManager.RUNTIME.characterImageCache[emoKey] = URL.createObjectURL(blob);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn("getImage failed for char", char.id, e);
+                }
+            }
+        }
+        console.log("Image hydration complete.");
+    }
+    // --- END NEW IMAGE HYDRATION ---
+	
+	// Now, load the active narrative
+    await StateManager.loadActiveNarrative();
+    
     const state = StateManager.getState();
 
     // --- Make the UI responsive immediately (listeners + layout + send-button state) ---
@@ -6444,7 +7616,7 @@ const app = {
     UIManager.setButtonToSendMode();       // ensures the input button is in the correct mode
 
     // --- Try IndexedDB, but DO NOT let it block the UI ---
-    let dbReady = false;
+    dbReady = false;
     try {
       await DBService.init();              // DBService is fail-soft; still guard with try/catch
       dbReady = true;
@@ -6530,43 +7702,10 @@ const app = {
     if (dbReady) {
       try {
         await migrateLegacyImagesToIDB(
-          StateManager.StateManager.getState() || StateManager.getLibrary?.()
+          StateManager.getState() || StateManager.getLibrary?.()
         );
       } catch (e) {
         console.warn("Legacy image migration failed:", e);
-      }
-    }
-
-    // --- Optional: hydrate character portraits from IndexedDB if available ---
-    if (dbReady && state && state.characters) {
-      for (const char of state.characters) {
-        try {
-          const blob = await DBService.getImage(char.id);
-          if (blob) {
-            UIManager.RUNTIME.characterImageCache[char.id] = URL.createObjectURL(blob);
-          }
-        } catch (e) {
-          console.warn("getImage failed for", char.id, e);
-        }
-      }
-    }
-	
-// Also hydrate emotion portraits into cache
-    if (dbReady && state && state.characters) {
-      for (const char of state.characters) {
-        if (!Array.isArray(char.extra_portraits)) continue;
-        for (const p of char.extra_portraits) {
-          const emotion = (p.emotion || 'neutral').toLowerCase();
-          const emoKey = `${char.id}::emotion::${emotion}`;
-          try {
-            const blob = await DBService.getImage(emoKey);
-            if (blob) {
-              UIManager.RUNTIME.characterImageCache[emoKey] = URL.createObjectURL(blob);
-            }
-          } catch (e) {
-            console.warn("getImage failed for", emoKey, e);
-          }
-        }
       }
     }
 	
@@ -6703,11 +7842,6 @@ const app = {
 
 // Start the application once the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => app.init());
-
-
-
 	</script>
-
-    
 </body>
 </html>
