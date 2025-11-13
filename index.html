@@ -322,6 +322,8 @@ body.layout-vertical #chat-input-container {
       This is 0px on desktop but has a value on mobile.
     */
     padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+	padding-top: calc(1rem + env(safe-area-inset-top));
+
 
     border-top: 1px solid;
 	border-top-color: color-mix(in srgb, var(--chat-text-color) 50%, transparent);
@@ -4026,6 +4028,22 @@ renderDynamicEntryDetails() {
 
         document.getElementById('chat-window').innerHTML = (state.chat_history || []).map((msg, index) => this._createMessageHTML(msg, index)).join('');
         (state.chat_history || []).forEach(m => m.isNew = false);
+		
+		const chatWindow = document.getElementById('chat-window');
+        chatWindow.innerHTML = (state.chat_history || []).map((msg, index) => this._createMessageHTML(msg, index)).join('');
+        (state.chat_history || []).forEach(m => m.isNew = false);
+
+        // --- ROBUST AUTO-SCROLL FIX ---
+        // 1. Use setTimeout to yield to the render thread
+        setTimeout(() => {
+            // 2. Use requestAnimationFrame to ensure layout is calculated
+            window.requestAnimationFrame(() => {
+                if (chatWindow) {
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                }
+            });
+        }, 50); // 50ms delay allows images/styles to settle
+		
     },
     
     renderExampleDialogueModal() {
@@ -7632,6 +7650,10 @@ try {
  */
 const app = {
   async init() {
+  
+  if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
   
 // --- NEW: ONE-TIME MIGRATION LOGIC ---
     
