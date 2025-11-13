@@ -287,7 +287,7 @@ input:checked + .toggle-bg:after {
 #mobile-header { display: flex; }
 
 body.layout-vertical #app-container { padding: 0; }
-body.layout-vertical #main-header { position: fixed; top: .3rem; left: 0; right: 0; z-index: 52; margin: 0; padding: 0.5rem; background: transparent; pointer-events: none; }
+body.layout-vertical #main-header { position: fixed; top: calc(.2rem + env(safe-area-inset-top)); left: 0; right: 0; z-index: 52; margin: 0; padding: 0.5rem; background: transparent; pointer-events: none; }
 body.layout-vertical #hamburger-menu-button-container { opacity: 0.3; transition: opacity 0.3s ease; pointer-events: auto; position: relative; z-index: 52;}
 body.layout-vertical #hamburger-menu-button-container:hover { opacity: 1; }
 body.layout-vertical #mobile-story-title-overlay { 
@@ -297,7 +297,8 @@ body.layout-vertical #mobile-story-title-overlay {
     width: 100%; 
     z-index: 51; /* Increased to 51 to sit above the main header */
     background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent); 
-    padding: .3rem; 
+    padding: .3rem;
+	padding-top: calc(1rem + env(safe-area-inset-top)); /* Pushes text below the notch */
     text-align: center; 
     opacity: 0; 
     transition: opacity 0.3s ease; 
@@ -322,8 +323,6 @@ body.layout-vertical #chat-input-container {
       This is 0px on desktop but has a value on mobile.
     */
     padding-bottom: calc(1rem + env(safe-area-inset-bottom));
-	padding-top: calc(1rem + env(safe-area-inset-top));
-
 
     border-top: 1px solid;
 	border-top-color: color-mix(in srgb, var(--chat-text-color) 50%, transparent);
