@@ -287,10 +287,28 @@ input:checked + .toggle-bg:after {
 #mobile-header { display: flex; }
 
 body.layout-vertical #app-container { padding: 0; }
-body.layout-vertical #main-header { position: fixed; top: 0; left: 0; right: 0; z-index: 50; margin: 0; padding: 0.5rem; background: transparent; pointer-events: none; }
-body.layout-vertical #hamburger-menu-button-container { opacity: 0.3; transition: opacity 0.3s ease; pointer-events: auto; }
+body.layout-vertical #main-header { position: fixed; top: .3rem; left: 0; right: 0; z-index: 52; margin: 0; padding: 0.5rem; background: transparent; pointer-events: none; }
+body.layout-vertical #hamburger-menu-button-container { opacity: 0.3; transition: opacity 0.3s ease; pointer-events: auto; position: relative; z-index: 52;}
 body.layout-vertical #hamburger-menu-button-container:hover { opacity: 1; }
-body.layout-vertical #mobile-story-title-overlay { position: fixed; top: 0; left: 0; width: 100%; z-index: 49; background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent); padding: 1rem; text-align: center; opacity: 0; transition: opacity 0.3s ease; pointer-events: auto; }
+body.layout-vertical #mobile-story-title-overlay { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    z-index: 51; /* Increased to 51 to sit above the main header */
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent); 
+    padding: .3rem; 
+    text-align: center; 
+    opacity: 0; 
+    transition: opacity 0.3s ease; 
+    pointer-events: auto; 
+}
+
+/* NEW RULE: Keeps the title visible when you hover over it or click to edit */
+body.layout-vertical #mobile-story-title-overlay:hover,
+body.layout-vertical #mobile-story-title-overlay:focus {
+    opacity: 1 !important;
+}
 body.layout-vertical #chat-window-container { justify-content: center; border-radius: 0; margin-bottom: 0 !important; }
 body.layout-vertical #chat-window { width: 99%; }
 body.layout-vertical #character-portrait-container { display: none; }
@@ -552,43 +570,44 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
 </div>
 
 <!-- Knowledge Modal (Static & Dynamic) -->
-<div id="knowledge-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
-	<div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('knowledge-modal')">
-	</div>
-	<div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl relative flex flex-col h-[85vh]" style="width: 90%; max-width: 1200px;">
-		<div class="p-6 pb-0 flex justify-between items-center border-b border-gray-700">
-			<div class="flex">
-				<button id="knowledge-tab-static" onclick="Controller.switchKnowledgeTab('static')" class="py-3 px-4 font-semibold text-lg border-b-2 border-indigo-500 text-white">Static</button>
-				<button id="knowledge-tab-dynamic" onclick="Controller.switchKnowledgeTab('dynamic')" class="py-3 px-4 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">Dynamic</button>
-			</div>
-			<button id="knowledge-add-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg ml-4 flex-shrink-0">Add Entry</button>
-		</div>
-		<div class="p-6 overflow-y-auto flex-grow height: 100%">
-				<div id="knowledge-static-content" class style="height: 100%">
-					<div id="static-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
-						<div id="static-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4"></div>
-						<div id="static-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4">
-							<div id="static-entry-details-content" class="h-full">
-								<div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			<div id="knowledge-dynamic-content" class="hidden" class style="height: 100%">
-				<div id="dynamic-entries-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
-					<div id="dynamic-entries-list" class="md:col-span-1 bg-black/30 rounded-lg p-4 h-[26rem] md:h-full"></div>
-					<div id="dynamic-entry-details" class="md:col-span-2 bg-black/30 rounded-lg p-4">
-						<div id="dynamic-entry-details-content" class="h-full">
-						<div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end">
-			<button onclick="Controller.closeModal('knowledge-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button>
-		</div>
-	</div>
+<div id="knowledge-modal" class="fixed inset-0 z-50 items-center justify-center hidden p-4">
+    <div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('knowledge-modal')"></div>
+    <div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl relative flex flex-col w-full max-w-6xl max-h-[90vh] overflow-hidden">
+        
+        <div class="p-4 flex-shrink-0 flex justify-between items-center border-b border-gray-700">
+            <div class="flex space-x-4">
+                <button id="knowledge-tab-static" onclick="Controller.switchKnowledgeTab('static')" class="py-2 px-2 font-semibold text-lg border-b-2 border-indigo-500 text-white">Static</button>
+                <button id="knowledge-tab-dynamic" onclick="Controller.switchKnowledgeTab('dynamic')" class="py-2 px-2 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">Dynamic</button>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="knowledge-add-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg text-sm">Add Entry</button>
+                <button onclick="Controller.closeModal('knowledge-modal')" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-4 flex-grow overflow-y-auto min-h-0">
+            
+            <div id="knowledge-static-content" class="h-full flex flex-col md:flex-row gap-4">
+                <div id="static-entries-list" class="w-full md:w-1/3 bg-black/30 rounded-lg p-4 overflow-y-auto h-48 md:h-full flex-shrink-0"></div>
+                <div id="static-entry-details" class="w-full md:w-2/3 bg-black/30 rounded-lg p-4 overflow-y-auto flex-grow">
+                    <div id="static-entry-details-content" class="h-full">
+                        <div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="knowledge-dynamic-content" class="hidden h-full flex flex-col md:flex-row gap-4">
+                <div id="dynamic-entries-list" class="w-full md:w-1/3 bg-black/30 rounded-lg p-4 overflow-y-auto h-48 md:h-full flex-shrink-0"></div>
+                <div id="dynamic-entry-details" class="w-full md:w-2/3 bg-black/30 rounded-lg p-4 overflow-y-auto flex-grow">
+                    <div id="dynamic-entry-details-content" class="h-full">
+                        <div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
 </div>
 
 <!-- World Map Modal -->
@@ -600,7 +619,29 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
 </div>
 
 <!-- Settings Modal -->
-<div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('settings-modal')"></div><div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 relative flex flex-col max-h-[90vh]"><div class="p-6 pb-0 border-b border-gray-700"><h2 class="text-2xl font-semibold mb-4">Settings</h2><div class="flex -mb-px"><button id="settings-tab-appearance" onclick="Controller.switchSettingsTab('appearance')" class="py-2 px-4 font-semibold border-b-2 border-indigo-500 text-white">Appearance</button><button id="settings-tab-prompt" onclick="Controller.switchSettingsTab('prompt')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Prompt</button><button id="settings-tab-model" onclick="Controller.switchSettingsTab('model')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Model</button></div></div><div class="p-6 overflow-y-auto flex-grow" id="settings-content-container">...</div><div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end"><button onclick="Controller.closeModal('settings-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button></div></div></div>
+<div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center hidden p-4">
+    <div class="modal-overlay absolute inset-0" onclick="Controller.closeModal('settings-modal')"></div>
+    <div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] relative flex flex-col">
+        
+        <div class="p-6 flex-shrink-0 border-b border-gray-700 flex justify-between items-start">
+            <div>
+                <h2 class="text-2xl font-semibold mb-4">Settings</h2>
+                <div class="flex -mb-px space-x-4">
+                    <button id="settings-tab-appearance" onclick="Controller.switchSettingsTab('appearance')" class="pb-2 font-semibold border-b-2 border-indigo-500 text-white transition-colors">Appearance</button>
+                    <button id="settings-tab-prompt" onclick="Controller.switchSettingsTab('prompt')" class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Prompt</button>
+                    <button id="settings-tab-model" onclick="Controller.switchSettingsTab('model')" class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Model</button>
+                </div>
+            </div>
+            <button onclick="Controller.closeModal('settings-modal')" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors -mt-2" title="Close">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto flex-grow min-h-0" id="settings-content-container">
+            ...
+        </div>
+        </div>
+</div>
 
 <!-- Edit Response Modal -->
 <div id="edit-response-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
@@ -1920,19 +1961,22 @@ data: {
     /**
      * Scans all stories and characters to build a unique, sorted list of all tags.
      */
+/**
+     * Scans all stories and characters to build a unique, sorted list of all tags.
+     * [UPDATED] Normalizes to lowercase to combine duplicates.
+     */
     updateTagCache() {
         const allTags = new Set();
         this.data.library.stories.forEach(story => {
-            if (story.tags) story.tags.forEach(tag => allTags.add(tag));
+            if (story.tags) story.tags.forEach(tag => allTags.add(tag.toLowerCase()));
             // We can still scan characters, as they are part of the story stub
             if (story.characters) {
                 story.characters.forEach(char => {
-                    if (char.tags) char.tags.forEach(tag => allTags.add(tag));
+                    if (char.tags) char.tags.forEach(tag => allTags.add(tag.toLowerCase()));
                 });
             }
         });
         this.data.library.tag_cache = Array.from(allTags).sort();
-        // REMOVED saveLibrary() call. This is just an in-memory cache.
     },
 };
 
@@ -3507,11 +3551,19 @@ const UIManager = {
             const lowerCaseSearch = searchTerm.toLowerCase();
             stories = stories.filter(s => s.search_index && s.search_index.includes(lowerCaseSearch));
         }
-        if (filterTag) {
+	if (filterTag) {
+            const lowerFilter = filterTag.toLowerCase();
             stories = stories.filter(s => {
-                const storyTags = new Set(s.tags || []);
-                (s.characters || []).forEach(c => (c.tags || []).forEach(t => storyTags.add(t)));
-                return storyTags.has(filterTag);
+                // Create a set of all tags in this story, converted to lowercase
+                const storyTags = new Set();
+                
+                // Add story tags
+                (s.tags || []).forEach(t => storyTags.add(t.toLowerCase()));
+                
+                // Add character tags
+                (s.characters || []).forEach(c => (c.tags || []).forEach(t => storyTags.add(t.toLowerCase())));
+                
+                return storyTags.has(lowerFilter);
             });
         }
         stories.sort((a, b) => {
@@ -3972,8 +4024,6 @@ renderDynamicEntryDetails() {
 		  this.RUNTIME.activeCinematicBg = 1;
 		}
 
-
-
         document.getElementById('chat-window').innerHTML = (state.chat_history || []).map((msg, index) => this._createMessageHTML(msg, index)).join('');
         (state.chat_history || []).forEach(m => m.isNew = false);
     },
@@ -4105,11 +4155,16 @@ startStreamingResponse(charId, fullText, emotion) {
                      bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
                 }
                 wordIndex++;
-            } else {
+			} else {
                 clearInterval(this.RUNTIME.streamingInterval);
                 this.RUNTIME.streamingInterval = null;
                 state.chat_history[messageIndex].isNew = false;
                 StateManager.saveState();
+
+                // --- NEW: Check for dynamic triggers based on the AI's response ---
+                Controller.checkDynamicEntryTriggers(); 
+                // ------------------------------------------------------------------
+
                 setTimeout(() => bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
             }
         }, 2); // Speed of streaming in inverse.
@@ -6155,41 +6210,76 @@ async clearBackgroundImage() {
         } 
     },
     
-    /**
-     * Checks the last message against all dynamic entry triggers and activates any that match.
+	/**
+     * Helper: Converts a user keyword into a RegExp with word boundaries.
+     * Handles * as a wildcard.
      */
-checkDynamicEntryTriggers() {
+    _compileTriggerRegex(keyword) {
+        // 1. Escape special regex characters (like ?, +, ., etc) to prevent errors
+        // We temporarily preserve the * if it exists
+        let clean = keyword.replace(/[.+^${}()|[\]\\]/g, '\\$&'); 
+
+        // 2. Check for wildcards
+        const hasStartWild = clean.startsWith('*');
+        const hasEndWild = clean.endsWith('*');
+
+        // 3. Remove the asterisks for the pattern
+        clean = clean.replace(/^\*|\*$/g, '');
+
+        // 4. Build boundaries
+        // If NO start wildcard, enforce a word boundary at the start (\b)
+        if (!hasStartWild) clean = '\\b' + clean;
+        
+        // If NO end wildcard, enforce a word boundary at the end (\b)
+        if (!hasEndWild) clean = clean + '\\b';
+
+        // 5. Return regex (i = case insensitive)
+        return new RegExp(clean, 'i');
+    },
+	
+	/**
+     * Checks the last message against all dynamic entry triggers and activates any that match.
+     * [UPDATED] Now supports exact matching and * wildcards.
+     */
+    checkDynamicEntryTriggers() {
         const state = StateManager.getState();
         // Get the last message that wasn't a lore reveal
         const lastMessage = (state.chat_history || []).filter(m => m.type !== 'lore_reveal').pop();
         if (!lastMessage) return;
 
-        const content = lastMessage.content.toLowerCase();
+        const content = lastMessage.content; // We use raw content, regex handles case insensitivity
         let stateChanged = false;
 
         (state.dynamic_entries || []).forEach(entry => {
             // 1. Check for triggers
             const { groups, chance } = this.parseTriggers(entry.triggers);
+            
             const keywordMatch = groups.some(group => {
+                // Map keywords to Regex patterns
+                const patterns = group.keywords.map(kw => this._compileTriggerRegex(kw));
+
                 switch (group.type) {
-                    case 'OR': return content.includes(group.keywords[0]);
-                    case 'AND': return group.keywords.every(kw => content.includes(kw));
-                    case 'XOR': const [f, s] = [content.includes(group.keywords[0]), content.includes(group.keywords[1])]; return (f && !s) || (!f && s);
-                    default: return false;
+                    case 'OR': 
+                        return patterns.some(regex => regex.test(content));
+                    case 'AND': 
+                        return patterns.every(regex => regex.test(content));
+                    case 'XOR': 
+                        const [f, s] = [patterns[0].test(content), patterns[1].test(content)]; 
+                        return (f && !s) || (!f && s);
+                    default: 
+                        return false;
                 }
             });
 
             // 2. If triggered:
             if (keywordMatch || (Math.random() * 100 < chance)) {
                 
-                // 3. De-duplicate: Look-behind 20 messages and remove existing entry
-                // This is the efficient tweak to your "scan all history" request.
+                // 3. De-duplicate: Look-behind 20 messages
                 const searchWindowStart = Math.max(0, state.chat_history.length - 20);
                 let foundIndex = -1;
 
                 for (let i = state.chat_history.length - 1; i >= searchWindowStart; i--) {
                     const msg = state.chat_history[i];
-                    // We need a stable ID to find the entry
                     if (msg.type === 'lore_reveal' && msg.dynamic_entry_id === entry.id) {
                         foundIndex = i;
                         break;
@@ -6198,42 +6288,31 @@ checkDynamicEntryTriggers() {
 
                 if (foundIndex !== -1) {
                     state.chat_history.splice(foundIndex, 1);
-                    console.log(`Removed old dynamic entry: ${entry.title}`);
                     stateChanged = true;
                 }
-				// --- NEW SEQUENTIAL LOGIC ---
-                // 1. Get the current index, defaulting to 0
+
+                // 4. Sequential Logic
                 const contentIndex = entry.current_index || 0;
-                
-                // 2. Get the content from the specific field
                 const contentToReveal = entry.content_fields[contentIndex];
 
-                // 3. Increment the index for the *next* trigger
                 let nextIndex = contentIndex + 1;
-
-                // 4. Check if we've reached the end. If so, stick to the last field.
                 if (nextIndex >= entry.content_fields.length) {
                     nextIndex = entry.content_fields.length - 1;
                 }
-                
-                // 5. Save the new index back to the entry
                 entry.current_index = nextIndex;
-                // --- END SEQUENTIAL LOGIC ---
-				
-				
-                // 4. Add the new entry inline (at the end of the history)
+                
+                // 5. Add the new entry inline
                 state.chat_history.push({ 
                     type: 'lore_reveal', 
                     title: entry.title, 
                     content: contentToReveal,
-                    dynamic_entry_id: entry.id, // Stable identifier for de-duplication
+                    dynamic_entry_id: entry.id,
                     timestamp: new Date().toISOString(),
-                    isHidden: true // Mark as invisible for the UI
+                    isHidden: true
                 });
-                console.log(`Dynamic Entry triggered and added inline: ${entry.title}`);
+                console.log(`Dynamic Entry triggered: ${entry.title}`);
                 stateChanged = true;
 
-                // 5. Clean up the old 'triggered_at_turn' property so it doesn't show as "ACTIVE" in the UI
                 if (entry.triggered_at_turn !== null) {
                     entry.triggered_at_turn = null;
                 }
@@ -6242,7 +6321,6 @@ checkDynamicEntryTriggers() {
 
         if (stateChanged) {
             StateManager.saveState();
-            // We still call this to clear any "ACTIVE" tags from the UI
             UIManager.renderDynamicEntries(); 
         }
     },
@@ -7988,6 +8066,10 @@ const app = {
 // Start the application once the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => app.init());
 
+
+
 	</script>
+
+    
 </body>
 </html>
