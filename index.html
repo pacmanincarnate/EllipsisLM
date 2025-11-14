@@ -5965,16 +5965,23 @@ async clearBackgroundImage() {
         }
     },
 
-    /** Undoes the last message in the chat history. */
+	/** Undoes the last message in the chat history, handling hidden lore entries. */
     undoLastTurn() { 
         if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
         const state = StateManager.getState();
         if (state.chat_history.length === 0) return; 
-        const lastMessage = state.chat_history[state.chat_history.length - 1]; 
-        if (lastMessage && lastMessage.type === 'chat') {
-            state.messageCounter--;
+
+        // Keep removing items from the end until we find and remove a 'chat' type message
+        // This ensures we remove the AI response AND any hidden system/lore events that triggered after it
+        let removedChatMessage = false;
+        while (state.chat_history.length > 0 && !removedChatMessage) {
+            const msg = state.chat_history.pop();
+            if (msg.type === 'chat') {
+                state.messageCounter--;
+                removedChatMessage = true;
+            }
         }
-        state.chat_history.pop();
+
         this.saveAndRender(); 
     },
 
