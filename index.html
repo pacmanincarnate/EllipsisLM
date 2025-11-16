@@ -111,6 +111,10 @@ body.layout-horizontal #chat-window::-webkit-scrollbar-thumb {
     background-color: var(--surface-overlay); 
 }
 
+.details-scroll-container::-webkit-scrollbar-track {
+    background: rgba(31, 41, 55, 0.5); /* dark-gray-800 at 50% opacity */
+}
+
 .toggle-bg:after { 
     content: ''; 
     position: absolute; 
@@ -120,16 +124,21 @@ body.layout-horizontal #chat-window::-webkit-scrollbar-thumb {
     border-radius: 9999px; 
     height: 1.25rem; 
     width: 1.25rem; 
-    transition: transform var(--transition-fast); 
+    /* MODIFICATION: Animate 'left' instead of 'transform' */
+    transition: left var(--transition-fast), background-color var(--transition-fast);
 }
 
 input:checked + .toggle-bg { 
-    background-color: var(--brand-color-toggle); 
+    background-color: rgb(56 189 248 / var(--tw-text-opacity, 1)); 
 }
 
 input:checked + .toggle-bg:after { 
-    transform: translateX(100%); 
+    /* This value is (Bar Width) - (Knob Width) - (Right Padding) */
+    /* 3rem - 1.25rem - 0.125rem = 1.625rem */
+    left: 1.625rem;
 }
+
+
 
 /* --- New Character Roster Button Styling --- */
 .char-roster-btn {
@@ -418,6 +427,22 @@ body.layout-horizontal[data-mode="cinematic_overlay"] #main-header {
 
 #chat-window .chat-bubble-container:last-child {
     margin-bottom: 1rem; /* Adjust this value as needed */
+}
+
+/* By default (mobile-first / layout-vertical), show the title and hide the balancer */
+.story-details-title-input {
+    display: block;
+}
+.story-details-title-balancer {
+    display: none;
+}
+
+/* When in horizontal/desktop layout, hide the title and show the balancer */
+body.layout-horizontal .story-details-title-input {
+    display: none;
+}
+body.layout-horizontal .story-details-title-balancer {
+    display: block;
 }
 	</style>
 </head>
@@ -1289,14 +1314,24 @@ const StoryService = {
      * @param {object} currentState - The full activeNarrativeState object from StateManager.
      * @param {Array<object>} narrativeStubs - The current list of stubs for this story.
      */
+/**
+     * Saves the entire active state by splitting it into Story (Metadata + Characters)
+     * and Narrative (Chat + Active Status).
+     */
     async saveActiveState(currentState, narrativeStubs) {
         if (!currentState || !currentState.id || !currentState.narrativeId) {
             console.warn("StoryService: saveActiveState skipped (invalid state).");
             return; 
         }
 
-        // 1. Create the 'story' object (metadata)
-        // This object contains all story-level settings and data.
+        // 1. Extract Active Character IDs for the Narrative
+        // The narrative only cares *who* is here, not *what* they look like.
+        const activeCharacterIds = (currentState.characters || [])
+            .filter(c => c.is_active)
+            .map(c => c.id);
+
+        // 2. Create the 'story' object
+        // This holds the MASTER LIST of character definitions.
         const storyData = {
             id: currentState.id,
             name: currentState.name,
@@ -1304,7 +1339,7 @@ const StoryService = {
             created_date: currentState.created_date,
             creator_notes: currentState.creator_notes,
             tags: currentState.tags,
-            // UI settings
+            // UI settings & Prompts
             font: currentState.font,
             backgroundImageURL: currentState.backgroundImageURL,
             bubbleOpacity: currentState.bubbleOpacity,
@@ -1313,7 +1348,6 @@ const StoryService = {
             backgroundBlur: currentState.backgroundBlur,
             textSize: currentState.textSize,
             bubbleImageSize: currentState.bubbleImageSize,
-            // Prompts
             system_prompt: currentState.system_prompt,
             event_master_base_prompt: currentState.event_master_base_prompt,
             event_master_prompt: currentState.event_master_prompt, 
@@ -1322,21 +1356,20 @@ const StoryService = {
             prompt_location_gen: currentState.prompt_location_gen,
             prompt_entry_gen: currentState.prompt_entry_gen,
             prompt_location_memory_gen: currentState.prompt_location_memory_gen,
-            // Story-level Data
-            characters: currentState.characters,
+            // Data
+            characters: currentState.characters, // Save full definitions here
             dynamic_entries: currentState.dynamic_entries,
             scenarios: currentState.scenarios,
-            // We MUST store the list of narrative stubs
             narratives: narrativeStubs || []
         };
 
-        // 2. Create the 'narrative' object (heavy data)
-        // This contains only the data for this specific chat session.
+        // 3. Create the 'narrative' object
         const narrativeData = {
             id: currentState.narrativeId,
             name: currentState.narrativeName,
             last_modified: new Date().toISOString(),
-            // The 'state' property holds the heavy chat history and map
+            // NEW: Store the list of IDs that are active in this specific narrative
+            active_character_ids: activeCharacterIds, 
             state: {
                 chat_history: currentState.chat_history,
                 messageCounter: currentState.messageCounter,
@@ -1345,7 +1378,7 @@ const StoryService = {
             }
         };
 
-        // 3. Save both to IDB in parallel
+        // 4. Save both
         await Promise.all([
             DBService.saveStory(storyData),
             DBService.saveNarrative(narrativeData)
@@ -1485,6 +1518,9 @@ const StoryService = {
      * @param {string} scenarioId
      * @returns {Promise<object>} The newly created (and saved) narrative object.
      */
+/**
+     * Creates a new narrative and RESTORES the Story State from a scenario snapshot.
+     */
     async createNarrativeFromScenario(storyId, scenarioId) {
         // 1. Get the full story
         const story = await DBService.getStory(storyId);
@@ -1494,21 +1530,37 @@ const StoryService = {
         const scenario = story.scenarios.find(sc => sc.id === scenarioId);
         if (!scenario) throw new Error("Scenario not found");
 
+        // --- RESTORE STORY-LEVEL DATA ---
+        // If the scenario has snapshot data, we overwrite the current Story settings
+        // with the data preserved in the scenario.
+		if (scenario.dynamic_entries) story.dynamic_entries = JSON.parse(JSON.stringify(scenario.dynamic_entries));
+        if (scenario.prompts) Object.assign(story, scenario.prompts);
+		
+		// Determine Active IDs from Scenario
+        // If the scenario has a specific list, use it. Otherwise, default to all.
+        const activeIDs = scenario.active_character_ids || story.characters.map(c => c.id);
+		
         // 3. Create the new full narrative object
-        const newNarrative = {
+		const newNarrative = {
             id: UTILITY.uuid(),
             name: `${scenario.name} - Chat`,
             last_modified: new Date().toISOString(),
+            // --- Save the active IDs ---
+            active_character_ids: activeIDs,
             state: {
                 chat_history: [],
                 messageCounter: 0,
-                // Deep copy state from scenario if it exists
                 static_entries: scenario.static_entries ? JSON.parse(JSON.stringify(scenario.static_entries)) : [{ id: UTILITY.uuid(), title: "World Overview", content: "A high-fantasy world." }],
                 worldMap: scenario.worldMap ? JSON.parse(JSON.stringify(scenario.worldMap)) : { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
             }
         };
 
-        // 4. Add the first message from the scenario
+        // 4. Inject Example Dialogue
+        if (scenario.example_dialogue && Array.isArray(scenario.example_dialogue)) {
+            newNarrative.state.chat_history.push(...JSON.parse(JSON.stringify(scenario.example_dialogue)));
+        }
+
+        // 5. Add the first visible message
         const firstMessage = scenario.message;
         if (firstMessage) {
             const firstSpeaker = story.characters.find(c => !c.is_user && c.is_active);
@@ -1521,16 +1573,14 @@ const StoryService = {
             }
         }
         
-        // 5. Save the new narrative to its store
+        // 6. Save the new narrative
         await DBService.saveNarrative(newNarrative);
         
-        // 6. Add the *stub* of the new narrative to the story's list
+        // 7. Add the stub AND Save the UPDATED Story (with restored settings)
         story.narratives.push({ id: newNarrative.id, name: newNarrative.name });
-        
-        // 7. Save the updated story
         await DBService.saveStory(story);
         
-        return newNarrative; // Return the new narrative
+        return newNarrative;
     },
 
     /**
@@ -1863,13 +1913,34 @@ data: {
             this.data.library.active_story_id = activeStory ? activeStory.id : null;
             this.data.library.active_narrative_id = activeNarrative ? activeNarrative.id : null;
 
-            // 4. Populate the activeNarrativeState if data was returned
+			// 4. Populate the activeNarrativeState if data was returned
             if (activeStory && activeNarrative) {
-                this.data.activeNarrativeState = {
+                // hydrate Character Active State
+                
+                // 1. Get the list of active IDs.
+                // If the list is undefined/null (old narrative), we'll use a fallback.
+                const idList = activeNarrative.active_character_ids;
+
+                // 2. Create the Set of active IDs.
+                // IF idList is null/undefined (old narrative): default to ALL characters in the story being active.
+                // ELSE (new narrative): use the specific list from the narrative.
+                const activeIDs = (idList === null || idList === undefined)
+                    ? new Set((activeStory.characters || []).map(c => c.id)) // <--- MIGRATION FIX: Default to all active
+                    : new Set(idList);                                        // <--- STANDARD: Use saved list
+                
+                // 2. Map over story characters and set is_active flag
+                const hydratedCharacters = (activeStory.characters || []).map(char => ({
+                    ...char,
+                    // It is active IF it's in the narrative's list
+                    // Exception: The User character is ALWAYS active
+                    is_active: char.is_user || activeIDs.has(char.id) // <--- This logic now works
+                }));
+				this.data.activeNarrativeState = {
                     ...activeStory,                // Story settings
                     ...this.data.globalSettings,   // Global settings
                     ...activeNarrative.state,      // Narrative state (chat history, etc)
-                    narrativeId: activeNarrative.id, // <-- Store the narrative ID
+                    characters: hydratedCharacters,
+					narrativeId: activeNarrative.id, // <-- Store the narrative ID
                     narrativeName: activeNarrative.name
                 };
 
@@ -2879,110 +2950,13 @@ async exportStoryAsBYAF(story, narrative, primaryCharId) {
 
     // --- Data Conversion Helpers (Import) ---
 
-	_convertV2toEllipsis(v2Data) {
-		const story = this._createEmptyEllipsisStory();
-		story.name = v2Data.name || "Imported Character";
-		story.tags = v2Data.tags || [];
-
-		// Create User and AI Character with corrected variable names
-		const userChar = { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {user} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', tags:[], is_narrator: false };
-		const aiChar = {
-			id: UTILITY.uuid(),
-			name: v2Data.name || "Imported Character",
-			...UTILITY.getDefaultStorySettings(),
-			description: (v2Data.description || "").replace(/{{char}}/g, v2Data.name || "Imported Character").replace(/{{user}}/g, "{user}"),
-			short_description: (v2Data.description || "").split('.')[0] + '.',
-			model_instructions: (v2Data.system_prompt || "Act as {character}. Be descriptive and engaging.").replace(/{{char}}/g, "{character}").replace(/{{user}}/g, "{user}"),
-			image_url: '',
-			extra_portraits: [],
-			tags: v2Data.tags || [],
-			is_user: false,
-			is_active: true,
-			is_narrator: false
-		};
-		story.characters = [userChar, aiChar];
-
-		// Map Lorebook -> Dynamic Entries
-		if (v2Data.character_book && v2Data.character_book.entries) {
-			story.dynamic_entries = v2Data.character_book.entries.map(entry => ({
-				id: UTILITY.uuid(),
-				title: (entry.keys || []).join(', ') || "Imported Lore",
-				triggers: (entry.keys || []).join(', '),
-				content_fields: [entry.content || ""], // <-- FIX
-                current_index: 0,                    // <-- FIX
-				triggered_at_turn: null
-			}));
-		}
-		
-		const firstMes = (v2Data.first_mes || `The story of ${aiChar.name} begins.`).replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, "{user}");		// Create Scenario and Narrative
-		const scenario = { id: UTILITY.uuid(), name: "Imported Start", message: firstMes };
-		story.scenarios.push(scenario);
-				
-		// Create a scenario for the main first_mes AND each alternate_greeting
-		const allGreetings = [v2Data.first_mes || `The story of ${aiChar.name} begins.`];
-		if (Array.isArray(v2Data.alternate_greetings)) {
-			allGreetings.push(...v2Data.alternate_greetings);
-		}
-    
-		story.scenarios = []; // Clear the default empty scenario
-		allGreetings.forEach((greeting, index) => {
-			const scenarioName = index === 0 ? "Imported Start" : `Alternate Start ${index}`;
-			const messageContent = (greeting || "").replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, "{user}");
-			
-			story.scenarios.push({
-				id: UTILITY.uuid(),
-				name: scenarioName,
-				message: messageContent
-			});
-		});
-		
-		const narrative = this._createEmptyEllipsisNarrative("Imported Chat");
-
-		// Parse V2 multi-turn example dialogues
-			if (v2Data.mes_example) {
-				const charNameIdMap = { '{{user}}': userChar.id, '{{char}}': aiChar.id };
-				const regex = /({{user}}|{{char}}):([\s\S]*?)(?={{user}}:|{{char}}:|$)/g;
-				
-				let cleanedText = v2Data.mes_example.replace(/<START>/g).trim();
-				
-				for (const match of cleanedText.matchAll(regex)) {
-					const speakerPrefix = match[1];
-					const messageContent = match[2].trim().replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, "{user}");
-					const speakerId = charNameIdMap[speakerPrefix];
-
-					if (speakerId && messageContent) {
-						narrative.state.chat_history.push({
-							character_id: speakerId,
-							content: messageContent,
-							type: 'chat',
-							isHidden: true
-						});
-					}
-				}
-			}
-
-			// Add the first message from the PRIMARY scenario to the chat history so it appears on load
-			const firstScenario = story.scenarios[0];
-			if (firstScenario && firstScenario.message) {
-				narrative.state.chat_history.push({
-					character_id: aiChar.id,
-					content: firstScenario.message,
-					type: 'chat',
-					isHidden: false
-				});
-				narrative.state.messageCounter = 1;
-			}
-			
-			story.narratives.push(narrative);
-			return story;
-		},
-
-    _convertBYAFtoEllipsis(byafData) {
+_convertBYAFtoEllipsis(byafData) {
         const { character, scenario } = byafData;
         const story = this._createEmptyEllipsisStory();
         story.name = character.displayName || character.name || "Imported Character";
         story.tags = character.tags || [];
 
+        // 1. Construct Characters
         const userChar = { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', tags:[], is_narrator: false };
         const aiChar = {
             id: UTILITY.uuid(),
@@ -2999,60 +2973,79 @@ async exportStoryAsBYAF(story, narrative, primaryCharId) {
         };
         story.characters = [userChar, aiChar];
 
-		// Map Lore Items -> Dynamic Entries
+        // --- NEW: Define Active IDs ---
+        const activeIDs = [userChar.id, aiChar.id];
+
+        // 2. Construct Lore
         if (character.loreItems) {
             story.dynamic_entries = character.loreItems.map(item => ({
                 id: UTILITY.uuid(),
                 title: item.key || "Imported Lore",
                 triggers: item.key || "",
-                content_fields: [item.value || ""], // <-- FIX
-                current_index: 0,                   // <-- FIX
+                content_fields: [item.value || ""],
+                current_index: 0,
                 triggered_at_turn: null
             }));
         }
 
+        // 3. Parse Example Dialogue
+        const exampleDialogue = [];
+        if (scenario.exampleMessages && scenario.exampleMessages.length > 0) {
+            const charNameIdMap = { '#{character}:': aiChar.id, '#{user}:': userChar.id };
+            const regex = /(#\{(?:character|user)\}:)([\s\S]*?)(?=#\{|$)/g;
+
+            scenario.exampleMessages.forEach(msg => {
+                const exampleText = msg.text || "";
+                for (const match of exampleText.matchAll(regex)) {
+                    const speakerPrefix = match[1];
+                    const messageContent = match[2].trim();
+                    const speakerId = charNameIdMap[speakerPrefix];
+
+                    if (speakerId && messageContent) {
+                        exampleDialogue.push({
+                            character_id: speakerId,
+                            content: messageContent,
+                            type: 'chat',
+                            emotion: 'neutral',
+                            timestamp: new Date().toISOString(),
+                            isHidden: true
+                        });
+                    }
+                }
+            });
+        }
+
+        const staticEntries = [];
+        if (scenario.narrative) {
+            staticEntries.push({ id: UTILITY.uuid(), title: "Starting Scenario", content: scenario.narrative });
+        }
+
+        // 4. Create Scenario
         const firstMes = (scenario.firstMessages && scenario.firstMessages[0]?.text) || `The story of ${aiChar.name} begins.`;
-        const newScenario = { id: UTILITY.uuid(), name: "Imported Start", message: firstMes };
+        const newScenario = { 
+            id: UTILITY.uuid(), 
+            name: "Imported Start", 
+            message: firstMes,
+            // --- NEW: Active IDs ---
+            active_character_ids: activeIDs,
+            dynamic_entries: JSON.parse(JSON.stringify(story.dynamic_entries)),
+            example_dialogue: JSON.parse(JSON.stringify(exampleDialogue)),
+            static_entries: staticEntries,
+            worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] },
+            prompts: UTILITY.getDefaultSystemPrompts() // Simplification for BYAF which lacks internal prompts
+        };
         story.scenarios.push(newScenario);
 
+        // 5. Create Narrative
         const narrative = this._createEmptyEllipsisNarrative("Imported Chat");
+        // --- NEW: Active IDs ---
+        narrative.active_character_ids = activeIDs;
+        narrative.state.static_entries = JSON.parse(JSON.stringify(staticEntries));
+        
+        if (exampleDialogue.length > 0) {
+            narrative.state.chat_history.push(...JSON.parse(JSON.stringify(exampleDialogue)));
+        }
 		
-		 // Correctly map the BYAF scenario's 'narrative' field to a static entry
-		if (scenario.narrative) {
-			narrative.state.static_entries.push({
-				id: UTILITY.uuid(),
-				title: "Starting Scenario",
-				content: scenario.narrative
-			});
-		}
-	
-// [FIX] Parse multi-turn example dialogues from BYAF format
-    if (scenario.exampleMessages && scenario.exampleMessages.length > 0) {
-        const charNameIdMap = { '#{character}:': aiChar.id, '#{user}:': userChar.id };
-        const regex = /(#\{(?:character|user)\}:)([\s\S]*?)(?=#\{|$)/g;
-
-        scenario.exampleMessages.forEach(msg => {
-            const exampleText = msg.text || "";
-            for (const match of exampleText.matchAll(regex)) {
-                const speakerPrefix = match[1];
-                const messageContent = match[2].trim();
-                const speakerId = charNameIdMap[speakerPrefix];
-
-                if (speakerId && messageContent) {
-                    narrative.state.chat_history.push({
-                        character_id: speakerId,
-                        content: messageContent,
-                        type: 'chat',
-                        emotion: 'neutral',
-                        timestamp: new Date().toISOString(),
-                        isHidden: true
-                    });
-                }
-            }
-        });
-	}
-		
-		// Add the first message to the chat history so it appears on load
 		if (firstMes) {
 			narrative.state.chat_history.push({
 				character_id: aiChar.id,
@@ -3060,7 +3053,7 @@ async exportStoryAsBYAF(story, narrative, primaryCharId) {
 				type: 'chat',
 				emotion: 'neutral',
 				timestamp: new Date().toISOString(),
-				isHidden: false // Ensure it's a visible message
+				isHidden: false 
 			});
 			narrative.state.messageCounter = 1;
 		}
@@ -3068,20 +3061,155 @@ async exportStoryAsBYAF(story, narrative, primaryCharId) {
 		story.narratives.push(narrative);
 		return story;
 	},
+	
+	_convertV2toEllipsis(v2Data) {
+		const story = this._createEmptyEllipsisStory();
+		story.name = v2Data.name || "Imported Character";
+		story.tags = v2Data.tags || [];
+
+		// 1. Construct Characters
+		const userChar = { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {user} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', tags:[], is_narrator: false };
+		const aiChar = {
+			id: UTILITY.uuid(),
+			name: v2Data.name || "Imported Character",
+			...UTILITY.getDefaultStorySettings(),
+			description: (v2Data.description || "").replace(/{{char}}/g, v2Data.name || "Imported Character").replace(/{{user}}/g, "{user}"),
+			short_description: (v2Data.description || "").split('.')[0] + '.',
+			model_instructions: (v2Data.system_prompt || "Act as {character}. Be descriptive and engaging.").replace(/{{char}}/g, "{character}").replace(/{{user}}/g, "{user}"),
+			image_url: '',
+			extra_portraits: [],
+			tags: v2Data.tags || [],
+			is_user: false,
+			is_active: true,
+			is_narrator: false
+		};
+		story.characters = [userChar, aiChar];
+		
+		// --- NEW: Define who is active for this import ---
+        const activeIDs = [userChar.id, aiChar.id];
+
+		// 2. Construct Lore (Dynamic Entries)
+		if (v2Data.character_book && v2Data.character_book.entries) {
+			story.dynamic_entries = v2Data.character_book.entries.map(entry => ({
+				id: UTILITY.uuid(),
+				title: (entry.keys || []).join(', ') || "Imported Lore",
+				triggers: (entry.keys || []).join(', '),
+				content_fields: [entry.content || ""],
+                current_index: 0,
+				triggered_at_turn: null
+			}));
+		}
+		
+        // 3. Prepare Snapshot Data (Common to all scenarios)
+        // We create a snapshot of the story state *as it exists right now*
+		const promptSnapshot = {
+            system_prompt: story.system_prompt,
+            event_master_base_prompt: story.event_master_base_prompt,
+            prompt_persona_gen: story.prompt_persona_gen,
+            prompt_world_map_gen: story.prompt_world_map_gen,
+            prompt_location_gen: story.prompt_location_gen,
+            prompt_entry_gen: story.prompt_entry_gen,
+            prompt_location_memory_gen: story.prompt_location_memory_gen,
+            font: story.font,
+            bubbleOpacity: story.bubbleOpacity,
+            chatTextColor: story.chatTextColor
+        };
+
+		// 4. Process Example Dialogue
+        const exampleDialogue = [];
+        if (v2Data.mes_example) {
+            const charNameIdMap = { '{{user}}': userChar.id, '{{char}}': aiChar.id };
+            const regex = /({{user}}|{{char}}):([\s\S]*?)(?={{user}}:|{{char}}:|$)/g;
+            let cleanedText = v2Data.mes_example.replace(/<START>/g).trim();
+            
+            for (const match of cleanedText.matchAll(regex)) {
+                const speakerPrefix = match[1];
+                const messageContent = match[2].trim().replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, "{user}");
+                const speakerId = charNameIdMap[speakerPrefix];
+
+                if (speakerId && messageContent) {
+                    exampleDialogue.push({
+                        character_id: speakerId,
+                        content: messageContent,
+                        type: 'chat',
+                        isHidden: true,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            }
+        }
+
+		// 5. Create Scenarios (Snapshots)
+        // Create a scenario for the main first_mes AND each alternate_greeting
+		const allGreetings = [v2Data.first_mes || `The story of ${aiChar.name} begins.`];
+		if (Array.isArray(v2Data.alternate_greetings)) {
+			allGreetings.push(...v2Data.alternate_greetings);
+		}
+    
+		story.scenarios = [];
+		allGreetings.forEach((greeting, index) => {
+			const scenarioName = index === 0 ? "Imported Start" : `Alternate Start ${index}`;
+			const messageContent = (greeting || "").replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, "{user}");
+			
+			story.scenarios.push({
+				id: UTILITY.uuid(),
+				name: scenarioName,
+				message: messageContent,
+                // Include Full Snapshot
+                active_character_ids: activeIDs,
+                dynamic_entries: JSON.parse(JSON.stringify(story.dynamic_entries)),
+                prompts: JSON.parse(JSON.stringify(promptSnapshot)),
+                example_dialogue: JSON.parse(JSON.stringify(exampleDialogue)),
+                static_entries: [],
+                worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
+			});
+		});
+		
+        // 6. Create Initial Narrative
+		const narrative = this._createEmptyEllipsisNarrative("Imported Chat");
+		
+		narrative.active_character_ids = activeIDs;
+        
+        // Add example dialogue to narrative history
+        if (exampleDialogue.length > 0) {
+            narrative.state.chat_history.push(...JSON.parse(JSON.stringify(exampleDialogue)));
+        }
+
+        // Add the first message from the PRIMARY scenario
+        const firstScenario = story.scenarios[0];
+        if (firstScenario && firstScenario.message) {
+            narrative.state.chat_history.push({
+                character_id: aiChar.id,
+                content: firstScenario.message,
+                type: 'chat',
+                isHidden: false,
+                timestamp: new Date().toISOString()
+            });
+            narrative.state.messageCounter = 1;
+        }
+			
+        story.narratives.push(narrative);
+        return story;
+    },	
 
     // --- Data Conversion Helpers (Export) ---
 
-_convertEllipsistoV2(story, narrative, primaryCharId) {
+	_convertEllipsistoV2(story, narrative, primaryCharId) {
         const primaryChar = story.characters.find(c => c.id === primaryCharId);
-        // Find other AI characters (excluding user and primary)
-        const otherAiChars = story.characters.filter(c => !c.is_user && c.id !== primaryCharId);
-        // Find the user character
         const userChar = story.characters.find(c => c.is_user);
 
-        if (!primaryChar) {
-            // Should have been caught earlier, but double-check
-            throw new Error("Primary character not found during V2 conversion.");
-        }
+        // --- NEW: Filter other characters by Narrative Active State ---
+        // If active_character_ids exists, use it. Otherwise fall back to all (legacy safety).
+        const activeIDs = narrative.active_character_ids || story.characters.map(c => c.id);
+        
+        // Find other AI characters that are NOT the primary char AND are active in this narrative
+        const otherAiChars = story.characters.filter(c => 
+            !c.is_user && 
+            c.id !== primaryCharId && 
+            activeIDs.includes(c.id)
+        );
+
+        if (!primaryChar) throw new Error("Primary character not found during V2 conversion.");
 
         // --- Prepare Merged Description ---
         let fullDescription = primaryChar.description || "";
@@ -3616,95 +3744,151 @@ const UIManager = {
         }
     },
 
-    /**
-     * Renders the detailed view for a selected story, showing its scenarios and narratives.
-     * @param {string} storyId - The ID of the story to display.
+/**
+     * Renders the detailed view for a selected story.
+     * [UPDATED] Header-based actions, scrollable carousel, expandable scenarios.
      */
     openStoryDetails(storyId) {
         const library = StateManager.getLibrary();
         const story = library.stories.find(s => s.id === storyId);
         if (!story) return;
+		const isMobile = (window.innerHeight > window.innerWidth);
+		const closeModalAction = isMobile 
+			? "Controller.closeModal('story-details-modal')" 
+			: "Controller.closeModal('story-library-modal')";
 
+        // 1. Generate Scenarios HTML (Expandable, Markdown, No Message BG)
         const scenariosHTML = (story.scenarios || []).map(scenario => `
-            <div class="bg-gray-700/30 p-3 rounded-lg flex justify-between items-center gap-2">
-                <p class="font-semibold flex-grow">${UTILITY.escapeHTML(scenario.name)}</p>
-                <div class="flex-shrink-0 flex items-center gap-2">
-                    <button onclick="Controller.createNarrativeFromScenario('${story.id}', '${scenario.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold p-2 rounded-lg" title="Load Scenario (Creates New Narrative)"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg></button>
-                    <button onclick="Controller.duplicateScenario('${story.id}', '${scenario.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold p-2 rounded-lg" title="Duplicate Scenario"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
-                    <button onclick="Controller.deleteScenario('${story.id}', '${scenario.id}')" class="bg-red-600 hover:bg-red-500 text-white font-bold p-2 rounded-lg" title="Delete Scenario"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+            <details open class="bg-gray-700/30 rounded-lg overflow-hidden group">
+                <summary class="p-3 cursor-pointer hover:bg-gray-700/50 flex justify-between items-center font-semibold select-none">
+                    <span>${UTILITY.escapeHTML(scenario.name)}</span>
+                    <span class="text-xs text-gray-400 group-open:hidden">▼</span>
+                    <span class="text-xs text-gray-400 hidden group-open:block">▲</span>
+                </summary>
+                <div class="p-3 bg-black/20 border-t border-gray-600 space-y-3">
+                    <div>
+                        <p class="text-xs text-gray-400 font-bold mb-1">First Message:</p>
+                        <div class="text-sm text-gray-300 prose prose-invert prose-sm max-w-none">
+                            ${marked.parse(scenario.message || '*(No message)*')}
+                        </div>
+                    </div>
+                    <div class="flex gap-2 justify-end pt-2">
+                        <button onclick="Controller.createNarrativeFromScenario('${story.id}', '${scenario.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-1 px-3 rounded" title="Load Scenario">Load</button>
+                        <button onclick="Controller.duplicateScenario('${story.id}', '${scenario.id}')" class="bg-gray-600 hover:bg-gray-500 text-white text-xs font-bold py-1 px-3 rounded" title="Duplicate">Duplicate</button>
+                        <button onclick="Controller.deleteScenario('${story.id}', '${scenario.id}')" class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold py-1 px-3 rounded" title="Delete">Delete</button>
+                    </div>
                 </div>
-            </div>
+            </details>
         `).join('');
 
+        // 2. Generate Narratives HTML (Buttons re-ordered, new Load icon)
         const narrativesHTML = (story.narratives || []).sort((a, b) => new Date(b.last_modified) - new Date(a.last_modified)).map(narrative => `
             <div class="bg-gray-700/60 p-3 rounded-lg flex justify-between items-center gap-2">
-                <div class="flex-grow">
-                    <p class="font-semibold">${UTILITY.escapeHTML(narrative.name)}</p>
+                <div class="flex-grow min-w-0">
+                    <p class="font-semibold truncate">${UTILITY.escapeHTML(narrative.name)}</p>
                     <p class="text-xs text-gray-400">Modified: ${new Date(narrative.last_modified).toLocaleString()}</p>
                 </div>
                 ${narrative.id === library.active_narrative_id && story.id === library.active_story_id ? '<span class="text-xs text-sky-300 font-bold flex-shrink-0">ACTIVE</span>' : ''}
+                
                 <div class="flex-shrink-0 flex items-center gap-2">
-                    <button onclick="Controller.elevateNarrativeToScenario('${story.id}', '${narrative.id}')" class="bg-teal-600 hover:bg-teal-500 text-white font-bold p-2 rounded-lg" title="Elevate to Scenario"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z"></path></svg></button>
-                    <button onclick="Controller.loadNarrative('${story.id}', '${narrative.id}')" class="bg-green-600 hover:bg-green-500 text-white font-bold p-2 rounded-lg" title="Load Narrative"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
-                    <button onclick="Controller.duplicateNarrative('${story.id}', '${narrative.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold p-2 rounded-lg" title="Duplicate"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
-                    <button onclick="Controller.deleteNarrative('${story.id}', '${narrative.id}')" class="bg-red-600 hover:bg-red-500 text-white font-bold p-2 rounded-lg" title="Delete"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                    <button onclick="Controller.deleteNarrative('${story.id}', '${narrative.id}')" class="text-red-400 hover:text-red-300 p-1" title="Delete"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                    <button onclick="Controller.elevateNarrativeToScenario('${story.id}', '${narrative.id}')" class="text-teal-400 hover:text-teal-300 p-1" title="Elevate to Scenario"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z"></path></svg></button>
+                    <button onclick="Controller.duplicateNarrative('${story.id}', '${narrative.id}')" class="text-gray-400 hover:text-gray-300 p-1" title="Duplicate"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
+                    <button onclick="Controller.loadNarrative('${story.id}', '${narrative.id}')" class="text-green-400 hover:text-green-300 p-1" title="Load Narrative"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 0 0 4 4.11V15.89a1.5 1.5 0 0 0 2.3 1.269l9.344-5.89a1.5 1.5 0 0 0 0-2.538L6.3 2.84Z"/></svg></button>
                 </div>
             </div>
         `).join('');
 
+        // 3. Construct Full HTML
         const detailsHTML = `
-            <div class="relative w-full h-full bg-black/20 overflow-hidden flex flex-col">
-                <div class="relative w-full aspect-video flex-shrink-0" style="height: 69%;">
-                     <div id="details-carousel" class="w-full h-full"></div>
-                     <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/80 via-black/30 to-transparent pointer-events-none z-10"></div>
-                     <h3 class="absolute top-4 left-4 text-white text-2xl font-bold drop-shadow-lg z-20">${UTILITY.escapeHTML(story.name || 'Untitled Story')}</h3>
+            <div class="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent" style="padding-top: calc(1rem + env(safe-area-inset-top));">
+				<input type="text" 
+                   value="${UTILITY.escapeHTML(story.name)}" 
+                   oninput="Controller.updateStoryField('${story.id}', 'name', this.value)" 
+                   class="text-2xl font-bold bg-transparent border border-transparent hover:border-gray-600 focus:border-indigo-500 rounded px-2 py-1 text-white w-2/3 transition-colors focus:outline-none focus:bg-black/30 story-details-title-input"
+                   placeholder="Story Title">
+            
+            <div class="story-details-title-balancer"></div>
+
+                <div class="flex items-center space-x-2">
+                    <button onclick="Controller.duplicateStory('${story.id}')" class="bg-gray-700/50 hover:bg-gray-600/80 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Duplicate Story">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    </button>
+                    <button onclick="Controller.deleteStory('${story.id}')" class="bg-red-900/50 hover:bg-red-700/80 text-red-200 hover:text-white p-2 rounded-lg transition-colors" title="Delete Story">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                    <div class="w-px h-6 bg-gray-600/50 mx-2"></div>
+                    <button onclick="${closeModalAction}" class="bg-gray-700/50 hover:bg-gray-600/80 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
                 </div>
-                <div class="p-6 flex-grow overflow-y-auto space-y-6 min-h-0">
-                     
-                     <div class="space-y-4 -mt-2">
+            </div>
+
+            <div class="flex-grow overflow-y-auto min-h-0 details-scroll-container">
+                
+                <div class="relative w-full aspect-square bg-black/50 group">
+                     <div id="details-carousel" class="w-full h-full object-cover"></div>
+                     </div>
+
+                <div class="p-6 space-y-8">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="text-sm text-gray-400">Creator's Note</label>
+                            <label class="text-sm text-gray-400 font-bold mb-1 block">Creator's Note</label>
                             <div class="relative">
-                                <textarea oninput="Controller.updateStoryField('${story.id}', 'creator_notes', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded resize-none h-20">${UTILITY.escapeHTML(story.creator_notes || '')}</textarea>
-                                <button onclick="Controller.generateStoryNotesAI(event, '${story.id}')" class="absolute top-2 right-2 text-sky-400 hover:text-sky-300 p-1 bg-sky-600/80 rounded" title="Generate with AI">${this.getAIGenIcon()}</button>
+                                <textarea oninput="Controller.updateStoryField('${story.id}', 'creator_notes', this.value)" class="w-full bg-black/30 border-gray-600 p-3 rounded-lg resize-none h-24 text-sm focus:ring-1 focus:ring-indigo-500 transition-all">${UTILITY.escapeHTML(story.creator_notes || '')}</textarea>
+                                <button onclick="Controller.generateStoryNotesAI(event, '${story.id}')" class="absolute top-2 right-2 text-gray-500 hover:text-indigo-400 transition-colors" title="Generate with AI">${this.getAIGenIcon()}</button>
                             </div>
                         </div>
-                        <div>
-                            <label class="text-sm text-gray-400">Tags (comma-separated)</label>
-                            <div class="relative">
-                                <input type="text" value="${UTILITY.escapeHTML((story.tags || []).join(', '))}" oninput="Controller.updateStoryTags('${story.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded">
-                                <button onclick="Controller.generateStoryTagsAI(event, '${story.id}')" class="absolute top-1/2 right-2 -translate-y-1/2 text-sky-400 hover:text-sky-300 p-1 bg-sky-600/80 rounded" title="Generate with AI">${this.getAIGenIcon()}</button>
-                            </div>
-                        </div>
-                     </div>
-                     <hr class="border-gray-600">
-                     <div>
-                        <h4 class="font-bold text-lg mb-2 text-indigo-300">Scenarios (Templates)</h4>
-                        <div class="space-y-2">${scenariosHTML || '<p class="text-sm text-gray-400">No scenarios in this story.</p>'}</div>
-                     </div>
-                     <hr class="border-gray-600">
-                     <div>
-                        <h4 class="font-bold text-lg mb-2 text-sky-300">Narratives (Chats)</h4>
-                        <div class="space-y-2">${narrativesHTML || '<p class="text-sm text-gray-400">No narratives yet. Load a scenario to start one.</p>'}</div>
-                     </div>
-                      <hr class="border-gray-600">
-                     <div class="flex space-x-2">
-                        <button onclick="Controller.renameStoryPrompt('${story.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded-lg" title="Rename"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-                        <button onclick="Controller.duplicateStory('${story.id}')" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded-lg" title="Duplicate"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
-                        <button onclick="Controller.deleteStory('${story.id}')" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-3 rounded-lg" title="Delete"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                     </div>
+						<div>
+							<label class="text-sm text-gray-400 font-bold mb-1 block">Tags</label>
+							<div class="relative">
+								<input type="text" value="${UTILITY.escapeHTML((story.tags || []).join(', '))}" oninput="Controller.updateStoryTags('${story.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-3 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 transition-all">
+								<button onclick="Controller.generateStoryTagsAI(event, '${story.id}')" class="absolute top-1/2 right-2 -translate-y-1/2 text-gray-500 hover:text-indigo-400 transition-colors" title="Generate with AI">${this.getAIGenIcon()}</button>
+							</div>
+						</div>
+                    </div>
+
+                    <hr class="border-gray-700">
+
+                    <div>
+                        <h4 class="font-bold text-lg mb-4 text-indigo-300 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            Scenarios (Templates)
+                        </h4>
+                        <div class="space-y-3">${scenariosHTML || '<p class="text-sm text-gray-500 italic">No scenarios available.</p>'}</div>
+                    </div>
+
+                    <hr class="border-gray-700">
+
+                    <div>
+                        <h4 class="font-bold text-lg mb-4 text-sky-300 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                            Narratives (Chats)
+                        </h4>
+                        <div class="space-y-2">${narrativesHTML || '<p class="text-sm text-gray-500 italic">No narratives started. Load a scenario to begin.</p>'}</div>
+                    </div>
                 </div>
             </div>
         `;
 
+        // Render based on device
         if (window.innerHeight > window.innerWidth) {
-            document.getElementById('story-details-content-mobile').innerHTML = detailsHTML;
+            // MODIFIED: Target the modal's main content box to overwrite the footer
+            document.querySelector('#story-details-modal > div:not(.modal-overlay)').innerHTML = detailsHTML;
             Controller.openModal('story-details-modal');
-            this.startCarousel(story.characters, 'details-carousel');
         } else {
-            document.getElementById('story-details-content-desktop').innerHTML = detailsHTML;
-            this.startCarousel(story.characters, 'details-carousel');
+            // MODIFIED: Wrap desktop content to fix padding issue
+            const detailsWrapperHTML = `
+                <div class="w-full h-full flex flex-col md:-m-6 bg-gray-900 relative">
+                    ${detailsHTML}
+                </div>
+            `;
+            document.getElementById('story-details-content-desktop').innerHTML = detailsWrapperHTML;
         }
+        
+        // Start carousel
+        this.startCarousel(story.characters, 'details-carousel');
     },
 
     /**
@@ -3755,7 +3939,7 @@ const UIManager = {
         }, 4000);
     },
     
-    renderCharacters() { 
+	renderCharacters() { 
         const state = StateManager.getState();
         const container = document.getElementById('characters-container');
         if (!state.characters) {
@@ -3764,10 +3948,22 @@ const UIManager = {
         }
         container.innerHTML = state.characters.map(char => {
             const tagsHTML = (char.tags || []).map(tag => `<span class="bg-indigo-500/50 text-indigo-200 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${UTILITY.escapeHTML(tag)}</span>`).join('');
+            
+            // --- NEW VISUAL LOGIC ---
+            // If inactive: 50% opacity and grayscale
+            const visualStyle = char.is_active 
+                ? "" 
+                : "opacity: 0.5; filter: grayscale(80%);";
+            const activeBadge = char.is_active
+                ? ""
+                : '<div class="absolute top-2 right-2 bg-black/60 text-gray-300 text-xs px-2 py-1 rounded">Inactive</div>';
+            // ------------------------
+
             return `
                 <div onclick="Controller.openModal('character-detail-modal', '${char.id}')" 
                      class="char-roster-btn" 
-                     style="background-image: url('${UIManager.RUNTIME.characterImageCache[char.id] || char.image_url || 'https://placehold.co/600x800/111827/4b5563?text=?'}')">
+                     style="background-image: url('${UIManager.RUNTIME.characterImageCache[char.id] || char.image_url || 'https://placehold.co/600x800/111827/4b5563?text=?'}'); ${visualStyle}">
+                    ${activeBadge}
                     <div class="char-roster-content text-white">
                         <h3 class="font-bold text-lg truncate">${UTILITY.escapeHTML(char.name)}</h3>
                         <p class="text-sm text-gray-300 italic truncate">${UTILITY.escapeHTML(char.short_description)}</p>
@@ -4493,96 +4689,84 @@ getPortraitSrc(character, mood) {
 	  return null;
 	},
 
-    openCharacterDetailModal(charId) {
+	openCharacterDetailModal(charId) {
         const state = StateManager.getState();
         const char = state.characters.find(c => c.id === charId);
-        if (!char) {
-            console.error("Character not found:", charId);
-            return;
-        }
+        if (!char) return;
         const container = document.getElementById('character-detail-modal-content');
         
-const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) => {
-          const emo = portrait.emotion || 'happy';
-          const fileInputId = `emo-file-${char.id}-${index}`;
-          const urlInputId  = `emo-url-${char.id}-${index}`;
-          const labelId     = `emo-label-${char.id}-${index}`;
+        // Determine current role for UI state
+        let currentRole = 'none';
+        if (char.is_user) currentRole = 'user';
+        else if (char.is_narrator) currentRole = 'narrator';
 
-          // Determine current source to show a hint (cache -> “local”)
-          const cached = (UIManager.RUNTIME.characterImageCache || {})[`${char.id}::emotion::${emo}`];
-          const hint   = cached ? '[local image]' : (portrait.url ? '[url]' : '[none]');
-
-          return `
-            <div class="flex flex-col space-y-2 mt-2 p-2 rounded border border-gray-700/50">
-                <div class="flex items-center space-x-2">
-                    <select
-                        onchange="Controller.updateExtraPortrait('${char.id}', ${index}, 'emotion', this.value)"
-                        class="w-1/3 bg-black/30 border-gray-600 rounded p-1 text-sm"
-                    >
-                        <option value="happy" ${emo === 'happy' ? 'selected' : ''}>Happy</option>
-                        <option value="sad" ${emo === 'sad' ? 'selected' : ''}>Sad</option>
-                        <option value="angry" ${emo === 'angry' ? 'selected' : ''}>Angry</option>
-                        <option value="surprised" ${emo === 'surprised' ? 'selected' : ''}>Surprised</option>
-                        <option value="neutral" ${emo === 'neutral' ? 'selected' : ''}>Neutral</option>
-                    </select>
-                    <input
-                        id="${urlInputId}"
-                        type="text"
-                        value="${UTILITY.escapeHTML(portrait.url || '')}"
-                        oninput="Controller.updateExtraPortrait('${char.id}', ${index}, 'url', this.value)"
-                        class="w-2/3 bg-black/30 border-gray-600 p-1 text-sm"
-                        placeholder="Image URL (used if no local image)"
-                    >
-                    <button
-                        onclick="Controller.removeExtraPortrait('${char.id}', ${index})"
-                        class="text-red-400 hover:text-red-300"
-                        title="Remove portrait"
-                    >X</button>
-                </div>
-                <div class="flex items-center justify-between">
-                    <label class="text-sm text-gray-400" for="${fileInputId}">
-                        Upload local image for <span class="font-semibold">${emo}</span>:
-                    </label>
-                    <span id="${labelId}" class="text-xs text-gray-400">${hint}</span>
-                </div>
-                <input
-                    id="${fileInputId}"
-                    type="file"
-                    accept="image/*"
-                    onchange="Controller.handleLocalEmotionImageUpload(event, '${char.id}', ${index})"
-                    class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer"
-                >
-            </div>
-          `;
+        const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) => {
+             // ... (Keep existing extraPortraitsHTML logic exactly as is) ...
+             const emo = portrait.emotion || 'happy';
+             const fileInputId = `emo-file-${char.id}-${index}`;
+             const urlInputId  = `emo-url-${char.id}-${index}`;
+             const labelId     = `emo-label-${char.id}-${index}`;
+             const cached = (UIManager.RUNTIME.characterImageCache || {})[`${char.id}::emotion::${emo}`];
+             const hint   = cached ? '[local image]' : (portrait.url ? '[url]' : '[none]');
+             return `
+                <div class="flex flex-col space-y-2 mt-2 p-2 rounded border border-gray-700/50">
+                    <div class="flex items-center space-x-2">
+                        <select onchange="Controller.updateExtraPortrait('${char.id}', ${index}, 'emotion', this.value)" class="w-1/3 bg-black/30 border-gray-600 rounded p-1 text-sm">
+                            <option value="happy" ${emo === 'happy' ? 'selected' : ''}>Happy</option>
+                            <option value="sad" ${emo === 'sad' ? 'selected' : ''}>Sad</option>
+                            <option value="angry" ${emo === 'angry' ? 'selected' : ''}>Angry</option>
+                            <option value="surprised" ${emo === 'surprised' ? 'selected' : ''}>Surprised</option>
+                            <option value="neutral" ${emo === 'neutral' ? 'selected' : ''}>Neutral</option>
+                        </select>
+                        <input id="${urlInputId}" type="text" value="${UTILITY.escapeHTML(portrait.url || '')}" oninput="Controller.updateExtraPortrait('${char.id}', ${index}, 'url', this.value)" class="w-2/3 bg-black/30 border-gray-600 p-1 text-sm" placeholder="Image URL">
+                        <button onclick="Controller.removeExtraPortrait('${char.id}', ${index})" class="text-red-400 hover:text-red-300">X</button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label class="text-sm text-gray-400" for="${fileInputId}">Upload local image for <span class="font-semibold">${emo}</span>:</label>
+                        <span id="${labelId}" class="text-xs text-gray-400">${hint}</span>
+                    </div>
+                    <input id="${fileInputId}" type="file" accept="image/*" onchange="Controller.handleLocalEmotionImageUpload(event, '${char.id}', ${index})" class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
+                </div>`;
         }).join('');
 
-        
         const tagsValue = (char.tags || []).join(', ');
-
         const color = char.color || { base: '#334155', bold: '#94a3b8' };
 
         const modalHTML = `
-            <div class="p-6 border-b border-gray-700 flex justify-between items-center">
-                <h2 class="text-2xl font-semibold" data-char-id="${char.id}">${UTILITY.escapeHTML(char.name)}</h2>
-                ${!char.is_user ? `<div class="flex items-center space-x-2"><span class="text-sm">Active</span><label class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" class="sr-only" ${char.is_active ? 'checked' : ''} onchange="Controller.toggleCharacterActive(event, '${char.id}')"><div class="w-12 h-6 bg-gray-600 rounded-full toggle-bg"></div></div></label></div>` : '<span class="text-sm font-semibold text-indigo-400">PLAYER</span>'}
+            <div class="p-6 border-b border-gray-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-semibold" data-char-id="${char.id}">${UTILITY.escapeHTML(char.name)}</h2>
+                    <div class="flex items-center space-x-2 mt-1">
+                        <span class="text-sm text-gray-400">Active in this chat</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" ${char.is_active ? 'checked' : ''} onchange="Controller.toggleCharacterActive(event, '${char.id}')">
+                            <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex bg-black/40 rounded-lg p-1">
+                    <button onclick="Controller.setCharacterRole('${char.id}', 'user')" class="px-3 py-1 rounded-md text-sm font-bold transition-colors ${currentRole === 'user' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}">User</button>
+                    <button onclick="Controller.setCharacterRole('${char.id}', 'none')" class="px-3 py-1 rounded-md text-sm font-bold transition-colors ${currentRole === 'none' ? 'bg-gray-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}">NPC</button>
+                    <button onclick="Controller.setCharacterRole('${char.id}', 'narrator')" class="px-3 py-1 rounded-md text-sm font-bold transition-colors ${currentRole === 'narrator' ? 'bg-teal-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}">Narrator</button>
+                </div>
             </div>
+
             <div class="p-6 overflow-y-auto space-y-4">
                 <details open>
                     <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300">Primary Info</summary>
                     <div class="p-4 space-y-4 bg-black/20 rounded-b-lg">
-                        <div class="flex items-center justify-between">
-                            <label class="text-sm text-gray-400">Name</label>
-                            ${!char.is_user ? `<div class="flex items-center space-x-2"><span class="text-sm">Is Narrator</span><label class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" class="sr-only" ${char.is_narrator ? 'checked' : ''} onchange="Controller.updateCharacterField('${char.id}', 'is_narrator', this.checked)"><div class="w-12 h-6 bg-gray-600 rounded-full toggle-bg"></div></div></label></div>` : ''}
-                        </div>
-                        <input type="text" value="${UTILITY.escapeHTML(char.name)}" oninput="Controller.updateCharacterField('${char.id}', 'name', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded text-lg">
+                        <input type="text" value="${UTILITY.escapeHTML(char.name)}" oninput="Controller.updateCharacterField('${char.id}', 'name', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded text-lg" placeholder="Character Name">
                         <div><label class="text-sm text-gray-400">Short Description (for roster card)</label><input type="text" value="${UTILITY.escapeHTML(char.short_description)}" oninput="Controller.updateCharacterField('${char.id}', 'short_description', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"></div>
                         <div>
-                            <label class="text-sm text-gray-400">Default Image URL</label>
-                            <input type="text" value="${UTILITY.escapeHTML(char.image_url)}" oninput="Controller.updateCharacterField('${char.id}', 'image_url', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded" placeholder="Paste URL...">
-                            <label class="text-sm text-gray-400 mt-2 block">Or Upload Local Image</label>
-                            <input type="file" accept="image/*" onchange="Controller.handleLocalImageUpload(event, '${char.id}')" class="mt-1 block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
+                            <label class="text-sm text-gray-400">Default Image</label>
+                            <input type="text" value="${UTILITY.escapeHTML(char.image_url)}" oninput="Controller.updateCharacterField('${char.id}', 'image_url', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded mb-2" placeholder="Paste URL...">
+                            <input type="file" accept="image/*" onchange="Controller.handleLocalImageUpload(event, '${char.id}')" class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
                         </div>
-                        ${!char.is_user ? `<div class="grid grid-cols-2 gap-4"><div><label class="text-sm text-gray-400">Bubble Base Color</label><input type="color" value="${color.base}" oninput="Controller.updateCharacterColor('${char.id}', 'base', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded"></div><div><label class="text-sm text-gray-400">Name Color</label><input type="color" value="${color.bold}" oninput="Controller.updateCharacterColor('${char.id}', 'bold', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded"></div></div>` : ''}
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="text-sm text-gray-400">Bubble Base Color</label><input type="color" value="${color.base}" oninput="Controller.updateCharacterColor('${char.id}', 'base', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded"></div>
+                            <div><label class="text-sm text-gray-400">Name Color</label><input type="color" value="${color.bold}" oninput="Controller.updateCharacterColor('${char.id}', 'bold', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded"></div>
+                        </div>
                         <div><label class="text-sm text-gray-400">Tags (comma-separated)</label><input type="text" value="${tagsValue}" oninput="Controller.updateCharacterTags('${char.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"><button onclick="Controller.generateTagsForCharacter(event, '${char.id}')" class="text-xs text-sky-400 hover:text-sky-300 mt-1 p-1 bg-sky-600/80 rounded">${this.getAIGenIcon()}</button></div>
                     </div>
                 </details>
@@ -4597,7 +4781,7 @@ const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) =>
                     <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300">Model Instructions</summary>
                     <div class="p-4 space-y-4 bg-black/20 rounded-b-lg">
                          <textarea oninput="Controller.updateCharacterField('${char.id}', 'model_instructions', this.value)" class="w-full h-48 bg-black/30 border-gray-600 p-2 resize-y rounded">${UTILITY.escapeHTML(char.model_instructions)}</textarea>
-                         ${!char.is_user ? `<div class="text-right"><button onclick="Controller.generateModelInstructions(event, '${char.id}')" class="text-sm bg-sky-600/80 hover:bg-sky-700/80 font-semibold py-2 px-3 rounded-lg">${this.getAIGenIcon()}</button></div>` : ''}
+                         <div class="text-right"><button onclick="Controller.generateModelInstructions(event, '${char.id}')" class="text-sm bg-sky-600/80 hover:bg-sky-700/80 font-semibold py-2 px-3 rounded-lg">${this.getAIGenIcon()}</button></div>
                     </div>
                 </details>
                 <details>
@@ -4609,7 +4793,7 @@ const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) =>
                 </details>
             </div>
             <div class="p-4 bg-black/20 border-t border-gray-700 flex justify-between">
-                ${!char.is_user ? `<button onclick="if(confirm('Are you sure you want to delete this character?')) Controller.deleteCharacter('${char.id}')" class="bg-red-600/80 hover:bg-red-700/80 font-bold py-2 px-4 rounded-lg">Delete</button>` : '<div></div>'}
+                <button onclick="if(confirm('Are you sure you want to delete this character?')) Controller.deleteCharacter('${char.id}')" class="bg-red-600/80 hover:bg-red-700/80 font-bold py-2 px-4 rounded-lg">Delete</button>
                 <button onclick="Controller.closeModal('character-detail-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button>
             </div>
         `;
@@ -5254,9 +5438,6 @@ const Controller = {
         }
     },
 
-    // This function is no longer needed, as renameStoryPrompt calls the service directly
-    // renameStory(storyId, newName) { ... }
-
     async renameStoryPrompt(storyId) {
         const library = StateManager.getLibrary();
         const story = library.stories.find(s => s.id === storyId);
@@ -5668,7 +5849,7 @@ const Controller = {
     },
 
     /** Clears the locally stored background image. */
-async clearBackgroundImage() {
+	async clearBackgroundImage() {
         UIManager.showLoadingSpinner?.('Clearing background...');
         try {
             await DBService.deleteImage('global_background_image');
@@ -5912,6 +6093,12 @@ async clearBackgroundImage() {
         const state = StateManager.getState();
         const input = document.getElementById('chat-input');
         const userChar = state.characters.find(c => c.is_user);
+		
+		if (!userChar) {
+            alert("No character is set as the 'User'. Please set a character to 'User' in the Characters modal to send messages.");
+            return;
+        }
+		
         const messageContent = input.value.trim();
         if (!messageContent) return;
         
@@ -6581,6 +6768,42 @@ async clearBackgroundImage() {
             }
         } 
     }, 300),
+	
+	
+	/** * Sets the role of a character: 'user', 'narrator', or 'none'.
+     * Enforces single-user rule.
+     */
+    setCharacterRole(charId, role) {
+        const state = StateManager.getState();
+        
+        // 1. Update the target character
+        const targetChar = state.characters.find(c => c.id === charId);
+        if (!targetChar) return;
+
+        if (role === 'user') {
+            targetChar.is_user = true;
+            targetChar.is_narrator = false;
+            
+            // 2. Unset 'is_user' for ALL other characters
+            state.characters.forEach(c => {
+                if (c.id !== charId) c.is_user = false;
+            });
+        } else if (role === 'narrator') {
+            targetChar.is_user = false;
+            targetChar.is_narrator = true;
+        } else { // 'none'
+            targetChar.is_user = false;
+            targetChar.is_narrator = false;
+        }
+
+        StateManager.saveState();
+        
+        // 3. Refresh UI to reflect changes (roster + detail modal)
+        UIManager.renderCharacters();
+        UIManager.openCharacterDetailModal(charId);
+    },
+	
+	
 	/**
      * Updates a specific field of a story object (debounced).
      * REFACTORED: Now calls StoryService.
@@ -7303,31 +7526,61 @@ async clearBackgroundImage() {
     }, 300),
 
 	async elevateNarrativeToScenario(storyId, narrativeId) {
-        UIManager.showLoadingSpinner('Elevating to scenario...');
+        UIManager.showLoadingSpinner('Creating scenario...');
         try {
-            // 1. Get the full data
             const story = await DBService.getStory(storyId);
             const narrative = await DBService.getNarrative(narrativeId);
-            if (!story || !narrative) throw new Error("Story or Narrative not found in database.");
+            if (!story || !narrative) throw new Error("Data not found.");
 
-            // 2. Find the first *visible* message
             const firstMessage = (narrative.state.chat_history || []).find(m => !m.isHidden && m.type === 'chat');
+            const exampleDialogue = (narrative.state.chat_history || []).filter(m => m.isHidden);
 
-            // 3. Create the new scenario
+            // --- NEW: Capture Active IDs Only ---
+            // We use the list stored in the narrative, or derive it if missing
+            let activeIDs = narrative.active_character_ids;
+            if (!activeIDs) {
+                // Fallback for older narratives: assume everyone in story is active (or just user)
+                activeIDs = (story.characters || []).map(c => c.id);
+            }
+            // ------------------------------------
+
             const newScenario = {
                 id: UTILITY.uuid(),
                 name: `${narrative.name} (Scenario)`,
                 message: firstMessage ? firstMessage.content : "The story continues...",
+                
+                // Narrative Data
                 static_entries: JSON.parse(JSON.stringify(narrative.state.static_entries || [])),
                 worldMap: JSON.parse(JSON.stringify(narrative.state.worldMap || {})),
+                example_dialogue: JSON.parse(JSON.stringify(exampleDialogue)),
+                
+                // --- NEW: Store IDs, NOT full objects ---
+                active_character_ids: activeIDs,
+                
+                // Snapshot other settings (Prompts/Dynamic/UI)
+                // We still snapshot prompts because those can change per run,
+                // but we DON'T snapshot the 'characters' array anymore.
+                dynamic_entries: JSON.parse(JSON.stringify(story.dynamic_entries || [])),
+                prompts: {
+                    system_prompt: story.system_prompt,
+                    event_master_base_prompt: story.event_master_base_prompt,
+                    prompt_persona_gen: story.prompt_persona_gen,
+                    prompt_world_map_gen: story.prompt_world_map_gen,
+                    prompt_location_gen: story.prompt_location_gen,
+                    prompt_entry_gen: story.prompt_entry_gen,
+                    prompt_location_memory_gen: story.prompt_location_memory_gen,
+                    font: story.font,
+                    backgroundImageURL: story.backgroundImageURL,
+                    bubbleOpacity: story.bubbleOpacity,
+                    chatTextColor: story.chatTextColor
+                }
             };
 
-            // 4. Add new scenario to story and save
             story.scenarios.push(newScenario);
             story.last_modified = new Date().toISOString();
             await DBService.saveStory(story);
 
-            // 5. Update in-memory stub
+            // Update in-memory
             const library = StateManager.getLibrary();
             const storyInLibrary = library.stories.find(s => s.id === storyId);
             if (storyInLibrary) {
@@ -7335,7 +7588,7 @@ async clearBackgroundImage() {
                 storyInLibrary.last_modified = story.last_modified;
             }
 
-            UIManager.openStoryDetails(storyId); // Refresh UI
+            UIManager.openStoryDetails(storyId);
         } catch (e) {
             console.error("Failed to elevate narrative:", e);
             alert(`Error: ${e.message}`);
