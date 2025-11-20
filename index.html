@@ -765,7 +765,7 @@ body.layout-horizontal .story-details-title-balancer {
 <div id="settings-model-content" class="space-y-6">
         <p class="text-sm text-amber-300 bg-amber-900/50 p-3 rounded-lg -mt-2 mb-4"><strong>Note:</strong> These model settings are persistent and apply globally to all stories.</p>
         
-        <div><h3 class="text-lg font-medium mb-2">AI Provider</h3><div class="flex space-x-4"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="gemini" onchange="Controller.setApiProvider('gemini')"><span>Gemini</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="openrouter" onchange="Controller.setApiProvider('openrouter')"><span>OpenRouter</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="koboldcpp" onchange="Controller.setApiProvider('koboldcpp')"><span>KoboldCPP</span></label></div></div><div id="gemini-settings"><h3 class="text-lg font-medium">Gemini API Settings</h3><p class="text-gray-400 text-sm mb-2">Required for text generation.</p><input type="password" id="gemini-api-key-input" class="w-full rounded-lg p-2" placeholder="Enter Gemini API key"></div><div id="openrouter-settings"><h3 class="text-lg font-medium">OpenRouter API Settings</h3><p class="text-gray-400 text-sm mb-2">Your key and the model name.</p><input type="password" id="openrouter-api-key-input" class="w-full rounded-lg p-2" placeholder="Enter OpenRouter API key"><input type="text" id="openrouter-model-input" class="mt-2 w-full rounded-lg p-2" placeholder="Enter model name"></div><div id="koboldcpp-settings"><h3 class="text-lg font-medium">KoboldCPP Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is running with default URL.</p><div><label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label><select id="koboldcpp-template-selector" class="w-full rounded-lg p-2"><option value="none">None (Raw Text)</option><option value="mistral">Mistral</option><option value="chatml">ChatML</option><option value="alpaca">Alpaca</option></select></div><div><label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-min-p-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-min-p-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div><div><label for="koboldcpp-dry-slider" class="text-gray-400 text-sm block mt-4 mb-2">DRY (Repetition Penalty)</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-dry-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-dry-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div></div>
+        <div><h3 class="text-lg font-medium mb-2">AI Provider</h3><div class="flex space-x-4"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="gemini" onchange="Controller.setApiProvider('gemini')"><span>Gemini</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="openrouter" onchange="Controller.setApiProvider('openrouter')"><span>OpenRouter</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="koboldcpp" onchange="Controller.setApiProvider('koboldcpp')"><span>KoboldCPP</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="apiProvider" value="lmstudio" onchange="Controller.setApiProvider('lmstudio')"><span>LM Studio</span></label></div></div><div id="gemini-settings"><h3 class="text-lg font-medium">Gemini API Settings</h3><p class="text-gray-400 text-sm mb-2">Required for text generation.</p><input type="password" id="gemini-api-key-input" class="w-full rounded-lg p-2" placeholder="Enter Gemini API key"></div><div id="openrouter-settings"><h3 class="text-lg font-medium">OpenRouter API Settings</h3><p class="text-gray-400 text-sm mb-2">Your key and the model name.</p><input type="password" id="openrouter-api-key-input" class="w-full rounded-lg p-2" placeholder="Enter OpenRouter API key"><input type="text" id="openrouter-model-input" class="mt-2 w-full rounded-lg p-2" placeholder="Enter model name"></div><div id="koboldcpp-settings"><h3 class="text-lg font-medium">KoboldCPP Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is running with default URL.</p><div><label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label><select id="koboldcpp-template-selector" class="w-full rounded-lg p-2"><option value="none">None (Raw Text)</option><option value="mistral">Mistral</option><option value="chatml">ChatML</option><option value="alpaca">Alpaca</option></select></div><div><label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-min-p-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-min-p-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div><div><label for="koboldcpp-dry-slider" class="text-gray-400 text-sm block mt-4 mb-2">DRY (Repetition Penalty)</label><div class="flex items-center space-x-4"><input type="range" id="koboldcpp-dry-slider" class="w-full" min="0" max="1" step="0.05"><span id="koboldcpp-dry-value" class="text-sm text-gray-400 w-12 text-right"></span></div></div></div><div id="lmstudio-settings"><h3 class="text-lg font-medium">LM Studio Settings</h3><p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure LM Studio is running with a model loaded. Default URL is http://localhost:1234</p><div><label for="lmstudio-url-input" class="text-gray-400 text-sm block mb-2">LM Studio Server URL</label><input type="text" id="lmstudio-url-input" class="w-full rounded-lg p-2" placeholder="http://localhost:1234"></div></div>
     </div>
 </div>
 
@@ -2075,6 +2075,8 @@ const APIService = {
                 text = await this.callOpenRouter(prompt, signal);
             } else if (state.apiProvider === 'koboldcpp') {
                 text = await this.callKoboldCPP(prompt, signal);
+            } else if (state.apiProvider === 'lmstudio') {
+                text = await this.callLMStudio(prompt, signal);
             }
 
             if (isJson) {
@@ -2117,7 +2119,7 @@ const APIService = {
         const payload = {
             prompt: prompt, use_story: false, use_memory: false, use_authors_note: false, use_world_info: false,
             max_context_length: 4096, max_length: 200, min_p: state.koboldcpp_min_p,
-            rep_pen: 1.1, rep_pen_range: 2048, rep_pen_slope: 0.7, temperature: 0.65, 
+            rep_pen: 1.1, rep_pen_range: 2048, rep_pen_slope: 0.7, temperature: 0.65,
             tfs: 1, top_p: 0.92, top_k: 0, typical: 1, sampler_order: [6, 0, 1, 2, 3, 4, 5],
             mirostat: 2, mirostat_tau: 4, mirostat_eta: 0.1, dry: state.koboldcpp_dry,
         };
@@ -2125,6 +2127,15 @@ const APIService = {
         if (!res.ok) { let errorDetails = `Status: ${res.status} ${res.statusText}.`; try { errorDetails += ` Message: ${(await res.json()).error.message}`; } catch (e) { errorDetails += ` Response body: ${await res.text()}`; } throw new Error(`KoboldCPP API Error: ${errorDetails}`); }
         const data = await res.json();
         return data.results[0].text.trim();
+    },
+    async callLMStudio(prompt, signal) {
+        const state = StateManager.getState();
+        if (!state.lmstudio_url) throw new Error("LM Studio URL not set.");
+        const endpoint = `${state.lmstudio_url}/v1/chat/completions`;
+        const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], temperature: 0.7, stream: false }), signal });
+        if (!res.ok) { let errorDetails = `Status: ${res.status} ${res.statusText}.`; try { const errorJson = await res.json(); errorDetails += ` Message: ${errorJson.error?.message || JSON.stringify(errorJson.error)}`; } catch (e) { errorDetails += ` Response body: ${await res.text()}`; } throw new Error(`LM Studio API Error: ${errorDetails}`); }
+        const data = await res.json();
+        return data.choices[0].message.content;
     },
 };
 
@@ -2188,6 +2199,7 @@ const UTILITY = {
         return {
             apiProvider: 'gemini', geminiApiKey: '', openRouterKey: '', openRouterModel: 'google/gemini-flash-1.5',
             koboldcpp_url: 'http://localhost:5001', koboldcpp_template: 'none', koboldcpp_min_p: 0.1, koboldcpp_dry: 0.25,
+            lmstudio_url: 'http://localhost:1234',
         };
     },
     getDefaultUiSettings() {
@@ -5883,8 +5895,9 @@ const Controller = {
 		
 		// <-- DEFINE MODEL KEYS -->
         const modelSettingKeys = [
-            'geminiApiKey', 'openRouterKey', 'openRouterModel', 
-            'koboldcpp_url', 'koboldcpp_template', 'koboldcpp_min_p', 'koboldcpp_dry'
+            'geminiApiKey', 'openRouterKey', 'openRouterModel',
+            'koboldcpp_url', 'koboldcpp_template', 'koboldcpp_min_p', 'koboldcpp_dry',
+            'lmstudio_url'
         ];
 		
         const setListener = (id, key, callback) => { 
@@ -5954,6 +5967,7 @@ const Controller = {
         if(document.getElementById('koboldcpp-min-p-slider')) setupSlider('koboldcpp-min-p-slider', 'koboldcpp-min-p-value', 'koboldcpp_min_p');
         if(document.getElementById('koboldcpp-dry-slider')) setupSlider('koboldcpp-dry-slider', 'koboldcpp-dry-value', 'koboldcpp_dry');
 		if(document.getElementById('koboldcpp-url-input')) setListener('koboldcpp-url-input', 'koboldcpp_url');
+		if(document.getElementById('lmstudio-url-input')) setListener('lmstudio-url-input', 'lmstudio_url');
 		
 		const bgHint = document.getElementById('background-image-hint');
         if (bgHint) {
@@ -6024,9 +6038,11 @@ const Controller = {
         const geminiSettings = document.getElementById('gemini-settings');
         const openrouterSettings = document.getElementById('openrouter-settings');
         const koboldcppSettings = document.getElementById('koboldcpp-settings');
-        if (geminiSettings) geminiSettings.style.display = state.apiProvider === 'gemini' ? 'block' : 'none'; 
+        const lmstudioSettings = document.getElementById('lmstudio-settings');
+        if (geminiSettings) geminiSettings.style.display = state.apiProvider === 'gemini' ? 'block' : 'none';
         if (openrouterSettings) openrouterSettings.style.display = state.apiProvider === 'openrouter' ? 'block' : 'none';
         if (koboldcppSettings) koboldcppSettings.style.display = state.apiProvider === 'koboldcpp' ? 'block' : 'none';
+        if (lmstudioSettings) lmstudioSettings.style.display = state.apiProvider === 'lmstudio' ? 'block' : 'none';
     },
     
     /** Changes the chat font. */
@@ -6333,6 +6349,7 @@ const Controller = {
                 case 'gemini': return !!state.geminiApiKey;
                 case 'openrouter': return !!state.openRouterKey && !!state.openRouterModel;
                 case 'koboldcpp': return !!state.koboldcpp_url;
+                case 'lmstudio': return !!state.lmstudio_url;
                 default: return false;
             }
         };

@@ -8,15 +8,27 @@ EllipsisLM is an open-source front-end for AI-powered roleplay. It runs as a sin
 - Go to Import/Export to bring in a V2 Tavern Card PNG or BYAF character.
 - In your imported story card, create a new "Narrative" from the "Scenario" template (the plus sign)
 - Start the roleplay with the green up arrow button.
-- Go to settings and into the model tab. Input your Gemini or OpenRouter API and model selection, **or** select koboldcpp for local generation.
+- Go to settings and into the model tab. Input your Gemini or OpenRouter API and model selection, **or** select koboldcpp or LM Studio for local generation.
 - Start chatting!
-- (If you want to run local, go to https://github.com/LostRuins/koboldcpp/releases and download the latest koboldcpp release. Run the exe and select your model. Return to EllipsisLM.
+- **For local generation (Koboldcpp):** Go to https://github.com/LostRuins/koboldcpp/releases and download the latest koboldcpp release. Run the exe and select your model. Return to EllipsisLM.
+- **For local generation (LM Studio):**
+  1. Download and install LM Studio from https://lmstudio.ai/
+  2. Load a model in LM Studio
+  3. Start the local server (click the server icon ⬅️➡️)
+  4. **Important:** Enable CORS in LM Studio's server settings (look for "Enable CORS" or "Allow cross-origin requests" checkbox)
+  5. In EllipsisLM settings, select "LM Studio" and use the default URL: http://localhost:1234
 
 Try it now:
 https://pacmanincarnate.github.io/EllipsisLM/
 
 ## Backend
-The app utilizes a Gemini API, OpenRouter API, or a local Koboldcpp instance. If you use Koboldcpp, none of your information leaves your computer. Koboldcpp is quick and easy to install, and it lets you use the same GGUF-format models as in BY. OpenRouter offers a number of free models that you can use if you choose that route.
+The app supports multiple AI backends:
+- **Gemini API** - Google's cloud-based AI (requires API key)
+- **OpenRouter API** - Access to multiple AI models (requires API key, some free options available)
+- **Koboldcpp** - Local generation, none of your information leaves your computer. Quick and easy to install, uses GGUF-format models.
+- **LM Studio** - Local generation with a user-friendly interface. Download models and run them locally with no cloud services.
+
+For local backends (Koboldcpp and LM Studio), all processing happens on your computer with complete privacy.
 
 ### Mobile and desktop browser support
 The app is a single HTML file that requires no installation and works on mobile and desktop. To use on mobile, access it through the GitHub site. For desktop use, you can either use the GitHub site or download the HTML file (a download may be required for Koboldcpp support).
