@@ -18,11 +18,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,400;1,700&family=Dancing+Script:wght@700&family=EB+Garamond:ital,wght@0,400;1,400&family=Inter:wght@400;500;700&family=Lora:ital,wght@0,400;1,400&family=Nunito+Sans:ital,wght@0,400;1,400&family=Roboto+Slab:wght@400;700&family=Source+Code+Pro:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
-
-    <link href="https://fonts.googleapis.com/css2?family=Comic+Relief:wght@600;700&family=Domine:wght@0,400;1,700&family=Caveat&family=Titan+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Comic+Neue:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Dancing+Script:wght@700&family=Domine:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=Inter:wght@400;500;700&family=Lora:ital,wght@0,400;1,400&family=Nunito+Sans:ital,wght@0,400;1,400&family=Patrick+Hand&family=Prompt:wght@400;700&family=Roboto+Slab:wght@400;700&family=Source+Code+Pro:ital,wght@0,400;1,400&family=Titan+One&display=swap" rel="stylesheet">
 
     <!-- Application Styles -->
 <style>
@@ -271,6 +269,7 @@
             display: flex;
             flex-direction: column;
             padding: 1rem;
+			-webkit-overflow-scrolling: touch;
         }
 
         /* FIX: Push top bubble down in Vertical Mode to avoid header overlap */
@@ -279,17 +278,42 @@
         }
 
         /* Markdown Styles */
-        #chat-window h1 { font-size: 1.5em; font-weight: 700; margin: 0.5em 0; }
-        #chat-window h2 { font-size: 1.25em; font-weight: 600; margin: 0.4em 0; }
-        #chat-window p { margin-bottom: 0.5em; line-height: 1.5; }
+        /* FIX: Markdown Styles using CSS Variables */
+        #chat-window h1 { 
+            color: var(--md-h1-color, #818cf8); /* Default: Indigo-400 */
+            font-size: 1.5em; 
+            font-weight: 700; 
+            margin: 0.5em 0; 
+        }
+        #chat-window h2 { 
+            color: var(--md-h2-color, #a5b4fc); /* Default: Indigo-300 */
+            font-size: 1.25em; 
+            font-weight: 600; 
+            margin: 0.4em 0; 
+        }
+        #chat-window h3 { 
+            color: var(--md-h3-color, #c7d2fe); /* Default: Indigo-200 */
+            font-size: 1.1em; 
+            font-weight: 600; 
+            margin: 0.3em 0; 
+        }
+        #chat-window strong { 
+            color: var(--md-bold-color, #ffffff); /* Default: White */
+            font-weight: 700;
+        }
+        #chat-window em { 
+            color: var(--md-italic-color, #9ca3af); /* Default: Gray-400 */
+        }
         #chat-window blockquote {
             border-left: 3px solid var(--brand-color);
             padding-left: 1rem;
-            color: var(--text-secondary);
+            color: var(--md-quote-color, #9ca3af); /* Default: Gray-400 */
             font-style: italic;
         }
-        #chat-window em { color: var(--text-accent); }
-        #chat-window strong { color: white; }
+		#chat-window em { 
+            /* Uses user setting, falls back to Gray if not set */
+            color: var(--md-italic-color, #9ca3af); 
+        }        #chat-window strong { color: white; }
 
         /* FIX: Restored Quotation Formatting */
         .dialogue-quote {
@@ -743,21 +767,35 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label for="font-selector" class="text-gray-400 text-sm block mb-2">Chat Font</label>
-                        <select id="font-selector" class="w-full rounded-lg p-2">
-                            <option value="'Inter', sans-serif">Inter (Sans-Serif)</option>
-                            <option value="'Prompt', sans-serif">Prompt (Sans-Serif)</option>
-                            <option value="'Titan One', cursive">Titan One (Chunky)</option>
-                            <option value="'Lora', serif">Lora (Serif)</option>
-                            <option value="'Roboto Slab', serif">Roboto Slab</option>
-                            <option value="'EB Garamond', serif">EB Garamond</option>
-							<option value="'Domine', serif">Domine</option>
+						<select id="font-selector" class="w-full rounded-lg p-2">
+							<option value="'Inter', sans-serif">Inter (Standard)</option>
+							<option value="'Prompt', sans-serif">Prompt (Modern)</option>
+							<option value="'Nunito Sans', sans-serif">Nunito Sans (Soft)</option>
+							<option value="'Source Code Pro', monospace">Source Code Pro (Code)</option>
+							<option value="'Lora', serif">Lora (Serif)</option>
+							<option value="'Domine', serif">Domine (Bold Serif)</option>
+							<option value="'Roboto Slab', serif">Roboto Slab (Slab)</option>
+							<option value="'EB Garamond', serif">EB Garamond (Classic)</option>
+							<option value="'Cormorant Garamond', serif">Cormorant Garamond (Elegant)</option>
+							<option value="'Comic Neue', sans-serif">Comic Neue (Comic)</option>
 							<option value="'Caveat', cursive">Caveat (Handwriting)</option>
-                            <option value="'Comic Relief', cursive">Comic Relief (Comic)</option>
-                            <option value="'Dancing Script', cursive">Dancing Script</option>
-                            <option value="'Source Code Pro', monospace">Source Code Pro</option>
-                        </select>
+							<option value="'Patrick Hand', cursive">Patrick Hand (Neat Hand)</option>
+							<option value="'Dancing Script', cursive">Dancing Script (Cursive)</option>
+							<option value="'Titan One', cursive">Titan One (Chunky)</option>
+						</select>
                     </div>
                     <div><label for="chat-text-color" class="text-gray-400 text-sm block mb-2">Chat Text Color</label><input type="color" id="chat-text-color" class="w-full rounded-lg p-1 h-10"></div>
+					<details class="bg-black/20 rounded-lg p-2 mb-4">
+                    <summary class="cursor-pointer font-semibold text-gray-300 hover:text-white select-none p-2">Markdown Colors</summary>
+                    <div class="grid grid-cols-2 gap-4 p-2 mt-2 border-t border-gray-700">
+                        <div><label class="text-xs text-gray-400 block mb-1">Heading 1</label><input type="color" id="md-h1-color-input" class="w-full h-8 rounded cursor-pointer"></div>
+                        <div><label class="text-xs text-gray-400 block mb-1">Heading 2</label><input type="color" id="md-h2-color-input" class="w-full h-8 rounded cursor-pointer"></div>
+                        <div><label class="text-xs text-gray-400 block mb-1">Heading 3</label><input type="color" id="md-h3-color-input" class="w-full h-8 rounded cursor-pointer"></div>
+                        <div><label class="text-xs text-gray-400 block mb-1">Bold Text</label><input type="color" id="md-bold-color-input" class="w-full h-8 rounded cursor-pointer"></div>
+                        <div><label class="text-xs text-gray-400 block mb-1">Italic Text</label><input type="color" id="md-italic-color-input" class="w-full h-8 rounded cursor-pointer"></div>
+                        <div><label class="text-xs text-gray-400 block mb-1">Blockquotes</label><input type="color" id="md-quote-color-input" class="w-full h-8 rounded cursor-pointer"></div>
+                    </div>
+                </details>
                 </div>
                 <div>
                     <label for="background-image-upload" class="text-gray-400 text-sm block mb-2">Background Image</label>
@@ -1265,7 +1303,7 @@
             return { storyStubs, activeStory, activeNarrative };
         },
 
-        async saveActiveState(currentState, narrativeStubs) {
+		async saveActiveState(currentState, narrativeStubs) {
             if (!currentState || !currentState.id || !currentState.narrativeId) return;
 
             const activeCharacterIds = (currentState.characters || [])
@@ -1279,6 +1317,8 @@
                 created_date: currentState.created_date,
                 creator_notes: currentState.creator_notes,
                 tags: currentState.tags,
+                
+                // Visual Settings
                 font: currentState.font,
                 backgroundImageURL: currentState.backgroundImageURL,
                 bubbleOpacity: currentState.bubbleOpacity,
@@ -1287,6 +1327,16 @@
                 backgroundBlur: currentState.backgroundBlur,
                 textSize: currentState.textSize,
                 bubbleImageSize: currentState.bubbleImageSize,
+
+                // FIX: Added Markdown Color Persistence
+                md_h1_color: currentState.md_h1_color,
+                md_h2_color: currentState.md_h2_color,
+                md_h3_color: currentState.md_h3_color,
+                md_bold_color: currentState.md_bold_color,
+                md_italic_color: currentState.md_italic_color,
+                md_quote_color: currentState.md_quote_color,
+
+                // Prompts
                 system_prompt: currentState.system_prompt,
                 event_master_base_prompt: currentState.event_master_base_prompt,
                 event_master_prompt: currentState.event_master_prompt, 
@@ -1295,6 +1345,10 @@
                 prompt_location_gen: currentState.prompt_location_gen,
                 prompt_entry_gen: currentState.prompt_entry_gen,
                 prompt_location_memory_gen: currentState.prompt_location_memory_gen,
+                prompt_story_notes_gen: currentState.prompt_story_notes_gen,
+                prompt_story_tags_gen: currentState.prompt_story_tags_gen,
+
+                // Data
                 characters: currentState.characters,
                 dynamic_entries: currentState.dynamic_entries,
                 scenarios: currentState.scenarios,
@@ -1815,8 +1869,8 @@
             const B = (num & 0x0000FF) - amt;
             return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
         },
-getDefaultApiSettings() {
-    return {
+	getDefaultApiSettings() {
+		return {
         apiProvider: 'gemini', 
         geminiApiKey: '', 
         openRouterKey: '', 
@@ -1828,11 +1882,19 @@ getDefaultApiSettings() {
         lmstudio_url: 'http://localhost:1234',
     };
 },
-        getDefaultUiSettings() {
+	getDefaultUiSettings() {
             return {
                 font: "'Inter', sans-serif", backgroundImageURL: '', bubbleOpacity: 0.85,
                 chatTextColor: '#e5e7eb', characterImageMode: 'none',
                 backgroundBlur: 5, textSize: 16, bubbleImageSize: 100,
+                
+                //Markdown Color Defaults
+                md_h1_color: '#818cf8',
+                md_h2_color: '#a5b4fc',
+                md_h3_color: '#c7d2fe',
+                md_bold_color: '#ffffff',
+                md_italic_color: '#9ca3af',
+                md_quote_color: '#9ca3af'
             };
         },
         getDefaultStorySettings() {
@@ -1951,8 +2013,9 @@ getDefaultApiSettings() {
         }
     };
 
-    /**
+/**
      * PromptBuilder Module
+     * Updated with Null-Safety Checks
      */
     const PromptBuilder = {
         _getReplacer(contextCharacter) {
@@ -1967,21 +2030,32 @@ getDefaultApiSettings() {
                 return processedText;
             };
         },
+
         _getSmartHistorySlice(history, chatMessageCount) {
-                let chatCount = 0;
-                let startIndex = history.length; 
-                for (let i = history.length - 1; i >= 0; i--) {
-                    startIndex = i;
-                    const msg = history[i];
-                    if (msg.type === 'chat' && !msg.isHidden) chatCount++;
-                    if (chatCount >= chatMessageCount) break;
-                }
-                return history.slice(startIndex);
-        },	
+            if (!Array.isArray(history)) return [];
+            
+            let chatCount = 0;
+            let startIndex = history.length; 
+            
+            // Loop backwards
+            for (let i = history.length - 1; i >= 0; i--) {
+                const msg = history[i];
+                
+                // FIX: Safety check for undefined/null messages
+                if (!msg) continue; 
+
+                startIndex = i;
+                if (msg.type === 'chat' && !msg.isHidden) chatCount++;
+                if (chatCount >= chatMessageCount) break;
+            }
+            return history.slice(startIndex);
+        },  
+
         buildPrompt(charToActId, isForUser = false) {
             const state = StateManager.getState();
             const charToAct = state.characters.find(c => c.id === charToActId);
             if (!charToAct) return "";
+            
             const replacer = this._getReplacer(charToAct);
             const modelInstructions = charToAct.model_instructions || state.system_prompt;
 
@@ -1990,16 +2064,17 @@ getDefaultApiSettings() {
                 const { grid, currentLocation, path } = state.worldMap;
                 const currentLoc = grid.find(l => l.coords.x === currentLocation.x && l.coords.y === currentLocation.y);
 
-                if (currentLoc && currentLoc.name && currentLoc.prompt) {
-                    locationContext += `CURRENT LOCATION: ${currentLoc.name}\n${currentLoc.prompt}\n\n`;
+                if (currentLoc && currentLoc.name) {
+                    locationContext += `CURRENT LOCATION: ${currentLoc.name}\n`;
+                    if (currentLoc.prompt) locationContext += `${currentLoc.prompt}\n\n`;
+                    else locationContext += `(No detailed description available.)\n\n`;
+
                     if (currentLoc.local_static_entries && currentLoc.local_static_entries.length > 0) {
                         locationContext += "--- LOCATION-SPECIFIC KNOWLEDGE ---\n";
                         locationContext += currentLoc.local_static_entries
                             .map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`)
                             .join('\n\n') + "\n\n";
                     }
-                } else if (currentLoc && currentLoc.name) {
-                     locationContext += `CURRENT LOCATION: ${currentLoc.name}\n(No detailed description available.)\n\n`;
                 }
 
                 if (currentLoc) { 
@@ -2038,8 +2113,10 @@ getDefaultApiSettings() {
                 charToAct: charToAct,
                 isForUser: isForUser,
                 location_context: locationContext,
+                dynamic_entries: '' // If needed, pull from state logic or remove if handled elsewhere
             };
             
+            // Simple auto-consume logic for event master
             if (state.event_master_prompt) { 
                 state.event_master_prompt = ''; 
                 StateManager.saveState(); 
@@ -2050,19 +2127,22 @@ getDefaultApiSettings() {
             }
             return this.buildDefaultPrompt(components, replacer);
         },
+
         buildDefaultPrompt(components, replacer) {
             const state = StateManager.getState();
             let p = components.system_prompt + "\n\n";
             if (components.event_master_prompt) p += "--- SECRET EVENT MASTER INSTRUCTION ---\n" + components.event_master_prompt + "\n\n";
             if (components.location_context) p += "## LOCATION CONTEXT\n" + components.location_context + "\n\n";
             p += "## WORLD KNOWLEDGE\n" + components.static_entries + "\n\n";
-            if (components.dynamic_entries) p += "## RECENTLY REVEALED DYNAMIC KNOWLEDGE\n" + components.dynamic_entries + "\n\n";
+            // Note: Dynamic entries usually injected into chat history as 'lore_reveal', but can be added here if architectural preference changes.
             p += "## CHARACTERS\n" + components.characters + "\n\n";
 
-            const exampleDialogue = (state.chat_history || []).filter(m => m.isHidden);
+            const exampleDialogue = (state.chat_history || []).filter(m => m && m.isHidden);
             if(exampleDialogue.length > 0){
                 p += "## EXAMPLE DIALOGUE\n";
                 exampleDialogue.forEach(msg => {
+                    // FIX: Safety Check
+                    if (!msg) return;
                     const char = state.characters.find(c => c.id === msg.character_id);
                     if (char) p += `${char.name}: ${replacer(msg.content)}\n`;
                 });
@@ -2071,7 +2151,10 @@ getDefaultApiSettings() {
             
             p += "## RECENT CONVERSATION & EVENTS\n";
             components.history.forEach(msg => { 
+                // FIX: Safety Checks
+                if (!msg) return;
                 if (msg.type === 'chat' && msg.isHidden) return;
+                
                 if (msg.type === 'chat') {
                     const char = state.characters.find(c => c.id === msg.character_id); 
                     if (char) p += `[${char.name}:]\n${replacer(msg.content)}\n\n`;
@@ -2086,6 +2169,7 @@ getDefaultApiSettings() {
             p += " Do not repeat the character's name in the response itself.\n[CHARACTER_TO_ACT]: " + components.charToAct.name;
             return p;
         },
+
         buildKoboldTemplatedPrompt(components, replacer) {
             const state = StateManager.getState();
             const template = state.koboldcpp_template;
@@ -2095,12 +2179,14 @@ getDefaultApiSettings() {
             if (components.event_master_prompt) system.push("SECRET EVENT INSTRUCTION:\n" + components.event_master_prompt);
             if (components.location_context) system.push("LOCATION CONTEXT:\n" + components.location_context);
             system.push("STATIC KNOWLEDGE:\n" + components.static_entries);
-            if (components.dynamic_entries) system.push("DYNAMIC KNOWLEDGE:\n" + components.dynamic_entries);
             system.push("CHARACTERS:\n" + components.characters);
             const system_prompt_str = system.join('\n\n');
             
             const history_str = components.history.map(msg => {
+                // FIX: Safety Checks
+                if (!msg) return null;
                 if (msg.type === 'chat' && msg.isHidden) return null;
+                
                 if (msg.type === 'chat') {
                     const char = state.characters.find(c => c.id === msg.character_id); 
                     if (char) return `${char.is_user ? 'user' : 'assistant'}:${char.name}:\n${replacer(msg.content)}`;
@@ -2120,7 +2206,10 @@ getDefaultApiSettings() {
                     return `<s>[INST] ${system_prompt_str}\n\n${history_str}\n\n${instruction} [/INST]`;
                 case 'chatml':
                     const history_chatml = components.history.map(msg => {
+                        // FIX: Safety Checks
+                        if (!msg) return null;
                         if (msg.type === 'chat' && msg.isHidden) return null;
+                        
                         let role = 'system';
                         let content = '';
                         if (msg.type === 'chat') {
@@ -2783,17 +2872,35 @@ getDefaultApiSettings() {
         _proxyCache: new WeakMap(), // Cache to maintain object identity
         _saveTimeout: null,
 
-        /**
-         * Initialize the store with the loaded state from StateManager.
-         * @param {object} initialState - The activeNarrativeState.
-         */
-        init(initialState) {
-            this._target = initialState;
-            this._listeners.clear();
-            this._proxyCache = new WeakMap(); // Reset cache on init
-            this.state = this._createProxy(initialState);
-            console.log("ReactiveStore: Initialized.");
-        },
+/**
+     * Initialize the store with the loaded state from StateManager.
+     * @param {object} initialState - The activeNarrativeState.
+     */
+    init(initialState) {
+        this._target = initialState;
+        this._listeners.clear();
+        this._proxyCache = new WeakMap(); 
+        this.state = this._createProxy(initialState);
+        
+        // FIX: Add safety nets for tab closing/switching
+        const saveNow = () => {
+            if (this._saveTimeout) {
+                clearTimeout(this._saveTimeout);
+                this._saveTimeout = null;
+                console.log("ReactiveStore: Emergency Save Triggered");
+                StateManager.saveState();
+            }
+        };
+
+        // Trigger save on visibility change (mobile app switch) and page hide (tab close)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') saveNow();
+        });
+        window.addEventListener('pagehide', saveNow);
+        window.addEventListener('beforeunload', saveNow);
+
+        console.log("ReactiveStore: Initialized with Safety Nets.");
+    },
 
         /**
          * Subscribe to changes on a specific root property.
@@ -2936,7 +3043,7 @@ const UIComponents = {
         `;
     },
 
-    /**
+/**
      * Renders a single chat message bubble.
      */
     MessageBubble(msg, index, state) {
@@ -2968,15 +3075,20 @@ const UIComponents = {
             contentHTML = DOM.html`<img src="${imgSrc}" class="bubble-char-image">${contentHTML}`;
         }
 
-        if (character.is_user) {
-            bubbleStyle = `background-color: rgba(75, 85, 99, ${state.bubbleOpacity});`;
-        } else {
-            const charColor = character.color || { base: '#334155', bold: '#94a3b8' };
-            const topColor = UTILITY.hexToRgba(charColor.base, state.bubbleOpacity);
-            const bottomColor = UTILITY.hexToRgba(UTILITY.darkenHex(charColor.base, 10), state.bubbleOpacity);
-            bubbleStyle = `background-image: linear-gradient(to bottom, ${topColor}, ${bottomColor});`;
-            characterNameColor = `style="color: ${charColor.bold};"`;
-        }
+        // FIX: Unified Color Logic. 
+        // Use character's custom color, or fall back to defaults (Gray for User, Slate for AI)
+        const defaultColor = character.is_user 
+            ? { base: '#4b5563', bold: '#e5e7eb' } // Gray-600 / Gray-200
+            : { base: '#334155', bold: '#94a3b8' }; // Slate-700 / Slate-400
+            
+        const charColor = character.color || defaultColor;
+        
+        // Generate Gradient
+        const topColor = UTILITY.hexToRgba(charColor.base, state.bubbleOpacity);
+        const bottomColor = UTILITY.hexToRgba(UTILITY.darkenHex(charColor.base, 10), state.bubbleOpacity);
+        
+        bubbleStyle = `background-image: linear-gradient(to bottom, ${topColor}, ${bottomColor});`;
+        characterNameColor = `style="color: ${charColor.bold};"`;
         
         const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
@@ -3652,9 +3764,19 @@ renderStaticEntries() {
       portraitContainer.innerHTML = DOM.html`<img src="${portraitUrl}" class="max-w-full max-h-full object-contain rounded-lg">`.toString();
     },
 
-    startStreamingResponse(charId, fullText, emotion) {
+startStreamingResponse(charId, fullText, emotion) {
         if (this.RUNTIME.streamingInterval) clearInterval(this.RUNTIME.streamingInterval);
-        const state = StateManager.getState();
+        const state = ReactiveStore.state;
+
+        // FIX: Remove previous "AI Error" system messages before starting new stream
+        if (state.chat_history.length > 0) {
+            const cleanHistory = state.chat_history.filter(msg => 
+                !(msg.type === 'system_event' && (msg.content.startsWith('AI Error') || msg.content.includes('Failed to fetch')))
+            );
+            if (cleanHistory.length !== state.chat_history.length) {
+                state.chat_history = cleanHistory;
+            }
+        }
 
         const messageIndex = state.chat_history.length;
         state.chat_history.push({ 
@@ -3662,14 +3784,12 @@ renderStaticEntries() {
             timestamp: new Date().toISOString(), isNew: true 
         });
 
-        this.renderChat();
+        UIManager.renderChat();
         
         const messageContentEl = document.getElementById(`message-content-${messageIndex}`);
-        if (!messageContentEl) {
-            console.error("Could not find message element to stream to.");
-            return;
-        }
-        const bubbleEl = messageContentEl.closest('.chat-bubble-container');
+        if (!messageContentEl) return;
+        
+        const chatWindow = document.getElementById('chat-window');
         const words = fullText.split(/(\s+)/);
         let wordIndex = 0;
 
@@ -3694,23 +3814,24 @@ renderStaticEntries() {
 
                 messageContentEl.innerHTML = fullHTML.toString();
                 
-                const chatWindow = document.getElementById('chat-window');
-                const isScrolledToBottom = chatWindow.scrollHeight - chatWindow.clientHeight <= chatWindow.scrollTop + 50;
-                if(isScrolledToBottom) {
-                     bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                // iOS-safe scroll
+                const threshold = 150; 
+                if (chatWindow.scrollHeight - chatWindow.clientHeight <= chatWindow.scrollTop + threshold) {
+                     chatWindow.scrollTop = chatWindow.scrollHeight;
                 }
+                
                 wordIndex++;
             } else {
                 clearInterval(this.RUNTIME.streamingInterval);
                 this.RUNTIME.streamingInterval = null;
                 state.chat_history[messageIndex].isNew = false;
                 
-                // Trigger save manually here for chat history completion
                 if (typeof ReactiveStore !== 'undefined') ReactiveStore.persist();
-
                 if (typeof NarrativeController !== 'undefined') NarrativeController.checkDynamicEntryTriggers(); 
 
-                setTimeout(() => bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                requestAnimationFrame(() => {
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                });
             }
         }, 2);
     },
@@ -3740,10 +3861,11 @@ renderStaticEntries() {
         if (el) el.remove(); 
     },
     
-    applyStyling() { 
+applyStyling() { 
         const state = StateManager.getState();
         const backgroundElement = document.getElementById('global-background');
         
+        // 1. Handle Background Image Logic
         let backgroundUrl = ''; 
 
         if (state.worldMap && state.worldMap.grid.length > 0) {
@@ -3768,12 +3890,16 @@ renderStaticEntries() {
             backgroundUrl = state.backgroundImageURL;
         }
 
-        backgroundElement.style.backgroundImage = backgroundUrl ? `url('${backgroundUrl}')` : 'none';
+        if (backgroundElement) {
+            backgroundElement.style.backgroundImage = backgroundUrl ? `url('${backgroundUrl}')` : 'none';
+        }
         
+        // 2. Handle Base UI Settings
         document.getElementById('app-container').style.backdropFilter = `blur(${state.backgroundBlur || 0}px)`;
         document.documentElement.style.setProperty('--chat-font-size', `${state.textSize || 16}px`);
         document.documentElement.style.setProperty('--bubble-image-size', `${state.bubbleImageSize || 100}px`);
 
+        // 3. Calculate Border Hue from Text Color
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
@@ -3791,10 +3917,28 @@ renderStaticEntries() {
         document.documentElement.style.setProperty('--chat-text-color', state.chatTextColor);
         document.documentElement.style.setProperty('--chat-font-family', state.font);
         
+        // 4. Sync Titles
         const storyTitleInput = document.getElementById('story-title-input');
         const mobileStoryTitleOverlay = document.getElementById('mobile-story-title-overlay');
-        if (storyTitleInput) storyTitleInput.style.color = state.chatTextColor;
-        if (mobileStoryTitleOverlay) mobileStoryTitleOverlay.style.color = state.chatTextColor;
+        if (storyTitleInput) {
+            storyTitleInput.style.color = state.chatTextColor;
+            storyTitleInput.style.fontFamily = state.font;
+        }
+        if (mobileStoryTitleOverlay) {
+            mobileStoryTitleOverlay.style.color = state.chatTextColor;
+            mobileStoryTitleOverlay.style.fontFamily = state.font;
+        }
+
+        // 5. Apply Markdown Colors (NEW FEATURE)
+        const defaults = UTILITY.getDefaultUiSettings();
+        const root = document.documentElement;
+        
+        root.style.setProperty('--md-h1-color', state.md_h1_color || defaults.md_h1_color);
+        root.style.setProperty('--md-h2-color', state.md_h2_color || defaults.md_h2_color);
+        root.style.setProperty('--md-h3-color', state.md_h3_color || defaults.md_h3_color);
+        root.style.setProperty('--md-bold-color', state.md_bold_color || defaults.md_bold_color);
+        root.style.setProperty('--md-italic-color', state.md_italic_color || defaults.md_italic_color);
+        root.style.setProperty('--md-quote-color', state.md_quote_color || defaults.md_quote_color);
         
         this.renderChat();
     },
@@ -4748,6 +4892,13 @@ const AppController = {
             fontSelector.value = state.font; 
             fontSelector.addEventListener('change', (e) => this.changeFont(e.target.value));
         }
+		
+		// Markdown Color Bindings
+        ['md_h1_color', 'md_h2_color', 'md_h3_color', 'md_bold_color', 'md_italic_color', 'md_quote_color'].forEach(key => {
+            // The HTML IDs use dashes, the state keys use underscores
+            const inputId = key.replace(/_/g, '-') + '-input'; 
+            if (document.getElementById(inputId)) setListener(inputId, key);
+        });
 
         // Kobold Template Selector
         const templateSelector = document.getElementById('koboldcpp-template-selector');
@@ -5652,8 +5803,14 @@ const NarrativeController = {
      * Sends a user message.
      */
     async sendMessage() {
-        if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
-        
+		if (this.RUNTIME.activeRequestAbortController) {
+			this.stopGeneration();
+		}
+		if (UIManager.RUNTIME.streamingInterval) {
+			clearInterval(UIManager.RUNTIME.streamingInterval);
+			UIManager.RUNTIME.streamingInterval = null;
+		}
+		
         const state = ReactiveStore.state;
         const input = document.getElementById('chat-input');
         const userChar = state.characters.find(c => c.is_user);
@@ -5736,13 +5893,25 @@ const NarrativeController = {
         }
     },
 
-    /**
+/**
      * Adds a message to history (Reactive).
      */
     addMessageToHistory(id, content, type = 'chat', emotion = 'neutral') {
         if (UIManager.RUNTIME.streamingInterval) {
             clearInterval(UIManager.RUNTIME.streamingInterval);
             UIManager.RUNTIME.streamingInterval = null;
+        }
+		
+		const state = ReactiveStore.state;
+		
+		if (state.chat_history.length > 0) {
+            const cleanHistory = state.chat_history.filter(msg => 
+                !(msg.type === 'system_event' && (msg.content.startsWith('AI Error') || msg.content.includes('Failed to fetch')))
+            );
+            // Only trigger update if items were actually removed
+            if (cleanHistory.length !== state.chat_history.length) {
+                state.chat_history = cleanHistory;
+            }
         }
         
         const newMessage = { 
@@ -5755,6 +5924,9 @@ const NarrativeController = {
         if (type === 'chat') {
             ReactiveStore.state.messageCounter++;
         }
+        
+        // FIX: Force immediate DB save. Do not wait for the 1-second timer.
+        ReactiveStore.persist();
         
         setTimeout(() => {
             const chatWindow = document.getElementById('chat-window');
@@ -5919,6 +6091,7 @@ const NarrativeController = {
         } finally {
             UIManager.setButtonToSendMode();
             this.RUNTIME.activeRequestAbortController = null;
+			UIManager.hideTypingIndicator();
         }
     },
 
@@ -5930,6 +6103,12 @@ const NarrativeController = {
         if (state.apiProvider === 'koboldcpp' && state.koboldcpp_url) {
             fetch(`${state.koboldcpp_url}/api/v1/generate/stop`, { method: 'POST' }).catch(() => {});
         }
+		
+		if (UIManager.RUNTIME.streamingInterval) {
+            clearInterval(UIManager.RUNTIME.streamingInterval);
+            UIManager.RUNTIME.streamingInterval = null;
+        }
+		
         UIManager.hideTypingIndicator();
         UIManager.setButtonToSendMode();
         this.RUNTIME.activeRequestAbortController = null;
@@ -7051,16 +7230,28 @@ const ActionDispatcher = {
           }
 
           // Ensure Colors
+		// FIX: Ensure Colors for ALL characters, including User
           let aiCharCount = 0;
           (state.characters || []).forEach(char => {
-              if (!char.is_user) {
-                   if (!char.color) char.color = NarrativeController.CONSTANTS.CHARACTER_COLORS[aiCharCount % 8];
+              if (!char.color) {
+                  if (char.is_user) {
+                      // Default User Gray
+                      char.color = { base: '#4b5563', bold: '#e5e7eb' };
+                  } else {
+                      // Cycle through AI colors
+                      char.color = NarrativeController.CONSTANTS.CHARACTER_COLORS[aiCharCount % 8];
+                      aiCharCount++;
+                  }
+              } else if (!char.is_user) {
+                  // Just increment counter if AI already has color, to keep variety for next new char
                   aiCharCount++;
               }
           });
 
           // Setup Subscriptions (Mapped to UIManager)
-          ['font', 'chatTextColor', 'textSize', 'bubbleOpacity', 'backgroundBlur', 'bubbleImageSize', 'backgroundImageURL', 'characterImageMode'].forEach(key => {
+          ['font', 'chatTextColor', 'textSize', 'bubbleOpacity', 'backgroundBlur', 'bubbleImageSize', 'backgroundImageURL', 'characterImageMode', 
+           'md_h1_color', 'md_h2_color', 'md_h3_color', 'md_bold_color', 'md_italic_color', 'md_quote_color']
+          .forEach(key => {
               ReactiveStore.subscribe(key, () => UIManager.applyStyling());
           });
 
@@ -7104,7 +7295,7 @@ const ActionDispatcher = {
         window.addEventListener('resize', debounce(() => this.updateLayout(), 100));
         
         // Update: Use LibraryController for title renaming
-const titleInputHandler = (e) => { 
+	const titleInputHandler = (e) => { 
             if (typeof NarrativeController !== 'undefined') {
                  NarrativeController.renameActiveNarrative(e.target.value);
             }
@@ -7114,6 +7305,20 @@ const titleInputHandler = (e) => {
         const mobileTitle = document.getElementById('mobile-story-title-overlay');
         if (titleInput) titleInput.addEventListener('input', titleInputHandler);
         if (mobileTitle) mobileTitle.addEventListener('input', titleInputHandler);
+		
+		// Enter-to-Send Logic
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            chatInput.addEventListener('keydown', (e) => {
+                // Check if Enter was pressed WITHOUT Shift
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    // Prevent the default new line insertion
+                    e.preventDefault(); 
+                    // Trigger the send action
+                    NarrativeController.handlePrimaryAction();
+                }
+            });
+        }
 
         // Hamburger Menu
         const hamburgerBtn = document.getElementById('hamburger-menu-button');
