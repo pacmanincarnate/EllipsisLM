@@ -9,7 +9,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="AI Storyteller">
-    <link rel="apple-touch-icon" href="https://storage.googleapis.com/pai-images/22e56a81615f4e6691238e2124c6536b.png">
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" href="logo.png">
 
     <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -488,7 +489,10 @@
                 </div>
 
                 <div class="flex space-x-2">
-                     <button data-action="open-modal" data-target="characters-modal" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Characters
+					 <button data-action="quick-create-character" class="bg-indigo-600/80 hover:bg-indigo-500/80 text-white font-bold py-2 px-4 rounded-lg" title="Quickly Generate Character from Chat">
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+					 </button>
+					 <button data-action="open-modal" data-target="characters-modal" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Characters
 					"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A5.965 5.965 0 0112 13a5.965 5.965 0 013 1.803"></path></svg></button>
                      <button data-action="open-modal" data-target="world-map-modal" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="World Map"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m-6 4v.01"></path></svg></button>
                      <button data-action="open-modal" data-target="knowledge-modal" class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Knowledge"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253z"></path></svg></button>
@@ -507,6 +511,7 @@
                         <a href="#" data-action="open-modal" data-target="story-library-modal" onclick="AppController.toggleMobileMenu(); return false;" class="block px-4 py-3 text-white hover:bg-gray-700">Story Library</a>
                         <div class="px-4 py-2 text-gray-400 text-sm font-bold border-t border-gray-700">Narrative Settings</div>
                         <a href="#" data-action="open-modal" data-target="characters-modal" onclick="AppController.toggleMobileMenu(); return false;" class="block px-4 py-3 text-white hover:bg-gray-700">Characters</a>
+						<a href="#" data-action="quick-create-character" onclick="AppController.toggleMobileMenu(); return false;" class="block px-4 py-3 text-white hover:bg-gray-700">Quick Add Character (AI)</a>
                         <a href="#" data-action="open-modal" data-target="world-map-modal" onclick="AppController.toggleMobileMenu(); return false;" class="block px-4 py-3 text-white hover:bg-gray-700">World Map</a>
                         <a href="#" data-action="open-modal" data-target="knowledge-modal" onclick="AppController.toggleMobileMenu(); return false;" class="block px-4 py-3 text-white hover:bg-gray-700">Knowledge</a>
                         <a href="#" data-action="check-world-info" onclick="AppController.toggleMobileMenu(); return false;" class="block px-4 py-3 text-white hover:bg-gray-700">Update Static</a>
@@ -538,8 +543,8 @@
              <!-- Chat Input & Controls -->
              <div id="chat-input-container" class="flex items-start space-x-2 sm:space-x-4" style="padding: 1rem; border-top: 1px solid; border-top-color: color-mix(in srgb, var(--chat-text-color) 50%, transparent);">
                  <textarea id="chat-input" class="flex-grow bg-black/30 border border-gray-800 rounded-lg p-2 color: black" placeholder="Enter your message..." rows="4" style="color: var(--chat-text-color)" ></textarea>
-                 <div class="flex flex-col space-y-2">
-                     <select id="ai-character-selector" class="bg-black/30 border border-gray-600 rounded-lg p-2 w-full mb-2"></select>
+                 <div class="flex flex-col space-y-2 w-min">
+                     <select id="ai-character-selector" class="bg-black/30 border border-gray-600 rounded-lg p-2 w-0 min-w-full mb-2 truncate"></select>
                      <div class="flex items-center justify-center space-x-1">
                          <button id="primary-action-btn" class="bg-indigo-600/50 hover:bg-indigo-600/80 text-white font-bold p-1.5 rounded-lg" title="Send / Write for Me"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg></button>
                          <button id="regen-btn" class="bg-sky-600/40 hover:bg-sky-600/70 text-white font-bold p-1.5 rounded-lg" title="Regenerate / New Response"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 9a9 9 0 0114.65-5.32L20 5M20 15a9 9 0 01-14.65 5.32L4 19"></path></svg></button>
@@ -6420,6 +6425,92 @@ const NarrativeController = {
             AppController.closeModal('character-detail-modal');
         });
     },
+	
+	async quickCreateCharacter() {
+        const state = ReactiveStore.state;
+        if (!state || !state.chat_history) {
+             alert("Please load a story first.");
+             return;
+        }
+
+        // 1. Get the name
+        const name = prompt("Who would you like to create? Enter a name mentioned in the story:");
+        if (!name || name.trim() === "") return;
+
+        UIManager.showLoadingSpinner(`Dreaming up ${name}...`);
+
+        try {
+            // 2. Gather Context (Last 30 messages + World Info)
+            const recentHistory = state.chat_history
+                .slice(-30)
+                .filter(m => m.type === 'chat' && !m.isHidden)
+                .map(m => {
+                    const char = state.characters.find(c => c.id === m.character_id);
+                    return `${char ? char.name : 'Unknown'}: ${m.content}`;
+                })
+                .join('\n');
+            
+            const staticLore = (state.static_entries || []).map(e => `${e.title}: ${e.content}`).join('\n');
+
+            // 3. Construct Prompt
+            const prompt = `You are a character designer. Based on the provided chat history and world context, generate a detailed character profile for a new character named "${name}".
+            
+            CONTEXT:
+            ${staticLore}
+            
+            RECENT CHAT:
+            ${recentHistory}
+            
+            INSTRUCTIONS:
+            Infer their personality, appearance, and role based on how they were mentioned or implied in the text. If they weren't mentioned, invent a persona that fits the current scenario perfectly.
+            
+            Respond with valid JSON only:
+            {
+                "description": "Full personality and physical description, written in 2nd person or 3rd person (approx 150 words).",
+                "short_description": "A very brief, one-sentence summary for a roster card.",
+                "tags": ["tag1", "tag2", "tag3"],
+                "model_instructions": "Specific instructions for the AI on how to roleplay this character (e.g., 'Act as ${name}, speak in a rough tone...')"
+            }`;
+
+            // 4. Call AI
+            const jsonString = await APIService.callAI(prompt, true);
+            const data = JSON.parse(jsonString);
+
+            // 5. Create Character Object
+            const aiCount = state.characters.filter(c => !c.is_user).length;
+            const color = this.CONSTANTS.CHARACTER_COLORS[aiCount % this.CONSTANTS.CHARACTER_COLORS.length];
+
+            const newChar = { 
+                id: UTILITY.uuid(), 
+                name: name.trim(), 
+                description: data.description || "A mysterious character.", 
+                short_description: data.short_description || "A new character.",
+                model_instructions: data.model_instructions || `Act as ${name}.`, 
+                image_url: "", 
+                extra_portraits: [], 
+                tags: data.tags || [], 
+                is_user: false, 
+                is_active: true, 
+                color: color, 
+                is_narrator: false
+            };
+
+            // 6. Save and Open
+            state.characters.push(newChar);
+            await ReactiveStore.forceSave(); // Ensure persistence
+            
+            UIManager.hideLoadingSpinner();
+            UIManager.renderCharacters();
+            
+            // Open the detail modal so user can refine it
+            AppController.openModal('character-detail-modal', newChar.id);
+
+        } catch (error) {
+            UIManager.hideLoadingSpinner();
+            console.error("Quick Create failed:", error);
+            alert(`Failed to generate character: ${error.message}`);
+        }
+    },
 
     updateCharacterField: debounce(function(id, field, value) { 
         const char = ReactiveStore.state.characters.find(c => c.id === id); 
@@ -7332,6 +7423,7 @@ const ActionDispatcher = {
         ActionHandler.register('chat-copy', (ds) => NarrativeController.copyMessage(ds.index));
         ActionHandler.register('chat-edit', (ds) => NarrativeController.openEditModal(ds.index));
         ActionHandler.register('chat-delete', (ds) => NarrativeController.deleteMessage(ds.index));
+		ActionHandler.register('quick-create-character', () => NarrativeController.quickCreateCharacter());
         
         ActionHandler.register('move-example-turn', (ds) => NarrativeController.moveExampleDialogueTurn(parseInt(ds.index), ds.direction));
         ActionHandler.register('delete-example-turn', (ds) => NarrativeController.deleteExampleDialogueTurn(parseInt(ds.index)));
