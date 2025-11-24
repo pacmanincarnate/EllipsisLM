@@ -5542,30 +5542,37 @@ const LibraryController = {
             const existingStory = library.stories.find(s => s.name && newStory.name && s.name.toLowerCase() === newStory.name.toLowerCase());
             if (existingStory) {
                 const now = new Date();
-                const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
-                newStory.name = `${newStory.name} - ${timestamp}`;
+                // Simple timestamp
+                newStory.name = `${newStory.name} - ${Date.now()}`;
             }
 
-            // Create Stubs & Save
+            // Separating Narratives from the Story Object
             const narratives = newStory.narratives || [];
             const narrativeStubs = narratives.map(n => ({ id: n.id, name: n.name, last_modified: n.last_modified }));
             newStory.narratives = narrativeStubs;
 
+            // 1. Save Story to DB
             await DBService.saveStory(newStory);
+            
+            // 2. Save Narratives to DB (Sequentially for memory safety)
             if (narratives.length > 0) {
-                await Promise.all(narratives.map(n => DBService.saveNarrative(n)));
+                for (const n of narratives) {
+                    await DBService.saveNarrative(n);
+                }
             }
+            
+            // 3. Update In-Memory Library
             library.stories.push(newStory);
 
-            // Save Primary Image
+            // 4. Save Primary Image to DB
             const primaryAiChar = newStory.characters?.find(c => !c.is_user);
             if (imageBlob && primaryAiChar && primaryAiChar.id) {
-                const savedToDB = await DBService.saveImage(primaryAiChar.id, imageBlob);
-                if (savedToDB) {
-                    UIManager.RUNTIME.characterImageCache = UIManager.RUNTIME.characterImageCache || {};
-                    if (UIManager.RUNTIME.characterImageCache[primaryAiChar.id]) URL.revokeObjectURL(UIManager.RUNTIME.characterImageCache[primaryAiChar.id]);
-                    UIManager.RUNTIME.characterImageCache[primaryAiChar.id] = URL.createObjectURL(imageBlob);
-                }
+                await DBService.saveImage(primaryAiChar.id, imageBlob);
+                
+                // Update Cache
+                UIManager.RUNTIME.characterImageCache = UIManager.RUNTIME.characterImageCache || {};
+                if (UIManager.RUNTIME.characterImageCache[primaryAiChar.id]) URL.revokeObjectURL(UIManager.RUNTIME.characterImageCache[primaryAiChar.id]);
+                UIManager.RUNTIME.characterImageCache[primaryAiChar.id] = URL.createObjectURL(imageBlob);
             }
 
             this.updateSearchIndex(newStory);
@@ -5602,39 +5609,75 @@ const LibraryController = {
                 if (entry.kind !== 'file' || !entry.name) continue;
                 const lowerCaseName = entry.name.toLowerCase();
 
-                if (lowerCaseName.endsWith('.png') || lowerCaseName.endsWith('.byaf') || lowerCaseName.endsWith('.zip')) {
+                if (lowerCaseName.endsWith('.png') || lowerCaseName.endsWith('.byaf') || lowerCaseName.endsWith('.zip') || lowerCaseName.endsWith('.json')) {
                     UIManager.showLoadingSpinner(`Processing file ${++processedFiles}: ${entry.name}`);
                     try {
                         const file = await entry.getFile();
-                        const { story: newStory, imageBlob } = await ImportExportService.parseUploadedFile(file, false); // Assume no quota check for simplicity here
+                        
+                        // 1. Parse the file into memory
+                        const { story: newStory, imageBlob } = await ImportExportService.parseUploadedFile(file, false);
 
                         if (!newStory || !newStory.name) throw new Error("Invalid parsed story data.");
 
+                        // 2. Handle Duplicate Names
                         const existingStory = library.stories.find(s => s.name && s.name.toLowerCase() === newStory.name.toLowerCase());
                         if (existingStory) {
-                            newStory.name = `${newStory.name} - ${Date.now()}`; // Simple timestamp for uniqueness
+                            newStory.name = `${newStory.name} - ${Date.now()}`;
                         }
 
-                        library.stories.push(newStory);
+                        // 3. CRITICAL FIX: Extract Narratives and Save Data to DB
+                        // We must separate the heavy narrative data from the story object
+                        const narratives = newStory.narratives || [];
+                        const narrativeStubs = narratives.map(n => ({ 
+                            id: n.id, 
+                            name: n.name, 
+                            last_modified: n.last_modified 
+                        }));
+                        
+                        // Replace full narratives with stubs in the story object
+                        newStory.narratives = narrativeStubs;
 
+                        // Save the Story to DB
+                        await DBService.saveStory(newStory);
+
+                        // Save all Narratives to DB
+                        for (const narrative of narratives) {
+                            await DBService.saveNarrative(narrative);
+                        }
+
+                        // 4. Save Image to DB
                         const primaryAiChar = newStory.characters?.find(c => !c.is_user);
                         if (imageBlob && primaryAiChar) {
-                            await DBService.saveImage(primaryAiChar.id, imageBlob).catch(e => console.warn("Failed to save image in bulk import", e));
+                            await DBService.saveImage(primaryAiChar.id, imageBlob);
+                            
+                            // Update cache immediately so it shows in UI
+                            UIManager.RUNTIME.characterImageCache = UIManager.RUNTIME.characterImageCache || {};
+                            if (UIManager.RUNTIME.characterImageCache[primaryAiChar.id]) {
+                                URL.revokeObjectURL(UIManager.RUNTIME.characterImageCache[primaryAiChar.id]);
+                            }
+                            UIManager.RUNTIME.characterImageCache[primaryAiChar.id] = URL.createObjectURL(imageBlob);
                         }
 
+                        // 5. Update In-Memory Library (UI)
+                        library.stories.push(newStory);
                         this.updateSearchIndex(newStory);
                         importedStoryNames.push(newStory.name);
+
                     } catch (err) {
+                        console.error(`Failed to import ${entry.name}`, err);
                         failedFiles.push({ name: entry.name, reason: err.message || 'Unknown error' });
                     }
                 }
             }
 
             StateManager.updateTagCache();
+            // Save the library list order/meta-data
             StateManager.saveLibrary();
+            
             UIManager.hideLoadingSpinner();
             UIManager.showBulkImportReport(importedStoryNames, failedFiles);
             UIManager.renderLibraryInterface();
+            
         } catch (err) {
             UIManager.hideLoadingSpinner();
             if (err.name !== 'AbortError') alert(`Bulk import error: ${err.message}`);
