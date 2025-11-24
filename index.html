@@ -886,7 +886,23 @@
         </div>
     </div>
 
+	<div id="lightbox-modal" class="fixed inset-0 z-[100] bg-black/90 hidden items-center justify-center backdrop-blur-sm">
+        <button data-action="close-lightbox" class="absolute top-4 right-4 text-white/50 hover:text-white p-2 z-50">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        
+        <button data-action="lightbox-prev" class="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white p-4 z-50 bg-black/20 hover:bg-black/50 rounded-full transition-all">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
 
+        <img id="lightbox-image" class="max-h-[90vh] max-w-[90vw] object-contain shadow-2xl rounded-lg" src="" alt="Character Portrait">
+
+        <button data-action="lightbox-next" class="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white p-4 z-50 bg-black/20 hover:bg-black/50 rounded-full transition-all">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+        
+        <div id="lightbox-caption" class="absolute bottom-6 left-0 right-0 text-center text-white/80 font-bold text-xl drop-shadow-md"></div>
+    </div>
 
 
 
@@ -3377,7 +3393,7 @@ const UIManager = {
         }
     },
 
-    openStoryDetails(storyId) {
+	openStoryDetails(storyId) {
         const library = StateManager.getLibrary();
         const story = library.stories.find(s => s.id === storyId);
         if (!story) return;
@@ -3395,23 +3411,28 @@ const UIManager = {
             return UIComponents.NarrativeItem(narrative, story.id, isActive);
         });
 
-        // FIX: Check if we have any valid images before creating the HTML
         const hasImages = (story.characters || []).some(c => UIManager.getPortraitSrc(c));
         
         const carouselHTML = hasImages ? DOM.html`
-            <div class="relative w-full aspect-square bg-black/50 group">
+            <div class="relative w-full aspect-square bg-black/50 group cursor-pointer hover:opacity-90 transition-opacity" title="Click to view full image">
                  <div id="details-carousel" class="w-full h-full object-cover"></div>
+                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <svg class="w-12 h-12 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                 </div>
             </div>` : '';
 
+        // Added 'pt-24' (Padding Top) if there are no images, so content doesn't hide behind the absolute header
+        const contentPaddingClass = hasImages ? '' : 'pt-24';
+
         const detailsHTML = DOM.html`
-            <div class="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent" style="padding-top: calc(1rem + env(safe-area-inset-top));">
+            <div class="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent" style="padding-top: calc(1rem + env(safe-area-inset-top));">
                 <input type="text" 
                    value="${story.name}" 
                    oninput="LibraryController.updateStoryField('${story.id}', 'name', this.value)" 
                    class="text-xl font-bold bg-transparent border border-transparent hover:border-gray-600 focus:border-indigo-500 rounded px-2 py-1 text-white w-2/3 transition-colors focus:outline-none focus:bg-black/30 story-details-title-input"
                    placeholder="Story Title">
-            
-            <div class="story-details-title-balancer"></div>
+                
+                <div class="story-details-title-balancer"></div>
 
                 <div class="flex items-center space-x-2">
                     <button data-action="duplicate-story" data-id="${story.id}" class="bg-gray-700/50 hover:bg-gray-600/80 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Duplicate Story">
@@ -3431,7 +3452,7 @@ const UIManager = {
                 
                 ${carouselHTML}
 
-                <div class="p-6 space-y-8">
+                <div class="p-6 space-y-8 ${contentPaddingClass}">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -3485,50 +3506,117 @@ const UIManager = {
             document.getElementById('story-details-content-desktop').innerHTML = detailsWrapperHTML.toString();
         }
         
-        // Only start carousel if there are images
         if (hasImages) {
-            this.startCarousel(story.characters, 'details-carousel');
+            this.startCarousel(story.characters, 'details-carousel', story.id);
         }
     },
 
-    startCarousel(characters, containerId) {
+    startCarousel(characters, containerId, storyId) {
         if (ModalManager.RUNTIME.carousel_interval) clearInterval(ModalManager.RUNTIME.carousel_interval);
         
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        const images = (characters || []).map(c => UIManager.getPortraitSrc(c)).filter(Boolean);
+        // Map characters to a clean object for the lightbox
+        const imageData = (characters || []).map(c => {
+            const src = UIManager.getPortraitSrc(c);
+            return src ? { src, name: c.name } : null;
+        }).filter(Boolean);
 
-        if (images.length === 0) {
+        if (imageData.length === 0) {
             container.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gray-900 text-gray-500">No character images</div>`;
             return;
         }
 
+        // Cache this list for the lightbox
+        UIManager.RUNTIME.currentLightboxImages = imageData;
+
+        // FIX: If only 1 image, render static and do NOT start interval
+        if (imageData.length === 1) {
+            container.innerHTML = `
+                <img src="${imageData[0].src}" 
+                     data-action="open-lightbox" 
+                     data-index="0"
+                     class="absolute inset-0 w-full h-full object-cover object-top" 
+                     style="opacity: 1;">
+            `;
+            return;
+        }
+		
+		// Multiple images: Render two for crossfading
         container.innerHTML = `
-            <img id="${containerId}-img1" class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" style="opacity: 1;">
-            <img id="${containerId}-img2" class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" style="opacity: 0;">
+            <img id="${containerId}-img1" data-action="open-lightbox" data-index="0" class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" style="opacity: 1;">
+            <img id="${containerId}-img2" data-action="open-lightbox" data-index="0" class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" style="opacity: 0;">
         `;
         
         let currentIndex = 0;
         let activeImg = 1;
         const img1 = document.getElementById(`${containerId}-img1`);
         const img2 = document.getElementById(`${containerId}-img2`);
-        img1.src = images[currentIndex];
+        
+        img1.src = imageData[currentIndex].src;
         
         ModalManager.RUNTIME.carousel_interval = setInterval(() => {
-            currentIndex = (currentIndex + 1) % images.length;
+            currentIndex = (currentIndex + 1) % imageData.length;
+            const nextSrc = imageData[currentIndex].src;
+
+            // Update the hidden image source, then fade it in
             if (activeImg === 1) {
-                img2.src = images[currentIndex];
+                img2.src = nextSrc;
+                img2.dataset.index = currentIndex; // Update index for lightbox
                 img1.style.opacity = 0;
                 img2.style.opacity = 1;
                 activeImg = 2;
             } else {
-                img1.src = images[currentIndex];
+                img1.src = nextSrc;
+                img1.dataset.index = currentIndex; // Update index for lightbox
                 img1.style.opacity = 1;
                 img2.style.opacity = 0;
                 activeImg = 1;
             }
         }, 4000);
+    },
+	
+	openLightbox(index) {
+        const images = UIManager.RUNTIME.currentLightboxImages || [];
+        if (images.length === 0) return;
+
+        UIManager.RUNTIME.lightboxIndex = parseInt(index) || 0;
+        this.updateLightboxDisplay();
+
+        const modal = document.getElementById('lightbox-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    },
+
+    updateLightboxDisplay() {
+        const images = UIManager.RUNTIME.currentLightboxImages || [];
+        const index = UIManager.RUNTIME.lightboxIndex;
+        const data = images[index];
+        
+        const imgEl = document.getElementById('lightbox-image');
+        const capEl = document.getElementById('lightbox-caption');
+
+        if (imgEl && data) imgEl.src = data.src;
+        if (capEl && data) capEl.textContent = data.name;
+    },
+
+    navigateLightbox(direction) {
+        const images = UIManager.RUNTIME.currentLightboxImages || [];
+        if (images.length === 0) return;
+
+        let newIndex = UIManager.RUNTIME.lightboxIndex + direction;
+        if (newIndex >= images.length) newIndex = 0;
+        if (newIndex < 0) newIndex = images.length - 1;
+
+        UIManager.RUNTIME.lightboxIndex = newIndex;
+        this.updateLightboxDisplay();
+    },
+
+    closeLightbox() {
+        const modal = document.getElementById('lightbox-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     },
     
     renderCharacters() { 
@@ -7215,6 +7303,12 @@ const ActionDispatcher = {
         ActionHandler.register('delete-story', (ds) => LibraryController.deleteStory(ds.id));
         ActionHandler.register('gen-story-notes', (ds, e) => LibraryController.generateStoryNotesAI(e, ds.id));
         ActionHandler.register('gen-story-tags', (ds, e) => LibraryController.generateStoryTagsAI(e, ds.id));
+		
+		// Lightbox Actions
+        ActionHandler.register('open-lightbox', (ds) => UIManager.openLightbox(ds.index));
+        ActionHandler.register('lightbox-next', () => UIManager.navigateLightbox(1));
+        ActionHandler.register('lightbox-prev', () => UIManager.navigateLightbox(-1));
+        ActionHandler.register('close-lightbox', () => UIManager.closeLightbox());
         
         // Scenario Actions (Load, Rename, Delete)
         ActionHandler.register('load-scenario', (ds) => LibraryController.createNarrativeFromScenario(ds.storyId, ds.scenarioId));
