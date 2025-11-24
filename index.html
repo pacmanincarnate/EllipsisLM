@@ -297,9 +297,10 @@
             font-weight: 600; 
             margin: 0.3em 0; 
         }
+		/* FIX: Use the CSS variable for Bold color */
         #chat-window strong { 
-            color: var(--md-bold-color, #ffffff); /* Default: White */
-            font-weight: 700;
+            color: var(--md-bold-color, #ffffff); 
+            font-weight: 700; 
         }
         #chat-window em { 
             color: var(--md-italic-color, #9ca3af); /* Default: Gray-400 */
@@ -1076,6 +1077,34 @@
         await this.init();
         return !!this.db;
       },
+	  
+	  async iterateStore(storeName, callback) {
+        if (!(await this.ensure())) return false;
+        return new Promise((resolve, reject) => {
+          try {
+            const tx = this.db.transaction([storeName], "readonly");
+            const store = tx.objectStore(storeName);
+            const req = store.openCursor();
+            
+            req.onsuccess = async (event) => {
+              const cursor = event.target.result;
+              if (cursor) {
+                // We await the callback to ensure processing finishes before moving to next
+                try {
+                    await callback(cursor.key, cursor.value);
+                    cursor.continue();
+                } catch (err) {
+                    console.error("Error in iterateStore callback:", err);
+                    cursor.continue(); // Try to keep going even if one item fails
+                }
+              } else {
+                resolve(true);
+              }
+            };
+            req.onerror = () => reject(req.error);
+          } catch (e) { reject(e); }
+        });
+      },
 
       async saveImage(id, blob) {
         if (!(await this.ensure())) return false;
@@ -1517,60 +1546,87 @@
             return story;
         },
 
-        async exportLibraryAsZip() {
+async exportLibraryAsZip() {
             console.log("StoryService: Starting library export...");
+            
+            // 1. Force a save of the current state before exporting
+            // This ensures characters/stories modified seconds ago are included.
+            if (typeof ReactiveStore !== 'undefined') {
+                await ReactiveStore.forceSave(); 
+            }
+
             const zip = new JSZip();
             const dataFolder = zip.folder("data");
             const imageFolder = zip.folder("images");
 
+            // 2. Export Stories
             const stories = await DBService.getAllStories();
-            const narratives = await DBService.getAllNarratives();
-            const images = await DBService.getAllEntries("characterImages"); 
-
             dataFolder.file("stories.json", JSON.stringify(stories, null, 2));
+
+            // 3. Export Narratives
+            const narratives = await DBService.getAllNarratives();
             dataFolder.file("narratives.json", JSON.stringify(narratives, null, 2));
             
-            if (images.length > 0) {
-              images.forEach(([key, blob]) => {
-                imageFolder.file(key, blob);
-              });
-            }
+            // 4. Export Images Iteratively (Memory Safe)
+            // We use iterateStore to avoid loading all Blobs into an array at once.
+            await DBService.iterateStore("characterImages", (key, blob) => {
+                if (blob) {
+                    imageFolder.file(key, blob);
+                }
+            });
 
-            return zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
+            return zip.generateAsync({ 
+                type: "blob", 
+                compression: "DEFLATE", 
+                compressionOptions: { level: 6 } 
+            });
         },
 
         async importLibraryFromZip(file) {
             console.log("StoryService: Starting library import...");
             const zip = await JSZip.loadAsync(file);
 
+            // 1. Clear existing data
             await Promise.all([
               DBService.clearStore("stories"),
               DBService.clearStore("narratives"),
               DBService.clearStore("characterImages")
             ]);
 
+            // 2. Import Stories
             const storiesFile = zip.file("data/stories.json");
             if (storiesFile) {
-              const stories = JSON.parse(await storiesFile.async("string"));
-              await Promise.all(stories.map(story => DBService.saveStory(story)));
+              const storiesStr = await storiesFile.async("string");
+              const stories = JSON.parse(storiesStr);
+              // Sequential execution to be kind to the DB transaction
+              for (const story of stories) {
+                  await DBService.saveStory(story);
+              }
             }
 
+            // 3. Import Narratives
             const narrativesFile = zip.file("data/narratives.json");
             if (narrativesFile) {
-              const narratives = JSON.parse(await narrativesFile.async("string"));
-              await Promise.all(narratives.map(narrative => DBService.saveNarrative(narrative)));
+              const narrativesStr = await narrativesFile.async("string");
+              const narratives = JSON.parse(narrativesStr);
+              for (const narrative of narratives) {
+                  await DBService.saveNarrative(narrative);
+              }
             }
 
+            // 4. Import Images
             const imageFolder = zip.folder("images");
             if (imageFolder) {
               const imageFiles = [];
               imageFolder.forEach((relativePath, file) => {
                 imageFiles.push({ key: relativePath, file: file });
               });
-              await Promise.all(imageFiles.map(async (img) => {
-                const blob = await img.file.async("blob");
-                await DBService.saveImage(img.key, blob);
-              }));
+              
+              // Process images sequentially to prevent Transaction Inactive errors on iOS
+              for (const img of imageFiles) {
+                  const blob = await img.file.async("blob");
+                  await DBService.saveImage(img.key, blob);
+              }
             }
         },
 
@@ -1701,16 +1757,27 @@
         },
 
         async saveState() {
-            const { active_story_id, stories } = this.data.library;
+            // FIX: Destructure active_narrative_id so we know which stub to update
+            const { active_story_id, active_narrative_id, stories } = this.data.library;
             const currentState = this.data.activeNarrativeState;
 
             if (!active_story_id || !currentState) return;
 
             try {
-                const storyStubs = (stories.find(s => s.id === active_story_id) || {}).narratives || [];
+                const storyInLibrary = stories.find(s => s.id === active_story_id);
+                const storyStubs = (storyInLibrary || {}).narratives || [];
+
+                // FIX: Find the specific narrative stub and update its timestamp
+                if (active_narrative_id) {
+                    const currentStub = storyStubs.find(n => n.id === active_narrative_id);
+                    if (currentStub) {
+                        currentStub.last_modified = new Date().toISOString();
+                    }
+                }
+
+                // Now save the story (with the updated narrative list) and the narrative itself
                 await StoryService.saveActiveState(currentState, storyStubs);
 
-                const storyInLibrary = this.data.library.stories.find(s => s.id === active_story_id);
                 if (storyInLibrary) {
                     storyInLibrary.last_modified = new Date().toISOString();
                 }
@@ -2859,54 +2926,40 @@
         }
     };
 	
-	/**
+/**
      * =================================================================================================
-     * REFACTOR PHASE 4: Reactive State Store
+     * Reactive State Store
      * Wraps the application state in a Proxy to handle auto-saving and UI updates.
      * =================================================================================================
      */
     const ReactiveStore = {
-        state: null,       // The public Proxy object
-        _target: null,     // The raw data object
+        state: null,       
+        _target: null,     
         _listeners: new Map(),
-        _proxyCache: new WeakMap(), // Cache to maintain object identity
+        _proxyCache: new WeakMap(), 
         _saveTimeout: null,
+        _isSaving: false, // Track saving state
 
-/**
-     * Initialize the store with the loaded state from StateManager.
-     * @param {object} initialState - The activeNarrativeState.
-     */
-    init(initialState) {
-        this._target = initialState;
-        this._listeners.clear();
-        this._proxyCache = new WeakMap(); 
-        this.state = this._createProxy(initialState);
-        
-        // FIX: Add safety nets for tab closing/switching
-        const saveNow = () => {
-            if (this._saveTimeout) {
-                clearTimeout(this._saveTimeout);
-                this._saveTimeout = null;
-                console.log("ReactiveStore: Emergency Save Triggered");
-                StateManager.saveState();
-            }
-        };
+        init(initialState) {
+            this._target = initialState;
+            this._listeners.clear();
+            this._proxyCache = new WeakMap(); 
+            this.state = this._createProxy(initialState);
+            
+            const saveNow = () => {
+                // If we are closing, trigger an immediate save without debounce
+                this.forceSave();
+            };
 
-        // Trigger save on visibility change (mobile app switch) and page hide (tab close)
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') saveNow();
-        });
-        window.addEventListener('pagehide', saveNow);
-        window.addEventListener('beforeunload', saveNow);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') saveNow();
+            });
+            window.addEventListener('pagehide', saveNow);
+            window.addEventListener('beforeunload', saveNow);
 
-        console.log("ReactiveStore: Initialized with Safety Nets.");
-    },
+            console.log("ReactiveStore: Initialized with Safety Nets.");
+        },
 
-        /**
-         * Subscribe to changes on a specific root property.
-         * @param {string} key - The root property name (e.g., 'font', 'characters').
-         * @param {function} callback - Function to run when this property (or its children) changes.
-         */
         subscribe(key, callback) {
             if (!this._listeners.has(key)) {
                 this._listeners.set(key, new Set());
@@ -2914,39 +2967,23 @@
             this._listeners.get(key).add(callback);
         },
 
-        /**
-         * Internal: Creates a recursive proxy for deep watching.
-         */
         _createProxy(target, rootKey = null) {
-            // If it's not an object/array, return as is
             if (typeof target !== 'object' || target === null) return target;
-
-            // Return cached proxy if it exists (preserves === equality)
             if (this._proxyCache.has(target)) return this._proxyCache.get(target);
 
             const handler = {
                 get: (obj, prop) => {
                     const value = obj[prop];
-                    
-                    // Determine the "Root Key" (the top-level property name, e.g., 'characters')
-                    // If rootKey is already set, we are deep inside that tree. 
-                    // If not, and we are accessing a property, THAT property is the new root key.
                     const nextRootKey = rootKey || (typeof prop === 'string' ? prop : null);
-
-                    // Recursively proxy nested objects
                     if (typeof value === 'object' && value !== null) {
                         return this._createProxy(value, nextRootKey);
                     }
                     return value;
                 },
                 set: (obj, prop, value) => {
-                    if (obj[prop] === value) return true; // No change
+                    if (obj[prop] === value) return true; 
                     obj[prop] = value;
-
-                    // Identify which top-level subscriber to notify
-                    // If rootKey is null, we are setting a top-level prop (e.g., state.font = '...')
                     const notificationKey = rootKey || prop;
-
                     this._notify(notificationKey);
                     this._scheduleSave();
                     return true;
@@ -2967,7 +3004,6 @@
 
         _notify(key) {
             if (this._listeners.has(key)) {
-                // console.log(`ReactiveStore: Change detected in '${String(key)}'. Notifying listeners.`);
                 this._listeners.get(key).forEach(cb => cb(this.state[key]));
             }
         },
@@ -2975,20 +3011,33 @@
         _scheduleSave() {
             if (this._saveTimeout) clearTimeout(this._saveTimeout);
             this._saveTimeout = setTimeout(() => {
-                // Bridge to the legacy StateManager to handle the actual IndexedDB write
-                // Since ReactiveStore.state wraps StateManager.data.activeNarrativeState,
-                // the underlying data is already updated. We just trigger the save.
-                StateManager.saveState();
-            }, 1000); // 1-second debounce to prevent DB thrashing
+                this.forceSave();
+            }, 1000); 
         },
 
-        /**
-         * Force an immediate save. 
-         * Used by Controllers for critical events (e.g., chat completion).
-         */
+        // New async method to ensure data is written
+        async forceSave() {
+            if (this._saveTimeout) {
+                clearTimeout(this._saveTimeout);
+                this._saveTimeout = null;
+            }
+            
+            if (this._isSaving) return; // Prevent overlapping saves
+            this._isSaving = true;
+            
+            try {
+                await StateManager.saveState();
+                console.log("ReactiveStore: State saved successfully.");
+            } catch (err) {
+                console.error("ReactiveStore: Save failed", err);
+            } finally {
+                this._isSaving = false;
+            }
+        },
+
+        // Legacy compatibility
         persist() {
-            if (this._saveTimeout) clearTimeout(this._saveTimeout);
-            StateManager.saveState();
+            this.forceSave();
         }
     };
 	
@@ -3128,7 +3177,8 @@ const UIComponents = {
         `;
     },
 
-    /**
+
+	/**
      * Renders a collapsible Scenario item for Story Details.
      */
     ScenarioItem(scenario, storyId) {
@@ -3149,7 +3199,7 @@ const UIComponents = {
                     </div>
                     <div class="flex gap-2 justify-end pt-2">
                         <button data-action="load-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-1 px-3 rounded" title="Load Scenario">Load</button>
-                        <button data-action="duplicate-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="bg-gray-600 hover:bg-gray-500 text-white text-xs font-bold py-1 px-3 rounded" title="Duplicate">Duplicate</button>
+                        <button data-action="rename-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="bg-gray-600 hover:bg-gray-500 text-white text-xs font-bold py-1 px-3 rounded" title="Rename">Rename</button>
                         <button data-action="delete-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="text-xs bg-red-900/50 hover:bg-red-700/80 text-red-200 font-semibold py-2 px-3 rounded"" title="Delete">Delete</button>
                     </div>
                 </div>
@@ -3157,16 +3207,27 @@ const UIComponents = {
         `;
     },
 
-    /**
+	/**
      * Renders a Narrative list item for Story Details.
      */
     NarrativeItem(narrative, storyId, isActive) {
         const activeBadge = isActive ? DOM.html`<span class="text-xs text-sky-300 font-bold flex-shrink-0">ACTIVE</span>` : '';
+        
+        // FIX: defensive date parsing
+        let dateDisplay = 'Date unknown';
+        if (narrative.last_modified) {
+            const dateObj = new Date(narrative.last_modified);
+            // Check if date is valid
+            if (!isNaN(dateObj.getTime())) {
+                dateDisplay = dateObj.toLocaleString();
+            }
+        }
+
         return DOM.html`
             <div class="bg-gray-700/60 p-3 rounded-lg flex justify-between items-center gap-2">
                 <div class="flex-grow min-w-0">
                     <p class="font-semibold truncate">${narrative.name}</p>
-                    <p class="text-xs text-gray-400">Modified: ${new Date(narrative.last_modified).toLocaleString()}</p>
+                    <p class="text-xs text-gray-400">Modified: ${dateDisplay}</p>
                 </div>
                 ${activeBadge}
                 <div class="flex-shrink-0 flex items-center gap-2">
@@ -3334,6 +3395,14 @@ const UIManager = {
             return UIComponents.NarrativeItem(narrative, story.id, isActive);
         });
 
+        // FIX: Check if we have any valid images before creating the HTML
+        const hasImages = (story.characters || []).some(c => UIManager.getPortraitSrc(c));
+        
+        const carouselHTML = hasImages ? DOM.html`
+            <div class="relative w-full aspect-square bg-black/50 group">
+                 <div id="details-carousel" class="w-full h-full object-cover"></div>
+            </div>` : '';
+
         const detailsHTML = DOM.html`
             <div class="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent" style="padding-top: calc(1rem + env(safe-area-inset-top));">
                 <input type="text" 
@@ -3360,9 +3429,7 @@ const UIManager = {
 
             <div class="flex-grow overflow-y-auto min-h-0 details-scroll-container">
                 
-                <div class="relative w-full aspect-square bg-black/50 group">
-                     <div id="details-carousel" class="w-full h-full object-cover"></div>
-                     </div>
+                ${carouselHTML}
 
                 <div class="p-6 space-y-8">
                     
@@ -3418,7 +3485,10 @@ const UIManager = {
             document.getElementById('story-details-content-desktop').innerHTML = detailsWrapperHTML.toString();
         }
         
-        this.startCarousel(story.characters, 'details-carousel');
+        // Only start carousel if there are images
+        if (hasImages) {
+            this.startCarousel(story.characters, 'details-carousel');
+        }
     },
 
     startCarousel(characters, containerId) {
@@ -3764,11 +3834,11 @@ renderStaticEntries() {
       portraitContainer.innerHTML = DOM.html`<img src="${portraitUrl}" class="max-w-full max-h-full object-contain rounded-lg">`.toString();
     },
 
-startStreamingResponse(charId, fullText, emotion) {
+	startStreamingResponse(charId, fullText, emotion) {
         if (this.RUNTIME.streamingInterval) clearInterval(this.RUNTIME.streamingInterval);
         const state = ReactiveStore.state;
 
-        // FIX: Remove previous "AI Error" system messages before starting new stream
+        // Remove previous error messages
         if (state.chat_history.length > 0) {
             const cleanHistory = state.chat_history.filter(msg => 
                 !(msg.type === 'system_event' && (msg.content.startsWith('AI Error') || msg.content.includes('Failed to fetch')))
@@ -3789,7 +3859,8 @@ startStreamingResponse(charId, fullText, emotion) {
         const messageContentEl = document.getElementById(`message-content-${messageIndex}`);
         if (!messageContentEl) return;
         
-        const chatWindow = document.getElementById('chat-window');
+        // Get reference to the container bubble for final scrolling
+        const bubbleEl = messageContentEl.closest('.chat-bubble-container');
         const words = fullText.split(/(\s+)/);
         let wordIndex = 0;
 
@@ -3814,11 +3885,8 @@ startStreamingResponse(charId, fullText, emotion) {
 
                 messageContentEl.innerHTML = fullHTML.toString();
                 
-                // iOS-safe scroll
-                const threshold = 150; 
-                if (chatWindow.scrollHeight - chatWindow.clientHeight <= chatWindow.scrollTop + threshold) {
-                     chatWindow.scrollTop = chatWindow.scrollHeight;
-                }
+                // FIX: Removed the auto-scroll logic from here. 
+                // The view will now stay static while text streams in.
                 
                 wordIndex++;
             } else {
@@ -3829,9 +3897,13 @@ startStreamingResponse(charId, fullText, emotion) {
                 if (typeof ReactiveStore !== 'undefined') ReactiveStore.persist();
                 if (typeof NarrativeController !== 'undefined') NarrativeController.checkDynamicEntryTriggers(); 
 
-                requestAnimationFrame(() => {
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
-                });
+                // FIX: Scroll only AFTER generation finishes
+                // 'block: start' aligns the top of the message with the top of the window
+                if (bubbleEl) {
+                    requestAnimationFrame(() => {
+                        bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    });
+                }
             }
         }, 2);
     },
@@ -5022,6 +5094,40 @@ const LibraryController = {
             UIManager.hideLoadingSpinner();
         }
     },
+	
+	async renameScenario(storyId, scenarioId) {
+        const story = await DBService.getStory(storyId);
+        if (!story) return;
+        
+        const scenario = story.scenarios.find(sc => sc.id === scenarioId);
+        if (!scenario) return;
+
+        const newName = prompt("Enter new name for this scenario:", scenario.name);
+        if (!newName || newName.trim() === "") return;
+
+        try {
+            scenario.name = newName.trim();
+            story.last_modified = new Date().toISOString();
+            
+            // 1. Save to DB
+            await DBService.saveStory(story);
+
+            // 2. Update In-Memory Library Stub
+            const library = StateManager.getLibrary();
+            const storyInLibrary = library.stories.find(s => s.id === storyId);
+            if (storyInLibrary) {
+                storyInLibrary.scenarios = story.scenarios;
+                storyInLibrary.last_modified = story.last_modified;
+            }
+            
+            // 3. Refresh UI
+            UIManager.openStoryDetails(storyId);
+            
+        } catch (e) {
+            console.error("Failed to rename scenario:", e);
+            alert(`Error: ${e.message}`);
+        }
+    },
 
     /**
      * Deletes a story and all associated data.
@@ -5206,7 +5312,7 @@ const LibraryController = {
     /**
      * Creates a new narrative from a scenario template.
      */
-    async createNarrativeFromScenario(storyId, scenarioId) {
+	async createNarrativeFromScenario(storyId, scenarioId) {
         UIManager.showLoadingSpinner('Creating new narrative...');
         try {
             // 1. Call the StoryService to do all the database work
@@ -5215,7 +5321,11 @@ const LibraryController = {
             // 2. Update the in-memory library stub
             const library = StateManager.getLibrary();
             const storyInLibrary = library.stories.find(s => s.id === storyId);
+            
             if (storyInLibrary) {
+                // Safety: Ensure array exists before pushing
+                if (!storyInLibrary.narratives) storyInLibrary.narratives = [];
+                
                 storyInLibrary.narratives.push({
                     id: newNarrative.id,
                     name: newNarrative.name,
@@ -5893,10 +6003,10 @@ const NarrativeController = {
         }
     },
 
-/**
+	/**
      * Adds a message to history (Reactive).
      */
-    addMessageToHistory(id, content, type = 'chat', emotion = 'neutral') {
+    async addMessageToHistory(id, content, type = 'chat', emotion = 'neutral') {
         if (UIManager.RUNTIME.streamingInterval) {
             clearInterval(UIManager.RUNTIME.streamingInterval);
             UIManager.RUNTIME.streamingInterval = null;
@@ -5908,7 +6018,6 @@ const NarrativeController = {
             const cleanHistory = state.chat_history.filter(msg => 
                 !(msg.type === 'system_event' && (msg.content.startsWith('AI Error') || msg.content.includes('Failed to fetch')))
             );
-            // Only trigger update if items were actually removed
             if (cleanHistory.length !== state.chat_history.length) {
                 state.chat_history = cleanHistory;
             }
@@ -5919,14 +6028,15 @@ const NarrativeController = {
             timestamp: new Date().toISOString(), isNew: true 
         };
         
+        // Push to state
         ReactiveStore.state.chat_history.push(newMessage);
         
         if (type === 'chat') {
             ReactiveStore.state.messageCounter++;
         }
         
-        // FIX: Force immediate DB save. Do not wait for the 1-second timer.
-        ReactiveStore.persist();
+        // FIX: Await the save operation to ensure iOS persistence
+        await ReactiveStore.forceSave();
         
         setTimeout(() => {
             const chatWindow = document.getElementById('chat-window');
@@ -5968,23 +6078,23 @@ const NarrativeController = {
         }
     },
 
-    copyMessage(index) {
+	copyMessage(index) {
         const msg = ReactiveStore.state.chat_history[index];
         if (!msg) return;
-        const temp = document.createElement('textarea');
-        temp.value = msg.content;
-        document.body.appendChild(temp);
-        temp.select();
-        document.execCommand('copy');
-        document.body.removeChild(temp);
-        
-        // UI Feedback
-        const btn = document.querySelector(`[data-message-index='${index}'] button[data-action='chat-copy']`);
-        if (btn) {
-            const original = btn.innerHTML;
-            btn.innerHTML = `<span class="text-xs text-green-400">Copied!</span>`;
-            setTimeout(() => btn.innerHTML = original, 1500);
-        }
+
+        // Use modern Clipboard API
+        navigator.clipboard.writeText(msg.content).then(() => {
+            // UI Feedback
+            const btn = document.querySelector(`[data-message-index='${index}'] button[data-action='chat-copy']`);
+            if (btn) {
+                const original = btn.innerHTML;
+                btn.innerHTML = `<span class="text-xs text-green-400 font-bold">Copied!</span>`;
+                setTimeout(() => btn.innerHTML = original, 1500);
+            }
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            alert("Failed to copy to clipboard.");
+        });
     },
 
     openEditModal(index) {
@@ -7057,16 +7167,18 @@ const ActionDispatcher = {
         // but we can map specific actions here if needed in the future.
 
         // --- LibraryController (Stories, Scenarios, IO) ---
-        ActionHandler.register('open-story', (ds) => UIManager.openStoryDetails(ds.id)); // View-only action
+        ActionHandler.register('open-story', (ds) => UIManager.openStoryDetails(ds.id)); 
         ActionHandler.register('duplicate-story', (ds) => LibraryController.duplicateStory(ds.id));
         ActionHandler.register('delete-story', (ds) => LibraryController.deleteStory(ds.id));
         ActionHandler.register('gen-story-notes', (ds, e) => LibraryController.generateStoryNotesAI(e, ds.id));
         ActionHandler.register('gen-story-tags', (ds, e) => LibraryController.generateStoryTagsAI(e, ds.id));
         
+        // Scenario Actions (Load, Rename, Delete)
         ActionHandler.register('load-scenario', (ds) => LibraryController.createNarrativeFromScenario(ds.storyId, ds.scenarioId));
-        ActionHandler.register('duplicate-scenario', (ds) => LibraryController.duplicateScenario(ds.storyId, ds.scenarioId));
+        ActionHandler.register('rename-scenario', (ds) => LibraryController.renameScenario(ds.storyId, ds.scenarioId));
         ActionHandler.register('delete-scenario', (ds) => LibraryController.deleteScenario(ds.storyId, ds.scenarioId));
         
+        // Narrative Actions
         ActionHandler.register('load-narrative', (ds) => LibraryController.loadNarrative(ds.storyId, ds.narrativeId));
         ActionHandler.register('duplicate-narrative', (ds) => LibraryController.duplicateNarrative(ds.storyId, ds.narrativeId));
         ActionHandler.register('delete-narrative', (ds) => LibraryController.deleteNarrative(ds.storyId, ds.narrativeId));
