@@ -3446,17 +3446,23 @@ const UIComponents = {
     /**
      * Renders a single character card for the roster.
      */
+
 	CharacterTile(char) {
         const tagsHTML = (char.tags || []).map(tag => DOM.html`<span class="bg-indigo-500/50 text-indigo-200 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${tag}</span>`);
         const visualStyle = char.is_active ? "" : "opacity: 0.5; filter: grayscale(80%);";
         const activeBadge = char.is_active ? "" : DOM.unsafe('<div class="absolute top-2 right-2 bg-black/60 text-gray-300 text-xs px-2 py-1 rounded">Inactive</div>');
         
-        // Silhouette SVG Data URI
-        const placeholder = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzRiNTU2MyI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00czLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==';
-        
+        // Use URL-Encoded SVG instead of Base64 to prevent ERR_INVALID_URL
+        // This is a standard gray silhouette icon.
+		const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234b5563' opacity='0.25'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";        
         const hasImage = UIManager.RUNTIME.characterImageCache[char.id] || (char.image_url && !char.image_url.startsWith('local_'));
-        const bgImage = `url('${hasImage ? (UIManager.RUNTIME.characterImageCache[char.id] || char.image_url) : placeholder}')`;
-        const bgSize = hasImage ? 'cover' : '50%';
+        
+        // Determine URL and escape single quotes to prevent CSS breakage
+        let rawUrl = hasImage ? (UIManager.RUNTIME.characterImageCache[char.id] || char.image_url) : placeholder;
+        if (rawUrl) rawUrl = rawUrl.replace(/'/g, "%27"); 
+
+        const bgImage = `url('${rawUrl}')`;
+        const bgSize = hasImage ? 'cover' : 'cover';
         const bgRepeat = 'no-repeat';
 
         return DOM.html`
@@ -4146,8 +4152,12 @@ renderStaticEntries() {
     },
 
     renderChat() {
-        const state = StateManager.getState();
+        // Hardened check to prevent blinking during streaming updates
+        if (this.RUNTIME.suppressChatRender) return;
+		
+		const state = StateManager.getState();
         const chatWindow = document.getElementById('chat-window');
+		
         
         // 1. Empty State Check
         if (!state || !state.chat_history) {
@@ -4310,10 +4320,9 @@ renderStaticEntries() {
         if (this.RUNTIME.streamingInterval) clearInterval(this.RUNTIME.streamingInterval);
         
         const state = ReactiveStore.state;
-        // FIX: Define chatWindow here so it is visible inside the interval loop
         const chatWindow = document.getElementById('chat-window'); 
 
-        // 1. LOCK THE DB: Stop saving while we animate
+        // 1. LOCK THE DB
         if (typeof ReactiveStore.pauseSaving === 'function') {
             ReactiveStore.pauseSaving();
         }
@@ -4322,17 +4331,23 @@ renderStaticEntries() {
         const messageIndex = state.chat_history.length;
         const newMessage = { 
             character_id: charId, 
-            content: "", // Start empty
+            content: "", 
             type: 'chat', 
             emotion: emotion, 
             timestamp: new Date().toISOString(), 
             isNew: true 
         };
         
+        // FIX: Suppress full re-render (Prevent Start Blink)
+        this.RUNTIME.suppressChatRender = true;
         state.chat_history.push(newMessage);
+        this.RUNTIME.suppressChatRender = false;
         
-        // Force immediate render so the bubble appears in the DOM
-        this.renderChat();
+        // FIX: Manually append the new bubble
+        const newBubbleHTML = UIComponents.MessageBubble(newMessage, messageIndex, state);
+        if (chatWindow) {
+            chatWindow.insertAdjacentHTML('beforeend', newBubbleHTML.toString());
+        }
 
         // 3. Locate the DOM Element
         const messageContentEl = document.getElementById(`message-content-${messageIndex}`);
@@ -4343,21 +4358,18 @@ renderStaticEntries() {
             return;
         }
 
-        // 4. The Animation Loop (Visuals Only)
+        // 4. The Animation Loop
         const words = fullText.split(/(\s+)/);
         let currentText = "";
         let wordIndex = 0;
 
         this.RUNTIME.streamingInterval = setInterval(() => {
             if (wordIndex < words.length) {
-                // A. Update Local Variable
                 currentText += words[wordIndex];
                 
-                // B. Process formatting locally
                 const styledContent = currentText.replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`);
                 const fullHTML = DOM.unsafe(marked.parse(styledContent || ''));
                 
-                // C. Update DOM Directly
                 let finalHTML = fullHTML.toString();
                 const character = state.characters.find(c => c.id === charId);
                 
@@ -4367,32 +4379,48 @@ renderStaticEntries() {
                 }
                 
                 messageContentEl.innerHTML = finalHTML;
-                
-                // D. Scroll Logic (Now chatWindow is defined)
-                if (bubbleEl && chatWindow && wordIndex % 5 === 0) { 
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
-                }
-
                 wordIndex++;
             } else {
                 // 5. FINISH: Commit Data
                 clearInterval(this.RUNTIME.streamingInterval);
                 this.RUNTIME.streamingInterval = null;
                 
+                // FIX: Keep suppression ON during post-processing
+                this.RUNTIME.suppressChatRender = true;
+                
                 // Update the TRUE state now that we are done
                 state.chat_history[messageIndex].content = fullText;
                 state.chat_history[messageIndex].isNew = false;
                 
-                // 6. UNLOCK DB: This triggers the single final save
+                // FIX: Manually clean up the 'new-message' class from the DOM
+                // Since we are skipping the re-render, we must update the class manually
+                if (bubbleEl) bubbleEl.classList.remove('new-message');
+
+                // 6. UNLOCK DB (Triggers save, but render is still suppressed)
                 if (typeof ReactiveStore.resumeSaving === 'function') {
                     ReactiveStore.resumeSaving();
                 }
                 
-                // Final scroll
-                if (bubbleEl) bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                
-                // Check for Dynamic Entries
+                // Check for Dynamic Entries (May modify state)
+                // We keep suppression ON so if a lore entry is added, we don't blink the whole chat.
+                // Note: If a lore entry IS added, it won't appear until the next interaction. 
+                // This is a trade-off for smoothness, but acceptable for "hidden" lore. 
+                // If you want Lore Reveals to appear instantly, we would need to manually append them here too.
                 if (typeof NarrativeController !== 'undefined') NarrativeController.checkDynamicEntryTriggers();
+                
+                // FIX: Final Scroll Logic
+                // block: 'start' aligns the TOP of the bubble (Character Name) with the TOP of the chat window.
+                if (bubbleEl) {
+                    window.requestAnimationFrame(() => {
+                        bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Release suppression AFTER the scroll animation frame request
+                        setTimeout(() => {
+                            this.RUNTIME.suppressChatRender = false;
+                        }, 100);
+                    });
+                } else {
+                    this.RUNTIME.suppressChatRender = false;
+                }
             }
         }, 10); 
     },
@@ -6574,6 +6602,17 @@ const NarrativeController = {
         UIManager.setButtonToStopMode();
         this.RUNTIME.activeRequestAbortController = new AbortController();
 
+        // FIX: Start Placeholder Animation
+        // Cycles through: "." -> ". ." -> ". . ."
+        let dotFrame = 0;
+        input.placeholder = ".";
+        
+        this.RUNTIME.placeholderInterval = setInterval(() => {
+            dotFrame = (dotFrame + 1) % 3;
+            // Create string based on frame: 0=".", 1=". .", 2=". . ."
+            input.placeholder = Array(dotFrame + 1).fill(".").join(" ");
+        }, 500);
+
         try {
             const prompt = PromptBuilder.buildPrompt(userChar.id, true);
             const response = await APIService.callAI(prompt, false, this.RUNTIME.activeRequestAbortController.signal);
@@ -6582,6 +6621,13 @@ const NarrativeController = {
             if (error.name === 'AbortError') console.log("Write For Me stopped.");
             else console.error("Write for Me failed:", error);
         } finally {
+            // FIX: Stop Animation & Restore Original Text
+            if (this.RUNTIME.placeholderInterval) {
+                clearInterval(this.RUNTIME.placeholderInterval);
+                this.RUNTIME.placeholderInterval = null;
+            }
+            input.placeholder = "Enter your message...";
+
             UIManager.setButtonToSendMode();
             this.RUNTIME.activeRequestAbortController = null;
         }
@@ -8116,7 +8162,10 @@ const ActionDispatcher = {
               }
           });
 
-          ReactiveStore.subscribe('chat_history', () => UIManager.renderChat());
+		// FIX: Don't re-render if we are manually handling the DOM (e.g., finishing a stream)
+          ReactiveStore.subscribe('chat_history', () => {
+              if (!UIManager.RUNTIME.suppressChatRender) UIManager.renderChat();
+          });
           
           ReactiveStore.subscribe('static_entries', () => {
                if (!document.activeElement?.closest('#static-entry-details')) UIManager.renderStaticEntries();
