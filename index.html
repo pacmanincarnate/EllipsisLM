@@ -278,44 +278,46 @@
             margin-top: 4rem; 
         }
 
-        /* Markdown Styles */
+	/* Markdown Styles */
         /* FIX: Markdown Styles using CSS Variables */
         #chat-window h1 { 
-            color: var(--md-h1-color, #818cf8); /* Default: Indigo-400 */
+            color: var(--md-h1-color, #818cf8);
+            font-family: var(--md-h1-font, var(--chat-font-family));
             font-size: 1.5em; 
             font-weight: 700; 
             margin: 0.5em 0; 
         }
         #chat-window h2 { 
-            color: var(--md-h2-color, #a5b4fc); /* Default: Indigo-300 */
+            color: var(--md-h2-color, #a5b4fc);
+            font-family: var(--md-h2-font, var(--chat-font-family));
             font-size: 1.25em; 
             font-weight: 600; 
             margin: 0.4em 0; 
         }
         #chat-window h3 { 
-            color: var(--md-h3-color, #c7d2fe); /* Default: Indigo-200 */
+            color: var(--md-h3-color, #c7d2fe);
+            font-family: var(--md-h3-font, var(--chat-font-family));
             font-size: 1.1em; 
             font-weight: 600; 
             margin: 0.3em 0; 
         }
 		/* FIX: Use the CSS variable for Bold color */
         #chat-window strong { 
-            color: var(--md-bold-color, #ffffff); 
+            color: var(--md-bold-color, #ffffff);
+            font-family: var(--md-bold-font, var(--chat-font-family)); 
             font-weight: 700; 
         }
         #chat-window em { 
-            color: var(--md-italic-color, #9ca3af); /* Default: Gray-400 */
+            color: var(--md-italic-color, #9ca3af);
+            font-family: var(--md-italic-font, var(--chat-font-family)); 
         }
         #chat-window blockquote {
             border-left: 3px solid var(--brand-color);
             padding-left: 1rem;
-            color: var(--md-quote-color, #9ca3af); /* Default: Gray-400 */
+            color: var(--md-quote-color, #9ca3af);
+            font-family: var(--md-quote-font, var(--chat-font-family));
             font-style: italic;
         }
-		#chat-window em { 
-            /* Uses user setting, falls back to Gray if not set */
-            color: var(--md-italic-color, #9ca3af); 
-        }        #chat-window strong { color: white; }
 
         /* FIX: Restored Quotation Formatting */
         .dialogue-quote {
@@ -768,41 +770,92 @@
     
     <!-- Hidden template for settings tabs -->
     <div id="settings-templates" class="hidden">
+        
         <div id="settings-appearance-content" class="space-y-6">
             <div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label for="font-selector" class="text-gray-400 text-sm block mb-2">Chat Font</label>
 						<select id="font-selector" class="w-full rounded-lg p-2">
-							<option value="'Inter', sans-serif">Inter (Standard)</option>
-							<option value="'Prompt', sans-serif">Prompt (Modern)</option>
-							<option value="'Nunito Sans', sans-serif">Nunito Sans (Soft)</option>
-							<option value="'Source Code Pro', monospace">Source Code Pro (Code)</option>
-							<option value="'Lora', serif">Lora (Serif)</option>
-							<option value="'Domine', serif">Domine (Bold Serif)</option>
-							<option value="'Roboto Slab', serif">Roboto Slab (Slab)</option>
-							<option value="'EB Garamond', serif">EB Garamond (Classic)</option>
-							<option value="'Cormorant Garamond', serif">Cormorant Garamond (Elegant)</option>
-							<option value="'Comic Neue', sans-serif">Comic Neue (Comic)</option>
-							<option value="'Caveat', cursive">Caveat (Handwriting)</option>
-							<option value="'Patrick Hand', cursive">Patrick Hand (Neat Hand)</option>
-							<option value="'Dancing Script', cursive">Dancing Script (Cursive)</option>
-							<option value="'Titan One', cursive">Titan One (Chunky)</option>
+							<option value="'Inter', sans-serif" style="font-family: 'Inter', sans-serif">Inter (Standard)</option>
+							<option value="'Prompt', sans-serif" style="font-family: 'Prompt', sans-serif">Prompt (Modern)</option>
+							<option value="'Nunito Sans', sans-serif" style="font-family: 'Nunito Sans', sans-serif">Nunito Sans (Soft)</option>
+							<option value="'Source Code Pro', monospace" style="font-family: 'Source Code Pro', monospace">Source Code Pro (Code)</option>
+							<option value="'Lora', serif" style="font-family: 'Lora', serif">Lora (Serif)</option>
+							<option value="'Domine', serif" style="font-family: 'Domine', serif">Domine (Bold Serif)</option>
+							<option value="'Roboto Slab', serif" style="font-family: 'Roboto Slab', serif">Roboto Slab (Slab)</option>
+							<option value="'EB Garamond', serif" style="font-family: 'EB Garamond', serif">EB Garamond (Classic)</option>
+							<option value="'Cormorant Garamond', serif" style="font-family: 'Cormorant Garamond', serif">Cormorant Garamond (Elegant)</option>
+							<option value="'Comic Neue', sans-serif" style="font-family: 'Comic Neue', sans-serif">Comic Neue (Comic)</option>
+							<option value="'Caveat', cursive" style="font-family: 'Caveat', cursive">Caveat (Handwriting)</option>
+							<option value="'Patrick Hand', cursive" style="font-family: 'Patrick Hand', cursive">Patrick Hand (Neat Hand)</option>
+							<option value="'Dancing Script', cursive" style="font-family: 'Dancing Script', cursive">Dancing Script (Cursive)</option>
+							<option value="'Titan One', cursive" style="font-family: 'Titan One', cursive">Titan One (Chunky)</option>
 						</select>
                     </div>
                     <div><label for="chat-text-color" class="text-gray-400 text-sm block mb-2">Chat Text Color</label><input type="color" id="chat-text-color" class="w-full rounded-lg p-1 h-10"></div>
-					<details class="bg-black/20 rounded-lg p-2 mb-4">
-                    <summary class="cursor-pointer font-semibold text-gray-300 hover:text-white select-none p-2">Markdown Colors</summary>
+                </div>
+
+                <details class="bg-black/20 rounded-lg p-2 mb-4 w-full">
+                    <summary class="cursor-pointer font-semibold text-gray-300 hover:text-white select-none p-2">Markdown Styling</summary>
                     <div class="grid grid-cols-2 gap-4 p-2 mt-2 border-t border-gray-700">
-                        <div><label class="text-xs text-gray-400 block mb-1">Heading 1</label><input type="color" id="md-h1-color-input" class="w-full h-8 rounded cursor-pointer"></div>
-                        <div><label class="text-xs text-gray-400 block mb-1">Heading 2</label><input type="color" id="md-h2-color-input" class="w-full h-8 rounded cursor-pointer"></div>
-                        <div><label class="text-xs text-gray-400 block mb-1">Heading 3</label><input type="color" id="md-h3-color-input" class="w-full h-8 rounded cursor-pointer"></div>
-                        <div><label class="text-xs text-gray-400 block mb-1">Bold Text</label><input type="color" id="md-bold-color-input" class="w-full h-8 rounded cursor-pointer"></div>
-                        <div><label class="text-xs text-gray-400 block mb-1">Italic Text</label><input type="color" id="md-italic-color-input" class="w-full h-8 rounded cursor-pointer"></div>
-                        <div><label class="text-xs text-gray-400 block mb-1">Blockquotes</label><input type="color" id="md-quote-color-input" class="w-full h-8 rounded cursor-pointer"></div>
+                        
+                        <div>
+                            <label class="text-xs text-gray-400 block mb-1">Heading 1 Font</label>
+                            <select id="md-h1-font-input" class="w-full rounded p-1 text-xs bg-gray-700 border border-gray-600">
+                                <option value="">Use Default</option>
+                                <option value="'Inter', sans-serif" style="font-family: 'Inter', sans-serif">Inter (Standard)</option><option value="'Prompt', sans-serif" style="font-family: 'Prompt', sans-serif">Prompt (Modern)</option><option value="'Nunito Sans', sans-serif" style="font-family: 'Nunito Sans', sans-serif">Nunito Sans (Soft)</option><option value="'Source Code Pro', monospace" style="font-family: 'Source Code Pro', monospace">Source Code Pro (Code)</option><option value="'Lora', serif" style="font-family: 'Lora', serif">Lora (Serif)</option><option value="'Domine', serif" style="font-family: 'Domine', serif">Domine (Bold Serif)</option><option value="'Roboto Slab', serif" style="font-family: 'Roboto Slab', serif">Roboto Slab (Slab)</option><option value="'EB Garamond', serif" style="font-family: 'EB Garamond', serif">EB Garamond (Classic)</option><option value="'Cormorant Garamond', serif" style="font-family: 'Cormorant Garamond', serif">Cormorant Garamond (Elegant)</option><option value="'Comic Neue', sans-serif" style="font-family: 'Comic Neue', sans-serif">Comic Neue (Comic)</option><option value="'Caveat', cursive" style="font-family: 'Caveat', cursive">Caveat (Handwriting)</option><option value="'Patrick Hand', cursive" style="font-family: 'Patrick Hand', cursive">Patrick Hand (Neat Hand)</option><option value="'Dancing Script', cursive" style="font-family: 'Dancing Script', cursive">Dancing Script (Cursive)</option><option value="'Titan One', cursive" style="font-family: 'Titan One', cursive">Titan One (Chunky)</option>
+                            </select>
+                        </div>
+                        <div><label class="text-xs text-gray-400 block mb-1">Heading 1 Color</label><input type="color" id="md-h1-color-input" class="w-full h-7 rounded cursor-pointer"></div>
+
+                        <div>
+                            <label class="text-xs text-gray-400 block mb-1">Heading 2 Font</label>
+                            <select id="md-h2-font-input" class="w-full rounded p-1 text-xs bg-gray-700 border border-gray-600">
+                                <option value="">Use Default</option>
+                                <option value="'Inter', sans-serif" style="font-family: 'Inter', sans-serif">Inter (Standard)</option><option value="'Prompt', sans-serif" style="font-family: 'Prompt', sans-serif">Prompt (Modern)</option><option value="'Nunito Sans', sans-serif" style="font-family: 'Nunito Sans', sans-serif">Nunito Sans (Soft)</option><option value="'Source Code Pro', monospace" style="font-family: 'Source Code Pro', monospace">Source Code Pro (Code)</option><option value="'Lora', serif" style="font-family: 'Lora', serif">Lora (Serif)</option><option value="'Domine', serif" style="font-family: 'Domine', serif">Domine (Bold Serif)</option><option value="'Roboto Slab', serif" style="font-family: 'Roboto Slab', serif">Roboto Slab (Slab)</option><option value="'EB Garamond', serif" style="font-family: 'EB Garamond', serif">EB Garamond (Classic)</option><option value="'Cormorant Garamond', serif" style="font-family: 'Cormorant Garamond', serif">Cormorant Garamond (Elegant)</option><option value="'Comic Neue', sans-serif" style="font-family: 'Comic Neue', sans-serif">Comic Neue (Comic)</option><option value="'Caveat', cursive" style="font-family: 'Caveat', cursive">Caveat (Handwriting)</option><option value="'Patrick Hand', cursive" style="font-family: 'Patrick Hand', cursive">Patrick Hand (Neat Hand)</option><option value="'Dancing Script', cursive" style="font-family: 'Dancing Script', cursive">Dancing Script (Cursive)</option><option value="'Titan One', cursive" style="font-family: 'Titan One', cursive">Titan One (Chunky)</option>
+                            </select>
+                        </div>
+                        <div><label class="text-xs text-gray-400 block mb-1">Heading 2 Color</label><input type="color" id="md-h2-color-input" class="w-full h-7 rounded cursor-pointer"></div>
+
+                        <div>
+                            <label class="text-xs text-gray-400 block mb-1">Heading 3 Font</label>
+                            <select id="md-h3-font-input" class="w-full rounded p-1 text-xs bg-gray-700 border border-gray-600">
+                                <option value="">Use Default</option>
+                                <option value="'Inter', sans-serif" style="font-family: 'Inter', sans-serif">Inter (Standard)</option><option value="'Prompt', sans-serif" style="font-family: 'Prompt', sans-serif">Prompt (Modern)</option><option value="'Nunito Sans', sans-serif" style="font-family: 'Nunito Sans', sans-serif">Nunito Sans (Soft)</option><option value="'Source Code Pro', monospace" style="font-family: 'Source Code Pro', monospace">Source Code Pro (Code)</option><option value="'Lora', serif" style="font-family: 'Lora', serif">Lora (Serif)</option><option value="'Domine', serif" style="font-family: 'Domine', serif">Domine (Bold Serif)</option><option value="'Roboto Slab', serif" style="font-family: 'Roboto Slab', serif">Roboto Slab (Slab)</option><option value="'EB Garamond', serif" style="font-family: 'EB Garamond', serif">EB Garamond (Classic)</option><option value="'Cormorant Garamond', serif" style="font-family: 'Cormorant Garamond', serif">Cormorant Garamond (Elegant)</option><option value="'Comic Neue', sans-serif" style="font-family: 'Comic Neue', sans-serif">Comic Neue (Comic)</option><option value="'Caveat', cursive" style="font-family: 'Caveat', cursive">Caveat (Handwriting)</option><option value="'Patrick Hand', cursive" style="font-family: 'Patrick Hand', cursive">Patrick Hand (Neat Hand)</option><option value="'Dancing Script', cursive" style="font-family: 'Dancing Script', cursive">Dancing Script (Cursive)</option><option value="'Titan One', cursive" style="font-family: 'Titan One', cursive">Titan One (Chunky)</option>
+                            </select>
+                        </div>
+                        <div><label class="text-xs text-gray-400 block mb-1">Heading 3 Color</label><input type="color" id="md-h3-color-input" class="w-full h-7 rounded cursor-pointer"></div>
+
+                        <div>
+                            <label class="text-xs text-gray-400 block mb-1">Bold Text Font</label>
+                            <select id="md-bold-font-input" class="w-full rounded p-1 text-xs bg-gray-700 border border-gray-600">
+                                <option value="">Use Default</option>
+                                <option value="'Inter', sans-serif" style="font-family: 'Inter', sans-serif">Inter (Standard)</option><option value="'Prompt', sans-serif" style="font-family: 'Prompt', sans-serif">Prompt (Modern)</option><option value="'Nunito Sans', sans-serif" style="font-family: 'Nunito Sans', sans-serif">Nunito Sans (Soft)</option><option value="'Source Code Pro', monospace" style="font-family: 'Source Code Pro', monospace">Source Code Pro (Code)</option><option value="'Lora', serif" style="font-family: 'Lora', serif">Lora (Serif)</option><option value="'Domine', serif" style="font-family: 'Domine', serif">Domine (Bold Serif)</option><option value="'Roboto Slab', serif" style="font-family: 'Roboto Slab', serif">Roboto Slab (Slab)</option><option value="'EB Garamond', serif" style="font-family: 'EB Garamond', serif">EB Garamond (Classic)</option><option value="'Cormorant Garamond', serif" style="font-family: 'Cormorant Garamond', serif">Cormorant Garamond (Elegant)</option><option value="'Comic Neue', sans-serif" style="font-family: 'Comic Neue', sans-serif">Comic Neue (Comic)</option><option value="'Caveat', cursive" style="font-family: 'Caveat', cursive">Caveat (Handwriting)</option><option value="'Patrick Hand', cursive" style="font-family: 'Patrick Hand', cursive">Patrick Hand (Neat Hand)</option><option value="'Dancing Script', cursive" style="font-family: 'Dancing Script', cursive">Dancing Script (Cursive)</option><option value="'Titan One', cursive" style="font-family: 'Titan One', cursive">Titan One (Chunky)</option>
+                            </select>
+                        </div>
+                        <div><label class="text-xs text-gray-400 block mb-1">Bold Text Color</label><input type="color" id="md-bold-color-input" class="w-full h-7 rounded cursor-pointer"></div>
+
+                        <div>
+                            <label class="text-xs text-gray-400 block mb-1">Italic Text Font</label>
+                            <select id="md-italic-font-input" class="w-full rounded p-1 text-xs bg-gray-700 border border-gray-600">
+                                <option value="">Use Default</option>
+                                <option value="'Inter', sans-serif" style="font-family: 'Inter', sans-serif">Inter (Standard)</option><option value="'Prompt', sans-serif" style="font-family: 'Prompt', sans-serif">Prompt (Modern)</option><option value="'Nunito Sans', sans-serif" style="font-family: 'Nunito Sans', sans-serif">Nunito Sans (Soft)</option><option value="'Source Code Pro', monospace" style="font-family: 'Source Code Pro', monospace">Source Code Pro (Code)</option><option value="'Lora', serif" style="font-family: 'Lora', serif">Lora (Serif)</option><option value="'Domine', serif" style="font-family: 'Domine', serif">Domine (Bold Serif)</option><option value="'Roboto Slab', serif" style="font-family: 'Roboto Slab', serif">Roboto Slab (Slab)</option><option value="'EB Garamond', serif" style="font-family: 'EB Garamond', serif">EB Garamond (Classic)</option><option value="'Cormorant Garamond', serif" style="font-family: 'Cormorant Garamond', serif">Cormorant Garamond (Elegant)</option><option value="'Comic Neue', sans-serif" style="font-family: 'Comic Neue', sans-serif">Comic Neue (Comic)</option><option value="'Caveat', cursive" style="font-family: 'Caveat', cursive">Caveat (Handwriting)</option><option value="'Patrick Hand', cursive" style="font-family: 'Patrick Hand', cursive">Patrick Hand (Neat Hand)</option><option value="'Dancing Script', cursive" style="font-family: 'Dancing Script', cursive">Dancing Script (Cursive)</option><option value="'Titan One', cursive" style="font-family: 'Titan One', cursive">Titan One (Chunky)</option>
+                            </select>
+                        </div>
+                        <div><label class="text-xs text-gray-400 block mb-1">Italic Text Color</label><input type="color" id="md-italic-color-input" class="w-full h-7 rounded cursor-pointer"></div>
+
+                        <div>
+                            <label class="text-xs text-gray-400 block mb-1">Quote Font</label>
+                            <select id="md-quote-font-input" class="w-full rounded p-1 text-xs bg-gray-700 border border-gray-600">
+                                <option value="">Use Default</option>
+                                <option value="'Inter', sans-serif" style="font-family: 'Inter', sans-serif">Inter (Standard)</option><option value="'Prompt', sans-serif" style="font-family: 'Prompt', sans-serif">Prompt (Modern)</option><option value="'Nunito Sans', sans-serif" style="font-family: 'Nunito Sans', sans-serif">Nunito Sans (Soft)</option><option value="'Source Code Pro', monospace" style="font-family: 'Source Code Pro', monospace">Source Code Pro (Code)</option><option value="'Lora', serif" style="font-family: 'Lora', serif">Lora (Serif)</option><option value="'Domine', serif" style="font-family: 'Domine', serif">Domine (Bold Serif)</option><option value="'Roboto Slab', serif" style="font-family: 'Roboto Slab', serif">Roboto Slab (Slab)</option><option value="'EB Garamond', serif" style="font-family: 'EB Garamond', serif">EB Garamond (Classic)</option><option value="'Cormorant Garamond', serif" style="font-family: 'Cormorant Garamond', serif">Cormorant Garamond (Elegant)</option><option value="'Comic Neue', sans-serif" style="font-family: 'Comic Neue', sans-serif">Comic Neue (Comic)</option><option value="'Caveat', cursive" style="font-family: 'Caveat', cursive">Caveat (Handwriting)</option><option value="'Patrick Hand', cursive" style="font-family: 'Patrick Hand', cursive">Patrick Hand (Neat Hand)</option><option value="'Dancing Script', cursive" style="font-family: 'Dancing Script', cursive">Dancing Script (Cursive)</option><option value="'Titan One', cursive" style="font-family: 'Titan One', cursive">Titan One (Chunky)</option>
+                            </select>
+                        </div>
+                        <div><label class="text-xs text-gray-400 block mb-1">Quote Color</label><input type="color" id="md-quote-color-input" class="w-full h-7 rounded cursor-pointer"></div>
                     </div>
                 </details>
-                </div>
+
                 <div>
                     <label for="background-image-upload" class="text-gray-400 text-sm block mb-2">Background Image</label>
                     <span id="background-image-hint" class="text-xs text-gray-500 block mb-1"></span>
@@ -861,8 +914,13 @@
                 <div>
 					<label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt Template</label>
 					<select id="koboldcpp-template-selector" class="w-full rounded-lg p-2">
-						<option value="none">None (Raw Text)</option><option value="mistral">Mistral</option>
-						<option value="chatml">ChatML</option><option value="alpaca">Alpaca</option>
+						<option value="none">None (Raw Text)</option>
+						<option value="llama3">Llama 3</option>
+						<option value="gemma">Gemma 2 (Google)</option>
+						<option value="phi3">Phi-3 (Microsoft)</option>
+						<option value="mistral">Mistral</option>
+						<option value="chatml">ChatML (Qwen/DeepSeek)</option>
+						<option value="alpaca">Alpaca</option>
 					</select>
 				</div>
                 <div>
@@ -1378,13 +1436,20 @@
                 textSize: currentState.textSize,
                 bubbleImageSize: currentState.bubbleImageSize,
 
-                // FIX: Added Markdown Color Persistence
+                // FIX: Added Markdown Color & Font Persistence
                 md_h1_color: currentState.md_h1_color,
                 md_h2_color: currentState.md_h2_color,
                 md_h3_color: currentState.md_h3_color,
                 md_bold_color: currentState.md_bold_color,
                 md_italic_color: currentState.md_italic_color,
                 md_quote_color: currentState.md_quote_color,
+                
+                md_h1_font: currentState.md_h1_font,
+                md_h2_font: currentState.md_h2_font,
+                md_h3_font: currentState.md_h3_font,
+                md_bold_font: currentState.md_bold_font,
+                md_italic_font: currentState.md_italic_font,
+                md_quote_font: currentState.md_quote_font,
 
                 // Prompts
                 system_prompt: currentState.system_prompt,
@@ -1869,18 +1934,128 @@ async exportLibraryAsZip() {
         },
         async callKoboldCPP(prompt, signal) {
             const state = StateManager.getState();
+            
             const payload = {
-                prompt: prompt, use_story: false, use_memory: false, use_authors_note: false, use_world_info: false,
-                max_context_length: 4096, max_length: 200, min_p: state.koboldcpp_min_p,
-                rep_pen: 1.1, rep_pen_range: 2048, rep_pen_slope: 0.7, temperature: 0.65, 
-                tfs: 1, top_p: 0.92, top_k: 0, typical: 1, sampler_order: [6, 0, 1, 2, 3, 4, 5],
-                mirostat: 2, mirostat_tau: 4, mirostat_eta: 0.1, dry: state.koboldcpp_dry,
+                prompt: prompt,
+                use_story: false, use_memory: false, use_authors_note: false, use_world_info: false,
+                max_context_length: 16384,
+                max_length: 512, // Updated to 512 as per your snippet
+                quiet: true,
+                
+                // Sampling Settings
+                temperature: 1.0, 
+                min_p: state.koboldcpp_min_p,
+                top_p: 1.0, // Disabled when using Min-P/DRY for pure results, or keep 0.92 if preferred
+                top_k: 0,
+                tfs: 1, 
+                typical: 1,
+                
+                // Disable Legacy Repetition Penalty (Conflict avoidance)
+                rep_pen: 1.0, 
+                rep_pen_range: 2048, 
+                rep_pen_slope: 0.7, 
+                
+                // FIX: Disable Mirostat
+                mirostat: 0, 
+                mirostat_tau: 4, 
+                mirostat_eta: 0.1, 
+                
+                // FIX: Proper DRY Implementation
+                dry_multiplier: state.koboldcpp_dry, 
+                dry_base: 1.75, 
+                dry_allowed_length: 2, 
+                dry_penalty_last_n: -1, // Scan entire context
+                
+                sampler_order: [6, 0, 1, 2, 3, 4, 5]
             };
-            const res = await fetch(`${state.koboldcpp_url}/api/v1/generate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal });
-            if (!res.ok) { let errorDetails = `Status: ${res.status} ${res.statusText}.`; try { errorDetails += ` Message: ${(await res.json()).error.message}`; } catch (e) { errorDetails += ` Response body: ${await res.text()}`; } throw new Error(`KoboldCPP API Error: ${errorDetails}`); }
+
+            const res = await fetch(`${state.koboldcpp_url}/api/v1/generate`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(payload), 
+                signal 
+            });
+
+            if (!res.ok) { 
+                let errorDetails = `Status: ${res.status} ${res.statusText}.`; 
+                try { errorDetails += ` Message: ${(await res.json()).error.message}`; } catch (e) { errorDetails += ` Response body: ${await res.text()}`; } 
+                throw new Error(`KoboldCPP API Error: ${errorDetails}`); 
+            }
+            
             const data = await res.json();
             return data.results[0].text.trim();
         },
+
+        async streamKoboldPolled(prompt, onChunk, signal) {
+            const state = StateManager.getState();
+            
+            // Identical Payload to callKoboldCPP to ensure consistency
+            const payload = {
+                prompt: prompt,
+                use_story: false, use_memory: false, use_authors_note: false, use_world_info: false,
+                max_context_length: 16384,
+                max_length: 512, // Updated to 512 as per your snippet
+                quiet: true,
+                
+                // Sampling Settings
+                temperature: 1.0, 
+                min_p: state.koboldcpp_min_p,
+                top_p: 1.0, // Disabled when using Min-P/DRY for pure results, or keep 0.92 if preferred
+                top_k: 0,
+                tfs: 1, 
+                typical: 1,
+                
+                // Disable Legacy Repetition Penalty (Conflict avoidance)
+                rep_pen: 1.0, 
+                rep_pen_range: 2048, 
+                rep_pen_slope: 0.7, 
+                
+                // FIX: Disable Mirostat
+                mirostat: 0, 
+                mirostat_tau: 4, 
+                mirostat_eta: 0.1, 
+                
+                // FIX: Proper DRY Implementation
+                dry_multiplier: state.koboldcpp_dry, 
+                dry_base: 1.75, 
+                dry_allowed_length: 2, 
+                dry_penalty_last_n: -1, // Scan entire context
+                
+                sampler_order: [6, 0, 1, 2, 3, 4, 5]
+            };
+
+            // 1. Start Generation
+            await fetch(`${state.koboldcpp_url}/api/v1/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal
+            });
+
+            let finished = false;
+            
+            // 2. Poll for Tokens
+            while (!finished) {
+                if (signal.aborted) break;
+                
+                try {
+                    const check = await fetch(`${state.koboldcpp_url}/api/extra/generate/check`, { signal });
+                    const data = await check.json();
+                    
+                    if (data.results && data.results[0]) {
+                        onChunk(data.results[0].text);
+                    }
+                    
+                    if (data.done) finished = true;
+                } catch (e) {
+                    if (e.name !== 'AbortError') console.warn("Polling error:", e);
+                    // Don't break loop on transient network error, wait and retry
+                }
+                
+                if (!finished) await new Promise(r => setTimeout(r, 100));
+            }
+        },
+		
 		async callLMStudio(prompt, signal) {
         const state = StateManager.getState();
         if (!state.lmstudio_url) throw new Error("LM Studio URL not set.");
@@ -1976,13 +2151,20 @@ async exportLibraryAsZip() {
                 chatTextColor: '#e5e7eb', characterImageMode: 'none',
                 backgroundBlur: 5, textSize: 16, bubbleImageSize: 100,
                 
-                //Markdown Color Defaults
+                //Markdown Color & Font Defaults
                 md_h1_color: '#818cf8',
                 md_h2_color: '#a5b4fc',
                 md_h3_color: '#c7d2fe',
                 md_bold_color: '#ffffff',
                 md_italic_color: '#9ca3af',
-                md_quote_color: '#9ca3af'
+                md_quote_color: '#9ca3af',
+                
+                md_h1_font: '', // Empty string defaults to main chat font via CSS var fallback
+                md_h2_font: '',
+                md_h3_font: '',
+                md_bold_font: '',
+                md_italic_font: '',
+                md_quote_font: ''
             };
         },
         getDefaultStorySettings() {
@@ -2260,9 +2442,9 @@ async exportLibraryAsZip() {
 
         buildKoboldTemplatedPrompt(components, replacer) {
             const state = StateManager.getState();
-            const template = state.koboldcpp_template;
-            if (template === 'none') return this.buildDefaultPrompt(components, replacer);
+            const template = state.koboldcpp_template || 'none';
 
+            // 1. Construct System/Context Block
             let system = [components.system_prompt];
             if (components.event_master_prompt) system.push("SECRET EVENT INSTRUCTION:\n" + components.event_master_prompt);
             if (components.location_context) system.push("LOCATION CONTEXT:\n" + components.location_context);
@@ -2270,57 +2452,137 @@ async exportLibraryAsZip() {
             system.push("CHARACTERS:\n" + components.characters);
             const system_prompt_str = system.join('\n\n');
             
-            const history_str = components.history.map(msg => {
-                // FIX: Safety Checks
-                if (!msg) return null;
-                if (msg.type === 'chat' && msg.isHidden) return null;
-                
-                if (msg.type === 'chat') {
-                    const char = state.characters.find(c => c.id === msg.character_id); 
-                    if (char) return `${char.is_user ? 'user' : 'assistant'}:${char.name}:\n${replacer(msg.content)}`;
-                } else if (msg.type === 'lore_reveal') {
-                    return `system:Dynamic Entry Revealed - ${msg.title}:\n${replacer(msg.content)}`;
-                } else if (msg.type === 'system_event') {
-                    return `system:System Event:\n${replacer(msg.content)}`;
-                }
-                return null;
-            }).filter(Boolean).join('\n');
-
-            let instruction = components.isForUser ? `Write the next chat message for the user's character, ${components.charToAct.name}.` : `Write the next chat message for ${components.charToAct.name}. Stay in character.`;
+            let instruction = components.isForUser 
+                ? `Write the next chat message for the user's character, ${components.charToAct.name}.` 
+                : `Write the next chat message for ${components.charToAct.name}. Stay in character.`;
             instruction += " Do not write any prefix like 'Character Name:'.";
 
-            switch (template) {
-                case 'mistral':
-                    return `<s>[INST] ${system_prompt_str}\n\n${history_str}\n\n${instruction} [/INST]`;
-                case 'chatml':
-                    const history_chatml = components.history.map(msg => {
-                        // FIX: Safety Checks
-                        if (!msg) return null;
-                        if (msg.type === 'chat' && msg.isHidden) return null;
-                        
-                        let role = 'system';
-                        let content = '';
-                        if (msg.type === 'chat') {
-                            const char = state.characters.find(c => c.id === msg.character_id);
-                            if (!char) return null;
-                            role = char.is_user ? 'user' : 'assistant';
-                            content = `${char.name}:\n${replacer(msg.content)}`;
-                        } else if (msg.type === 'lore_reveal') {
-                            content = `[Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}`;
-                        } else if (msg.type === 'system_event') {
-                            content = `[System Event: ${replacer(msg.content)}]`;
-                        } else {
-                            return null;
-                        }
-                        return `<|im_start|>${role}\n${content}<|im_end|>`;
-                    }).filter(Boolean).join('\n');
-                    return `<|im_start|>system\n${system_prompt_str}<|im_end|>\n${history_chatml}\n<|im_start|>user\n${instruction}<|im_end|>\n<|im_start|>assistant\n${components.charToAct.name}:\n`;
-                case 'alpaca':
-                     return `### Instruction:\n${system_prompt_str}\n\n${history_str}\n\n${instruction}\n\n### Response:\n`;
-                default:
-                    return this.buildDefaultPrompt(components, replacer);
+            if (template === 'none') return this.buildDefaultPrompt(components, replacer);
+
+            // --- LLAMA 3 ---
+            if (template === 'llama3') {
+                const history_llama3 = components.history.map(msg => {
+                    if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
+                    let role = 'user';
+                    let content = '';
+                    if (msg.type === 'chat') {
+                        const char = state.characters.find(c => c.id === msg.character_id);
+                        if (!char) return null;
+                        role = char.is_user ? 'user' : 'assistant';
+                        content = `${char.name}:\n${replacer(msg.content)}`;
+                    } else if (msg.type === 'lore_reveal') {
+                        role = 'system';
+                        content = `[Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}`;
+                    } else if (msg.type === 'system_event') {
+                        role = 'system';
+                        content = `[System Event: ${replacer(msg.content)}]`;
+                    } else { return null; }
+                    return `<|start_header_id|>${role}<|end_header_id|>\n\n${content}<|eot_id|>`;
+                }).filter(Boolean).join('\n');
+
+                return `<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n${system_prompt_str}<|eot_id|>\n${history_llama3}\n<|start_header_id|>user<|end_header_id|>\n\n${instruction}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n${components.charToAct.name}:\n`;
             }
-        },
+
+            // --- GEMMA (Google) ---
+            if (template === 'gemma') {
+                // Gemma often prefers system prompts to be part of the first user turn or a distinct user turn
+                // We will format the system prompt as a user turn for maximum compatibility
+                const history_gemma = components.history.map(msg => {
+                    if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
+                    
+                    let role = 'user';
+                    let content = '';
+                    
+                    if (msg.type === 'chat') {
+                        const char = state.characters.find(c => c.id === msg.character_id);
+                        if (!char) return null;
+                        role = char.is_user ? 'user' : 'model'; // Gemma uses 'model', not 'assistant'
+                        content = `${char.name}:\n${replacer(msg.content)}`;
+                    } else if (msg.type === 'lore_reveal' || msg.type === 'system_event') {
+                        // System events injected as user context
+                        return `<start_of_turn>user\n[System Note: ${replacer(msg.content)}]<end_of_turn>`;
+                    } else { return null; }
+                    
+                    return `<start_of_turn>${role}\n${content}<end_of_turn>`;
+                }).filter(Boolean).join('\n');
+
+                return `<start_of_turn>user\n${system_prompt_str}<end_of_turn>\n${history_gemma}\n<start_of_turn>user\n${instruction}<end_of_turn>\n<start_of_turn>model\n${components.charToAct.name}:\n`;
+            }
+
+            // --- PHI-3 (Microsoft) ---
+            if (template === 'phi3') {
+                const history_phi = components.history.map(msg => {
+                    if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
+                    
+                    let role = 'user';
+                    let content = '';
+                    if (msg.type === 'chat') {
+                        const char = state.characters.find(c => c.id === msg.character_id);
+                        if (!char) return null;
+                        role = char.is_user ? 'user' : 'assistant';
+                        content = `${char.name}:\n${replacer(msg.content)}`;
+                    } else if (msg.type === 'lore_reveal') {
+                        return `<|system|>\n[Dynamic Entry: ${replacer(msg.content)}]<|end|>`;
+                    } else if (msg.type === 'system_event') {
+                        return `<|system|>\n${replacer(msg.content)}<|end|>`;
+                    } else { return null; }
+                    
+                    return `<|${role}|>\n${content}<|end|>`;
+                }).filter(Boolean).join('\n');
+
+                return `<|system|>\n${system_prompt_str}<|end|>\n${history_phi}\n<|user|>\n${instruction}<|end|>\n<|assistant|>\n${components.charToAct.name}:\n`;
+            }
+
+            // --- MISTRAL ---
+            if (template === 'mistral') {
+                const history_str = components.history.map(msg => {
+                    if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
+                    if (msg.type === 'chat') {
+                        const char = state.characters.find(c => c.id === msg.character_id); 
+                        if (char) return `${char.is_user ? 'user' : 'assistant'}:${char.name}:\n${replacer(msg.content)}`;
+                    } else if (msg.type === 'lore_reveal') {
+                        return `system:Dynamic Entry Revealed - ${msg.title}:\n${replacer(msg.content)}`;
+                    } else if (msg.type === 'system_event') {
+                        return `system:System Event:\n${replacer(msg.content)}`;
+                    }
+                    return null;
+                }).filter(Boolean).join('\n');
+                return `<s>[INST] ${system_prompt_str}\n\n${history_str}\n\n${instruction} [/INST]`;
+            }
+
+            // --- CHATML ---
+            if (template === 'chatml') {
+                const history_chatml = components.history.map(msg => {
+                    if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
+                    let role = 'system';
+                    let content = '';
+                    if (msg.type === 'chat') {
+                        const char = state.characters.find(c => c.id === msg.character_id);
+                        if (!char) return null;
+                        role = char.is_user ? 'user' : 'assistant';
+                        content = `${char.name}:\n${replacer(msg.content)}`;
+                    } else if (msg.type === 'lore_reveal') {
+                        content = `[Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}`;
+                    } else if (msg.type === 'system_event') {
+                        content = `[System Event: ${replacer(msg.content)}]`;
+                    } else { return null; }
+                    return `<|im_start|>${role}\n${content}<|im_end|>`;
+                }).filter(Boolean).join('\n');
+                return `<|im_start|>system\n${system_prompt_str}<|im_end|>\n${history_chatml}\n<|im_start|>user\n${instruction}<|im_end|>\n<|im_start|>assistant\n${components.charToAct.name}:\n`;
+            }
+
+            // --- ALPACA ---
+            if (template === 'alpaca') {
+                 const history_str = components.history.map(msg => {
+                    if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
+                    const char = state.characters.find(c => c.id === msg.character_id);
+                    return char ? `${char.name}: ${replacer(msg.content)}` : null;
+                 }).filter(Boolean).join('\n');
+                 return `### Instruction:\n${system_prompt_str}\n\n${history_str}\n\n${instruction}\n\n### Response:\n`;
+            }
+
+            return this.buildDefaultPrompt(components, replacer);
+        }
     };
 
     /**
@@ -4094,16 +4356,26 @@ applyStyling() {
             mobileStoryTitleOverlay.style.fontFamily = state.font;
         }
 
-        // 5. Apply Markdown Colors (NEW FEATURE)
+        // 5. Apply Markdown Colors & Fonts
         const defaults = UTILITY.getDefaultUiSettings();
         const root = document.documentElement;
+        const chatFont = state.font || defaults.font;
         
+        // Colors
         root.style.setProperty('--md-h1-color', state.md_h1_color || defaults.md_h1_color);
         root.style.setProperty('--md-h2-color', state.md_h2_color || defaults.md_h2_color);
         root.style.setProperty('--md-h3-color', state.md_h3_color || defaults.md_h3_color);
         root.style.setProperty('--md-bold-color', state.md_bold_color || defaults.md_bold_color);
         root.style.setProperty('--md-italic-color', state.md_italic_color || defaults.md_italic_color);
         root.style.setProperty('--md-quote-color', state.md_quote_color || defaults.md_quote_color);
+
+        // Fonts (Fallback to chat font if empty)
+        root.style.setProperty('--md-h1-font', state.md_h1_font || chatFont);
+        root.style.setProperty('--md-h2-font', state.md_h2_font || chatFont);
+        root.style.setProperty('--md-h3-font', state.md_h3_font || chatFont);
+        root.style.setProperty('--md-bold-font', state.md_bold_font || chatFont);
+        root.style.setProperty('--md-italic-font', state.md_italic_font || chatFont);
+        root.style.setProperty('--md-quote-font', state.md_quote_font || chatFont);
         
         this.renderChat();
     },
@@ -5058,8 +5330,11 @@ const AppController = {
             fontSelector.addEventListener('change', (e) => this.changeFont(e.target.value));
         }
 		
-		// Markdown Color Bindings
-        ['md_h1_color', 'md_h2_color', 'md_h3_color', 'md_bold_color', 'md_italic_color', 'md_quote_color'].forEach(key => {
+		// Markdown Color & Font Bindings
+        [
+            'md_h1_color', 'md_h2_color', 'md_h3_color', 'md_bold_color', 'md_italic_color', 'md_quote_color',
+            'md_h1_font', 'md_h2_font', 'md_h3_font', 'md_bold_font', 'md_italic_font', 'md_quote_font'
+        ].forEach(key => {
             // The HTML IDs use dashes, the state keys use underscores
             const inputId = key.replace(/_/g, '-') + '-input'; 
             if (document.getElementById(inputId)) setListener(inputId, key);
@@ -6821,11 +7096,47 @@ _compileTriggerRegex(keyword) {
 			   (s.apiProvider === 'lmstudio' && s.lmstudio_url);
     },
     
-    viewRawPrompt() {
+viewRawPrompt() {
+        const state = ReactiveStore.state;
+        
+        // 1. Determine who the prompt is for
         let charId = document.getElementById('ai-character-selector').value;
-        if(charId === 'any') charId = this.determineNextSpeaker(false);
-        if(!charId) return alert("No active AI char.");
-        document.getElementById('raw-prompt-content').textContent = PromptBuilder.buildPrompt(charId);
+        if (charId === 'any') charId = this.determineNextSpeaker(false);
+        
+        if (!charId) {
+            alert("No active AI character found to build a prompt for.");
+            return;
+        }
+
+        // 2. Build the prompt string using the shared logic
+        const promptText = PromptBuilder.buildPrompt(charId);
+        
+        // 3. Generate Metadata Header for the view
+        let metaInfo = `--- DEBUG INFO ---\n`;
+        metaInfo += `Active Provider: ${state.apiProvider}\n`;
+        
+        if (state.apiProvider === 'koboldcpp') {
+            // Show specific template being used
+            const template = state.koboldcpp_template || 'none';
+            metaInfo += `Active Template: ${template.toUpperCase()}\n`;
+            
+            // Estimate Token Count (Roughly 4 chars per token)
+            const estTokens = Math.ceil(promptText.length / 4);
+            const maxCtx = 4096; // Default context limit
+            const usage = Math.round((estTokens / maxCtx) * 100);
+            metaInfo += `Est. Context Usage: ~${estTokens} / ${maxCtx} tokens (${usage}%)\n`;
+        } else {
+            metaInfo += `Template: Standard (Cloud/Default)\n`;
+        }
+        
+        metaInfo += `------------------\n\n`;
+
+        // 4. Render
+        const contentEl = document.getElementById('raw-prompt-content');
+        if (contentEl) {
+            contentEl.textContent = metaInfo + promptText;
+        }
+        
         AppController.openModal('view-raw-prompt-modal');
     }
 };
@@ -7590,8 +7901,16 @@ const ActionDispatcher = {
           });
 
           // Setup Subscriptions (Mapped to UIManager)
-          ['font', 'chatTextColor', 'textSize', 'bubbleOpacity', 'backgroundBlur', 'bubbleImageSize', 'backgroundImageURL', 'characterImageMode', 
-           'md_h1_color', 'md_h2_color', 'md_h3_color', 'md_bold_color', 'md_italic_color', 'md_quote_color']
+          [
+            'font', 'chatTextColor', 'textSize', 'bubbleOpacity', 'backgroundBlur', 
+            'bubbleImageSize', 'backgroundImageURL', 'characterImageMode', 
+            // Colors
+            'md_h1_color', 'md_h2_color', 'md_h3_color', 'md_bold_color', 
+            'md_italic_color', 'md_quote_color',
+            // Fonts (The missing keys causing the update issue)
+            'md_h1_font', 'md_h2_font', 'md_h3_font', 'md_bold_font', 
+            'md_italic_font', 'md_quote_font'
+          ]
           .forEach(key => {
               ReactiveStore.subscribe(key, () => UIManager.applyStyling());
           });
