@@ -8,9 +8,9 @@
     <!-- PWA and iOS Home Screen Support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="AI Storyteller">
-    <link rel="apple-touch-icon" href="logo.png">
-    <link rel="icon" type="image/png" href="logo.png">
+    <meta name="apple-mobile-web-app-title" content="EllipsisLM">
+    <link rel="apple-touch-icon" href="https://github.com/pacmanincarnate/EllipsisLM/blob/main/logo.png?raw=true">
+    <link rel="icon" type="image/png" href="https://github.com/pacmanincarnate/EllipsisLM/blob/main/logo.png?raw=true">
 
     <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -419,8 +419,7 @@
         /* Chat Window Container - Bottom 1/3 Position */
         body[data-mode="cinematic_overlay"] #chat-window-container {
             align-items: flex-end;
-			flex-grow: 0; /* Stop it from filling the screen */
-            margin-top: auto; /* Push entire container to the bottom of <main> */
+            margin-top: auto !important; /* FIX: Added !important to override vertical layout defaults */
             background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
             border: none;
             border-radius: 0; /* Flush edges look better in cinematic */
@@ -1146,6 +1145,44 @@
         });
       },
 
+	_saveQueue: Promise.resolve(),
+	
+	async _performWrite(storeName, data) {
+        // Chain the write operation to the queue
+        this._saveQueue = this._saveQueue.then(async () => {
+            if (!(await this.ensure())) throw new Error("Database closed.");
+            
+            return new Promise((resolve, reject) => {
+                const tx = this.db.transaction([storeName], "readwrite");
+                const store = tx.objectStore(storeName);
+                const req = store.put(data); // Overwrite logic
+
+                tx.oncomplete = () => resolve(true);
+                
+                tx.onerror = (e) => {
+                    console.error(`DB Write Error (${storeName}):`, e.target.error);
+                    reject(e.target.error);
+                };
+                
+                req.onerror = (e) => {
+                    // Specific check for Quota Exceeded
+                    if (e.target.error.name === 'QuotaExceededError') {
+                        alert("CRITICAL: Storage Quota Exceeded. Your recent chat cannot be saved. Please delete old stories or images.");
+                    }
+                    reject(e.target.error);
+                };
+            });
+        }).catch(err => {
+            console.error("Critical Save Failure:", err);
+            // OPTIONAL: Update UI to show "Save Failed" icon
+            const saveIndicator = document.getElementById('save-status-indicator');
+            if(saveIndicator) { saveIndicator.textContent = "❌ Save Failed"; saveIndicator.style.color = "red"; }
+            return false;
+        });
+        
+        return this._saveQueue;
+    },
+
       async init() {
         if (this.db) return;
         await this._open(2);
@@ -1242,18 +1279,9 @@
         });
       },
 
-      async saveStory(story) {
-        if (!(await this.ensure())) return false;
-        return new Promise((resolve) => {
-          try {
-            const tx = this.db.transaction(["stories"], "readwrite");
-            const store = tx.objectStore("stories");
-            const req = store.put(story);
-            req.onsuccess = () => resolve(true);
-            req.onerror = () => resolve(false);
-          } catch (e) { resolve(false); }
-        });
-      },
+	async saveStory(story) {
+        return this._performWrite("stories", story);
+	},
 
       async getStory(storyId) {
         if (!(await this.ensure())) return null;
@@ -1294,18 +1322,9 @@
         });
       },
 
-      async saveNarrative(narrative) {
-        if (!(await this.ensure())) return false;
-        return new Promise((resolve) => {
-          try {
-            const tx = this.db.transaction(["narratives"], "readwrite");
-            const store = tx.objectStore("narratives");
-            const req = store.put(narrative);
-            req.onsuccess = () => resolve(true);
-            req.onerror = () => resolve(false);
-          } catch (e) { resolve(false); }
-        });
-      },
+	async saveNarrative(narrative) {
+        return this._performWrite("narratives", narrative);
+    },
 
       async getNarrative(narrativeId) {
         if (!(await this.ensure())) return null;
@@ -1387,23 +1406,38 @@
      */
     const StoryService = {
         async loadApplicationData() {
-            console.log("StoryService: Loading application data...");
+            // console.log("StoryService: Loading application data..."); 
             const storyStubs = await DBService.getAllStories();
-            const activeStoryId = localStorage.getItem('active_story_id');
-            const activeNarrativeId = localStorage.getItem('active_narrative_id');
+            
+            // Robust local storage retrieval
+            let activeStoryId = localStorage.getItem('active_story_id');
+            let activeNarrativeId = localStorage.getItem('active_narrative_id');
+            
+            // Clean "null" strings
+            if (activeStoryId === 'null') activeStoryId = null;
+            if (activeNarrativeId === 'null') activeNarrativeId = null;
+
             let activeStory = null;
             let activeNarrative = null;
 
             if (activeStoryId && activeNarrativeId) {
-                const [story, narrative] = await Promise.all([
-                    DBService.getStory(activeStoryId),
-                    DBService.getNarrative(activeNarrativeId)
-                ]);
-                if (story && narrative) {
-                    activeStory = story;
-                    activeNarrative = narrative;
-                } else {
-                    console.warn("StoryService: Active session data mismatch. Clearing active IDs.");
+                try {
+                    const [story, narrative] = await Promise.all([
+                        DBService.getStory(activeStoryId),
+                        DBService.getNarrative(activeNarrativeId)
+                    ]);
+
+                    if (story && narrative) {
+                        activeStory = story;
+                        activeNarrative = narrative;
+                    } else {
+                        // Silent Fail-Safe: Data is missing, clear IDs but don't error out
+                        console.warn("StoryService: Session data not found in DB. Resetting.");
+                        localStorage.removeItem('active_story_id');
+                        localStorage.removeItem('active_narrative_id');
+                    }
+                } catch (e) {
+                    console.error("StoryService: DB Load Error", e);
                     localStorage.removeItem('active_story_id');
                     localStorage.removeItem('active_narrative_id');
                 }
@@ -1414,79 +1448,86 @@
 		async saveActiveState(currentState, narrativeStubs) {
             if (!currentState || !currentState.id || !currentState.narrativeId) return;
 
-            const activeCharacterIds = (currentState.characters || [])
-                .filter(c => c.is_active)
-                .map(c => c.id);
+            // 1. Prepare Data
+            const rawCharacters = JSON.parse(JSON.stringify(currentState.characters || []));
+            const safeChatHistory = JSON.parse(JSON.stringify(currentState.chat_history || []));
+            const safeStaticEntries = JSON.parse(JSON.stringify(currentState.static_entries || []));
+            const safeWorldMap = JSON.parse(JSON.stringify(currentState.worldMap || {}));
+            const safeDynamicEntries = JSON.parse(JSON.stringify(currentState.dynamic_entries || [])); // Add dynamic entries to save list
+            const safeScenarios = JSON.parse(JSON.stringify(currentState.scenarios || [])); // Add scenarios
 
-            const storyData = {
-                id: currentState.id,
-                name: currentState.name,
-                last_modified: new Date().toISOString(),
-                created_date: currentState.created_date,
-                creator_notes: currentState.creator_notes,
-                tags: currentState.tags,
-                
-                // Visual Settings
-                font: currentState.font,
-                backgroundImageURL: currentState.backgroundImageURL,
-                bubbleOpacity: currentState.bubbleOpacity,
-                chatTextColor: currentState.chatTextColor,
-                characterImageMode: currentState.characterImageMode,
-                backgroundBlur: currentState.backgroundBlur,
-                textSize: currentState.textSize,
-                bubbleImageSize: currentState.bubbleImageSize,
-
-                // FIX: Added Markdown Color & Font Persistence
-                md_h1_color: currentState.md_h1_color,
-                md_h2_color: currentState.md_h2_color,
-                md_h3_color: currentState.md_h3_color,
-                md_bold_color: currentState.md_bold_color,
-                md_italic_color: currentState.md_italic_color,
-                md_quote_color: currentState.md_quote_color,
-                
-                md_h1_font: currentState.md_h1_font,
-                md_h2_font: currentState.md_h2_font,
-                md_h3_font: currentState.md_h3_font,
-                md_bold_font: currentState.md_bold_font,
-                md_italic_font: currentState.md_italic_font,
-                md_quote_font: currentState.md_quote_font,
-
-                // Prompts
-                system_prompt: currentState.system_prompt,
-                event_master_base_prompt: currentState.event_master_base_prompt,
-                event_master_prompt: currentState.event_master_prompt, 
-                prompt_persona_gen: currentState.prompt_persona_gen,
-                prompt_world_map_gen: currentState.prompt_world_map_gen,
-                prompt_location_gen: currentState.prompt_location_gen,
-                prompt_entry_gen: currentState.prompt_entry_gen,
-                prompt_location_memory_gen: currentState.prompt_location_memory_gen,
-                prompt_story_notes_gen: currentState.prompt_story_notes_gen,
-                prompt_story_tags_gen: currentState.prompt_story_tags_gen,
-
-                // Data
-                characters: currentState.characters,
-                dynamic_entries: currentState.dynamic_entries,
-                scenarios: currentState.scenarios,
-                narratives: narrativeStubs || []
-            };
+            // Sanitize Characters (remove heavy base64 to keep DB light)
+            const sanitizedCharacters = rawCharacters.map(c => {
+                let safeImage = c.image_url;
+                if (safeImage && safeImage.length > 500 && !safeImage.startsWith('http') && !safeImage.startsWith('local_')) {
+                    safeImage = ''; 
+                }
+                c.image_url = safeImage;
+                return c;
+            });
 
             const narrativeData = {
                 id: currentState.narrativeId,
                 name: currentState.narrativeName,
                 last_modified: new Date().toISOString(),
-                active_character_ids: activeCharacterIds, 
+                active_character_ids: sanitizedCharacters.filter(c => c.is_active).map(c => c.id),
                 state: {
-                    chat_history: currentState.chat_history,
+                    chat_history: safeChatHistory,
                     messageCounter: currentState.messageCounter,
-                    static_entries: currentState.static_entries,
-                    worldMap: currentState.worldMap
+                    static_entries: safeStaticEntries,
+                    worldMap: safeWorldMap
                 }
             };
 
-            await Promise.all([
-                DBService.saveStory(storyData),
-                DBService.saveNarrative(narrativeData)
-            ]);
+            // 2. Perform Transactional Story Update
+            const storyId = currentState.id;
+            const currentNarrativeId = currentState.narrativeId;
+
+            try {
+                // A. Save the Narrative (Chat Content)
+                await DBService.saveNarrative(narrativeData);
+
+                // B. Sync the Story (Container)
+                const freshStory = await DBService.getStory(storyId);
+                
+                if (freshStory) {
+                    freshStory.last_modified = new Date().toISOString();
+                    
+                    // FIX: Explicitly sync the character list from memory to the DB
+                    freshStory.characters = sanitizedCharacters;
+
+                    // FIX: Also sync global story settings that might have changed
+                    freshStory.dynamic_entries = safeDynamicEntries;
+                    freshStory.scenarios = safeScenarios; // In case scenarios were renamed/deleted
+                    if (currentState.tags) freshStory.tags = currentState.tags;
+                    if (currentState.creator_notes) freshStory.creator_notes = currentState.creator_notes;
+                    
+                    // Update Prompts/Settings
+                    if (currentState.system_prompt) freshStory.system_prompt = currentState.system_prompt;
+                    if (currentState.backgroundImageURL) freshStory.backgroundImageURL = currentState.backgroundImageURL;
+                    // ... (Include any other settings keys you want synced)
+
+                    // C. Update the specific Stub for this narrative
+                    if (!freshStory.narratives) freshStory.narratives = [];
+                    
+                    const stubIndex = freshStory.narratives.findIndex(n => n.id === currentNarrativeId);
+                    if (stubIndex !== -1) {
+                        freshStory.narratives[stubIndex].name = currentState.narrativeName;
+                        freshStory.narratives[stubIndex].last_modified = narrativeData.last_modified;
+                    } else {
+                        freshStory.narratives.push({
+                            id: narrativeData.id,
+                            name: narrativeData.name,
+                            last_modified: narrativeData.last_modified
+                        });
+                    }
+
+                    // D. Save the reconciled Story
+                    await DBService.saveStory(freshStory);
+                }
+            } catch (err) {
+                console.error("StoryService: Save Transaction Failed", err);
+            }
         },
 
         async createDefaultStoryAndNarrative() {
@@ -1616,9 +1657,20 @@
                 }
             }
             
+            // 1. Save the Narrative
             await DBService.saveNarrative(newNarrative);
-            story.narratives.push({ id: newNarrative.id, name: newNarrative.name });
+            
+            // 2. Update the Story with the new Narrative Stub
+            // FIX: Explicitly include last_modified here to ensure DB consistency
+            story.narratives.push({ 
+                id: newNarrative.id, 
+                name: newNarrative.name,
+                last_modified: newNarrative.last_modified 
+            });
+            
+            // 3. Save the Story
             await DBService.saveStory(story);
+            
             return newNarrative;
         },
 
@@ -1827,9 +1879,21 @@ async exportLibraryAsZip() {
         
         saveLibrary() {
             try {
-                localStorage.setItem(this.CONSTANTS.ACTIVE_STORY_ID_KEY, this.data.library.active_story_id);
-                localStorage.setItem(this.CONSTANTS.ACTIVE_NARRATIVE_ID_KEY, this.data.library.active_narrative_id);
-            } catch (e) {}
+                // FIX: Only save if we have valid IDs, otherwise remove the keys
+                if (this.data.library.active_story_id) {
+                    localStorage.setItem(this.CONSTANTS.ACTIVE_STORY_ID_KEY, this.data.library.active_story_id);
+                } else {
+                    localStorage.removeItem(this.CONSTANTS.ACTIVE_STORY_ID_KEY);
+                }
+
+                if (this.data.library.active_narrative_id) {
+                    localStorage.setItem(this.CONSTANTS.ACTIVE_NARRATIVE_ID_KEY, this.data.library.active_narrative_id);
+                } else {
+                    localStorage.removeItem(this.CONSTANTS.ACTIVE_NARRATIVE_ID_KEY);
+                }
+            } catch (e) {
+                console.warn("LocalStorage save failed:", e);
+            }
         },
         
         loadActiveNarrative() {
@@ -3215,13 +3279,15 @@ async exportLibraryAsZip() {
      * Wraps the application state in a Proxy to handle auto-saving and UI updates.
      * =================================================================================================
      */
+
     const ReactiveStore = {
         state: null,       
         _target: null,     
         _listeners: new Map(),
         _proxyCache: new WeakMap(), 
         _saveTimeout: null,
-        _isSaving: false, // Track saving state
+        _isSaving: false,
+        _blockAutoSave: false, // New flag to prevent race conditions on reload
 
         init(initialState) {
             this._target = initialState;
@@ -3230,6 +3296,9 @@ async exportLibraryAsZip() {
             this.state = this._createProxy(initialState);
             
             const saveNow = () => {
+                // FIX: Check if auto-save is blocked (e.g., during critical DB migrations or reloads)
+                if (this._blockAutoSave) return;
+                
                 // If we are closing, trigger an immediate save without debounce
                 this.forceSave();
             };
@@ -3241,6 +3310,15 @@ async exportLibraryAsZip() {
             window.addEventListener('beforeunload', saveNow);
 
             console.log("ReactiveStore: Initialized with Safety Nets.");
+        },
+
+        // New method to explicitly stop the auto-save mechanism
+        blockAutoSave() {
+            this._blockAutoSave = true;
+            if (this._saveTimeout) {
+                clearTimeout(this._saveTimeout);
+                this._saveTimeout = null;
+            }
         },
 
         subscribe(key, callback) {
@@ -3291,21 +3369,41 @@ async exportLibraryAsZip() {
             }
         },
 
+        pauseSaving() {
+            this._isSavingPaused = true;
+            if (this._saveTimeout) {
+                clearTimeout(this._saveTimeout);
+                this._saveTimeout = null;
+            }
+        },
+
+        resumeSaving() {
+            this._isSavingPaused = false;
+            // Trigger one final save to catch up
+            this.forceSave();
+        },
+
         _scheduleSave() {
+            // If paused (streaming), DO NOT schedule a DB write
+            if (this._isSavingPaused) return;
+            if (this._blockAutoSave) return; // Respect block
+
             if (this._saveTimeout) clearTimeout(this._saveTimeout);
             this._saveTimeout = setTimeout(() => {
                 this.forceSave();
-            }, 1000); 
+            }, 2000); 
         },
 
-        // New async method to ensure data is written
         async forceSave() {
             if (this._saveTimeout) {
                 clearTimeout(this._saveTimeout);
                 this._saveTimeout = null;
             }
             
-            if (this._isSaving) return; // Prevent overlapping saves
+            if (this._isSaving) return;
+            // Even forceSave should respect the explicit block during critical transitions
+            if (this._blockAutoSave) return; 
+
             this._isSaving = true;
             
             try {
@@ -4050,63 +4148,82 @@ renderStaticEntries() {
     renderChat() {
         const state = StateManager.getState();
         const chatWindow = document.getElementById('chat-window');
+        
+        // 1. Empty State Check
         if (!state || !state.chat_history) {
-             chatWindow.innerHTML = `<div class="h-full w-full flex items-center justify-center text-gray-500 text-lg">No Narrative Loaded</div>`;
+             if (chatWindow) chatWindow.innerHTML = `<div class="h-full w-full flex items-center justify-center text-gray-500 text-lg">No Narrative Loaded</div>`;
              return;
         }
+        
+        // 2. Optimization: Don't full-render if actively streaming text
         if (this.RUNTIME.streamingInterval) return; 
         
+        // 3. Update Mode & Portraits
         document.body.dataset.mode = state.characterImageMode;
         this.updateSidePortrait();
 
+        // 4. Handle Cinematic Background Logic
         if (state.characterImageMode === 'cinematic_overlay') {
-          let latestAiImageUrl = null;
+             let latestAiImageUrl = null;
+             
+             // Find the last valid AI image in history
+             for (let i = state.chat_history.length - 1; i >= 0; i--) {
+                const msg = state.chat_history[i];
+                if (!msg) continue; // Safety check
+                if (msg.type !== 'chat' || msg.isHidden) continue;
+                
+                const speaker = state.characters.find(c => c.id === msg.character_id);
+                if (speaker && !speaker.is_user) {
+                  const candidate = this.getPortraitSrc(speaker, msg.emotion);
+                  if (candidate) { latestAiImageUrl = candidate; break; }
+                }
+             }
 
-          for (let i = state.chat_history.length - 1; i >= 0; i--) {
-            const msg = state.chat_history[i];
-            if (msg.type !== 'chat' || msg.isHidden) continue;
-            const speaker = state.characters.find(c => c.id === msg.character_id);
-            if (speaker && !speaker.is_user) {
-              const candidate = UIManager.getPortraitSrc(speaker, msg.emotion);
-              if (candidate) { latestAiImageUrl = candidate; break; }
-            }
-          }
-
-          if (latestAiImageUrl && latestAiImageUrl !== this.RUNTIME.lastCinematicImageUrl) {
-            this.RUNTIME.lastCinematicImageUrl = latestAiImageUrl;
-            const bg1 = document.getElementById('cinematic-bg-1');
-            const bg2 = document.getElementById('cinematic-bg-2');
-
-            if (this.RUNTIME.activeCinematicBg === 1) {
-              bg2.style.backgroundImage = `url('${latestAiImageUrl}')`;
-              bg1.style.opacity = 0;
-              bg2.style.opacity = 1;
-              this.RUNTIME.activeCinematicBg = 2;
-            } else {
-              bg1.style.backgroundImage = `url('${latestAiImageUrl}')`;
-              bg1.style.opacity = 1;
-              bg2.style.opacity = 0;
-              this.RUNTIME.activeCinematicBg = 1;
-            }
-          } else if (!latestAiImageUrl && this.RUNTIME.lastCinematicImageUrl) {
-            const activeBg = document.getElementById(`cinematic-bg-${this.RUNTIME.activeCinematicBg}`);
-            if (activeBg) activeBg.style.backgroundImage = `url('${this.RUNTIME.lastCinematicImageUrl}')`;
-          }
+             // Apply the image transition
+             if (latestAiImageUrl && latestAiImageUrl !== this.RUNTIME.lastCinematicImageUrl) {
+                this.RUNTIME.lastCinematicImageUrl = latestAiImageUrl;
+                const bg1 = document.getElementById('cinematic-bg-1');
+                const bg2 = document.getElementById('cinematic-bg-2');
+                
+                if (this.RUNTIME.activeCinematicBg === 1) {
+                  bg2.style.backgroundImage = `url('${latestAiImageUrl}')`;
+                  bg1.style.opacity = 0;
+                  bg2.style.opacity = 1;
+                  this.RUNTIME.activeCinematicBg = 2;
+                } else {
+                  bg1.style.backgroundImage = `url('${latestAiImageUrl}')`;
+                  bg1.style.opacity = 1;
+                  bg2.style.opacity = 0;
+                  this.RUNTIME.activeCinematicBg = 1;
+                }
+             } else if (!latestAiImageUrl && this.RUNTIME.lastCinematicImageUrl) {
+                 // Keep old image if no new one found, or handle specific fallback
+                 const activeBg = document.getElementById(`cinematic-bg-${this.RUNTIME.activeCinematicBg}`);
+                 if (activeBg) activeBg.style.backgroundImage = `url('${this.RUNTIME.lastCinematicImageUrl}')`;
+             }
         } else {
-          const bg1 = document.getElementById('cinematic-bg-1');
-          const bg2 = document.getElementById('cinematic-bg-2');
-          if (bg1) { bg1.style.backgroundImage = 'none'; bg1.style.opacity = '0'; }
-          if (bg2) { bg2.style.backgroundImage = 'none'; bg2.style.opacity = '0'; }
-          this.RUNTIME.lastCinematicImageUrl = null;
-          this.RUNTIME.activeCinematicBg = 1;
+             // Reset cinematic backgrounds if not in that mode
+             const bg1 = document.getElementById('cinematic-bg-1');
+             const bg2 = document.getElementById('cinematic-bg-2');
+             if (bg1) { bg1.style.backgroundImage = 'none'; bg1.style.opacity = '0'; }
+             if (bg2) { bg2.style.backgroundImage = 'none'; bg2.style.opacity = '0'; }
+             this.RUNTIME.lastCinematicImageUrl = null;
+             this.RUNTIME.activeCinematicBg = 1;
         }
 
-        chatWindow.innerHTML = (state.chat_history || []).map((msg, index) => 
-            UIComponents.MessageBubble(msg, index, state)
-        ).join('');
+        // 5. Generate HTML
+        chatWindow.innerHTML = (state.chat_history || [])
+            .map((msg, index) => {
+                // CRITICAL FIX: Guard against undefined messages during array mutation (Undo/Splice)
+                if (!msg) return ''; 
+                return UIComponents.MessageBubble(msg, index, state);
+            })
+            .join('');
         
-        (state.chat_history || []).forEach(m => m.isNew = false);
+        // 6. Cleanup flags
+        (state.chat_history || []).forEach(m => { if(m) m.isNew = false; });
 
+        // 7. Scroll to bottom
         setTimeout(() => {
             window.requestAnimationFrame(() => {
                 if (chatWindow) {
@@ -4191,76 +4308,93 @@ renderStaticEntries() {
 
 	startStreamingResponse(charId, fullText, emotion) {
         if (this.RUNTIME.streamingInterval) clearInterval(this.RUNTIME.streamingInterval);
+        
         const state = ReactiveStore.state;
+        // FIX: Define chatWindow here so it is visible inside the interval loop
+        const chatWindow = document.getElementById('chat-window'); 
 
-        // Remove previous error messages
-        if (state.chat_history.length > 0) {
-            const cleanHistory = state.chat_history.filter(msg => 
-                !(msg.type === 'system_event' && (msg.content.startsWith('AI Error') || msg.content.includes('Failed to fetch')))
-            );
-            if (cleanHistory.length !== state.chat_history.length) {
-                state.chat_history = cleanHistory;
-            }
+        // 1. LOCK THE DB: Stop saving while we animate
+        if (typeof ReactiveStore.pauseSaving === 'function') {
+            ReactiveStore.pauseSaving();
         }
 
+        // 2. Create the "Empty" Message in State
         const messageIndex = state.chat_history.length;
-        state.chat_history.push({ 
-            character_id: charId, content: '', type: 'chat', emotion: emotion, 
-            timestamp: new Date().toISOString(), isNew: true 
-        });
+        const newMessage = { 
+            character_id: charId, 
+            content: "", // Start empty
+            type: 'chat', 
+            emotion: emotion, 
+            timestamp: new Date().toISOString(), 
+            isNew: true 
+        };
+        
+        state.chat_history.push(newMessage);
+        
+        // Force immediate render so the bubble appears in the DOM
+        this.renderChat();
 
-        UIManager.renderChat();
-        
+        // 3. Locate the DOM Element
         const messageContentEl = document.getElementById(`message-content-${messageIndex}`);
-        if (!messageContentEl) return;
+        const bubbleEl = messageContentEl ? messageContentEl.closest('.chat-bubble-container') : null;
         
-        // Get reference to the container bubble for final scrolling
-        const bubbleEl = messageContentEl.closest('.chat-bubble-container');
+        if (!messageContentEl) {
+            if (typeof ReactiveStore.resumeSaving === 'function') ReactiveStore.resumeSaving();
+            return;
+        }
+
+        // 4. The Animation Loop (Visuals Only)
         const words = fullText.split(/(\s+)/);
+        let currentText = "";
         let wordIndex = 0;
 
         this.RUNTIME.streamingInterval = setInterval(() => {
             if (wordIndex < words.length) {
-                const word = words[wordIndex];
-                state.chat_history[messageIndex].content += word;
+                // A. Update Local Variable
+                currentText += words[wordIndex];
                 
-                const userChar = state.characters.find(c => c.is_user);
+                // B. Process formatting locally
+                const styledContent = currentText.replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`);
+                const fullHTML = DOM.unsafe(marked.parse(styledContent || ''));
+                
+                // C. Update DOM Directly
+                let finalHTML = fullHTML.toString();
                 const character = state.characters.find(c => c.id === charId);
-                const replacer = (text) => text.replace(/{character}/g, character.name).replace(/{user}/g, userChar.name);
-                let processedContent = replacer(state.chat_history[messageIndex].content);
                 
-                const styledContent = processedContent.replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`);
-                let fullHTML = DOM.unsafe(marked.parse(styledContent || ''));
+                if (state.characterImageMode === 'bubble' && character) {
+                    const imgSrc = this.getPortraitSrc(character, emotion);
+                    if (imgSrc) finalHTML = `<img src="${imgSrc}" class="bubble-char-image">${finalHTML}`;
+                }
                 
-                const imgSrc = UIManager.getPortraitSrc(character, state.chat_history[messageIndex].emotion);
+                messageContentEl.innerHTML = finalHTML;
                 
-                if (state.characterImageMode === 'bubble' && imgSrc) {
-                  fullHTML = DOM.html`<img src="${imgSrc}" class="bubble-char-image">${fullHTML}`;
+                // D. Scroll Logic (Now chatWindow is defined)
+                if (bubbleEl && chatWindow && wordIndex % 5 === 0) { 
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
                 }
 
-                messageContentEl.innerHTML = fullHTML.toString();
-                
-                // FIX: Removed the auto-scroll logic from here. 
-                // The view will now stay static while text streams in.
-                
                 wordIndex++;
             } else {
+                // 5. FINISH: Commit Data
                 clearInterval(this.RUNTIME.streamingInterval);
                 this.RUNTIME.streamingInterval = null;
+                
+                // Update the TRUE state now that we are done
+                state.chat_history[messageIndex].content = fullText;
                 state.chat_history[messageIndex].isNew = false;
                 
-                if (typeof ReactiveStore !== 'undefined') ReactiveStore.persist();
-                if (typeof NarrativeController !== 'undefined') NarrativeController.checkDynamicEntryTriggers(); 
-
-                // FIX: Scroll only AFTER generation finishes
-                // 'block: start' aligns the top of the message with the top of the window
-                if (bubbleEl) {
-                    requestAnimationFrame(() => {
-                        bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    });
+                // 6. UNLOCK DB: This triggers the single final save
+                if (typeof ReactiveStore.resumeSaving === 'function') {
+                    ReactiveStore.resumeSaving();
                 }
+                
+                // Final scroll
+                if (bubbleEl) bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // Check for Dynamic Entries
+                if (typeof NarrativeController !== 'undefined') NarrativeController.checkDynamicEntryTriggers();
             }
-        }, 2);
+        }, 10); 
     },
     
     showTypingIndicator(charId, text="is thinking...") { 
@@ -5683,17 +5817,21 @@ const LibraryController = {
 	async createNarrativeFromScenario(storyId, scenarioId) {
         UIManager.showLoadingSpinner('Creating new narrative...');
         try {
-            // 1. Call the StoryService to do all the database work
+            // FIX: 1. Force save current state to be safe
+            if (typeof ReactiveStore !== 'undefined') await ReactiveStore.forceSave();
+            
+            // FIX: 2. Block auto-save to prevent race condition on reload
+            if (typeof ReactiveStore !== 'undefined' && ReactiveStore.blockAutoSave) {
+                ReactiveStore.blockAutoSave();
+            }
+
             const newNarrative = await StoryService.createNarrativeFromScenario(storyId, scenarioId);
 
-            // 2. Update the in-memory library stub
             const library = StateManager.getLibrary();
             const storyInLibrary = library.stories.find(s => s.id === storyId);
             
             if (storyInLibrary) {
-                // Safety: Ensure array exists before pushing
                 if (!storyInLibrary.narratives) storyInLibrary.narratives = [];
-                
                 storyInLibrary.narratives.push({
                     id: newNarrative.id,
                     name: newNarrative.name,
@@ -5702,7 +5840,6 @@ const LibraryController = {
                 storyInLibrary.last_modified = new Date().toISOString();
             }
             
-            // 3. Load the new narrative
             this.loadNarrative(storyId, newNarrative.id);
 
         } catch (error) {
@@ -6319,48 +6456,109 @@ const NarrativeController = {
         const input = document.getElementById('chat-input');
         input.value.trim() === '' ? this.writeForMe() : this.sendMessage(); 
     },
+	
+	async checkEventMaster() {
+        const state = ReactiveStore.state;
+        
+        // 1. Configuration Guard
+        if (!state.event_master_base_prompt) return; 
+        
+        // 2. Dice Roll: 15% Chance
+        // If the roll fails, we return immediately so the chat continues normally.
+        if (Math.random() > 0.15) return; 
+        
+        // 3. Overlap Guard
+        if (state.event_master_prompt) return; 
+
+        // 4. Show UI Feedback
+        // Since this blocks the chat, we must tell the user what is happening.
+        UIManager.showLoadingSpinner("The Event Master is plotting...");
+
+        try {
+            console.log("Event Master: 🎲 Roll successful. Analyzing narrative...");
+
+            // 5. Build Context (Last 10 messages)
+            const recentHistory = state.chat_history
+                .slice(-10)
+                .filter(m => m && m.type === 'chat' && !m.isHidden)
+                .map(m => {
+                    const char = state.characters.find(c => c.id === m.character_id);
+                    return `${char ? char.name : 'Unknown'}: ${m.content}`;
+                })
+                .join('\n');
+
+            // 6. Construct Prompt
+            const prompt = `${state.event_master_base_prompt}
+            
+            RECENT CHAT HISTORY:
+            ${recentHistory}
+            
+            INSTRUCTION:
+            Analyze the chat history. Generate a single, concise "System Instruction" that introduces a plot twist, a sudden event, or a change in tone to push the story in a new direction.
+            
+            Output ONLY the instruction. Do not write a chat message.
+            Example Output: "A sudden thunderstorm knocks out the power."`;
+
+            // 7. Blocking API Call
+            // We use a new AbortController so this specific request has its own lifecycle
+            const controller = new AbortController();
+            const instruction = await APIService.callAI(prompt, false, controller.signal);
+
+            if (instruction && instruction.trim().length > 0) {
+                console.log("Event Master Triggered:", instruction);
+                // Save to state. 
+                // The PromptBuilder will inject this into the System Prompt when triggerAIResponse runs next.
+                state.event_master_prompt = instruction;
+            }
+
+        } catch (e) {
+            console.warn("Event Master skipped turn:", e);
+        } finally {
+            // 8. Always hide the spinner, whether we succeeded or failed
+            UIManager.hideLoadingSpinner();
+        }
+    },
 
     /**
      * Sends a user message.
      */
     async sendMessage() {
-		if (this.RUNTIME.activeRequestAbortController) {
-			this.stopGeneration();
-		}
-		if (UIManager.RUNTIME.streamingInterval) {
-			clearInterval(UIManager.RUNTIME.streamingInterval);
-			UIManager.RUNTIME.streamingInterval = null;
-		}
-		
+        if (this.RUNTIME.activeRequestAbortController) {
+            this.stopGeneration();
+        }
+        if (UIManager.RUNTIME.streamingInterval) {
+            clearInterval(UIManager.RUNTIME.streamingInterval);
+            UIManager.RUNTIME.streamingInterval = null;
+        }
+        
         const state = ReactiveStore.state;
         const input = document.getElementById('chat-input');
         const userChar = state.characters.find(c => c.is_user);
         
         if (!userChar) {
-            alert("No character is set as the 'User'. Please set a character to 'User' in the Characters modal.");
+            alert("No character is set as the 'User'.");
             return;
         }
         
         const messageContent = input.value.trim();
         if (!messageContent) return;
         
-        // 1. Add user message
+        // 1. Add user message immediately
         this.addMessageToHistory(userChar.id, messageContent);
         input.value = ''; 
         
-        // 2. Check triggers
+        // 2. Check triggers (Lore)
         this.checkDynamicEntryTriggers();
+
+        // 3. Run Event Master (BLOCKING)
+        // This "cuts in line" before the character replies.
+        await this.checkEventMaster();
         
-        // 3. Trigger AI
+        // 4. Trigger Character Response
+        // The character will now see the Event Master's instruction in the prompt context.
         await this.triggerAIResponse(null, messageContent);
         
-        // 4. Background Agents
-        this.checkEventMaster();
-        
-        // 5. Auto-Lore Update (Every 10 turns)
-        if (state.messageCounter > 0 && state.messageCounter % 10 === 0) {
-            if (typeof WorldController !== 'undefined') WorldController.checkWorldInfoAgent(true); // silent mode
-        }
+        // 5. Cleanup / Auto-Save logic is handled by ReactiveStore
     },
 
     /**
@@ -6533,23 +6731,13 @@ const NarrativeController = {
         const state = ReactiveStore.state;
         if (!state) return;
 
-        // 1. Update Active State (UI reflects this immediately)
-        // This change also triggers ReactiveStore to auto-save the Narrative object to DB
+        // 1. Update Reactive State immediately
         state.narrativeName = newName;
 
-        // 2. Update the Library Stub in Memory
-        // We must do this so that when the Story Object is saved, it contains the updated name in its list of narratives
-        const lib = StateManager.getLibrary();
-        if (lib.active_story_id && lib.active_narrative_id) {
-            const storyStub = lib.stories.find(s => s.id === lib.active_story_id);
-            if (storyStub && storyStub.narratives) {
-                const narrativeStub = storyStub.narratives.find(n => n.id === lib.active_narrative_id);
-                if (narrativeStub) {
-                    narrativeStub.name = newName;
-                    narrativeStub.last_modified = new Date().toISOString();
-                }
-            }
-        }
+        // 2. Force a save immediately to sync this name to the DB Stubs
+        // This relies on our new "Surgical Update" in StoryService.saveActiveState
+        ReactiveStore.forceSave();
+        
     }, 500),
 
     // --- AI Generation Logic ---
@@ -6971,7 +7159,7 @@ const NarrativeController = {
         } catch (e) { alert("Image upload failed."); }
     },
 
-_compileTriggerRegex(keyword) {
+	_compileTriggerRegex(keyword) {
         // Escape special regex characters
         const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         // Matches whole word/phrase, case insensitive
@@ -7001,7 +7189,9 @@ _compileTriggerRegex(keyword) {
 
     checkDynamicEntryTriggers() {
         const state = ReactiveStore.state;
-        const lastMsg = state.chat_history.slice().reverse().find(m => m.type === 'chat');
+        
+        // FIX 1: Guard against undefined items during the find() operation
+        const lastMsg = state.chat_history.slice().reverse().find(m => m && m.type === 'chat');
         if (!lastMsg) return;
         
         const content = lastMsg.content;
@@ -7032,7 +7222,9 @@ _compileTriggerRegex(keyword) {
 
                 for (let i = state.chat_history.length - 1; i >= searchWindowStart; i--) {
                     const msg = state.chat_history[i];
-                    if (msg.type === 'lore_reveal' && msg.dynamic_entry_id === entry.id) {
+                    
+                    // FIX 2: Guard against undefined 'msg' inside the loop
+                    if (msg && msg.type === 'lore_reveal' && msg.dynamic_entry_id === entry.id) {
                         foundIndex = i;
                         break;
                     }
@@ -7074,7 +7266,6 @@ _compileTriggerRegex(keyword) {
         });
 
         if (stateChanged) {
-            // ReactiveStore auto-saves, but we force a UI refresh for the list indicators if open
             UIManager.renderDynamicEntries(); 
         }
     },
