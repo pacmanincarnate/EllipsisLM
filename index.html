@@ -319,9 +319,13 @@
             font-style: italic;
         }
 
-        /* FIX: Restored Quotation Formatting */
+        /* FIX: Smart Quotation Formatting 
+           Uses dynamic variables to toggle between the default "Filtered" look 
+           and a specific "User Color" look. */
         .dialogue-quote {
-            filter: saturate(175%) opacity(75%) drop-shadow(1px 1px 5px black);
+            color: var(--active-quote-color, inherit);
+            filter: var(--active-quote-filter, saturate(175%) opacity(75%) drop-shadow(1px 1px 5px black));
+            font-family: var(--md-quote-font, inherit);
             font-weight: 500;
         }
 
@@ -520,6 +524,7 @@
                         <a href="#" onclick="AppController.openSettingsToTab('appearance'); AppController.toggleMobileMenu(); return false;" class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Appearance</a>
                         <a href="#" onclick="AppController.openSettingsToTab('prompt'); AppController.toggleMobileMenu(); return false;" class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Prompt</a>
                         <a href="#" onclick="AppController.openSettingsToTab('model'); AppController.toggleMobileMenu(); return false;" class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Model</a>
+						<a href="#" onclick="AppController.openSettingsToTab('personas'); AppController.toggleMobileMenu(); return false;" class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">User Personas</a>
                     </div>
                 </div>
             </div>
@@ -547,9 +552,28 @@
                  <div class="flex flex-col space-y-2 w-min">
                      <select id="ai-character-selector" class="bg-black/30 border border-gray-600 rounded-lg p-2 w-0 min-w-full mb-2 truncate"></select>
                      <div class="flex items-center justify-center space-x-1">
-                         <button id="primary-action-btn" class="bg-indigo-600/50 hover:bg-indigo-600/80 text-white font-bold p-1.5 rounded-lg" title="Send / Write for Me"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg></button>
-                         <button id="regen-btn" class="bg-sky-600/40 hover:bg-sky-600/70 text-white font-bold p-1.5 rounded-lg" title="Regenerate / New Response"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 9a9 9 0 0114.65-5.32L20 5M20 15a9 9 0 01-14.65 5.32L4 19"></path></svg></button>
-                         <button id="undo-btn" class="bg-gray-600/40 hover:bg-gray-500/70 text-white font-bold p-1.5 rounded-lg" title="Undo"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l4-4m-4 4l4 4"></path></svg></button>
+                         <button id="primary-action-btn" class="bg-indigo-600/50 hover:bg-indigo-600/80 text-white font-bold p-2 rounded-lg transition-colors" title="Send / Write for Me">
+                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                 <line x1="22" y1="2" x2="11" y2="13"></line>
+                                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                             </svg>
+                         </button>
+                         
+                         <button id="regen-btn" class="bg-sky-600/40 hover:bg-sky-600/70 text-white font-bold p-2 rounded-lg transition-colors" title="Regenerate / New Response">
+                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                 <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                                 <path d="M3 3v5h5"></path>
+                                 <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+                                 <path d="M16 21h5v-5"></path>
+                             </svg>
+                         </button>
+                         
+                         <button id="undo-btn" class="bg-gray-600/40 hover:bg-gray-500/70 text-white font-bold p-2 rounded-lg transition-colors" title="Undo Last Turn">
+                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                                 <path d="M3 3v5h5"></path>
+                             </svg>
+                         </button>
                      </div>
                  </div>
              </div>
@@ -698,6 +722,7 @@
                         <button id="settings-tab-appearance" onclick="AppController.switchSettingsTab('appearance')" class="pb-2 font-semibold border-b-2 border-indigo-500 text-white transition-colors">Appearance</button>
                         <button id="settings-tab-prompt" onclick="AppController.switchSettingsTab('prompt')" class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Prompt</button>
                         <button id="settings-tab-model" onclick="AppController.switchSettingsTab('model')" class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Model</button>
+						<button id="settings-tab-personas" onclick="AppController.switchSettingsTab('personas')" class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">User Personas</button>
                     </div>
                 </div>
                 <button data-action="close-modal" data-id="settings-modal" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors -mt-2" title="Close">
@@ -871,16 +896,57 @@
                 </div>
                 <label class="text-gray-400 text-sm block mt-4 mb-2">Character Image Display</label><div class="flex space-x-4" id="character-image-display"><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="none"><span>None</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="cinematic_overlay"><span>Cinematic</span></label><label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="imageDisplayMode" value="bubble"><span>Bubble</span></label></div>
             </div>
+			<div class="pt-6 mt-4 border-t border-gray-700/50 text-center">
+                    <p id="build-info-display" class="text-xs text-gray-600 font-mono uppercase tracking-widest opacity-75 select-all"></p>
+            </div>
         </div>
         
         <div id="settings-prompt-content" class="space-y-2">
-            <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Core Prompts</summary><div class="p-4 space-y-4 bg-black/20 rounded-b-lg"><div><h3 class="text-base font-medium mb-2">System Prompt (Global Fallback)</h3><p class="text-gray-400 text-sm mb-2">Used by AI characters who don't have their own specific instructions.</p><textarea id="system-prompt-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div><hr class="border-gray-700"><div><h3 class="text-base font-medium mb-2">Event Master Prompt</h3><p class="text-gray-400 text-sm mb-2">Define the base instruction for the Event Master, which injects surprise events.</p><textarea id="event-master-prompt-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></div></details>
+            <details>
+                <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Core Prompts</summary>
+                <div class="p-4 bg-black/20 rounded-b-lg">
+                    <h3 class="text-base font-medium mb-2">System Prompt (Global Fallback)</h3>
+                    <p class="text-gray-400 text-sm mb-2">Used by AI characters who don't have their own specific instructions.</p>
+                    <textarea id="system-prompt-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea>
+                </div>
+            </details>
+
+            <details>
+                <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Event Master</summary>
+                <div class="p-4 bg-black/20 rounded-b-lg">
+                    <h3 class="text-base font-medium mb-2">Event Master Prompt</h3>
+                    <p class="text-gray-400 text-sm mb-2">Define the base instruction for the Event Master.</p>
+                    <textarea id="event-master-prompt-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea>
+                    
+                    <div class="mt-3 flex items-center space-x-4">
+                        <label for="event-master-prob-input" class="text-gray-400 text-sm font-bold">Trigger Probability (%):</label>
+                        <input type="number" id="event-master-prob-input" min="0" max="100" class="w-20 rounded-lg p-2 text-center" placeholder="15">
+                    </div>
+                </div>
+            </details>
             <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Persona Generation Prompt</summary><div class="p-4 bg-black/20 rounded-b-lg"><p class="text-gray-400 text-sm mb-2">Used by the AI button on a character's persona. Use <code>{concept}</code> for the existing text.</p><textarea id="prompt-persona-gen-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></details>
             <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">World Map Generation Prompt</summary><div class="p-4 bg-black/20 rounded-b-lg"><p class="text-gray-400 text-sm mb-2">Used to generate the entire world map. Use <code>{characters}</code>, <code>{static}</code>, and <code>{recent}</code>.</p><textarea id="prompt-world-map-gen-input" class="w-full rounded-lg p-2 resize-y" rows="6"></textarea></div></details>
             <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Location Prompt Generation</summary><div class="p-4 bg-black/20 rounded-b-lg"><p class="text-gray-400 text-sm mb-2">Used to generate a location's detailed prompt. Use <code>{name}</code> and <code>{description}</code>.</p><textarea id="prompt-location-gen-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></details>
             <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Memory Entry Generation</summary><div class="p-4 bg-black/20 rounded-b-lg"><p class="text-gray-400 text-sm mb-2">Used for Static/Dynamic memory entries. Use <code>{title}</code> and <code>{triggers}</code>.</p><textarea id="prompt-entry-gen-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></details>
             <details><summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Location Memory Summary</summary><div class="p-4 bg-black/20 rounded-b-lg"><p class="text-gray-400 text-sm mb-2">Used to auto-summarize events when you leave a location. Use <code>{transcript}</code>.</p><textarea id="prompt-location-memory-gen-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea></div></details>
             <div class="flex space-x-2 pt-4"><button onclick="NarrativeController.viewRawPrompt()" class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw Prompt</button><button data-action="open-modal" data-target="example-dialogue-modal" class="bg-sky-600/80 hover:bg-sky-500/80 text-white font-bold py-2 px-4 rounded-lg">Edit Example Dialogue</button></div>
+        </div>
+		<div id="settings-personas-content" class="h-full flex flex-col">
+            <div class="flex-grow flex flex-col md:flex-row gap-4 min-h-0 h-[60vh]">
+                <div class="w-full md:w-1/3 flex flex-col h-full">
+                    <div id="user-personas-list" class="bg-black/30 rounded-t-lg p-2 overflow-y-auto flex-grow border border-gray-700 border-b-0"></div>
+                    <div class="flex-shrink-0 bg-black/30 rounded-b-lg p-2 border border-gray-700 border-t-0">
+                        <button onclick="AppController.addUserPersona()" class="w-full py-2 bg-gray-700 hover:bg-indigo-600 text-white rounded flex justify-center items-center transition-colors">
+                            <span class="font-bold mr-2">New Persona</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="user-persona-details" class="w-full md:w-2/3 bg-black/30 rounded-lg p-4 overflow-y-auto h-full border border-gray-700">
+                    <div class="text-gray-400 flex items-center justify-center h-full">Select a persona to edit.</div>
+                </div>
+            </div>
         </div>
         
         <div id="settings-model-content" class="space-y-6">
@@ -904,7 +970,15 @@
 				<h3 class="text-lg font-medium">OpenRouter API Settings</h3>
 				<p class="text-gray-400 text-sm mb-2">Your key and the model name.</p>
 				<input type="password" id="openrouter-api-key-input" class="w-full rounded-lg p-2" placeholder="Enter OpenRouter API key">
-				<input type="text" id="openrouter-model-input" class="mt-2 w-full rounded-lg p-2" placeholder="Enter model name">
+				
+                <div class="mt-2 flex space-x-2">
+                    <input type="text" id="openrouter-model-input" class="flex-grow rounded-lg p-2" placeholder="Enter model name (e.g. anthropic/claude-3-opus)">
+                    <button onclick="AppController.saveOpenRouterModel()" class="bg-gray-700 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-lg transition-colors" title="Save to list">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    </button>
+                </div>
+
+                <div id="openrouter-saved-models-list" class="mt-3 flex flex-wrap gap-2"></div>
 			</div>
             <div id="koboldcpp-settings">
                 <h3 class="text-lg font-medium">KoboldCPP Settings</h3>
@@ -983,6 +1057,14 @@
 
     <!-- Application Logic -->
 	<script>
+	
+	/**
+     * Application Build Information
+     * Update this variable to change the footer in Appearance Settings.
+     */
+    const APP_BUILD_TIMESTAMP = "Version: 2025.11.26 - 17:30 CST";
+	
+	
     /**
      * HTML Sanitizer
      */
@@ -2198,17 +2280,19 @@ async exportLibraryAsZip() {
         },
 	getDefaultApiSettings() {
 		return {
-        apiProvider: 'gemini', 
-        geminiApiKey: '', 
-        openRouterKey: '', 
-        openRouterModel: 'google/gemini-flash-1.5',
-        koboldcpp_url: 'http://localhost:5001', 
-        koboldcpp_template: 'none', 
-        koboldcpp_min_p: 0.1, 
-        koboldcpp_dry: 0.25,
-        lmstudio_url: 'http://localhost:1234',
-    };
-},
+            apiProvider: 'gemini', 
+            geminiApiKey: '', 
+            openRouterKey: '', 
+            openRouterModel: 'google/gemini-flash-1.5',
+            koboldcpp_url: 'http://localhost:5001', 
+            koboldcpp_template: 'none', 
+            koboldcpp_min_p: 0.1, 
+            koboldcpp_dry: 0.25,
+            lmstudio_url: 'http://localhost:1234',
+            userPersonas: [],
+			savedOpenRouterModels: []
+        };
+    },
 	getDefaultUiSettings() {
             return {
                 font: "'Inter', sans-serif", backgroundImageURL: '', bubbleOpacity: 0.85,
@@ -2232,7 +2316,7 @@ async exportLibraryAsZip() {
             };
         },
         getDefaultStorySettings() {
-            return { creator_notes: "", tags: [] };
+            return { creator_notes: "", tags: [], event_master_probability: 15};
         },
         getDefaultSystemPrompts() {
             return {
@@ -3997,7 +4081,27 @@ const UIManager = {
             container.innerHTML = '';
             return;
         }
-        container.innerHTML = state.characters.map(UIComponents.CharacterTile).join('');
+
+        // FIX: Custom Sort Logic
+        // 1. User First
+        // 2. Active Next (Alphabetical)
+        // 3. Inactive Last (Alphabetical)
+        const sortedChars = [...state.characters].sort((a, b) => {
+            // Priority 1: User Character
+            if (a.is_user && !b.is_user) return -1;
+            if (!a.is_user && b.is_user) return 1;
+
+            // Priority 2: Active Status
+            if (a.is_active && !b.is_active) return -1;
+            if (!a.is_active && b.is_active) return 1;
+
+            // Priority 3: Alphabetical Name
+            const nameA = a.name || "";
+            const nameB = b.name || "";
+            return nameA.localeCompare(nameB);
+        });
+
+        container.innerHTML = sortedChars.map(UIComponents.CharacterTile).join('');
     },
 
 	renderKnowledgeModalTabs() {
@@ -4088,7 +4192,16 @@ renderStaticEntries() {
     
 	renderDynamicEntries() { 
         const state = StateManager.getState(); 
-        const listHtml = (state.dynamic_entries || []).map(entry => DOM.html`<div data-action="select-dynamic-entry" data-id="${entry.id}" class="p-3 rounded-lg cursor-pointer ${state.selectedDynamicEntryId === entry.id ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'} flex justify-between items-center mb-1"><h4 class="font-semibold truncate">${entry.title}</h4> ${entry.triggered_at_turn !== null ? DOM.unsafe('<span class="text-xs text-sky-300">ACTIVE</span>') : ''}</div>`).join(''); 
+        // FIX: Ensure Robust ID Comparison (Convert to String) to handle legacy numeric IDs
+        const listHtml = (state.dynamic_entries || []).map(entry => {
+            const isSelected = String(state.selectedDynamicEntryId) === String(entry.id);
+            return DOM.html`
+                <div data-action="select-dynamic-entry" data-id="${entry.id}" 
+                     class="p-3 rounded-lg cursor-pointer ${isSelected ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'} flex justify-between items-center mb-1">
+                    <h4 class="font-semibold truncate">${entry.title}</h4> 
+                    ${entry.triggered_at_turn !== null ? DOM.unsafe('<span class="text-xs text-sky-300">ACTIVE</span>') : ''}
+                </div>`;
+        }).join(''); 
         
         const container = document.getElementById('dynamic-entries-list');
         container.innerHTML = listHtml;
@@ -4108,7 +4221,9 @@ renderStaticEntries() {
 	renderDynamicEntryDetails() { 
         const state = StateManager.getState();
         const container = document.getElementById('dynamic-entry-details-content'); 
-        const entry = (state.dynamic_entries || []).find(e => e.id === state.selectedDynamicEntryId); 
+        
+        // FIX: Ensure Robust ID Comparison (Convert to String)
+        const entry = (state.dynamic_entries || []).find(e => String(e.id) === String(state.selectedDynamicEntryId)); 
         
         if (entry) {
             const contentFieldsHTML = (entry.content_fields || [""]).map((content, index) => 
@@ -4406,18 +4521,32 @@ renderStaticEntries() {
                 // Note: If a lore entry IS added, it won't appear until the next interaction. 
                 // This is a trade-off for smoothness, but acceptable for "hidden" lore. 
                 // If you want Lore Reveals to appear instantly, we would need to manually append them here too.
-                if (typeof NarrativeController !== 'undefined') NarrativeController.checkDynamicEntryTriggers();
+                let structureChanged = false;
+                if (typeof NarrativeController !== 'undefined') {
+                    structureChanged = NarrativeController.checkDynamicEntryTriggers();
+                }
                 
+                // FIX: Bug 2 - Index Mismatch Fix
+                // If dynamic entries modified the array structure (splicing out old entries),
+                // the DOM indices are now stale. We MUST force a re-render to align them.
+                if (structureChanged) {
+                    this.RUNTIME.suppressChatRender = false;
+                    this.renderChat(); // Force update to fix edit buttons
+                }
+
                 // FIX: Final Scroll Logic
-                // block: 'start' aligns the TOP of the bubble (Character Name) with the TOP of the chat window.
-                if (bubbleEl) {
+                if (bubbleEl && !structureChanged) {
+                    // Only do smooth scroll if we didn't just blow away the DOM with renderChat
                     window.requestAnimationFrame(() => {
                         bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        // Release suppression AFTER the scroll animation frame request
                         setTimeout(() => {
                             this.RUNTIME.suppressChatRender = false;
                         }, 100);
                     });
+                } else if (structureChanged) {
+                    // If we re-rendered, just ensure we are at the bottom or near the new content
+                    const chatWindow = document.getElementById('chat-window');
+                    if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
                 } else {
                     this.RUNTIME.suppressChatRender = false;
                 }
@@ -4538,6 +4667,22 @@ applyStyling() {
         root.style.setProperty('--md-bold-font', state.md_bold_font || chatFont);
         root.style.setProperty('--md-italic-font', state.md_italic_font || chatFont);
         root.style.setProperty('--md-quote-font', state.md_quote_font || chatFont);
+		
+		// Smart Quote Logic
+        // If the user is using the default color (#9ca3af), we use the original "Filter" style (inherit + opacity/saturation).
+        // If the user picked a CUSTOM color, we disable the filter so the color appears exactly as chosen.
+        const defaultQuoteColor = '#9ca3af'; 
+        const isDefaultQuote = (state.md_quote_color || defaultQuoteColor).toLowerCase() === defaultQuoteColor.toLowerCase();
+
+        if (isDefaultQuote) {
+             // Restore original cinematic look
+             root.style.setProperty('--active-quote-color', 'inherit');
+             root.style.setProperty('--active-quote-filter', 'saturate(175%) opacity(75%) drop-shadow(1px 1px 5px black)');
+        } else {
+             // Use exact user color with a standard shadow (no opacity/saturation filter)
+             root.style.setProperty('--active-quote-color', state.md_quote_color);
+             root.style.setProperty('--active-quote-filter', 'drop-shadow(1px 1px 2px rgba(0,0,0,0.5))');
+        }
         
         this.renderChat();
     },
@@ -5163,7 +5308,8 @@ renderWorldMapModal() {
         button.title = "Stop Generation";
         button.classList.remove('bg-indigo-600/50', 'hover:bg-indigo-600/80');
         button.classList.add('bg-red-700/60', 'hover:bg-red-700/80');
-        button.innerHTML = DOM.html`<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0h8v8H6V4z" clip-rule="evenodd" /></svg>`.toString();
+        // FIX: Updated Stop Icon (Rounded Square)
+        button.innerHTML = DOM.unsafe(`<svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>`);
         
         setTimeout(() => {
             button.onclick = () => NarrativeController.stopGeneration();
@@ -5177,7 +5323,8 @@ renderWorldMapModal() {
         button.title = "Send / Write for Me";
         button.classList.remove('bg-red-700/60', 'hover:bg-red-700/80');
         button.classList.add('bg-indigo-600/50', 'hover:bg-indigo-600/80');
-        button.innerHTML = DOM.html`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>`.toString();
+        // FIX: Updated Send Icon (Paper Plane)
+        button.innerHTML = DOM.unsafe(`<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`);
     },
 };
 
@@ -5343,12 +5490,17 @@ const AppController = {
      */
     switchSettingsTab(tabName) {
         this.RUNTIME.activeSettingsTab = tabName;
-        const tabs = ['appearance', 'prompt', 'model'];
+        const tabs = ['appearance', 'prompt', 'model', 'personas']; // Updated list
         const container = document.getElementById('settings-content-container');
         const template = document.getElementById(`settings-${tabName}-content`);
         
         if (container && template) {
             container.innerHTML = template.innerHTML;
+            
+            const buildDisplay = document.getElementById('build-info-display');
+            if (buildDisplay && typeof APP_BUILD_TIMESTAMP !== 'undefined') {
+                buildDisplay.textContent = APP_BUILD_TIMESTAMP;
+            }
         }
 
         tabs.forEach(tab => {
@@ -5365,6 +5517,15 @@ const AppController = {
         });
         
         this.bindSettingsListeners();
+        
+        // FIX: Render persona list if that tab is active
+        if (tabName === 'personas') {
+            this.renderUserPersonaList();
+        }
+		// FIX: Render model list if that tab is active
+        if (tabName === 'model') {
+            this.renderSavedOpenRouterModels();
+        }
     },
 
     /**
@@ -5478,8 +5639,13 @@ const AppController = {
 
         // --- Bindings: Prompt Tab ---
         if(document.getElementById('system-prompt-input')) setListener('system-prompt-input', 'system_prompt');
-        if(document.getElementById('event-master-prompt-input')) setListener('event-master-prompt-input', 'event_master_base_prompt');
-        if(document.getElementById('prompt-persona-gen-input')) setListener('prompt-persona-gen-input', 'prompt_persona_gen');
+		if(document.getElementById('event-master-prob-input')) {
+            setListener('event-master-prob-input', 'event_master_probability');
+            // Ensure default display if missing
+            const input = document.getElementById('event-master-prob-input');
+            if (input.value === '' || input.value === undefined) input.value = 10;
+        }
+		if(document.getElementById('prompt-persona-gen-input')) setListener('prompt-persona-gen-input', 'prompt_persona_gen');
         if(document.getElementById('prompt-world-map-gen-input')) setListener('prompt-world-map-gen-input', 'prompt_world_map_gen');
         if(document.getElementById('prompt-location-gen-input')) setListener('prompt-location-gen-input', 'prompt_location_gen');
         if(document.getElementById('prompt-entry-gen-input')) setListener('prompt-entry-gen-input', 'prompt_entry_gen');
@@ -5575,12 +5741,305 @@ const AppController = {
         
         // Re-bind to show/hide correct sections
         this.bindSettingsListeners(); 
+    },
+	
+	// --- User Persona Methods ---
+
+    addUserPersona() {
+        const globalSettings = StateManager.data.globalSettings;
+        if (!globalSettings.userPersonas) globalSettings.userPersonas = [];
+        
+        const newPersona = {
+            id: UTILITY.uuid(),
+            name: "New Persona",
+            short_description: "Brief summary.",
+            description: "Full description.",
+            model_instructions: "Write a response for {character}...",
+            tags: []
+        };
+        
+        globalSettings.userPersonas.push(newPersona);
+        StateManager.saveGlobalSettings();
+        this.RUNTIME.selectedPersonaId = newPersona.id;
+        this.renderUserPersonaList();
+    },
+
+    deleteUserPersona(id) {
+        const globalSettings = StateManager.data.globalSettings;
+        if (!globalSettings.userPersonas) return;
+        
+        if (confirm("Delete this persona?")) {
+            globalSettings.userPersonas = globalSettings.userPersonas.filter(p => p.id !== id);
+            if (this.RUNTIME.selectedPersonaId === id) this.RUNTIME.selectedPersonaId = null;
+            StateManager.saveGlobalSettings();
+            this.renderUserPersonaList();
+        }
+    },
+
+    selectUserPersona(id) {
+        this.RUNTIME.selectedPersonaId = id;
+        this.renderUserPersonaList(); // Update visual selection state
+    },
+
+    updateUserPersonaField(id, field, value) {
+        const globalSettings = StateManager.data.globalSettings;
+        const persona = globalSettings.userPersonas.find(p => p.id === id);
+        if (persona) {
+            if (field === 'tags') {
+                persona.tags = value.split(',').map(t => t.trim()).filter(Boolean);
+            } else {
+                persona[field] = value;
+            }
+            StateManager.saveGlobalSettings();
+            // If name changed, update list
+            if (field === 'name') this.renderUserPersonaList(true); 
+        }
+    },
+
+    renderUserPersonaList(preserveDetails = false) {
+        const globalSettings = StateManager.data.globalSettings;
+        const personas = globalSettings.userPersonas || [];
+        const listContainer = document.getElementById('user-personas-list');
+        
+        listContainer.innerHTML = personas.map(p => `
+            <div onclick="AppController.selectUserPersona('${p.id}')" class="p-3 rounded-lg cursor-pointer ${this.RUNTIME.selectedPersonaId === p.id ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'} mb-1 transition-colors">
+                <h4 class="font-semibold truncate">${p.name}</h4>
+                <p class="text-xs text-gray-300 truncate">${p.short_description}</p>
+            </div>
+        `).join('');
+
+        if (!preserveDetails) this.renderUserPersonaDetails();
+    },
+
+    async renderUserPersonaDetails() {
+        const container = document.getElementById('user-persona-details');
+        const globalSettings = StateManager.data.globalSettings;
+        const persona = (globalSettings.userPersonas || []).find(p => p.id === this.RUNTIME.selectedPersonaId);
+
+        if (!persona) {
+            container.innerHTML = `<div class="text-gray-400 flex items-center justify-center h-full">Select a persona to edit.</div>`;
+            return;
+        }
+
+        // FIX: Hydrate image if missing from cache
+        if (!UIManager.RUNTIME.characterImageCache[persona.id]) {
+            try {
+                const blob = await DBService.getImage(persona.id);
+                if (blob) UIManager.RUNTIME.characterImageCache[persona.id] = URL.createObjectURL(blob);
+            } catch (e) { /* Ignore */ }
+        }
+
+        const imgSrc = UIManager.RUNTIME.characterImageCache[persona.id] || persona.image_url;
+        // Standard placeholder (URL encoded)
+        const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234b5563' opacity='0.25'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+        const displayImage = imgSrc ? imgSrc : placeholder;
+
+        container.innerHTML = `
+            <div class="flex flex-col gap-4">
+                <div class="flex justify-between items-center pb-2 border-b border-gray-700">
+                    <h3 class="text-xl font-bold">Edit Persona</h3>
+                    <div class="flex gap-2">
+                        <button onclick="AppController.applyUserPersonaToCurrentStory('${persona.id}')" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold py-1 px-3 rounded">Add to Roleplay</button>
+                        <button onclick="AppController.deleteUserPersona('${persona.id}')" class="bg-red-900/50 hover:bg-red-700/80 text-red-200 text-sm font-bold py-1 px-3 rounded">Delete</button>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-4">
+                    <div class="w-24 h-32 flex-shrink-0 bg-gray-800 rounded-lg overflow-hidden border border-gray-600 relative group">
+                        <img src="${displayImage}" class="w-full h-full object-cover">
+                        <label class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity text-xs text-white font-bold">
+                            Change
+                            <input type="file" accept="image/*" onchange="AppController.handleUserPersonaImageUpload(event, '${persona.id}')" class="hidden">
+                        </label>
+                    </div>
+                    <div class="flex-grow space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-400 mb-1">Name</label>
+                            <input type="text" value="${persona.name}" oninput="AppController.updateUserPersonaField('${persona.id}', 'name', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-400 mb-1">Short Description</label>
+                            <input type="text" value="${persona.short_description}" oninput="AppController.updateUserPersonaField('${persona.id}', 'short_description', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded focus:border-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-400 mb-1">Full Description</label>
+                    <textarea oninput="AppController.updateUserPersonaField('${persona.id}', 'description', this.value)" class="w-full h-32 bg-black/30 border-gray-600 p-2 rounded resize-y">${persona.description}</textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-400 mb-1">Model Instructions</label>
+                    <textarea oninput="AppController.updateUserPersonaField('${persona.id}', 'model_instructions', this.value)" class="w-full h-24 bg-black/30 border-gray-600 p-2 rounded resize-y">${persona.model_instructions}</textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-400 mb-1">Tags (comma-separated)</label>
+                    <input type="text" value="${(persona.tags || []).join(', ')}" oninput="AppController.updateUserPersonaField('${persona.id}', 'tags', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded focus:border-indigo-500">
+                </div>
+            </div>
+        `;
+    },
+	
+	async handleUserPersonaImageUpload(event, personaId) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        UIManager.showLoadingSpinner('Saving persona image...');
+        try {
+            const blob = await ImageProcessor.processImageAsBlob(file);
+            await DBService.saveImage(personaId, blob);
+            
+            // Update Cache
+            if (UIManager.RUNTIME.characterImageCache[personaId]) {
+                URL.revokeObjectURL(UIManager.RUNTIME.characterImageCache[personaId]);
+            }
+            UIManager.RUNTIME.characterImageCache[personaId] = URL.createObjectURL(blob);
+            
+            // Update Data Object marker
+            this.updateUserPersonaField(personaId, 'image_url', `local_idb_persona_${personaId}`);
+            
+            // Refresh UI
+            this.renderUserPersonaDetails();
+        } catch (e) {
+            alert("Image upload failed: " + e.message);
+        } finally {
+            UIManager.hideLoadingSpinner();
+        }
+    },
+
+    async applyUserPersonaToCurrentStory(personaId) {
+        const state = ReactiveStore.state;
+        if (!state || !state.characters) {
+            alert("No active story loaded.");
+            return;
+        }
+
+        const globalSettings = StateManager.data.globalSettings;
+        const persona = globalSettings.userPersonas.find(p => p.id === personaId);
+        if (!persona) return;
+
+        if (!confirm(`Add "${persona.name}" as the new User? The current User character will be saved as an inactive NPC.`)) {
+            return;
+        }
+
+        // 1. Demote existing User(s)
+        state.characters.forEach(c => {
+            if (c.is_user) {
+                c.is_user = false;
+                c.is_active = false;
+            }
+        });
+
+        // 2. Create New Character Object
+        const newCharId = UTILITY.uuid();
+        
+        // FIX: Clone Image Logic
+        // If persona has an image in IDB, copy it to the new character ID
+        // This ensures the story character has an independent copy of the image
+        let newImageUrl = "";
+        try {
+            const personaBlob = await DBService.getImage(persona.id);
+            if (personaBlob) {
+                await DBService.saveImage(newCharId, personaBlob);
+                newImageUrl = `local_idb_${newCharId}`;
+                // Pre-cache for immediate display
+                UIManager.RUNTIME.characterImageCache[newCharId] = URL.createObjectURL(personaBlob);
+            }
+        } catch (e) {
+            console.warn("Failed to clone persona image:", e);
+        }
+
+        const newChar = {
+            id: newCharId,
+            name: persona.name,
+            short_description: persona.short_description || "User Persona",
+            description: persona.description || "",
+            model_instructions: persona.model_instructions || `Act as ${persona.name}.`,
+            tags: [...(persona.tags || [])],
+            image_url: newImageUrl, 
+            extra_portraits: [],
+            is_user: true,
+            is_active: true,
+            is_narrator: false,
+            color: { base: '#4b5563', bold: '#e5e7eb' } 
+        };
+
+        // 3. Add to Story
+        state.characters.push(newChar);
+            
+        // 4. Save and Refresh UI
+        await ReactiveStore.forceSave();
+        UIManager.renderCharacters(); 
+        UIManager.updateAICharacterSelector(); 
+        
+        alert(`"${persona.name}" is now the active User.`);
+    },
+	// --- OpenRouter Saved Models Logic ---
+
+    saveOpenRouterModel() {
+        const input = document.getElementById('openrouter-model-input');
+        if (!input) return;
+        
+        const value = input.value.trim();
+        if (!value) return;
+
+        const globalSettings = StateManager.data.globalSettings;
+        if (!globalSettings.savedOpenRouterModels) globalSettings.savedOpenRouterModels = [];
+
+        // Avoid duplicates
+        if (!globalSettings.savedOpenRouterModels.includes(value)) {
+            globalSettings.savedOpenRouterModels.push(value);
+            StateManager.saveGlobalSettings();
+            this.renderSavedOpenRouterModels();
+        }
+    },
+
+    deleteOpenRouterModel(modelName) {
+        const globalSettings = StateManager.data.globalSettings;
+        if (!globalSettings.savedOpenRouterModels) return;
+
+        if (confirm(`Remove "${modelName}" from saved models?`)) {
+            globalSettings.savedOpenRouterModels = globalSettings.savedOpenRouterModels.filter(m => m !== modelName);
+            StateManager.saveGlobalSettings();
+            this.renderSavedOpenRouterModels();
+        }
+    },
+
+    selectOpenRouterModel(modelName) {
+        const input = document.getElementById('openrouter-model-input');
+        if (input) {
+            input.value = modelName;
+            // Manually trigger the input event to update the Global Settings via the listener
+            input.dispatchEvent(new Event('input'));
+        }
+    },
+
+    renderSavedOpenRouterModels() {
+        const container = document.getElementById('openrouter-saved-models-list');
+        if (!container) return;
+
+        const globalSettings = StateManager.data.globalSettings;
+        const models = globalSettings.savedOpenRouterModels || [];
+
+        if (models.length === 0) {
+            container.innerHTML = '<span class="text-xs text-gray-500 italic">No saved models.</span>';
+            return;
+        }
+
+        container.innerHTML = models.map(model => `
+            <div class="inline-flex items-center bg-black/30 border border-gray-600 rounded-lg overflow-hidden">
+                <button onclick="AppController.selectOpenRouterModel('${model}')" class="px-3 py-1 text-xs text-gray-300 hover:text-white hover:bg-white/10 transition-colors truncate max-w-[200px]" title="Use this model">
+                    ${model}
+                </button>
+                <button onclick="AppController.deleteOpenRouterModel('${model}')" class="px-2 py-1 text-xs text-gray-500 hover:text-red-400 hover:bg-black/20 border-l border-gray-600 transition-colors" title="Remove">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        `).join('');
     }
 };
-
-
-
-
 
 
 
@@ -6491,9 +6950,10 @@ const NarrativeController = {
         // 1. Configuration Guard
         if (!state.event_master_base_prompt) return; 
         
-        // 2. Dice Roll: 15% Chance
-        // If the roll fails, we return immediately so the chat continues normally.
-        if (Math.random() > 0.15) return; 
+        // 2. Dice Roll: Configurable Chance
+        // Use user-defined probability, defaulting to 10% if not set
+        const probability = (state.event_master_probability !== undefined) ? state.event_master_probability : 10;
+        if (Math.random() * 100 > probability) return;
         
         // 3. Overlap Guard
         if (state.event_master_prompt) return; 
@@ -6594,6 +7054,8 @@ const NarrativeController = {
      */
     async writeForMe() {
         if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
+		// Clear errors here too
+        this.clearSystemErrors();
         const state = ReactiveStore.state;
         const userChar = state.characters.find(c => c.is_user); 
         if (!userChar) return;
@@ -6788,9 +7250,27 @@ const NarrativeController = {
 
     // --- AI Generation Logic ---
 
+    // --- Helper for Bug 1 ---
+    clearSystemErrors() {
+        const state = ReactiveStore.state;
+        if (state.chat_history.length > 0) {
+            // Filter out system events starting with "AI Error"
+            const cleanHistory = state.chat_history.filter(msg => 
+                !(msg.type === 'system_event' && msg.content.startsWith('AI Error'))
+            );
+            
+            if (cleanHistory.length !== state.chat_history.length) {
+                state.chat_history = cleanHistory;
+            }
+        }
+    },
+
     async triggerAIResponse(charId = null, userMessage = '', isAfterMove = false) {
         const state = ReactiveStore.state;
         
+        // Clear previous error messages before starting new generation
+        this.clearSystemErrors();
+
         // 1. Validation
         const activeAiChars = state.characters.filter(c => !c.is_user && c.is_active);
         if (activeAiChars.length === 0) {
@@ -6822,7 +7302,6 @@ const NarrativeController = {
             let emotion = 'neutral';
             if (userMessage) {
                 this.analyzeTurn(userMessage).then(analysis => {
-                    // If location detected, trigger move (delayed)
                     if (analysis.locationName && typeof WorldController !== 'undefined') {
                         const grid = state.worldMap.grid;
                         const target = grid.find(l => l.name.toLowerCase() === analysis.locationName.toLowerCase());
@@ -6833,6 +7312,14 @@ const NarrativeController = {
                         }
                     }
                 });
+            }
+			// Analyze AI Response for Sentiment (Emotion)
+            // We await this so the portrait is correct when the bubble appears
+            try {
+                const aiAnalysis = await this.analyzeTurn(responseText);
+                emotion = aiAnalysis.emotion;
+            } catch (err) {
+                console.warn("Sentiment analysis failed, defaulting to neutral.");
             }
 
             // 6. Stream Result
@@ -6899,14 +7386,35 @@ const NarrativeController = {
 
     async analyzeTurn(text) {
         const state = ReactiveStore.state;
+        // Get valid locations for the prompt context
         const locations = (state.worldMap?.grid || []).map(l => l.name);
-        if (locations.length === 0) return { emotion: 'neutral', locationName: null };
+        const locationsStr = locations.length > 0 ? locations.join(', ') : "None";
 
         try {
-            const prompt = `Analyze text for implied change of location. Valid locations: ${locations.join(', ')}. Return JSON: {"locationName": "..." or null}`;
-            const res = await APIService.callAI(prompt + `\nTEXT: "${text}"`, true);
-            return JSON.parse(res);
-        } catch {
+            // FIX: Updated prompt to extract both Emotion and Location
+            const prompt = `Analyze the following text.
+            1. Identify the dominant emotion of the speaker. Valid options: 'happy', 'sad', 'angry', 'surprised', 'neutral'.
+            2. Identify if the text implies moving to a new location. Valid options: ${locationsStr}.
+            
+            TEXT: "${text}"
+            
+            Return valid JSON only: { "emotion": "string", "locationName": "string" or null }`;
+
+            const res = await APIService.callAI(prompt, true); // Expect JSON
+            const data = JSON.parse(res);
+            
+            // Validate Emotion (Fallback to neutral)
+            const validEmotions = ['happy', 'sad', 'angry', 'surprised', 'neutral'];
+            const detectedEmotion = (data.emotion && validEmotions.includes(data.emotion.toLowerCase())) 
+                ? data.emotion.toLowerCase() 
+                : 'neutral';
+
+            return { 
+                emotion: detectedEmotion, 
+                locationName: data.locationName || null 
+            };
+        } catch (e) {
+            console.warn("Turn analysis failed:", e);
             return { emotion: 'neutral', locationName: null };
         }
     },
@@ -7236,9 +7744,8 @@ const NarrativeController = {
     checkDynamicEntryTriggers() {
         const state = ReactiveStore.state;
         
-        // FIX 1: Guard against undefined items during the find() operation
         const lastMsg = state.chat_history.slice().reverse().find(m => m && m.type === 'chat');
-        if (!lastMsg) return;
+        if (!lastMsg) return false; // FIX: Return false if no check occurred
         
         const content = lastMsg.content;
         let stateChanged = false;
@@ -7268,8 +7775,6 @@ const NarrativeController = {
 
                 for (let i = state.chat_history.length - 1; i >= searchWindowStart; i--) {
                     const msg = state.chat_history[i];
-                    
-                    // FIX 2: Guard against undefined 'msg' inside the loop
                     if (msg && msg.type === 'lore_reveal' && msg.dynamic_entry_id === entry.id) {
                         foundIndex = i;
                         break;
@@ -7314,6 +7819,9 @@ const NarrativeController = {
         if (stateChanged) {
             UIManager.renderDynamicEntries(); 
         }
+        
+        // Return the boolean so UIManager knows if indices shifted
+        return stateChanged;
     },
 
     
