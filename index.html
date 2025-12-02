@@ -549,8 +549,8 @@
              <!-- Chat Input & Controls -->
              <div id="chat-input-container" class="flex items-start space-x-2 sm:space-x-4" style="padding: 1rem; border-top: 1px solid; border-top-color: color-mix(in srgb, var(--chat-text-color) 50%, transparent);">
                  <textarea id="chat-input" class="flex-grow bg-black/30 border border-gray-800 rounded-lg p-2 color: black" placeholder="Enter your message..." rows="4" style="color: var(--chat-text-color)" ></textarea>
-                 <div class="flex flex-col space-y-2 w-min">
-                     <select id="ai-character-selector" class="bg-black/30 border border-gray-600 rounded-lg p-2 w-0 min-w-full mb-2 truncate"></select>
+                 <div class="flex flex-col space-y-2" style="width: 8.5rem;">
+					<select id="ai-character-selector" class="bg-black/30 border border-gray-600 rounded-lg p-2 w-full mb-2 text-xs truncate"></select>
                      <div class="flex items-center justify-center space-x-1">
                          <button id="primary-action-btn" class="bg-indigo-600/50 hover:bg-indigo-600/80 text-white font-bold p-2 rounded-lg transition-colors" title="Send / Write for Me">
                              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -570,8 +570,8 @@
                          
                          <button id="undo-btn" class="bg-gray-600/40 hover:bg-gray-500/70 text-white font-bold p-2 rounded-lg transition-colors" title="Undo Last Turn">
                              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                                 <path d="M3 3v5h5"></path>
+                                 <path d="M9 14 4 9l5-5"/>
+                                 <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>
                              </svg>
                          </button>
                      </div>
@@ -1062,7 +1062,7 @@
      * Application Build Information
      * Update this variable to change the footer in Appearance Settings.
      */
-    const APP_BUILD_TIMESTAMP = "Version: 2025.11.26 - 9:43 CST";
+    const APP_BUILD_TIMESTAMP = "Version: 2025.12.01 - 22:30 CST";
 	
 	
     /**
@@ -1531,14 +1531,15 @@
             if (!currentState || !currentState.id || !currentState.narrativeId) return;
 
             // 1. Prepare Data
+            // Clone objects to break references (Sanitization)
             const rawCharacters = JSON.parse(JSON.stringify(currentState.characters || []));
             const safeChatHistory = JSON.parse(JSON.stringify(currentState.chat_history || []));
             const safeStaticEntries = JSON.parse(JSON.stringify(currentState.static_entries || []));
             const safeWorldMap = JSON.parse(JSON.stringify(currentState.worldMap || {}));
-            const safeDynamicEntries = JSON.parse(JSON.stringify(currentState.dynamic_entries || [])); // Add dynamic entries to save list
-            const safeScenarios = JSON.parse(JSON.stringify(currentState.scenarios || [])); // Add scenarios
+            const safeDynamicEntries = JSON.parse(JSON.stringify(currentState.dynamic_entries || [])); 
+            const safeScenarios = JSON.parse(JSON.stringify(currentState.scenarios || [])); 
 
-            // Sanitize Characters (remove heavy base64 to keep DB light)
+            // Image Sanitization
             const sanitizedCharacters = rawCharacters.map(c => {
                 let safeImage = c.image_url;
                 if (safeImage && safeImage.length > 500 && !safeImage.startsWith('http') && !safeImage.startsWith('local_')) {
@@ -1566,32 +1567,56 @@
             const currentNarrativeId = currentState.narrativeId;
 
             try {
-                // A. Save the Narrative (Chat Content)
+                // A. Save Narrative
                 await DBService.saveNarrative(narrativeData);
 
-                // B. Sync the Story (Container)
+                // B. Sync Story
                 const freshStory = await DBService.getStory(storyId);
                 
                 if (freshStory) {
                     freshStory.last_modified = new Date().toISOString();
                     
-                    // FIX: Explicitly sync the character list from memory to the DB
+                    // Sync Structures
                     freshStory.characters = sanitizedCharacters;
-
-                    // FIX: Also sync global story settings that might have changed
                     freshStory.dynamic_entries = safeDynamicEntries;
-                    freshStory.scenarios = safeScenarios; // In case scenarios were renamed/deleted
+                    freshStory.scenarios = safeScenarios; 
                     if (currentState.tags) freshStory.tags = currentState.tags;
                     if (currentState.creator_notes) freshStory.creator_notes = currentState.creator_notes;
                     
-                    // Update Prompts/Settings
-                    if (currentState.system_prompt) freshStory.system_prompt = currentState.system_prompt;
-                    if (currentState.backgroundImageURL) freshStory.backgroundImageURL = currentState.backgroundImageURL;
-                    // ... (Include any other settings keys you want synced)
+                    // FIX: Complete List of Settings Keys to Sync
+                    const settingsKeys = [
+                        // Appearance
+                        'font', 'backgroundImageURL', 'bubbleOpacity', 'chatTextColor', 
+                        'backgroundBlur', 'textSize', 'bubbleImageSize', 'characterImageMode',
+                        
+                        // Markdown Colors
+                        'md_h1_color', 'md_h2_color', 'md_h3_color', 
+                        'md_bold_color', 'md_italic_color', 'md_quote_color',
+                        
+                        // Markdown Fonts
+                        'md_h1_font', 'md_h2_font', 'md_h3_font', 
+                        'md_bold_font', 'md_italic_font', 'md_quote_font',
+                        
+                        // Core Prompts
+                        'system_prompt', 
+                        
+                        // Event Master
+                        'event_master_base_prompt', 'event_master_prompt', 'event_master_probability',
+                        
+                        // Generation Prompts
+                        'prompt_persona_gen', 'prompt_world_map_gen', 'prompt_location_gen', 
+                        'prompt_entry_gen', 'prompt_location_memory_gen', 'prompt_story_notes_gen', 'prompt_story_tags_gen'
+                    ];
 
-                    // C. Update the specific Stub for this narrative
+                    settingsKeys.forEach(key => {
+                        // Only overwrite if the current state actually has a value (even if it's an empty string)
+                        if (currentState[key] !== undefined) {
+                            freshStory[key] = currentState[key];
+                        }
+                    });
+
+                    // C. Update Stub
                     if (!freshStory.narratives) freshStory.narratives = [];
-                    
                     const stubIndex = freshStory.narratives.findIndex(n => n.id === currentNarrativeId);
                     if (stubIndex !== -1) {
                         freshStory.narratives[stubIndex].name = currentState.narrativeName;
@@ -1604,8 +1629,9 @@
                         });
                     }
 
-                    // D. Save the reconciled Story
+                    // D. Commit
                     await DBService.saveStory(freshStory);
+                    console.log("Story saved successfully with settings.");
                 }
             } catch (err) {
                 console.error("StoryService: Save Transaction Failed", err);
@@ -2526,8 +2552,18 @@ async exportLibraryAsZip() {
                 system_prompt: replacer(modelInstructions),
                 event_master_prompt: replacer(state.event_master_prompt),
                 static_entries: (state.static_entries || []).map(l => `### ${l.title}\n${replacer(l.content)}`).join('\n\n'),
-                characters: (state.characters || []).filter(c => c.is_active).map(c => `### Character: ${c.name}\n\n${replacer(c.description)}`).join('\n\n'),
-                history: this._getSmartHistorySlice(state.chat_history || [], 10),            
+				// Only include Narrator description if THAT Narrator is the one acting.
+                // Standard characters are always included if active.
+                characters: (state.characters || [])
+                    .filter(c => c.is_active)
+                    .filter(c => {
+                        if (c.is_narrator) {
+                            return c.id === charToActId;
+                        }
+                        return true;
+                    })
+                    .map(c => `### Character: ${c.name}\n\n${replacer(c.description)}`)
+                    .join('\n\n'),                history: this._getSmartHistorySlice(state.chat_history || [], 10),            
                 charToAct: charToAct,
                 isForUser: isForUser,
                 location_context: locationContext,
@@ -2822,6 +2858,51 @@ async exportLibraryAsZip() {
             const storyExport = JSON.parse(JSON.stringify(story));
             return new Blob([JSON.stringify(storyExport, null, 2)], { type: 'application/json' });
         },
+		
+		_ensureCharactersExist(story, chatHistory) {
+            const registeredIds = new Set(story.characters.map(c => c.id));
+            const activeIds = new Set(story.characters.filter(c => c.is_active).map(c => c.id));
+            
+            // Map names to IDs for existing chars to avoid duplicates if ID is missing but name matches
+            const nameToId = {};
+            story.characters.forEach(c => nameToId[c.name] = c.id);
+
+            chatHistory.forEach(msg => {
+                if (msg.type === 'chat' && !registeredIds.has(msg.character_id)) {
+                    // We found a message with an ID that isn't in the roster.
+                    // This is a "Ghost". We must manifest a body for it.
+                    
+                    // 1. Check if we can recover it by name (common in V2 imports)
+                    // (Assuming content might have name prefix, or we just create a generic one)
+                    // Since V2/BYAF often don't give us the ID in the message, we might have generated a random UUID 
+                    // for the message that has no matching char. 
+                    
+                    // Actually, for V2/BYAF, the previous logic often maps names to IDs. 
+                    // If the mapping failed, we need a fallback.
+                    
+                    const ghostChar = {
+                        id: msg.character_id, // Use the ID the message is already pointing to
+                        name: msg.name || "Unknown Speaker", // Fallback name
+                        description: "Imported from group chat history.",
+                        short_description: "Imported.",
+                        model_instructions: "Act as this character.",
+                        tags: ["imported"],
+                        image_url: "",
+                        extra_portraits: [],
+                        is_user: false,
+                        is_active: true, // Keep active so they show up
+                        is_narrator: false,
+                        color: { base: '#475569', bold: '#94a3b8' } // Slate
+                    };
+                    
+                    story.characters.push(ghostChar);
+                    registeredIds.add(ghostChar.id);
+                    activeIds.add(ghostChar.id);
+                }
+            });
+            
+            return Array.from(activeIds);
+        },
 
         async exportStoryAsV2(story, narrative, primaryCharId) {
             const primaryChar = story.characters.find(c => c.id === primaryCharId);
@@ -2890,6 +2971,16 @@ async exportLibraryAsZip() {
             charFolder.file("character.json", JSON.stringify(byafArchiveData.character, null, 2));
             if (imageBlob && imageFilename) charFolder.file(`images/${imageFilename}`, imageBlob);
             zip.file(`scenarios/scenario1.json`, JSON.stringify(byafArchiveData.scenario, null, 2));
+            // FIX: Add Background Image to Zip (BYAF Only)
+            if (story.backgroundImageURL === 'local_idb_background') {
+                try {
+                    const bgBlob = await DBService.getImage(`bg_${story.id}`);
+                    if (bgBlob) {
+                        zip.file("images/story_background.png", bgBlob);
+                    }
+                } catch (e) { console.warn("Failed to add background to BYAF:", e); }
+            }
+
             return zip.generateAsync({ type: "blob" });
         },
 
@@ -2897,14 +2988,55 @@ async exportLibraryAsZip() {
             const jsonString = await file.text();
             const story = JSON.parse(jsonString);
             if (!story.id || !story.name || !story.characters) throw new Error("Invalid Ellipsis JSON file.");
+            
             story.id = UTILITY.uuid();
-            (story.characters || []).forEach(c => c.id = UTILITY.uuid());
-            (story.scenarios || []).forEach(s => s.id = UTILITY.uuid());
-            (story.narratives || []).forEach(n => {
-                n.id = UTILITY.uuid();
-                (n.state?.static_entries || []).forEach(e => e.id = UTILITY.uuid());
+            
+            // FIX: Remap Character IDs
+            const charIdMap = {};
+            (story.characters || []).forEach(c => {
+                const oldId = c.id;
+                const newId = UTILITY.uuid();
+                c.id = newId;
+                charIdMap[oldId] = newId;
             });
+
+            // Helper to remap IDs in history
+            const remapHistory = (history) => {
+                if (!Array.isArray(history)) return;
+                history.forEach(msg => {
+                    if (msg.character_id && charIdMap[msg.character_id]) {
+                        msg.character_id = charIdMap[msg.character_id];
+                    }
+                });
+            };
+
+            // FIX: Update Scenarios (Example Dialogue references old IDs)
+            (story.scenarios || []).forEach(s => {
+                s.id = UTILITY.uuid();
+                remapHistory(s.example_dialogue);
+                if (s.active_character_ids) {
+                    s.active_character_ids = (s.active_character_ids || []).map(id => charIdMap[id] || id);
+                }
+            });
+
+            // FIX: Handle both Stubs (Legacy) and Full Narratives (New Export)
+            // We need to prepare them for the DB
+            story.narratives.forEach(n => {
+                // Ensure ID is unique/remapped (already handled by ID remapping logic previously applied)
+                
+                // If this is a FULL narrative (has state), we must allow it to be passed 
+                // back to the controller to be saved to the 'narratives' store.
+                // However, LibraryController.handleFileUpload expects the story object 
+                // to contain the full narratives in the .narratives array so it can loop and save them.
+                
+                // Ensure IDs are consistent
+                if (n.state?.static_entries) {
+                    n.state.static_entries.forEach(e => e.id = UTILITY.uuid());
+                }
+            });
+            
             (story.dynamic_entries || []).forEach(e => e.id = UTILITY.uuid());
+            
             return { story, imageBlob: null };
         },
 
@@ -2934,6 +3066,16 @@ async exportLibraryAsZip() {
                 const imageFileBlob = await imageFile.async('blob');
                 imageBlob = await ImageProcessor.processImageAsBlob(imageFileBlob);
             }
+			// FIX: Check for Background Image (BYAF Only)
+            let backgroundImageBlob = null;
+            const bgFile = zip.file("images/story_background.png");
+            if (bgFile) {
+                try {
+                    const bgData = await bgFile.async('blob');
+                    backgroundImageBlob = await ImageProcessor.processImageAsBlob(bgData);
+                } catch (e) { console.warn("Failed to extract BYAF background:", e); }
+            }
+			
             return { story: this._convertBYAFtoEllipsis(byafData), imageBlob };
         },
 
@@ -2942,13 +3084,14 @@ async exportLibraryAsZip() {
             const story = this._createEmptyEllipsisStory();
             story.name = character.displayName || character.name || "Imported Character";
             story.tags = character.tags || [];
-            const userChar = { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', tags:[], is_narrator: false };
+            
+            const userChar = { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "User.", model_instructions: "Act as User.", is_user: true, is_active: true, image_url: '', tags:[], is_narrator: false };
             const aiChar = {
                 id: UTILITY.uuid(),
                 name: character.displayName || character.name,
                 description: character.persona || "",
                 short_description: (character.persona || "").split('.')[0] + '.',
-                model_instructions: scenario.formattingInstructions || "Act as {character}. Be descriptive and engaging.",
+                model_instructions: scenario.formattingInstructions || "Act as {character}.",
                 image_url: '',
                 extra_portraits: [],
                 tags: character.tags || [],
@@ -2956,62 +3099,102 @@ async exportLibraryAsZip() {
                 is_active: true,
                 is_narrator: false
             };
+            
             story.characters = [userChar, aiChar];
-            const activeIDs = [userChar.id, aiChar.id];
-            if (character.loreItems) {
-                story.dynamic_entries = character.loreItems.map(item => ({
-                    id: UTILITY.uuid(),
-                    title: item.key || "Imported Lore",
-                    triggers: item.key || "",
-                    content_fields: [item.value || ""],
-                    current_index: 0,
-                    triggered_at_turn: null
-                }));
-            }
-            const exampleDialogue = [];
-            if (scenario.exampleMessages && scenario.exampleMessages.length > 0) {
-                const charNameIdMap = { '#{character}:': aiChar.id, '#{user}:': userChar.id };
-                const regex = /(#\{(?:character|user)\}:)([\s\S]*?)(?=#\{|$)/g;
-                scenario.exampleMessages.forEach(msg => {
-                    const exampleText = msg.text || "";
-                    for (const match of exampleText.matchAll(regex)) {
-                        const speakerPrefix = match[1];
-                        const messageContent = match[2].trim();
-                        const speakerId = charNameIdMap[speakerPrefix];
-                        if (speakerId && messageContent) {
-                            exampleDialogue.push({
-                                character_id: speakerId,
-                                content: messageContent,
-                                type: 'chat',
-                                emotion: 'neutral',
-                                timestamp: new Date().toISOString(),
-                                isHidden: true
-                            });
+            const nameToId = { 
+                'user': userChar.id, 
+                'character': aiChar.id,
+                [userChar.name.toLowerCase()]: userChar.id,
+                [aiChar.name.toLowerCase()]: aiChar.id
+            };
+
+            // Helper to get or create character ID for a name
+            const resolveCharacter = (name) => {
+                const lower = name.toLowerCase();
+                if (nameToId[lower]) return nameToId[lower];
+                
+                // Create Ghost
+                const newId = UTILITY.uuid();
+                const newChar = {
+                    id: newId, name: name, description: "Imported character.", short_description: "Imported.",
+                    model_instructions: `Act as ${name}.`, image_url: '', tags: [], is_user: false, is_active: true, is_narrator: false
+                };
+                story.characters.push(newChar);
+                nameToId[lower] = newId;
+                return newId;
+            };
+
+            // Parse Chat History / Examples
+            const parseMessages = (msgs, isHidden) => {
+                const output = [];
+                if (!msgs) return output;
+                
+                // BYAF/SillyTavern text format often is "Name: Message" or just Message
+                // If it's structured data (BYAF), it might have characterID or name fields?
+                // Standard BYAF scenario.exampleMessages is array of { text: "..." }
+                
+                msgs.forEach(msg => {
+                    let content = msg.text || "";
+                    let charId = aiChar.id; // Default to main char
+                    
+                    // Regex for "Name: Content" patterns common in logs
+                    // We look for the start of the string
+                    const match = content.match(/^(.+?):/);
+                    if (match) {
+                        const name = match[1].trim();
+                        // Special BYAF placeholders
+                        if (name === '#{user}' || name === '{{user}}') charId = userChar.id;
+                        else if (name === '#{character}' || name === '{{char}}') charId = aiChar.id;
+                        else {
+                            // It's a named speaker (e.g. "Alice: Hello")
+                            charId = resolveCharacter(name);
                         }
+                        // Strip the prefix for clean display
+                        content = content.substring(match[0].length).trim();
                     }
+                    
+                    output.push({
+                        character_id: charId,
+                        content: content,
+                        type: 'chat',
+                        emotion: 'neutral',
+                        timestamp: new Date().toISOString(),
+                        isHidden: isHidden
+                    });
                 });
-            }
+                return output;
+            };
+
+            const exampleDialogue = parseMessages(scenario.exampleMessages, true);
+            
+            // Static Entries
             const staticEntries = [];
             if (scenario.narrative) {
                 staticEntries.push({ id: UTILITY.uuid(), title: "Starting Scenario", content: scenario.narrative });
             }
+
+            // Scenarios
+            const activeIDs = story.characters.map(c => c.id);
             const firstMes = (scenario.firstMessages && scenario.firstMessages[0]?.text) || `The story of ${aiChar.name} begins.`;
-            const newScenario = { 
+            
+            story.scenarios.push({ 
                 id: UTILITY.uuid(), 
                 name: "Imported Start", 
                 message: firstMes,
                 active_character_ids: activeIDs,
-                dynamic_entries: JSON.parse(JSON.stringify(story.dynamic_entries)),
-                example_dialogue: JSON.parse(JSON.stringify(exampleDialogue)),
+                dynamic_entries: [], // (Populate from loreItems if present)
+                example_dialogue: exampleDialogue,
                 static_entries: staticEntries,
                 worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] },
                 prompts: UTILITY.getDefaultSystemPrompts() 
-            };
-            story.scenarios.push(newScenario);
+            });
+
+            // Narrative
             const narrative = this._createEmptyEllipsisNarrative("Imported Chat");
             narrative.active_character_ids = activeIDs;
             narrative.state.static_entries = JSON.parse(JSON.stringify(staticEntries));
-            if (exampleDialogue.length > 0) narrative.state.chat_history.push(...JSON.parse(JSON.stringify(exampleDialogue)));
+            narrative.state.chat_history.push(...exampleDialogue);
+            
             if (firstMes) {
                 narrative.state.chat_history.push({
                     character_id: aiChar.id,
@@ -3023,6 +3206,19 @@ async exportLibraryAsZip() {
                 });
                 narrative.state.messageCounter = 1;
             }
+            
+            // Lore Items (Dynamic Entries)
+            if (character.loreItems) {
+                story.dynamic_entries = character.loreItems.map(item => ({
+                    id: UTILITY.uuid(),
+                    title: item.key || "Lore",
+                    triggers: item.key || "",
+                    content_fields: [item.value || ""],
+                    current_index: 0,
+                    triggered_at_turn: null
+                }));
+            }
+
             story.narratives.push(narrative);
             return story;
         },
@@ -3527,32 +3723,44 @@ async exportLibraryAsZip() {
  * =================================================================================================
  */
 const UIComponents = {
-    /**
+	/**
      * Renders a single character card for the roster.
      */
-
 	CharacterTile(char) {
         const tagsHTML = (char.tags || []).map(tag => DOM.html`<span class="bg-indigo-500/50 text-indigo-200 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${tag}</span>`);
         const visualStyle = char.is_active ? "" : "opacity: 0.5; filter: grayscale(80%);";
+        
+        // FIX: Role-based Border Logic
+        let roleBorderClass = 'border-gray-600'; // Default NPC (Subtle)
+        let roleBadge = '';
+
+        if (char.is_user) {
+            roleBorderClass = 'border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.3)]';
+            roleBadge = DOM.unsafe('<div class="absolute top-2 left-2 bg-indigo-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">User</div>');
+        } else if (char.is_narrator) {
+            roleBorderClass = 'border-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.3)]';
+            roleBadge = DOM.unsafe('<div class="absolute top-2 left-2 bg-teal-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Narrator</div>');
+        }
+
         const activeBadge = char.is_active ? "" : DOM.unsafe('<div class="absolute top-2 right-2 bg-black/60 text-gray-300 text-xs px-2 py-1 rounded">Inactive</div>');
         
-        // Use URL-Encoded SVG instead of Base64 to prevent ERR_INVALID_URL
-        // This is a standard gray silhouette icon.
-		const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234b5563' opacity='0.25'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";        
+        // Standard gray silhouette icon (URL-Encoded SVG)
+        const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234b5563' opacity='0.25'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+        
         const hasImage = UIManager.RUNTIME.characterImageCache[char.id] || (char.image_url && !char.image_url.startsWith('local_'));
         
-        // Determine URL and escape single quotes to prevent CSS breakage
         let rawUrl = hasImage ? (UIManager.RUNTIME.characterImageCache[char.id] || char.image_url) : placeholder;
         if (rawUrl) rawUrl = rawUrl.replace(/'/g, "%27"); 
 
         const bgImage = `url('${rawUrl}')`;
-        const bgSize = hasImage ? 'cover' : 'cover';
+        const bgSize = 'cover'; 
         const bgRepeat = 'no-repeat';
 
         return DOM.html`
             <div data-action="open-character-detail" data-id="${char.id}" 
-                 class="char-roster-btn bg-gray-800" 
-                 style="background-image: ${DOM.unsafe(bgImage)}; background-size: ${bgSize}; background-repeat: ${bgRepeat}; ${DOM.unsafe(visualStyle)}">
+                 class="char-roster-btn bg-gray-800 ${roleBorderClass}" 
+                 style="background-image: ${DOM.unsafe(bgImage)}; background-size: ${bgSize}; background-repeat: ${bgRepeat}; ${DOM.unsafe(visualStyle)}; border-width: 2px;">
+                ${roleBadge}
                 ${activeBadge}
                 <div class="char-roster-content text-white">
                     <h3 class="font-bold text-lg truncate">${char.name}</h3>
@@ -3591,19 +3799,23 @@ const UIComponents = {
         let characterNameColor = '';
         const imgSrc = UIManager.getPortraitSrc(character, msg.emotion);
         
+        // FIX: Image Click Action (View Fullscreen)
         if (state.characterImageMode === 'bubble' && imgSrc) {
-            contentHTML = DOM.html`<img src="${imgSrc}" class="bubble-char-image">${contentHTML}`;
+            contentHTML = DOM.html`
+                <img src="${imgSrc}" 
+                     class="bubble-char-image cursor-pointer hover:opacity-90 transition-opacity" 
+                     data-action="view-chat-image" 
+                     data-src="${imgSrc}" 
+                     title="View Full Size">
+                ${contentHTML}`;
         }
 
-        // FIX: Unified Color Logic. 
-        // Use character's custom color, or fall back to defaults (Gray for User, Slate for AI)
         const defaultColor = character.is_user 
-            ? { base: '#4b5563', bold: '#e5e7eb' } // Gray-600 / Gray-200
-            : { base: '#334155', bold: '#94a3b8' }; // Slate-700 / Slate-400
+            ? { base: '#4b5563', bold: '#e5e7eb' } 
+            : { base: '#334155', bold: '#94a3b8' };
             
         const charColor = character.color || defaultColor;
         
-        // Generate Gradient
         const topColor = UTILITY.hexToRgba(charColor.base, state.bubbleOpacity);
         const bottomColor = UTILITY.hexToRgba(UTILITY.darkenHex(charColor.base, 10), state.bubbleOpacity);
         
@@ -3615,12 +3827,22 @@ const UIComponents = {
         return DOM.html`
             <div class="chat-bubble-container ${msg.isNew ? 'new-message' : ''}" data-message-index="${index}">
                 <div class="bubble-header">
-                     <p class="font-bold text-sm" ${DOM.unsafe(characterNameColor)}>${character.name}</p>
+                     <p class="font-bold text-sm cursor-pointer hover:underline decoration-dotted underline-offset-4" 
+                        ${DOM.unsafe(characterNameColor)}
+                        data-action="open-character-detail" 
+                        data-id="${character.id}"
+                        title="Open Character Details">
+                        ${character.name}
+                     </p>
+                     
                      <span class="timestamp text-xs text-gray-500">${timestamp}</span>
+                     
                      <div class="action-btn-group flex ml-2 space-x-4">
-                        <button data-action="chat-copy" data-index="${index}" class="text-gray-400 hover:text-white" title="Copy"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
+                        <button data-action="create-static-from-message" data-index="${index}" class="text-gray-400 hover:text-emerald-300" title="Create Static Memory"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></button>
+                        
                         <button data-action="chat-edit" data-index="${index}" class="text-gray-400 hover:text-white" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-                        <button data-action="chat-delete" data-index="${index}" class="text-gray-400 hover:text-white" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                        
+                        <button data-action="confirm-delete-message" data-index="${index}" class="text-gray-400 hover:text-red-400" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                     </div>
                 </div>
                 <div class="bubble-body rounded-lg px-3 py-2" style="${DOM.unsafe(bubbleStyle)}">
@@ -3772,6 +3994,53 @@ const UIManager = {
     getAIGenIcon() {
         return DOM.unsafe(`<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 3.5a1.5 1.5 0 011.5 1.5V6a1.5 1.5 0 01-3 0V5A1.5 1.5 0 0110 3.5zM5.429 7.429a1.5 1.5 0 012.121 0l1.061 1.061a1.5 1.5 0 01-2.121 2.121L5.429 9.55a1.5 1.5 0 010-2.121zM14.571 7.429a1.5 1.5 0 010 2.121l-1.061 1.061a1.5 1.5 0 01-2.121-2.121l1.061-1.061a1.5 1.5 0 012.121 0zM10 16.5a1.5 1.5 0 01-1.5-1.5V14a1.5 1.5 0 013 0v1a1.5 1.5 0 01-1.5 1.5z"></path></svg>`);
     },
+	
+	viewChatImage(src) {
+        // Reuse the lightbox modal structure but override the navigation
+        const imgEl = document.getElementById('lightbox-image');
+        const modal = document.getElementById('lightbox-modal');
+        const prevBtn = modal.querySelector('button[data-action="lightbox-prev"]');
+        const nextBtn = modal.querySelector('button[data-action="lightbox-next"]');
+        const capEl = document.getElementById('lightbox-caption');
+
+        if (imgEl) imgEl.src = src;
+        if (capEl) capEl.textContent = ""; // No caption for raw chat images
+        
+        // Hide nav buttons since this is a single image view
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        // Reset specific lightbox state so closing it works cleanly
+        UIManager.RUNTIME.currentLightboxImages = []; 
+    },
+	
+	showDeleteMessageOptions(index) {
+        const modal = document.getElementById('confirmation-modal');
+        const messageEl = document.getElementById('confirmation-modal-message');
+        const footerEl = modal.querySelector('.border-t'); // The footer div containing buttons
+        
+        if (!modal || !messageEl || !footerEl) return;
+
+        messageEl.textContent = "How would you like to delete this message?";
+        
+        // FIX: Inject 3-Button Layout
+        // We use flex-between and spacing to separate the destructive "Delete Forward"
+        footerEl.innerHTML = `
+            <div class="flex justify-between w-full items-center">
+                <button onclick="AppController.closeModal('confirmation-modal')" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg text-sm">Cancel</button>
+                
+                <div class="flex space-x-4">
+                    <button onclick="NarrativeController.executeDelete(${index}, 'single')" class="bg-red-700 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm">Delete This One</button>
+                    <button onclick="NarrativeController.executeDelete(${index}, 'forward')" class="bg-red-900 hover:bg-red-800 text-red-100 font-bold py-2 px-4 rounded-lg text-sm border border-red-500">Delete Forward &rarr;</button>
+                </div>
+            </div>
+        `;
+
+        AppController.openModal('confirmation-modal');
+    },
 
     renderAll() { 
         const state = StateManager.getState();
@@ -3790,10 +4059,24 @@ const UIManager = {
     renderLibraryInterface(filterState = {}) {
         const library = StateManager.getLibrary();
         const container = document.getElementById('library-content-container');
-        const { searchTerm = '', sortBy = 'last_modified', filterTag = '' } = filterState;
+        
+        const searchInput = document.getElementById('lib-search');
+        const sortInput = document.getElementById('lib-sort');
+        const tagInput = document.getElementById('lib-tag');
+        const listContainer = document.getElementById('lib-list');
 
-        const isTallScreen = window.innerHeight > window.innerWidth;
+        // 1. Determine Filter Values
+        let { searchTerm, sortBy, filterTag } = filterState;
 
+        if (searchTerm === undefined && searchInput) searchTerm = searchInput.value;
+        if (sortBy === undefined && sortInput) sortBy = sortInput.value;
+        if (filterTag === undefined && tagInput) filterTag = tagInput.value;
+
+        searchTerm = searchTerm || '';
+        sortBy = sortBy || 'last_modified';
+        filterTag = filterTag || '';
+
+        // 2. Filter & Sort Logic
         let stories = [...library.stories];
         if (searchTerm) {
             const lowerCaseSearch = searchTerm.toLowerCase();
@@ -3814,35 +4097,48 @@ const UIManager = {
             return new Date(b.last_modified) - new Date(a.last_modified);
         });
 
+        // 3. Generate List HTML
+        // This creates a standard string of HTML
+        const storyListHTML = stories.map((story, index) => {
+            const isActive = story.id === library.active_story_id;
+            const separator = index > 0 ? DOM.unsafe('<hr class="border-gray-700 my-2">') : '';
+            return UIComponents.StoryListItem(story, isActive, separator);
+        }).join('');
+
+        // Update Existing Frame (No wrapping needed, direct innerHTML assignment is safe here)
+        if (listContainer && searchInput) {
+            listContainer.innerHTML = storyListHTML;
+            return;
+        }
+
+        // 4. Generate Full Frame (First Render)
+        const isTallScreen = window.innerHeight > window.innerWidth;
         const tagOptions = library.tag_cache.map(tag => DOM.html`<option value="${tag}" ${filterTag === tag ? 'selected':''}>${tag}</option>`);
         
         const controlsHTML = DOM.html`
             <div class="p-6 border-b border-gray-700 space-y-4">
-                <input type="search" placeholder="Search stories..." value="${searchTerm}" oninput="UIManager.renderLibraryInterface({searchTerm: this.value, sortBy: document.getElementById('sort-by').value, filterTag: document.getElementById('filter-by-tag').value})" class="w-full bg-black/30 p-2 rounded-lg border-gray-600">
+                <input id="lib-search" type="search" placeholder="Search stories..." value="${searchTerm}" 
+                    oninput="UIManager.renderLibraryInterface()" 
+                    class="w-full bg-black/30 p-2 rounded-lg border-gray-600">
                 <div class="flex space-x-4">
-                    <select id="sort-by" onchange="UIManager.renderLibraryInterface({searchTerm: document.querySelector('#library-content-container input[type=search]').value, sortBy: this.value, filterTag: document.getElementById('filter-by-tag').value})" class="w-1/2 bg-black/30 p-2 rounded-lg border-gray-600">
+                    <select id="lib-sort" onchange="UIManager.renderLibraryInterface()" class="w-1/2 bg-black/30 p-2 rounded-lg border-gray-600">
                         <option value="last_modified" ${sortBy === 'last_modified' ? 'selected' : ''}>Modified</option>
                         <option value="name" ${sortBy === 'name' ? 'selected' : ''}>Name</option>
                         <option value="created_date" ${sortBy === 'created_date' ? 'selected' : ''}>Created</option>
                     </select>
-                    <select id="filter-by-tag" onchange="UIManager.renderLibraryInterface({searchTerm: document.querySelector('#library-content-container input[type=search]').value, sortBy: document.getElementById('sort-by').value, filterTag: this.value})" class="w-1/2 bg-black/30 p-2 rounded-lg border-gray-600">
+                    <select id="lib-tag" onchange="UIManager.renderLibraryInterface()" class="w-1/2 bg-black/30 p-2 rounded-lg border-gray-600">
                         <option value="">All Tags</option>
                         ${tagOptions}
                     </select>
                 </div>
             </div>`;
 
-        const storyListHTML = stories.map((story, index) => {
-            const isActive = story.id === library.active_story_id;
-            const separator = index > 0 ? DOM.unsafe('<hr class="border-gray-700 my-2">') : '';
-            return UIComponents.StoryListItem(story, isActive, separator);
-        });
-
+        // FIX: Wrap storyListHTML in DOM.unsafe() so the sanitizer treats it as HTML, not text
         if (isTallScreen) {
-             container.innerHTML = DOM.html`<div class="flex flex-col flex-grow min-h-0">${controlsHTML}<div class="p-6 overflow-y-auto">${storyListHTML}</div></div>`.toString();
+             container.innerHTML = DOM.html`<div class="flex flex-col flex-grow min-h-0">${controlsHTML}<div id="lib-list" class="p-6 overflow-y-auto">${DOM.unsafe(storyListHTML)}</div></div>`.toString();
         } else {
             container.innerHTML = DOM.html`
-                <div class="w-[450px] flex-shrink-0 border-r border-gray-700 flex flex-col">${controlsHTML}<div class="p-6 overflow-y-auto flex-grow">${storyListHTML}</div></div>
+                <div class="w-[450px] flex-shrink-0 border-r border-gray-700 flex flex-col">${controlsHTML}<div id="lib-list" class="p-6 overflow-y-auto flex-grow">${DOM.unsafe(storyListHTML)}</div></div>
                 <div id="story-details-content-desktop" class="flex-grow p-6 flex text-gray-500"><div class="w-full h-full flex items-center justify-center">Select a story to see details...</div></div>
             `.toString();
         }
@@ -4176,7 +4472,12 @@ renderStaticEntries() {
         if (entry) { 
             container.innerHTML = DOM.html`
             <div class="flex flex-col h-full">
-                <input type="text" value="${entry.title}" oninput="WorldController.updateStaticEntryField('${entry.id}', 'title', this.value)" onblur="UIManager.renderStaticEntries()" class="text-xl font-bold bg-black/30 p-2 w-full mb-4 flex-shrink-0 rounded">
+                <div class="flex justify-between items-center mb-4">
+                    <input type="text" value="${entry.title}" oninput="WorldController.updateStaticEntryField('${entry.id}', 'title', this.value)" onblur="UIManager.renderStaticEntries()" class="text-xl font-bold bg-black/30 p-2 flex-grow rounded mr-2">
+                    <button onclick="WorldController.convertStaticToDynamic('${entry.id}')" class="text-xs bg-indigo-600/80 hover:bg-indigo-500 text-white font-bold py-2 px-3 rounded flex-shrink-0" title="Convert to Dynamic Entry">
+                        To Dynamic &rarr;
+                    </button>
+                </div>
                 <div class="relative flex-grow">
                     <textarea oninput="WorldController.updateStaticEntryField('${entry.id}', 'content', this.value)" class="w-full h-full bg-black/30 p-4 resize-none rounded-md">${entry.content}</textarea>
                     <button data-action="gen-static-ai" data-id="${entry.id}" class="absolute top-2 right-2 text-gray-500 hover:text-indigo-400 transition-colors" title="Generate with AI">${this.getAIGenIcon()}</button>
@@ -4579,13 +4880,14 @@ renderStaticEntries() {
         if (el) el.remove(); 
     },
     
-applyStyling() { 
+	applyStyling() { 
         const state = StateManager.getState();
         const backgroundElement = document.getElementById('global-background');
         
         // 1. Handle Background Image Logic
         let backgroundUrl = ''; 
 
+        // Priority 1: Location Image (World Map)
         if (state.worldMap && state.worldMap.grid.length > 0) {
             const currentLoc = state.worldMap.grid.find(loc => loc.coords.x === state.worldMap.currentLocation.x && loc.coords.y === state.worldMap.currentLocation.y);
             if (currentLoc) {
@@ -4601,7 +4903,9 @@ applyStyling() {
             }
         }
         
-        if (!backgroundUrl && UIManager.RUNTIME.globalBackgroundImageCache) {
+        // Priority 2: Story Setting
+        // FIX: Only use the cache if the setting explicitly requests the local IDB image
+        if (!backgroundUrl && state.backgroundImageURL === 'local_idb_background' && UIManager.RUNTIME.globalBackgroundImageCache) {
              backgroundUrl = UIManager.RUNTIME.globalBackgroundImageCache;
         }
         else if (!backgroundUrl && state.backgroundImageURL && state.backgroundImageURL !== 'local_idb_background') {
@@ -5544,26 +5848,46 @@ const AppController = {
         const state = ReactiveStore.state;
         const globalSettings = StateManager.data.globalSettings;
         
-        // Helper: Bind text/password/textarea inputs
+        // FIX: Retrieve defaults to handle uninitialized values (e.g. blank prompts)
+        const defaultPrompts = UTILITY.getDefaultSystemPrompts();
+        const defaultUI = UTILITY.getDefaultUiSettings();
+        const allDefaults = { ...defaultPrompts, ...defaultUI };
+        
         const setListener = (id, key, callback) => { 
             const input = document.getElementById(id); 
             if (!input) return;
             
-            // Determine source (Global vs Story State)
             const isGlobal = this.CONSTANTS.MODEL_SETTING_KEYS.includes(key);
-            input.value = isGlobal 
-                ? (globalSettings[key] !== undefined ? globalSettings[key] : '')
-                : (state[key] !== undefined ? state[key] : '');
+            
+            // FIX: Logic to determine value: Global -> State -> Default -> Empty String
+            let val;
+            if (isGlobal) {
+                val = globalSettings[key];
+            } else {
+                val = state[key];
+                // If state value is missing/undefined, try the default
+                if (val === undefined || val === null) {
+                    val = allDefaults[key];
+                }
+            }
+            
+            input.value = (val !== undefined && val !== null) ? val : '';
                 
             const debouncedCallback = debounce(function(e) { 
-                // Update data
+                // Determine value
+                const val = e.target.value;
+
                 if (isGlobal) {
-                    globalSettings[key] = e.target.value;
+                    globalSettings[key] = val;
                     StateManager.saveGlobalSettings();
                 } else {
-                    state[key] = e.target.value; // Proxy handles save
+                    // Update Proxy State
+                    state[key] = val;
+                    // FIX: Explicitly trigger the save mechanism to be safe
+                    if (typeof ReactiveStore.forceSave === 'function') {
+                        ReactiveStore.forceSave();
+                    }
                 }
-
                 if(callback) callback();
             }.bind(this), 500);
             
@@ -6168,26 +6492,62 @@ const LibraryController = {
             if (!originalStory) throw new Error("Original story not found in database.");
 
             const originalNarrativeStubs = originalStory.narratives || [];
-            // Fetch full narrative objects for duplication
             const originalNarratives = await Promise.all(
                 originalNarrativeStubs.map(stub => DBService.getNarrative(stub.id))
             );
             
-            // 2. Create new story object with new IDs
+            // 2. Create new story object
             const newStory = JSON.parse(JSON.stringify(originalStory));
             newStory.id = UTILITY.uuid();
             newStory.name = `${originalStory.name || 'Untitled Story'} (Copy)`;
             newStory.last_modified = new Date().toISOString();
             newStory.created_date = new Date().toISOString();
+
+            // FIX: Create ID Mapping for Characters
+            // We must track which Old ID maps to which New ID so we can update the chat history
+            const charIdMap = {};
+            (newStory.characters || []).forEach(c => {
+                const oldId = c.id;
+                const newId = UTILITY.uuid();
+                c.id = newId;
+                charIdMap[oldId] = newId;
+            });
+
+            // Helper to remap IDs in a history array
+            const remapHistory = (history) => {
+                if (!Array.isArray(history)) return;
+                history.forEach(msg => {
+                    if (msg.character_id && charIdMap[msg.character_id]) {
+                        msg.character_id = charIdMap[msg.character_id];
+                    }
+                });
+            };
+
+            // Helper to remap active character lists
+            const remapActiveIds = (ids) => {
+                if (!Array.isArray(ids)) return ids;
+                return ids.map(id => charIdMap[id] || id);
+            };
             
-            // 3. Create new narratives with new IDs
+            // 3. Create new narratives with new IDs AND Remapped Character References
             const newNarratives = [];
             const newNarrativeStubs = [];
             
             for (const narrative of originalNarratives) {
-                if (!narrative) continue; // Skip if a narrative was missing
+                if (!narrative) continue; 
                 const newNarrative = JSON.parse(JSON.stringify(narrative));
                 newNarrative.id = UTILITY.uuid();
+                
+                // FIX: Update Chat History to point to new Character IDs
+                if (newNarrative.state && newNarrative.state.chat_history) {
+                    remapHistory(newNarrative.state.chat_history);
+                }
+                
+                // FIX: Update Active Character List
+                if (newNarrative.active_character_ids) {
+                    newNarrative.active_character_ids = remapActiveIds(newNarrative.active_character_ids);
+                }
+
                 newNarratives.push(newNarrative);
                 newNarrativeStubs.push({ id: newNarrative.id, name: newNarrative.name, last_modified: newNarrative.last_modified });
             }
@@ -6195,9 +6555,16 @@ const LibraryController = {
             // 4. Update new story with new narrative stubs
             newStory.narratives = newNarrativeStubs;
             
-            // 5. Create new IDs for scenarios, characters, entries to ensure deep cloning
-            (newStory.scenarios || []).forEach(s => s.id = UTILITY.uuid());
-            (newStory.characters || []).forEach(c => c.id = UTILITY.uuid());
+            // 5. Update Scenarios and other IDs
+            (newStory.scenarios || []).forEach(s => {
+                s.id = UTILITY.uuid();
+                // FIX: Update Scenario Example Dialogue and Active Lists
+                remapHistory(s.example_dialogue);
+                if (s.active_character_ids) {
+                    s.active_character_ids = remapActiveIds(s.active_character_ids);
+                }
+            });
+            
             (newStory.dynamic_entries || []).forEach(e => e.id = UTILITY.uuid());
             
             // 6. Save all new data to DB
@@ -6211,7 +6578,7 @@ const LibraryController = {
             StateManager.updateTagCache();
             
             UIManager.renderLibraryInterface(); 
-            UIManager.openStoryDetails(newStory.id); // Switch view to the new copy
+            UIManager.openStoryDetails(newStory.id); 
 
         } catch (e) {
             console.error("Failed to duplicate story:", e);
@@ -6527,7 +6894,8 @@ const LibraryController = {
         if (!file) return;
         UIManager.showLoadingSpinner('Parsing file...');
         try {
-            const { story: newStory, imageBlob } = await ImportExportService.parseUploadedFile(file);
+            // FIX: Accept backgroundImageBlob from the parser
+            const { story: newStory, imageBlob, backgroundImageBlob } = await ImportExportService.parseUploadedFile(file);
             const library = StateManager.getLibrary();
 
             // Duplicate Name Check
@@ -6565,6 +6933,16 @@ const LibraryController = {
                 UIManager.RUNTIME.characterImageCache = UIManager.RUNTIME.characterImageCache || {};
                 if (UIManager.RUNTIME.characterImageCache[primaryAiChar.id]) URL.revokeObjectURL(UIManager.RUNTIME.characterImageCache[primaryAiChar.id]);
                 UIManager.RUNTIME.characterImageCache[primaryAiChar.id] = URL.createObjectURL(imageBlob);
+            }
+			
+			// FIX: Save Background Image if the parser found one (BYAF or JSON)
+            if (backgroundImageBlob) {
+                const bgKey = `bg_${newStory.id}`;
+                await DBService.saveImage(bgKey, backgroundImageBlob);
+                
+                // Update the story setting to use local background
+                newStory.backgroundImageURL = 'local_idb_background';
+                await DBService.saveStory(newStory);
             }
 
             this.updateSearchIndex(newStory);
@@ -6751,7 +7129,18 @@ const LibraryController = {
             let blob, filename;
             switch(format) {
                 case 'json':
-                    blob = ImportExportService.exportStoryAsJSON(story);
+                    // FIX: Hydrate the narrative stubs with full data
+                    // The story object in memory only has stubs. We need the real data from IDB.
+                    const fullNarratives = await Promise.all(
+                        (story.narratives || []).map(n => DBService.getNarrative(n.id))
+                    );
+                    
+                    // Create a clone to avoid mutating the live object with heavy data
+                    const exportObj = JSON.parse(JSON.stringify(story));
+                    // Replace stubs with full objects (filtering out any nulls from DB errors)
+                    exportObj.narratives = fullNarratives.filter(n => n);
+                    
+                    blob = ImportExportService.exportStoryAsJSON(exportObj);
                     filename = `${story.name}.json`;
                     break;
                 case 'png':
@@ -6818,26 +7207,32 @@ const LibraryController = {
         if (!file) return;
         if (file.size > 5 * 1024 * 1024) { alert("Image too large (>5MB)."); return; }
 
+        const library = StateManager.getLibrary();
+        const storyId = library.active_story_id;
+        if (!storyId) { alert("No active story to save background to."); return; }
+
         UIManager.showLoadingSpinner('Processing background...');
         try {
             const blob = await ImageProcessor.processImageAsBlob(file);
-            const saved = await DBService.saveImage('global_background_image', blob);
+            
+            // Save with Story-Specific Key (bg_UUID)
+            const key = `bg_${storyId}`;
+            const saved = await DBService.saveImage(key, blob);
+            
             if (!saved) throw new Error("Failed to save to database.");
 
             if (UIManager.RUNTIME.globalBackgroundImageCache) URL.revokeObjectURL(UIManager.RUNTIME.globalBackgroundImageCache);
             UIManager.RUNTIME.globalBackgroundImageCache = URL.createObjectURL(blob);
 
-            // If there is an active state, update it reactively
+            // Update State to use the marker
             if (typeof ReactiveStore !== 'undefined' && ReactiveStore.state) {
                 ReactiveStore.state.backgroundImageURL = 'local_idb_background';
-            } else {
-                // Fallback to StateManager global settings update if no active story
-                // (Although background usually saves to Story settings, this implies global usage)
-                // For this implementation, we assume Active Story or Global Settings handle it.
+                // Trigger save to persist the 'local_idb_background' setting to the story object
+                ReactiveStore.forceSave();
             }
             
-            // Force refresh of styling
             UIManager.applyStyling();
+            
             const bgHint = document.getElementById('background-image-hint');
             if (bgHint) bgHint.textContent = 'Current: [Local Image]';
         } catch (e) {
@@ -6849,12 +7244,20 @@ const LibraryController = {
     },
 
     async clearBackgroundImage() {
-        await DBService.deleteImage('global_background_image');
+        const library = StateManager.getLibrary();
+        const storyId = library.active_story_id;
+        
+        // FIX: Delete Story-Specific Key
+        if (storyId) {
+            await DBService.deleteImage(`bg_${storyId}`);
+        }
+        
         if (UIManager.RUNTIME.globalBackgroundImageCache) URL.revokeObjectURL(UIManager.RUNTIME.globalBackgroundImageCache);
         UIManager.RUNTIME.globalBackgroundImageCache = null;
         
         if (typeof ReactiveStore !== 'undefined' && ReactiveStore.state) {
             ReactiveStore.state.backgroundImageURL = '';
+            ReactiveStore.forceSave();
         }
         
         UIManager.applyStyling();
@@ -6951,8 +7354,12 @@ const NarrativeController = {
         if (!state.event_master_base_prompt) return; 
         
         // 2. Dice Roll: Configurable Chance
-        // Use user-defined probability, defaulting to 10% if not set
-        const probability = (state.event_master_probability !== undefined) ? state.event_master_probability : 10;
+        // FIX: Strictly parse probability to prevent NaN causing 100% trigger rate
+        let probability = parseInt(state.event_master_probability);
+        if (isNaN(probability)) probability = 15; // Default if invalid
+        
+        // Logic: If random roll (0-100) is GREATER than probability, we SKIP.
+        // Example: Prob 15. Roll 20. 20 > 15 is True. Return (Skip).
         if (Math.random() * 100 > probability) return;
         
         // 3. Overlap Guard
@@ -7175,6 +7582,32 @@ const NarrativeController = {
             }
             ReactiveStore.state.chat_history.splice(index, 1);
         });
+    },
+	
+	confirmDeleteMessage(index) {
+        UIManager.showDeleteMessageOptions(index);
+    },
+
+    executeDelete(index, mode) {
+        const state = ReactiveStore.state;
+        
+        if (mode === 'single') {
+            const msg = state.chat_history[index];
+            if (msg && msg.type === 'chat') state.messageCounter--;
+            state.chat_history.splice(index, 1);
+        } 
+        else if (mode === 'forward') {
+            // Delete this index and everything after it
+            // Count how many chat messages we are removing to update counter
+            const removed = state.chat_history.slice(index);
+            const chatCount = removed.filter(m => m.type === 'chat').length;
+            state.messageCounter = Math.max(0, state.messageCounter - chatCount);
+            
+            // Perform truncate
+            state.chat_history.splice(index);
+        }
+        
+        AppController.closeModal('confirmation-modal');
     },
 
     undoLastTurn() { 
@@ -8424,6 +8857,98 @@ selectMapTile(x, y) {
             if (!silent) UIManager.hideTypingIndicator(); 
         } 
     },
+	
+	// --- New Features ---
+
+    async createStaticFromMessage(index) {
+        const state = ReactiveStore.state;
+        const msg = state.chat_history[index];
+        if (!msg) return;
+
+        // 1. Show Feedback
+        UIManager.showLoadingSpinner("Extracting knowledge...");
+
+        // Defaults (Fallback)
+        let entryTitle = "Extracted Memory";
+        let entryContent = msg.content;
+
+        try {
+            // 2. Construct Prompt
+            const char = state.characters.find(c => c.id === msg.character_id);
+            const speaker = char ? char.name : "Unknown Character";
+
+            const prompt = `Analyze the following roleplay message from ${speaker}.
+            Extract the most significant static facts, lore, or plot developments into a concise World Info entry.
+            
+            Return valid JSON only:
+            {
+                "title": "A short, descriptive title for this entry (3-6 words)",
+                "content": "A concise, objective summary of the new information found in the message."
+            }
+
+            MESSAGE:
+            "${msg.content}"`;
+
+            // 3. Call AI
+            const response = await APIService.callAI(prompt, true); // true = parses JSON automatically logic in APIService or returns string to parse
+            
+            // Note: APIService.callAI(..., true) returns the JSON string block, we must parse it.
+            const data = JSON.parse(response);
+
+            if (data.title) entryTitle = data.title;
+            if (data.content) entryContent = data.content;
+
+        } catch (e) {
+            console.warn("AI extraction failed, falling back to raw text:", e);
+            // We proceed with the raw text defaults defined above
+        }
+
+        // 4. Create Entry
+        const newEntry = { 
+            id: UTILITY.uuid(), 
+            title: entryTitle, 
+            content: entryContent 
+        };
+        
+        state.static_entries.push(newEntry);
+        state.selectedStaticEntryId = newEntry.id;
+
+        // 5. Update UI
+        UIManager.hideLoadingSpinner();
+        AppController.openModal('knowledge-modal');
+        UIManager.switchKnowledgeTab('static');
+    },
+
+    convertStaticToDynamic(staticId) {
+        const state = ReactiveStore.state;
+        const staticEntry = state.static_entries.find(e => e.id === staticId);
+        
+        if (!staticEntry) return;
+        
+        if (confirm("Convert this to a Dynamic Entry? The Static entry will be removed.")) {
+            // 1. Create Dynamic
+            const newDynamic = {
+                id: UTILITY.uuid(),
+                title: staticEntry.title,
+                triggers: staticEntry.title, // Default trigger to title
+                content_fields: [staticEntry.content],
+                current_index: 0,
+                triggered_at_turn: null
+            };
+            
+            // 2. Add Dynamic, Remove Static
+            state.dynamic_entries.push(newDynamic);
+            state.static_entries = state.static_entries.filter(e => e.id !== staticId);
+            
+            // 3. Switch Views
+            state.selectedDynamicEntryId = newDynamic.id;
+            state.selectedStaticEntryId = null;
+            
+            // 4. Force UI Refresh
+            UIManager.switchKnowledgeTab('dynamic');
+        }
+    },
+	
 };
 
 
@@ -8524,6 +9049,11 @@ const ActionDispatcher = {
         ActionHandler.register('add-local-static-entry', () => WorldController.addLocalStaticEntry());
         ActionHandler.register('select-local-static-entry', (ds) => WorldController.selectLocalStaticEntry(ds.id));
         ActionHandler.register('delete-local-static-entry', (ds) => WorldController.deleteLocalStaticEntry(ds.id));
+		
+		// Narrative Actions
+        ActionHandler.register('view-chat-image', (ds) => UIManager.viewChatImage(ds.src));
+        ActionHandler.register('create-static-from-message', (ds) => WorldController.createStaticFromMessage(parseInt(ds.index)));
+        ActionHandler.register('confirm-delete-message', (ds) => NarrativeController.confirmDeleteMessage(parseInt(ds.index)));
     }
 };
 
@@ -8595,6 +9125,29 @@ const ActionDispatcher = {
                 }
             }
             console.log("Image hydration complete.");
+        }
+		
+		// FIX: Hydrate Scoped Background Image
+        const activeStoryId = localStorage.getItem('active_story_id');
+        if (activeStoryId) {
+            try {
+                // Try fetching story-specific background
+                const bgBlob = await DBService.getImage(`bg_${activeStoryId}`);
+                if (bgBlob) {
+                    UIManager.RUNTIME.globalBackgroundImageCache = URL.createObjectURL(bgBlob);
+                    console.log("Scoped background hydrated.");
+                } else {
+                    // Fallback: Check for legacy global image (migration path)
+                    const globalBlob = await DBService.getImage('global_background_image');
+                    if (globalBlob) {
+                        // We don't auto-migrate here to avoid side effects, but we respect it if it exists
+                        // and the story claims to use it.
+                        UIManager.RUNTIME.globalBackgroundImageCache = URL.createObjectURL(globalBlob);
+                    }
+                }
+            } catch (e) {
+                console.warn("Background hydration failed:", e);
+            }
         }
 
         // 4. Load Active Narrative
@@ -8797,4 +9350,3 @@ const ActionDispatcher = {
     </script>
 </body>
 </html>
-
