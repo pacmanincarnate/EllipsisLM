@@ -3,6 +3,12 @@
 ## Overview
 EllipsisLM is an open-source front-end for AI-powered roleplay. It runs as a single HTML file that can be saved locally and will store your entire library in your web browser’s local cache.
 
+Try it now:
+https://pacmanincarnate.github.io/EllipsisLM/
+
+<img width="1620" height="2160" alt="image" src="https://github.com/user-attachments/assets/ff833d71-573b-4513-a185-b626193c5722" />
+
+
 ## Getting Started
 - Download the index.html file to your computer and open it in any browser.
 - Go to Import/Export to bring in a V2 Tavern Card PNG or BYAF character.
@@ -17,9 +23,6 @@ EllipsisLM is an open-source front-end for AI-powered roleplay. It runs as a sin
   3. Start the local server (click the server icon ⬅️➡️)
   4. **Important:** Enable CORS in LM Studio's server settings (look for "Enable CORS" or "Allow cross-origin requests" checkbox)
   5. In EllipsisLM settings, select "LM Studio" and use the default URL: http://localhost:1234
-
-Try it now:
-https://pacmanincarnate.github.io/EllipsisLM/
 
 ## Backend
 The app supports multiple AI backends:
