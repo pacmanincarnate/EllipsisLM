@@ -71,7 +71,7 @@
         html,
         body {
             height: 100%;
-            height: 100%dvh;
+            height: 100dvh;
             width: 100%;
             overflow: hidden;
             margin: 0;
@@ -229,6 +229,10 @@
             height: 100%;
             justify-content: center;
             align-items: inherit;
+        }
+
+        body.layout-horizontal #title-trigger-area {
+            display: none;
         }
 
         #mobile-story-title-overlay {
@@ -473,7 +477,7 @@
         .action-btn-group {
             opacity: 0;
             /* FIX: Add delay ONLY when hiding (mouse out) so cursor can bridge the gap */
-            transition: opacity 0.2s ease-in-out 0.1s;
+            transition: opacity 0.2s ease-in-out 0.4s;
         }
 
         .chat-bubble-container:hover .action-btn-group {
