@@ -461,7 +461,10 @@
         }
 
         .bubble-body .whitespace-pre-wrap {
-            white-space: normal !important;
+            /* This tells the browser: "If there is a newline character, show it." */
+            white-space: pre-wrap !important;
+            word-wrap: break-word;
+            /* Prevent long words from breaking layout */
         }
 
         .bubble-char-image {
@@ -472,6 +475,29 @@
             margin-right: 1rem;
             margin-bottom: 0.5rem;
             shape-outside: margin-box;
+        }
+
+        /* Restore natural spacing for Markdown elements inside bubbles */
+        .bubble-body p {
+            margin-bottom: 0.0rem;
+            /* Space between paragraphs */
+        }
+
+        .bubble-body p:last-child {
+            margin-bottom: 0;
+            /* No space after the last paragraph */
+        }
+
+        .bubble-body ul,
+        .bubble-body ol {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            /* Indent lists */
+        }
+
+        .bubble-body li {
+            list-style-type: disc;
+            /* Restore bullet points */
         }
 
         .action-btn-group {
@@ -908,25 +934,60 @@
                         class="bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg">Import /
                         Export</button>
 
-                    <button data-action="open-modal" data-target="gen-story-modal"
-                        class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg border border-indigo-400/30 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                        Gen Story
-                    </button>
+                    <div class="relative inline-block text-left">
+                        <button
+                            onclick="event.stopPropagation(); document.getElementById('new-story-dropdown').classList.toggle('hidden')"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                            New
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <!-- Dropdown Menu -->
+                        <div id="new-story-dropdown"
+                            class="hidden absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 z-50 focus:outline-none border border-gray-700">
+                            <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                                <button data-action="open-modal" data-target="gen-story-modal"
+                                    onclick="document.getElementById('new-story-dropdown').classList.add('hidden')"
+                                    class="w-full text-left text-gray-300 hover:bg-gray-700 hover:text-white px-4 py-3 text-sm flex items-center gap-3"
+                                    role="menuitem">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                    <div>
+                                        <span class="font-normal block">Generate Story</span>
+                                    </div>
+                                </button>
+                                <button
+                                    onclick="LibraryController.createNewStory(); document.getElementById('new-story-dropdown').classList.add('hidden')"
+                                    class="w-full text-left text-gray-300 hover:bg-gray-700 hover:text-white px-4 py-3 text-sm flex items-center gap-3"
+                                    role="menuitem">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 13h6m-3-3v6m5 5H6a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2z">
+                                        </path>
+                                    </svg>
+                                    Create Blank Story
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-                    <button onclick="LibraryController.createNewStory()"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">New
-                        Story</button>
+                    <button data-action="close-modal" data-id="story-library-modal" aria-label="Close"
+                        class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
             <div id="library-content-container" class="flex-grow flex min-h-0"></div>
-            <div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end">
-                <button data-action="close-modal" data-id="story-library-modal"
-                    class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Close</button>
-            </div>
+            <!-- Footer Removed -->
         </div>
     </div>
 
@@ -936,9 +997,19 @@
         </div>
         <div
             class="bg-gray-800/90 backdrop-blur-md rounded-lg shadow-2xl w-11/12 max-w-2xl relative flex flex-col p-6 border border-gray-600">
-            <h2
-                class="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
-                AI Story Architect</h2>
+            <div class="flex justify-between items-start mb-4">
+                <h2
+                    class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+                    AI Story Architect</h2>
+                <button data-action="close-modal" data-id="gen-story-modal"
+                    class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors"
+                    title="Close">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
 
             <div id="gen-story-input-view">
                 <label class="block text-sm text-gray-400 mb-2">What kind of story should we tell?</label>
@@ -949,7 +1020,7 @@
                     <button data-action="close-modal" data-id="gen-story-modal"
                         class="px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>
                     <button data-action="gen-story-phase-1"
-                        class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-105">Draft
+                        class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all">Draft
                         Concept</button>
                 </div>
             </div>
@@ -1046,7 +1117,7 @@
                         class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Add
                         Character</button>
                     <button data-action="close-modal" data-id="characters-modal" aria-label="Close"
-                        class="text-gray-400 hover:text-white p-2">
+                        class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12"></path>
@@ -1094,12 +1165,12 @@
             </div>
             <div class="p-4 flex-grow overflow-hidden min-h-0">
                 <div id="knowledge-static-content" class="h-full flex flex-col md:flex-row gap-4">
-                    <div class="w-full md:w-1/3 flex flex-col h-full">
+                    <div class="w-full md:w-1/3 flex flex-col h-1/3 md:h-full">
                         <div id="static-entries-list" class="bg-black/30 rounded-t-lg p-2 overflow-y-auto flex-grow">
                         </div>
                     </div>
                     <div id="static-entry-details"
-                        class="w-full md:w-2/3 bg-black/30 rounded-lg p-4 overflow-y-auto h-full">
+                        class="w-full md:w-2/3 bg-black/30 rounded-lg p-4 overflow-y-auto flex-1 md:flex-none md:h-full">
                         <div id="static-entry-details-content" class="h-full">
                             <div class="text-gray-400 flex items-center justify-center h-full">Select a static
                                 entry.
@@ -1108,12 +1179,12 @@
                     </div>
                 </div>
                 <div id="knowledge-dynamic-content" class="hidden h-full flex flex-col md:flex-row gap-4">
-                    <div class="w-full md:w-1/3 flex flex-col h-full">
+                    <div class="w-full md:w-1/3 flex flex-col h-1/3 md:h-full">
                         <div id="dynamic-entries-list" class="bg-black/30 rounded-t-lg p-2 overflow-y-auto flex-grow">
                         </div>
                     </div>
                     <div id="dynamic-entry-details"
-                        class="w-full md:w-2/3 bg-black/30 rounded-lg p-4 overflow-y-auto h-full">
+                        class="w-full md:w-2/3 bg-black/30 rounded-lg p-4 overflow-y-auto flex-1 md:flex-none md:h-full">
                         <div id="dynamic-entry-details-content" class="h-full">
                             <div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic
                                 entry.
@@ -1151,7 +1222,7 @@
                     Location Details
                 </h3>
                 <button data-action="close-modal" data-id="location-details-modal" aria-label="Close"
-                    class="text-gray-400 hover:text-white p-1">
+                    class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
                         </path>
@@ -1206,7 +1277,7 @@
                     <button id="edit-modal-save-button"
                         class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg text-sm">Save</button>
                     <button data-action="close-modal" data-id="edit-response-modal" aria-label="Close"
-                        class="text-gray-400 hover:text-white p-1">
+                        class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12"></path>
@@ -1226,8 +1297,16 @@
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="view-raw-prompt-modal"></div>
         <div
             class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b border-gray-700">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center">
                 <h2 class="text-2xl font-semibold">Raw Prompt</h2>
+                <button data-action="close-modal" data-id="view-raw-prompt-modal"
+                    class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors"
+                    title="Close">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
             </div>
             <div class="p-6 overflow-y-auto flex-grow bg-gray-900">
                 <pre id="raw-prompt-content" class="text-sm whitespace-pre-wrap"></pre>
@@ -1944,7 +2023,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2025.12.07 - 10:30 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2025.12.12 - 2:30 CST";
 
 
         /**
@@ -3157,13 +3236,6 @@
          * Manages API keys, request formatting, and error handling.
          */
         const APIService = {
-            /**
-             * Dispatches a prompt to the configured AI provider.
-             * @param {string} prompt - The prompt to send.
-             * @param {boolean} [isJson=false] - Whether to expect JSON output.
-             * @param {AbortSignal} [signal=null] - AbortSignal for cancellation.
-             * @returns {Promise<string>} - The AI response.
-             */
             async callAI(prompt, isJson = false, signal = null) {
                 const state = StateManager.getState();
                 let text = "";
@@ -3180,18 +3252,50 @@
 
                     if (isJson) {
                         const jsonMatch = text.match(/\{[\s\S]*\}/);
-                        if (jsonMatch && jsonMatch[0]) {
-                            return jsonMatch[0];
-                        }
+                        if (jsonMatch && jsonMatch[0]) return jsonMatch[0];
                         throw new Error("AI response was not in the expected JSON format.");
                     }
                     return text.trim();
                 } catch (error) {
                     if (error.name === 'AbortError') throw error;
-                    console.error(`AI call failed for provider ${state.apiProvider}:`, error);
+                    console.error(`AI call failed (${state.apiProvider}):`, error);
                     throw error;
                 }
             },
+
+            /**
+             * Fetches available models from the Gemini API.
+             */
+            async getGeminiModels() {
+                // Check Global Settings first, then State
+                const globalKey = StateManager.data.globalSettings.geminiApiKey;
+                const stateKey = StateManager.getState().geminiApiKey;
+                const apiKey = globalKey || stateKey;
+
+                if (!apiKey) {
+                    console.warn("getGeminiModels: No API key found.");
+                    return [];
+                }
+
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                    if (!res.ok) {
+                        console.error("Gemini List Models Failed:", res.status, res.statusText);
+                        return [];
+                    }
+                    const data = await res.json();
+
+                    // Filter for models that support generating content
+                    return (data.models || []).filter(m =>
+                        m.supportedGenerationMethods &&
+                        m.supportedGenerationMethods.includes('generateContent')
+                    );
+                } catch (e) {
+                    console.error("Failed to fetch Gemini models:", e);
+                    return [];
+                }
+            },
+
             /**
              * Calls the Gemini API.
              * @param {string} prompt - The prompt.
@@ -3200,12 +3304,26 @@
              */
             async callGemini(prompt, signal) {
                 const state = StateManager.getState();
-                if (!state.geminiApiKey) throw new Error("Gemini API key not set.");
+                const global = StateManager.data.globalSettings;
+                const apiKey = global.geminiApiKey || state.geminiApiKey;
 
-                // Use selected model or fallback to 1.5 Flash
-                const model = state.geminiModel || 'gemini-1.5-flash';
+                if (!apiKey) throw new Error("Gemini API key not set.");
 
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${state.geminiApiKey}`, {
+                // 1. Resolve Model Name
+                // State might hold "gemini-1.5-flash" OR "models/gemini-1.5-flash".
+                // Global setting might hold the fallback.
+                let rawModel = state.geminiModel || global.geminiModel || 'gemini-1.5-flash';
+
+                // Strip "models/" prefix if present to ensure clean base ID
+                if (rawModel.startsWith('models/')) {
+                    rawModel = rawModel.replace('models/', '');
+                }
+
+                // 2. Construct Endpoint
+                // The correct format is: models/{model_id}:generateContent
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${rawModel}:generateContent?key=${apiKey}`;
+
+                const res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
@@ -3213,11 +3331,16 @@
                 });
 
                 if (!res.ok) {
-                    let errorDetails = `Status: ${res.status} ${res.statusText}.`;
-                    try { errorDetails += ` Message: ${(await res.json()).error.message}`; }
-                    catch (e) { errorDetails += ` Response body: ${await res.text()}`; }
-                    throw new Error(`API Error: ${errorDetails}`);
+                    let errorMsg = `Status ${res.status}`;
+                    try {
+                        const errData = await res.json();
+                        errorMsg += `: ${errData.error.message}`;
+                    } catch (e) {
+                        errorMsg += `: ${await res.text()}`;
+                    }
+                    throw new Error(`Gemini API Error: ${errorMsg}`);
                 }
+
                 const data = await res.json();
                 return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
             },
@@ -5239,6 +5362,17 @@
             /**
                  * Renders a single chat message bubble.
                  */
+            /**
+                         * Renders a single chat message bubble.
+                         */
+            /**
+                         * Renders a single chat message bubble.
+                         * Formatted to support arbitrary newlines via 'pre-wrap'.
+                         */
+            /**
+                         * Renders a single chat message bubble.
+                         * Updated to support arbitrary newlines and remove trailing gaps.
+                         */
             MessageBubble(msg, index, state) {
                 if (msg.type === 'lore_reveal' || msg.isHidden) return '';
 
@@ -5253,18 +5387,26 @@
                 const characterName = character.name;
                 const userName = userChar ? userChar.name : 'You';
 
-                // Content processing
                 const replacer = (text) => text.replace(/{character}/g, characterName).replace(/{user}/g, userName);
-                const processedContent = replacer(msg.content);
+
+                // 1. Trim source to prevent initial whitespace issues
+                let processedContent = replacer(msg.content).trim();
+
+                // 2. FIX: Preserve Arbitrary Newlines (3 or more)
+                // Standard Markdown collapses \n\n\n into a single paragraph break.
+                // We replace 3+ newlines with explicit <br> tags so they render visually.
+                processedContent = processedContent.replace(/\n{3,}/g, (match) => '<br>'.repeat(match.length));
+
                 const styledContent = processedContent.replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`);
-                let contentHTML = DOM.unsafe(marked.parse(styledContent || ''));
+
+                // 3. FIX: Trim output HTML to remove the trailing newline that 'marked' adds
+                let contentHTML = DOM.unsafe(marked.parse(styledContent || '').trim());
 
                 // Styling
                 let bubbleStyle = '';
                 let characterNameColor = '';
                 const imgSrc = UIManager.getPortraitSrc(character, msg.emotion);
 
-                // FIX: Image Click Action (View Fullscreen)
                 if (state.characterImageMode === 'bubble' && imgSrc) {
                     contentHTML = DOM.html`
                 <img src="${imgSrc}" 
@@ -5280,7 +5422,6 @@
                     : { base: '#334155', bold: '#94a3b8' };
 
                 const charColor = character.color || defaultColor;
-
                 const topColor = UTILITY.hexToRgba(charColor.base, state.bubbleOpacity);
                 const bottomColor = UTILITY.hexToRgba(UTILITY.darkenHex(charColor.base, 10), state.bubbleOpacity);
 
@@ -5289,6 +5430,7 @@
 
                 const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
+                // HTML Container (Single line to prevent pre-wrap issues)
                 return DOM.html`
             <div class="chat-bubble-container ${msg.isNew ? 'new-message' : ''}" data-message-index="${index}">
                 <div class="bubble-header">
@@ -5299,23 +5441,14 @@
                         title="Open Character Details">
                         ${character.name}
                      </p>
-                     
                      <span class="timestamp text-xs text-gray-500">${timestamp}</span>
-                     
                      <div class="action-btn-group flex ml-2 space-x-4">
                         <button data-action="create-static-from-message" data-index="${index}" class="text-gray-400 hover:text-emerald-300" title="Create Static Memory"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></button>
-                        
                         <button data-action="chat-edit" data-index="${index}" class="text-gray-400 hover:text-white" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-                        
                         <button data-action="confirm-delete-message" data-index="${index}" class="text-gray-400 hover:text-red-400" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                     </div>
                 </div>
-                <div class="bubble-body rounded-lg px-3 py-2" style="${DOM.unsafe(bubbleStyle)}">
-                    <div id="message-content-${index}" class="whitespace-pre-wrap" style="color: ${state.chatTextColor}; font-family: ${state.font};">
-                        ${contentHTML}
-                    </div>
-                </div>
-            </div>`;
+                <div class="bubble-body rounded-lg px-3 py-2" style="${DOM.unsafe(bubbleStyle)}"><div id="message-content-${index}" class="whitespace-pre-wrap" style="color: ${state.chatTextColor}; font-family: ${state.font};">${contentHTML}</div></div></div>`;
             },
 
             /**
@@ -5474,7 +5607,7 @@
              * @returns {string} - The SVG HTML string.
              */
             getAIGenIcon() {
-                return DOM.unsafe(`<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 3.5a1.5 1.5 0 011.5 1.5V6a1.5 1.5 0 01-3 0V5A1.5 1.5 0 0110 3.5zM5.429 7.429a1.5 1.5 0 012.121 0l1.061 1.061a1.5 1.5 0 01-2.121 2.121L5.429 9.55a1.5 1.5 0 010-2.121zM14.571 7.429a1.5 1.5 0 010 2.121l-1.061 1.061a1.5 1.5 0 01-2.121-2.121l1.061-1.061a1.5 1.5 0 012.121 0zM10 16.5a1.5 1.5 0 01-1.5-1.5V14a1.5 1.5 0 013 0v1a1.5 1.5 0 01-1.5 1.5z"></path></svg>`);
+                return DOM.unsafe(`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>`);
             },
 
             /**
@@ -5697,7 +5830,7 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                     <div class="w-px h-6 bg-gray-600/50 mx-2"></div>
-                    <button data-action="close-modal" data-id="${targetModal}" class="bg-gray-700/50 hover:bg-gray-600/80 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
+                    <button data-action="close-modal" data-id="${targetModal}" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
@@ -6608,6 +6741,48 @@
             },
 
             /**
+             * Renders the modal for editing example dialogue (few-shot examples).
+             */
+            renderExampleDialogueModal() {
+                const state = ReactiveStore.state;
+                const examples = state.chat_history.filter(m => m.isHidden);
+                const container = document.getElementById('example-dialogue-modal-content');
+                if (!container) return;
+
+                const listHTML = examples.map((msg, index) => {
+                    const realIndex = state.chat_history.indexOf(msg);
+                    return DOM.html`
+                <div class="bg-black/30 p-3 rounded mb-2 border border-gray-700">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs text-gray-400 font-bold uppercase">${msg.character_id === state.characters.find(c => c.is_user)?.id ? 'User' : 'AI'}</span>
+                        <div class="flex space-x-2">
+                            <button onclick="UIManager.moveExampleDialogueTurn(${realIndex}, 'up')" class="text-gray-400 hover:text-white">▲</button>
+                            <button onclick="UIManager.moveExampleDialogueTurn(${realIndex}, 'down')" class="text-gray-400 hover:text-white">▼</button>
+                            <button onclick="UIManager.deleteExampleDialogueTurn(${realIndex})" class="text-red-400 hover:text-red-300">×</button>
+                        </div>
+                    </div>
+                    <textarea oninput="UIManager.updateExampleDialogueTurn(${realIndex}, 'content', this.value)" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm h-20 resize-y">${msg.content}</textarea>
+                </div>`;
+                }).join('');
+
+                const modalHTML = DOM.html`
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center">
+                <h2 class="text-2xl font-semibold">Edit Example Dialogue</h2>
+                <div class="flex items-center space-x-2">
+                  <button onclick="UIManager.addExampleDialogueTurn()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold py-1 px-3 rounded">+ Add Turn</button>
+                  <button data-action="close-modal" data-id="example-dialogue-modal" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                  </button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[60vh]">
+                ${listHTML.length ? listHTML : '<p class="text-gray-500 italic">No example dialogue yet.</p>'}
+            </div>
+            `;
+                container.innerHTML = modalHTML.toString();
+            },
+
+            /**
              * Renders the World Map modal content.
              * Handles both "Move" and "World Map" (Edit) tabs.
              */
@@ -6695,22 +6870,21 @@
             </div>`;
                 }
 
-                container.innerHTML = DOM.html`
-            <div class="p-4 flex-shrink-0 flex justify-between items-center border-b border-gray-700">
-                <div class="flex space-x-4">
-                    <button id="world-map-tab-move" data-action="switch-world-map-tab" data-tab="move" class="py-2 px-2 font-semibold text-lg ${activeWorldMapTab === 'move' ? 'border-b-2 border-indigo-500 text-white' : 'border-b-2 border-transparent text-gray-400 hover:text-white'}">Move</button>
-                    <button id="world-map-tab-worldmap" data-action="switch-world-map-tab" data-tab="worldmap" class="py-2 px-2 font-semibold text-lg ${activeWorldMapTab === 'worldmap' ? 'border-b-2 border-indigo-500 text-white' : 'border-b-2 border-transparent text-gray-400 hover:text-white'}">World Map</button>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <button id="generate-world-button" data-action="gen-world-map" class="text-sky-400 hover:text-sky-300" title="Generate World with AI">${this.getAIGenIcon()}</button>
-                    <button data-action="close-modal" data-id="world-map-modal" class="text-gray-400 hover:text-white p-1">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-            </div>
-            <div class="flex-grow overflow-y-auto min-h-0">
-                ${contentHTML}
-            </div>`.toString();
+                const headerHTML = DOM.html`
+                <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-black/40 flex-shrink-0">
+                     <div class="flex space-x-4">
+                        <button onclick="UIManager.switchWorldMapTab('move')" class="pb-2 text-lg font-bold border-b-2 ${activeWorldMapTab === 'move' ? 'border-indigo-500 text-white' : 'border-transparent text-gray-400 hover:text-white'} transition-colors">Move</button>
+                        <button onclick="UIManager.switchWorldMapTab('worldmap')" class="pb-2 text-lg font-bold border-b-2 ${activeWorldMapTab === 'worldmap' ? 'border-indigo-500 text-white' : 'border-transparent text-gray-400 hover:text-white'} transition-colors">Edit Map</button>
+                     </div>
+                     <div class="flex items-center space-x-3">
+                        <button id="generate-world-button" data-action="gen-world-map" class="text-sky-400 hover:text-sky-300 transition-colors" title="Generate World with AI">${this.getAIGenIcon()}</button>
+                        <button data-action="close-modal" data-id="world-map-modal" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                     </div>
+                </div>`;
+
+                container.innerHTML = DOM.html`<div class="flex flex-col h-full">${headerHTML}<div class="flex-grow overflow-y-auto min-h-0">${contentHTML}</div></div>`.toString();
             },
 
             /**
@@ -6914,10 +7088,15 @@
                     </div>
                 </div>
                 
-                <div class="flex bg-black/40 rounded-lg p-1">
-                    <button data-action="set-char-role" data-id="${char.id}" data-role="user" class="px-3 py-1 rounded-md text-sm font-bold transition-colors ${currentRole === 'user' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}">User</button>
-                    <button data-action="set-char-role" data-id="${char.id}" data-role="none" class="px-3 py-1 rounded-md text-sm font-bold transition-colors ${currentRole === 'none' ? 'bg-gray-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}">NPC</button>
-                    <button data-action="set-char-role" data-id="${char.id}" data-role="narrator" class="px-3 py-1 rounded-md text-sm font-bold transition-colors ${currentRole === 'narrator' ? 'bg-teal-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}">Narrator</button>
+                <div class="flex items-center space-x-4">
+                    <div class="flex bg-black/40 rounded-lg p-1">
+                        <button data-action="set-char-role" data-id="${char.id}" data-role="user" class="px-3 py-1 rounded-md text-sm font-bold transition-colors ${currentRole === 'user' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}">User</button>
+                        <button data-action="set-char-role" data-id="${char.id}" data-role="none" class="px-3 py-1 rounded-md text-sm font-bold transition-colors ${currentRole === 'none' ? 'bg-gray-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}">NPC</button>
+                        <button data-action="set-char-role" data-id="${char.id}" data-role="narrator" class="px-3 py-1 rounded-md text-sm font-bold transition-colors ${currentRole === 'narrator' ? 'bg-teal-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}">Narrator</button>
+                    </div>
+                    <button data-action="close-modal" data-id="character-detail-modal" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
                 </div>
             </div>
 
@@ -7028,8 +7207,11 @@
                     .join('');
 
                 const hubHTML = DOM.html`
-            <div class="p-6 border-b border-gray-700">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center">
                 <h2 class="text-2xl font-semibold">Import / Export Hub</h2>
+                <button data-action="close-modal" data-id="io-hub-modal" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
             <div class="p-6 overflow-y-auto">
                 <div class="grid md:grid-cols-2 gap-8">
@@ -7477,13 +7659,12 @@
              */
             switchSettingsTab(tabName) {
                 this.RUNTIME.activeSettingsTab = tabName;
-                const tabs = ['appearance', 'prompt', 'model', 'personas']; // Updated list
+                const tabs = ['appearance', 'prompt', 'model', 'personas'];
                 const container = document.getElementById('settings-content-container');
                 const template = document.getElementById(`settings-${tabName}-content`);
 
                 if (container && template) {
                     container.innerHTML = template.innerHTML;
-
                     const buildDisplay = document.getElementById('build-info-display');
                     if (buildDisplay && typeof APP_BUILD_TIMESTAMP !== 'undefined') {
                         buildDisplay.textContent = APP_BUILD_TIMESTAMP;
@@ -7505,13 +7686,72 @@
 
                 this.bindSettingsListeners();
 
-                // FIX: Render persona list if that tab is active
                 if (tabName === 'personas') {
                     this.renderUserPersonaList();
-                }
-                // FIX: Render model list if that tab is active
-                if (tabName === 'model') {
+                } else if (tabName === 'model') {
                     this.renderSavedOpenRouterModels();
+                    // NEW: Populate Gemini Models dynamically
+                    this.populateGeminiModels();
+                }
+            },
+
+            /**
+             * Fetches available Gemini models and populates the selector.
+             */
+            /**
+            * Fetches available Gemini models and populates the selector.
+            */
+            async populateGeminiModels() {
+                const selector = document.getElementById('gemini-model-selector');
+                const state = StateManager.getState();
+                const globalSettings = StateManager.data.globalSettings;
+
+                // Get Key from global settings primarily
+                const apiKey = globalSettings.geminiApiKey || state.geminiApiKey;
+
+                if (!selector) return;
+
+                // If no key, show placeholder
+                if (!apiKey) {
+                    selector.innerHTML = '<option value="gemini-1.5-flash">Default (Gemini 1.5 Flash)</option>';
+                    return;
+                }
+
+                const currentSelection = globalSettings.geminiModel || state.geminiModel || 'gemini-1.5-flash';
+
+                // Add loading indicator
+                selector.innerHTML = '<option>Fetching available models...</option>';
+
+                try {
+                    const models = await APIService.getGeminiModels();
+
+                    if (models.length > 0) {
+                        selector.innerHTML = ''; // Clear loading
+                        models.forEach(m => {
+                            // m.name usually comes as "models/gemini-pro"
+                            // We will use the simple ID "gemini-pro" as value to keep things clean,
+                            // or keep the full name. APIService.callGemini now handles both.
+                            // Let's store the CLEAN ID.
+                            const simpleId = m.name.replace('models/', '');
+
+                            const opt = document.createElement('option');
+                            opt.value = simpleId;
+                            opt.text = `${m.displayName} (${m.version})`;
+                            selector.appendChild(opt);
+                        });
+                    } else {
+                        // Fallback if list fails but key exists
+                        selector.innerHTML = '<option value="gemini-1.5-flash">Gemini 1.5 Flash (Fallback)</option><option value="gemini-1.5-pro">Gemini 1.5 Pro</option>';
+                    }
+
+                    // Restore selection
+                    // We check against the simple ID (e.g. "gemini-1.5-flash")
+                    let cleanCurrent = currentSelection.replace('models/', '');
+                    selector.value = cleanCurrent;
+
+                } catch (e) {
+                    console.error("Error populating models", e);
+                    selector.innerHTML = '<option value="gemini-1.5-flash">Error loading list (Using Flash)</option>';
                 }
             },
 
@@ -7616,7 +7856,7 @@
                 if (document.getElementById('koboldcpp-dry-slider')) setupSlider('koboldcpp-dry-slider', 'koboldcpp-dry-value', 'koboldcpp_dry');
                 if (document.getElementById('koboldcpp-url-input')) setListener('koboldcpp-url-input', 'koboldcpp_url');
                 if (document.getElementById('lmstudio-url-input')) setListener('lmstudio-url-input', 'lmstudio_url');
-                // Gemini Model Selector
+                // Gemini Model Selector (Just bind listener, population handled in switchSettingsTab)
                 if (document.getElementById('gemini-model-selector')) {
                     setListener('gemini-model-selector', 'geminiModel');
                 }
@@ -10687,15 +10927,23 @@
 
             /**
              * Checks if an AI model is properly configured.
-             * @param {Object} s - The state object.
-             * @returns {boolean} - True if configured.
-             * @private
+             * Checks both local state and global settings.
              */
             _isModelConfigured(s) {
-                return (s.apiProvider === 'gemini' && s.geminiApiKey) ||
-                    (s.apiProvider === 'openrouter' && s.openRouterKey) ||
-                    (s.apiProvider === 'koboldcpp' && s.koboldcpp_url) ||
-                    (s.apiProvider === 'lmstudio' && s.lmstudio_url);
+                const global = StateManager.data.globalSettings;
+
+                if (s.apiProvider === 'gemini') {
+                    return (s.geminiApiKey && s.geminiApiKey.trim() !== '') ||
+                        (global.geminiApiKey && global.geminiApiKey.trim() !== '');
+                }
+                if (s.apiProvider === 'openrouter') {
+                    return (s.openRouterKey && s.openRouterKey.trim() !== '') ||
+                        (global.openRouterKey && global.openRouterKey.trim() !== '');
+                }
+                if (s.apiProvider === 'koboldcpp') return !!s.koboldcpp_url;
+                if (s.apiProvider === 'lmstudio') return !!s.lmstudio_url;
+
+                return false;
             },
 
             /**
@@ -11826,6 +12074,15 @@
                     UIManager.applyStyling();
                     UIManager.renderAll();
                 }
+
+                // FIX: Enable line breaks for single newlines (Chat Style Markdown)
+                if (typeof marked !== 'undefined') {
+                    marked.use({ breaks: true, gfm: true });
+                }
+
+                if ('scrollRestoration' in history) {
+                    history.scrollRestoration = 'manual';
+                }
             },
 
             /**
@@ -11869,10 +12126,21 @@
                 }
 
                 document.addEventListener('click', (e) => {
+                    // Mobile Menu Logic
                     const menu = document.getElementById('mobile-menu');
                     const btn = document.getElementById('hamburger-menu-button');
                     if (menu && !menu.classList.contains('hidden') && !menu.contains(e.target) && (!btn || !btn.contains(e.target))) {
                         AppController.toggleMobileMenu();
+                    }
+
+                    // Story Library Dropdown Logic
+                    const dropdown = document.getElementById('new-story-dropdown');
+                    if (dropdown && !dropdown.classList.contains('hidden')) {
+                        // Only close if we clicked OUTSIDE the dropdown
+                        // (Clicks inside are handled by their own buttons or need to bubble for data-action)
+                        if (!dropdown.contains(e.target)) {
+                            dropdown.classList.add('hidden');
+                        }
                     }
                 });
 
