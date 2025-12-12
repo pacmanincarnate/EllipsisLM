@@ -352,8 +352,6 @@
         #chat-window {
             display: flex;
             flex-direction: column;
-            padding: 1rem;
-
         }
 
         /* Vertical Mode Adjustment: Push top bubble down to prevent overlap with the header */
@@ -712,7 +710,8 @@
 <body data-mode="none" class="bg-gray-900 h-full flex flex-col">
 
     <!-- Background Image Container -->
-    <div id="global-background" class="fixed inset-0 -z-10 bg-gray-900 bg-cover bg-center transition-all duration-500">
+    <div id="global-background"
+        class="fixed inset-0 -z-10 bg-gray-900 bg-[length:auto_100vh] bg-no-repeat bg-center transition-all duration-500">
     </div>
 
     <!-- Main Application Container -->
@@ -746,7 +745,7 @@
 
                 <div class="flex space-x-2">
                     <button data-action="quick-create-character"
-                        class="bg-indigo-600/80 hover:bg-indigo-500/80 text-white font-bold py-2 px-4 rounded-lg"
+                        class="bg-gray-700/40 hover:bg-indigo-500/80 text-white font-bold py-2 px-4 rounded-lg"
                         title="Quickly Generate Character from Chat">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -755,14 +754,14 @@
                         </svg>
                     </button>
                     <button data-action="open-modal" data-target="characters-modal"
-                        class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Characters
+                        class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Characters
 					"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A5.965 5.965 0 0112 13a5.965 5.965 0 013 1.803">
                             </path>
                         </svg></button>
                     <button data-action="open-modal" data-target="world-map-modal"
-                        class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
+                        class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
                         title="World Map"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                             xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -770,7 +769,7 @@
                             </path>
                         </svg></button>
                     <button data-action="open-modal" data-target="knowledge-modal"
-                        class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
+                        class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
                         title="Knowledge"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                             xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -778,7 +777,7 @@
                             </path>
                         </svg></button>
                     <button data-action="check-world-info"
-                        class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
+                        class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
                         title="Update Static Memory"><svg class="w-6 h-6" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -786,7 +785,7 @@
                             </path>
                         </svg></button>
                     <button data-action="open-modal" data-target="settings-modal"
-                        class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
+                        class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
                         title="Settings"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                             xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -816,28 +815,31 @@
                             class="block px-4 py-3 text-white hover:bg-gray-700">Story Library</a>
                         <div class="px-4 py-2 text-gray-400 text-sm font-bold border-t border-gray-700">Narrative
                             Settings</div>
-                        <a href="#" data-action="open-modal" data-target="characters-modal"
-                            onclick="AppController.toggleMobileMenu(); return false;"
-                            class="block px-4 py-3 text-white hover:bg-gray-700">Characters</a>
                         <a href="#" data-action="quick-create-character"
                             onclick="AppController.toggleMobileMenu(); return false;"
-                            class="block px-4 py-3 text-white hover:bg-gray-700">Quick Add Character (AI)</a>
+                            class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Generate Character</a>
+                        <a href="#" data-action="open-modal" data-target="characters-modal"
+                            onclick="AppController.toggleMobileMenu(); return false;"
+                            class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Characters</a>
                         <a href="#" data-action="open-modal" data-target="world-map-modal"
                             onclick="AppController.toggleMobileMenu(); return false;"
-                            class="block px-4 py-3 text-white hover:bg-gray-700">World Map</a>
+                            class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">World Map</a>
                         <a href="#" data-action="open-modal" data-target="knowledge-modal"
                             onclick="AppController.toggleMobileMenu(); return false;"
-                            class="block px-4 py-3 text-white hover:bg-gray-700">Knowledge</a>
+                            class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Knowledge</a>
                         <a href="#" data-action="check-world-info"
                             onclick="AppController.toggleMobileMenu(); return false;"
-                            class="block px-4 py-3 text-white hover:bg-gray-700">Update Static</a>
-                        <div class="px-4 py-2 text-gray-400 text-sm font-bold border-t border-gray-700">Settings</div>
+                            class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Update Static</a>
+                        <div class="px-4 py-2 text-gray-400 text-sm font-bold border-t border-gray-700">Story Settings
+                        </div>
                         <a href="#"
                             onclick="AppController.openSettingsToTab('appearance'); AppController.toggleMobileMenu(); return false;"
                             class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Appearance</a>
                         <a href="#"
                             onclick="AppController.openSettingsToTab('prompt'); AppController.toggleMobileMenu(); return false;"
                             class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Prompt</a>
+                        <div class="px-4 py-2 text-gray-400 text-sm font-bold border-t border-gray-700">Global Settings
+                        </div>
                         <a href="#"
                             onclick="AppController.openSettingsToTab('model'); AppController.toggleMobileMenu(); return false;"
                             class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Model</a>
@@ -2023,7 +2025,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2025.12.12 - 2:30 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2025.12.12 - 5:30 CST";
 
 
         /**
@@ -2280,33 +2282,37 @@
              * Iterates over all items in a store and applies a callback.
              * @param {string} storeName - The name of the object store.
              * @param {Function} callback - The function to call for each item (key, value).
-             * @returns {Promise<boolean>} - True if iteration completed successfully.
+             * @returns {Promise<{success: boolean, processedCount: number, errors: Array<{key: string, error: string}>}>}
              */
             async iterateStore(storeName, callback) {
-                if (!(await this.ensure())) return false;
+                if (!(await this.ensure())) return { success: false, processedCount: 0, errors: [] };
                 return new Promise((resolve, reject) => {
                     try {
                         const tx = this.db.transaction([storeName], "readonly");
                         const store = tx.objectStore(storeName);
                         const req = store.openCursor();
 
+                        let processedCount = 0;
+                        const errors = [];
+
                         req.onsuccess = async (event) => {
                             const cursor = event.target.result;
                             if (cursor) {
-                                // We await the callback to ensure processing finishes before moving to next
                                 try {
                                     await callback(cursor.key, cursor.value);
+                                    processedCount++;
                                     cursor.continue();
                                 } catch (err) {
-                                    console.error("Error in iterateStore callback:", err);
-                                    cursor.continue(); // Try to keep going even if one item fails
+                                    console.error(`Error processing item ${cursor.key} in ${storeName}:`, err);
+                                    errors.push({ key: cursor.key, error: err.message });
+                                    cursor.continue(); // Continue even if one item fails
                                 }
                             } else {
-                                resolve(true);
+                                resolve({ success: true, processedCount, errors });
                             }
                         };
-                        req.onerror = () => reject(req.error);
-                    } catch (e) { reject(e); }
+                        req.onerror = () => resolve({ success: false, processedCount, errors, globalError: req.error });
+                    } catch (e) { resolve({ success: false, processedCount: 0, errors: [], globalError: e }); }
                 });
             },
 
@@ -2323,11 +2329,20 @@
                         const tx = this.db.transaction(["characterImages"], "readwrite");
                         const store = tx.objectStore("characterImages");
                         tx.onabort = () => resolve(false);
-                        tx.onerror = () => resolve(false);
+                        tx.onerror = (e) => {
+                            console.error("DBService.saveImage Transaction Error:", e.target.error);
+                            resolve(false);
+                        };
                         const req = store.put(blob, id);
                         req.onsuccess = () => resolve(true);
-                        req.onerror = () => resolve(false);
-                    } catch (e) { resolve(false); }
+                        req.onerror = (e) => {
+                            console.error("DBService.saveImage Request Error:", e.target.error);
+                            resolve(false);
+                        };
+                    } catch (e) {
+                        console.error("DBService.saveImage Exception:", e);
+                        resolve(false);
+                    }
                 });
             },
 
@@ -2921,7 +2936,6 @@
                 console.log("StoryService: Starting library export...");
 
                 // 1. Force a save of the current state before exporting
-                // This ensures characters/stories modified seconds ago are included.
                 if (typeof ReactiveStore !== 'undefined') {
                     await ReactiveStore.forceSave();
                 }
@@ -2939,18 +2953,22 @@
                 dataFolder.file("narratives.json", JSON.stringify(narratives, null, 2));
 
                 // 4. Export Images Iteratively (Memory Safe)
-                // We use iterateStore to avoid loading all Blobs into an array at once.
-                await DBService.iterateStore("characterImages", (key, blob) => {
+                // Capture the report from iterateStore
+                const report = await DBService.iterateStore("characterImages", (key, blob) => {
                     if (blob) {
                         imageFolder.file(key, blob);
+                    } else {
+                        throw new Error("Blob was null in DB");
                     }
                 });
 
-                return zip.generateAsync({
+                const blob = await zip.generateAsync({
                     type: "blob",
                     compression: "DEFLATE",
                     compressionOptions: { level: 6 }
                 });
+
+                return { blob, report };
             },
 
             /**
@@ -2962,7 +2980,27 @@
                 console.log("StoryService: Starting library import...");
                 const zip = await JSZip.loadAsync(file);
 
-                // 1. Clear existing data
+                // 0. Pre-Flight Validation (Memory-Safe)
+                let stories = [];
+                let narratives = [];
+
+                const storiesFile = zip.file("data/stories.json");
+                if (storiesFile) {
+                    try {
+                        const str = await storiesFile.async("string");
+                        stories = JSON.parse(str);
+                    } catch (e) { throw new Error("Invalid 'stories.json' in backup file."); }
+                }
+
+                const narrativesFile = zip.file("data/narratives.json");
+                if (narrativesFile) {
+                    try {
+                        const str = await narrativesFile.async("string");
+                        narratives = JSON.parse(str);
+                    } catch (e) { throw new Error("Invalid 'narratives.json' in backup file."); }
+                }
+
+                // 1. Clear existing data (Only after validation passes)
                 await Promise.all([
                     DBService.clearStore("stories"),
                     DBService.clearStore("narratives"),
@@ -2970,24 +3008,15 @@
                 ]);
 
                 // 2. Import Stories
-                const storiesFile = zip.file("data/stories.json");
-                if (storiesFile) {
-                    const storiesStr = await storiesFile.async("string");
-                    const stories = JSON.parse(storiesStr);
-                    // Sequential execution to be kind to the DB transaction
-                    for (const story of stories) {
-                        await DBService.saveStory(story);
-                    }
+                for (const story of stories) {
+                    const success = await DBService.saveStory(story);
+                    if (!success) throw new Error(`Failed to save story "${story.name || 'Unknown'}". Storage may be full.`);
                 }
 
                 // 3. Import Narratives
-                const narrativesFile = zip.file("data/narratives.json");
-                if (narrativesFile) {
-                    const narrativesStr = await narrativesFile.async("string");
-                    const narratives = JSON.parse(narrativesStr);
-                    for (const narrative of narratives) {
-                        await DBService.saveNarrative(narrative);
-                    }
+                for (const narrative of narratives) {
+                    const success = await DBService.saveNarrative(narrative);
+                    if (!success) throw new Error(`Failed to save narrative "${narrative.name || 'Unknown'}". Storage may be full.`);
                 }
 
                 // 4. Import Images
@@ -2998,10 +3027,11 @@
                         imageFiles.push({ key: relativePath, file: file });
                     });
 
-                    // Process images sequentially to prevent Transaction Inactive errors on iOS
+                    // Process images sequentially
                     for (const img of imageFiles) {
                         const blob = await img.file.async("blob");
-                        await DBService.saveImage(img.key, blob);
+                        const success = await DBService.saveImage(img.key, blob);
+                        if (!success) throw new Error(`Failed to save image "${img.key}". Storage Quota Exceeded?`);
                     }
                 }
             },
@@ -6491,12 +6521,12 @@
                     isNew: true
                 };
 
-                // FIX: Suppress full re-render (Prevent Start Blink)
+                // Suppress full re-render (Prevent Start Blink)
                 this.RUNTIME.suppressChatRender = true;
                 state.chat_history.push(newMessage);
                 this.RUNTIME.suppressChatRender = false;
 
-                // FIX: Manually append the new bubble
+                // Manually append the new bubble
                 const newBubbleHTML = UIComponents.MessageBubble(newMessage, messageIndex, state);
                 if (chatWindow) {
                     chatWindow.insertAdjacentHTML('beforeend', newBubbleHTML.toString());
@@ -6545,7 +6575,7 @@
                         state.chat_history[messageIndex].content = fullText;
                         state.chat_history[messageIndex].isNew = false;
 
-                        // FIX: Manually clean up the 'new-message' class from the DOM
+                        // Manually clean up the 'new-message' class from the DOM
                         // Since we are skipping the re-render, we must update the class manually
                         if (bubbleEl) bubbleEl.classList.remove('new-message');
 
@@ -6564,7 +6594,6 @@
                             structureChanged = NarrativeController.checkDynamicEntryTriggers();
                         }
 
-                        // FIX: Bug 2 - Index Mismatch Fix
                         // If dynamic entries modified the array structure (splicing out old entries),
                         // the DOM indices are now stale. We MUST force a re-render to align them.
                         if (structureChanged) {
@@ -6572,7 +6601,7 @@
                             this.renderChat(); // Force update to fix edit buttons
                         }
 
-                        // FIX: Final Scroll Logic
+                        // Final Scroll Logic
                         if (bubbleEl && !structureChanged) {
                             // Only do smooth scroll if we didn't just blow away the DOM with renderChat
                             window.requestAnimationFrame(() => {
@@ -6589,7 +6618,7 @@
                             this.RUNTIME.suppressChatRender = false;
                         }
                     }
-                }, 10);
+                }, 5);
             },
 
             /**
@@ -6637,7 +6666,7 @@
                 let backgroundUrl = '';
 
                 // Priority 1: Location Image (World Map)
-                if (state.worldMap && state.worldMap.grid.length > 0) {
+                if (state.worldMap && state.worldMap.grid.length > 0 && state.worldMap.currentLocation) {
                     const currentLoc = state.worldMap.grid.find(loc => loc.coords.x === state.worldMap.currentLocation.x && loc.coords.y === state.worldMap.currentLocation.y);
                     if (currentLoc) {
                         const locationKey = `location::${currentLoc.coords.x},${currentLoc.coords.y}`;
@@ -6649,16 +6678,34 @@
                         else if (currentLoc.imageUrl && !currentLoc.imageUrl.startsWith('local_idb_location')) {
                             backgroundUrl = currentLoc.imageUrl;
                         }
+                        // HYDRATION FIX: If it SHOULD be a local IDB image, but it's not in cache, fetch it.
+                        else if (currentLoc.imageUrl && currentLoc.imageUrl.startsWith('local_idb_location')) {
+                            // Trigger async load, but don't block render.
+                            // Pass the *stored* key (e.g. local_idb_location::4,4) to the hydration helper
+                            // The helper expects the raw IDB key, which is "location::4,4" usually?
+                            // Let's check how we save it. 
+                            // In WorldController.handleWorldMapLocationImageUpload: 
+                            // locationKey = `location::${x},${y}`;
+                            // location.imageUrl = `local_idb_location::${x},${y}`;
+                            // So we strip the prefix.
+                            this.hydrateLocationImage(currentLoc.imageUrl);
+                        }
                     }
                 }
 
                 // Priority 2: Story Setting
-                // FIX: Only use the cache if the setting explicitly requests the local IDB image
-                if (!backgroundUrl && state.backgroundImageURL === 'local_idb_background' && UIManager.RUNTIME.globalBackgroundImageCache) {
-                    backgroundUrl = UIManager.RUNTIME.globalBackgroundImageCache;
-                }
-                else if (!backgroundUrl && state.backgroundImageURL && state.backgroundImageURL !== 'local_idb_background') {
-                    backgroundUrl = state.backgroundImageURL;
+                // FIX: Only use the cache if the setting explicitly requests the local IDB image.
+                // ALSO logic fix: If Priority 1 set a backgroundUrl, we should skip this block. 
+                // The original code tried 'if (!backgroundUrl...)' but the second 'else if' was logically separate in a way that might override? 
+                // Actually the original 'else if (!backgroundUrl...' was correct for fallback.
+
+                if (!backgroundUrl) {
+                    if (state.backgroundImageURL === 'local_idb_background' && UIManager.RUNTIME.globalBackgroundImageCache) {
+                        backgroundUrl = UIManager.RUNTIME.globalBackgroundImageCache;
+                    }
+                    else if (state.backgroundImageURL && state.backgroundImageURL !== 'local_idb_background') {
+                        backgroundUrl = state.backgroundImageURL;
+                    }
                 }
 
                 if (backgroundElement) {
@@ -6783,6 +6830,45 @@
             },
 
             /**
+             * Hydrates a location image from IndexDB into the runtime cache.
+             * @param {string} locationUrl - The stored image URL (e.g. 'local_idb_location::4,4').
+             */
+            async hydrateLocationImage(locationUrl) {
+                if (!locationUrl || !locationUrl.startsWith('local_idb_')) return;
+
+                // key logic: remove the prefix?
+                // In handleWorldMapLocationImageUpload: 
+                // key = `location::${x},${y}`
+                // saved url = `local_idb_location::${x},${y}`
+                // So key = locationUrl.replace('local_idb_', '')
+
+                const key = locationUrl.replace('local_idb_', ''); // "location::4,4"
+
+                // Avoid double fetching
+                UIManager.RUNTIME.worldImageCache = UIManager.RUNTIME.worldImageCache || {};
+                if (UIManager.RUNTIME.worldImageCache[key]) return; // Already in cache
+
+                try {
+                    const blob = await DBService.getImage(key);
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        UIManager.RUNTIME.worldImageCache[key] = url;
+                        // Re-apply styling to update the background immediately
+                        this.applyStyling();
+
+                        // Also re-render map execution if open (optional but nice)
+                        // If map modal is open, re-render it
+                        const mapModal = document.getElementById('world-map-modal');
+                        if (mapModal && !mapModal.classList.contains('hidden')) {
+                            this.renderWorldMapModal();
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Hydration failed for", locationUrl, e);
+                }
+            },
+
+            /**
              * Renders the World Map modal content.
              * Handles both "Move" and "World Map" (Edit) tabs.
              */
@@ -6814,16 +6900,22 @@
                                 else if (location.imageUrl && !location.imageUrl.startsWith('local_idb_location')) imageSrc = location.imageUrl;
                             }
                             const bgImage = imageSrc ? `background-image: url('${imageSrc}');` : '';
-                            let classList = ['aspect-square', 'rounded-lg', 'flex', 'items-end', 'p-2', 'text-white', 'relative', 'overflow-hidden', 'bg-cover', 'bg-center', 'transition-all'];
+                            let classList = ['aspect-square', 'rounded-lg', 'flex', 'items-center', 'justify-center', 'text-center', 'p-2', 'text-white', 'relative', 'overflow-hidden', 'bg-cover', 'bg-center', 'transition-all'];
 
                             if (isCenter) classList.push('bg-indigo-800/80', 'ring-2', 'ring-indigo-300');
-                            else if (location) classList.push('bg-gray-700/80', 'cursor-pointer', 'hover:ring-2', 'hover:ring-sky-400');
+                            else if (location) {
+                                // FIX: If we have a background image, don't use the opaque gray background.
+                                // Use a transparent black overlay to ensure text contrast if needed, but let the image shine.
+                                if (imageSrc) classList.push('bg-black/20', 'cursor-pointer', 'hover:ring-2', 'hover:ring-sky-400');
+                                else classList.push('bg-gray-700/80', 'cursor-pointer', 'hover:ring-2', 'hover:ring-sky-400');
+                            }
                             else classList.push('bg-black/50');
 
                             if (pendingMove && pendingMove.x === x && pendingMove.y === y && !isCenter) classList.push('ring-4', 'ring-yellow-400');
 
                             if (location) {
-                                moveGridHTML += DOM.html`<div class="${classList.join(' ')}" style="${DOM.unsafe(bgImage)}" ${!isCenter ? DOM.unsafe(`data-action="select-pending-move" data-x="${x}" data-y="${y}"`) : ''}><div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div><span class="relative z-10 text-sm font-bold">${location.name}</span></div>`.toString();
+                                const displayName = (location.name && location.name !== 'Undefined') ? location.name : '';
+                                moveGridHTML += DOM.html`<div class="${classList.join(' ')}" style="${DOM.unsafe(bgImage)}" ${!isCenter ? DOM.unsafe(`data-action="select-pending-move" data-x="${x}" data-y="${y}"`) : ''}><div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>${displayName ? DOM.html`<span class="relative z-10 text-sm font-bold">${displayName}</span>` : ''}</div>`.toString();
                             } else {
                                 moveGridHTML += DOM.html`<div class="${classList.join(' ')}"></div>`.toString();
                             }
@@ -6847,16 +6939,44 @@
                     let mapGridHTML = '';
                     for (let y = 0; y < 8; y++) {
                         for (let x = 0; x < 8; x++) {
-                            const location = worldMap.grid.find(loc => loc.coords.x === x && loc.coords.y === y);
-                            let classList = ['aspect-square', 'rounded', 'bg-gray-800/80', 'hover:bg-gray-700/80', 'cursor-pointer', 'text-xs', 'p-1', 'overflow-hidden', 'leading-tight'];
+                            // 1. Resolve Image for Edit Tab
+                            let imageSrc = '';
+                            if (location) {
+                                const locationKey = `location::${x},${y}`;
+                                UIManager.RUNTIME.worldImageCache = UIManager.RUNTIME.worldImageCache || {};
+                                if (UIManager.RUNTIME.worldImageCache[locationKey]) imageSrc = UIManager.RUNTIME.worldImageCache[locationKey];
+                                else if (location.imageUrl && !location.imageUrl.startsWith('local_idb_location')) imageSrc = location.imageUrl;
+                            }
 
-                            if (currentLocation.x === x && currentLocation.y === y) classList.push('ring-2', 'ring-green-400');
-                            if (destination && destination.x === x && destination.y === y) classList.push('ring-2', 'ring-red-500');
-                            if (path && path.some(p => p.x === x && p.y === y)) classList.push('bg-sky-700/50');
+                            let classList = [
+                                'aspect-square', 'rounded', 'cursor-pointer', 'text-xs', 'p-1', 'overflow-hidden', 'leading-tight',
+                                'flex', 'items-center', 'justify-center', 'text-center', 'transition-all', 'duration-200',
+                                'bg-cover', 'bg-center', 'relative' // Added for image support
+                            ];
+
+                            // Subtle gradients for visibility
+                            if (location) {
+                                if (imageSrc) {
+                                    classList.push('bg-black/20', 'text-white', 'shadow-sm', 'text-shadow-sm');
+                                } else {
+                                    classList.push('bg-gradient-to-br', 'from-gray-700/90', 'to-gray-800/90', 'hover:from-gray-600/90', 'hover:to-gray-700/90', 'text-gray-100', 'shadow-sm');
+                                }
+                            } else {
+                                classList.push('bg-gradient-to-br', 'from-gray-800/40', 'to-gray-900/40', 'hover:from-gray-800/60', 'hover:to-gray-900/60', 'text-gray-500');
+                            }
+
+                            if (currentLocation.x === x && currentLocation.y === y) classList.push('ring-2', 'ring-green-400', 'z-10');
+                            if (destination && destination.x === x && destination.y === y) classList.push('ring-2', 'ring-red-500', 'z-10');
+                            if (path && path.some(p => p.x === x && p.y === y)) classList.push('bg-sky-900/50');
 
                             // Removed selectedMapTile ring logic from here as it opens a modal now
 
-                            mapGridHTML += DOM.html`<div class="${classList.join(' ')}" data-action="select-map-tile" data-x="${x}" data-y="${y}">${location ? location.name : ''}</div>`.toString();
+                            const bgStyle = imageSrc ? `background-image: url('${imageSrc}');` : '';
+                            // Add overlay for text readability if image exists
+                            const displayName = (location && location.name && location.name !== 'Undefined') ? location.name : '';
+                            const content = location ? (imageSrc ? `<div class="absolute inset-0 bg-black/40"></div>${displayName ? `<span class="relative z-10">${displayName}</span>` : ''}` : displayName) : '';
+
+                            mapGridHTML += DOM.html`<div class="${classList.join(' ')}" style="${DOM.unsafe(bgStyle)}" data-action="select-map-tile" data-x="${x}" data-y="${y}">${DOM.unsafe(content)}</div>`.toString();
                         }
                     }
 
@@ -6877,6 +6997,9 @@
                         <button onclick="UIManager.switchWorldMapTab('worldmap')" class="pb-2 text-lg font-bold border-b-2 ${activeWorldMapTab === 'worldmap' ? 'border-indigo-500 text-white' : 'border-transparent text-gray-400 hover:text-white'} transition-colors">Edit Map</button>
                      </div>
                      <div class="flex items-center space-x-3">
+                        <button data-action="clear-world-map" class="text-red-400 hover:text-red-300 transition-colors mr-3" title="Clear World Map">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
                         <button id="generate-world-button" data-action="gen-world-map" class="text-sky-400 hover:text-sky-300 transition-colors" title="Generate World with AI">${this.getAIGenIcon()}</button>
                         <button data-action="close-modal" data-id="world-map-modal" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -6897,7 +7020,52 @@
 
                 if (!selectedMapTile || !container) return;
 
-                const imageHint = selectedMapTile.imageUrl.startsWith('local_idb_location') ? '[Local Image]' : (selectedMapTile.imageUrl ? '[Legacy URL]' : 'None');
+                // 1. Resolve Image Source (Lazy Load & Cache)
+                const x = selectedMapTile.coords.x;
+                const y = selectedMapTile.coords.y;
+                const imgKey = `location::${x},${y}`;
+                let visualSrc = null;
+
+                // Ensure cache object exists
+                UIManager.RUNTIME.worldImageCache = UIManager.RUNTIME.worldImageCache || {};
+
+                if (selectedMapTile.imageUrl) {
+                    if (selectedMapTile.imageUrl.startsWith('local_idb_')) {
+                        if (UIManager.RUNTIME.worldImageCache[imgKey]) {
+                            visualSrc = UIManager.RUNTIME.worldImageCache[imgKey];
+                        } else {
+                            DBService.getImage(imgKey).then(blob => {
+                                if (blob) {
+                                    UIManager.RUNTIME.worldImageCache[imgKey] = URL.createObjectURL(blob);
+                                    if (WorldController.RUNTIME.selectedMapTile &&
+                                        WorldController.RUNTIME.selectedMapTile.coords.x === x &&
+                                        WorldController.RUNTIME.selectedMapTile.coords.y === y) {
+                                        UIManager.renderLocationDetailsModal();
+                                    }
+                                }
+                            }).catch(e => console.warn("Failed to load location image", e));
+                        }
+                    } else {
+                        visualSrc = selectedMapTile.imageUrl;
+                    }
+                }
+
+                // 2. Generate Image HTML
+                const imageDisplayHTML = visualSrc
+                    ? `
+                        <div class="relative w-full aspect-video rounded-lg overflow-hidden border border-gray-600 mb-3 group bg-black/50">
+                             <img src="${visualSrc}" class="w-full h-full object-cover">
+                             <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                <span class="text-white font-bold text-sm drop-shadow-md">Change Image</span>
+                             </div>
+                        </div>`
+                    : `
+                        <div class="w-full aspect-video rounded-lg bg-black/40 border-2 border-dashed border-gray-700 mb-3 flex flex-col items-center justify-center text-gray-500 gap-2">
+                            <svg class="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="text-xs">No Image Set</span>
+                        </div>`;
+
+                const imageHint = selectedMapTile.imageUrl ? (selectedMapTile.imageUrl.startsWith('local_idb_') ? 'Local Storage' : 'Legacy URL') : 'None';
 
                 const content = DOM.html`
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -6914,11 +7082,14 @@
 
                     <div>
                         <label class="block text-sm font-bold text-gray-400 mb-1">Visuals</label>
+                        ${DOM.unsafe(imageDisplayHTML)}
                         <div class="flex items-center justify-between bg-black/20 p-2 rounded border border-gray-700">
-                            <span class="text-xs text-gray-500">Current: ${imageHint}</span>
-                            <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded">
-                                Upload
-                                <input type="file" accept="image/*" data-action-change="upload-loc-image" data-x="${selectedMapTile.coords.x}" data-y="${selectedMapTile.coords.y}" class="hidden">
+                            <span class="text-xs text-gray-500">Source: ${imageHint}</span>
+                            <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded transition-colors shadow-sm">
+                                Upload New
+                                <input type="file" accept="image/*" 
+                                       onchange="WorldController.handleWorldMapLocationImageUpload(event, ${selectedMapTile.coords.x}, ${selectedMapTile.coords.y})"
+                                       class="hidden">
                             </label>
                         </div>
                     </div>
@@ -7338,7 +7509,20 @@
                     const modal = document.getElementById('confirmation-modal');
                     const messageEl = document.getElementById('confirmation-modal-message');
                     const confirmBtn = document.getElementById('confirmation-modal-confirm-button');
+
+                    // Defensive check: If critical UI elements are missing, auto-fail gracefully
+                    if (!modal || !messageEl || !confirmBtn) {
+                        console.error("UIManager: Critical Error - Confirmation Modal elements missing from DOM.");
+                        resolve(false);
+                        return;
+                    }
+
                     const cancelBtn = modal.querySelector('button:not(#confirmation-modal-confirm-button)');
+                    if (!cancelBtn) {
+                        console.error("UIManager: Critical Error - Cancel button missing.");
+                        resolve(false);
+                        return;
+                    }
 
                     messageEl.textContent = message;
 
@@ -7354,13 +7538,16 @@
                     const cleanup = () => {
                         confirmBtn.removeEventListener('click', confirmClickHandler);
                         cancelBtn.removeEventListener('click', cancelClickHandler);
-                        modal.querySelector('.modal-overlay').removeEventListener('click', cancelClickHandler);
+                        const overlay = modal.querySelector('.modal-overlay');
+                        if (overlay) overlay.removeEventListener('click', cancelClickHandler);
                         AppController.closeModal('confirmation-modal');
                     };
 
                     confirmBtn.addEventListener('click', confirmClickHandler, { once: true });
                     cancelBtn.addEventListener('click', cancelClickHandler, { once: true });
-                    modal.querySelector('.modal-overlay').addEventListener('click', cancelClickHandler, { once: true });
+
+                    const overlay = modal.querySelector('.modal-overlay');
+                    if (overlay) overlay.addEventListener('click', cancelClickHandler, { once: true });
 
                     AppController.openModal('confirmation-modal');
                 });
@@ -9488,7 +9675,11 @@
             async exportLibrary() {
                 UIManager.showLoadingSpinner('Exporting entire library...');
                 try {
-                    const zipBlob = await StoryService.exportLibraryAsZip();
+                    const result = await StoryService.exportLibraryAsZip();
+                    // Handle legacy return (blob only) vs new object return
+                    const zipBlob = result.blob || result;
+                    const report = result.report || { success: true, errors: [] };
+
                     const url = URL.createObjectURL(zipBlob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -9497,6 +9688,12 @@
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
+
+                    if (report.errors && report.errors.length > 0) {
+                        const errorMsg = report.errors.map(e => `• ${e.key}: ${e.error}`).join('\n');
+                        alert(`⚠️ Export Partial Success\n\nThe backup was created, BUT ${report.errors.length} files failed to be included:\n\n${errorMsg}\n\nPlease check your Console for details.`);
+                        console.error("Export Failures:", report.errors);
+                    }
                 } catch (e) {
                     alert(`Library export failed: ${e.message}`);
                 } finally {
@@ -11234,6 +11431,24 @@
 
 
 
+            /**
+             * Clears the entire world map after confirmation.
+             */
+            async clearWorldMap() {
+                const proceed = await UIManager.showConfirmationPromise('Are you sure you want to clear the entire world map? This cannot be undone.');
+                if (!proceed) return;
+
+                const state = ReactiveStore.state;
+                state.worldMap.grid = UTILITY.createDefaultMapGrid();
+                state.worldMap.currentLocation = { x: 4, y: 4 };
+                state.worldMap.destination = { x: null, y: null };
+                state.worldMap.path = [];
+                this.RUNTIME.selectedMapTile = null;
+
+                UIManager.renderWorldMapModal();
+                UIManager.applyStyling();
+            },
+
             // NEW: Pure Generator Function
             async generateMapGrid(contextObj) {
                 const promptTemplate = StateManager.getState().prompt_world_map_gen || UTILITY.getDefaultSystemPrompts().prompt_world_map_gen;
@@ -11250,6 +11465,7 @@
                         if (!l.local_static_entries) l.local_static_entries = [];
                         if (!l.imageUrl) l.imageUrl = "";
                         if (!l.prompt) l.prompt = "";
+                        if (!l.name || l.name === "Undefined") l.name = "";
                     });
                     return data.grid;
                 }
@@ -11844,6 +12060,7 @@
                 // --- WorldController (Map, Lore) ---
                 ActionHandler.register('switch-world-map-tab', (ds) => WorldController.switchWorldMapTab(ds.tab));
                 ActionHandler.register('gen-world-map', (ds, e) => WorldController.generateWorldMap(e));
+                ActionHandler.register('clear-world-map', () => WorldController.clearWorldMap());
                 ActionHandler.register('select-pending-move', (ds) => WorldController.selectPendingMove(parseInt(ds.x), parseInt(ds.y)));
                 ActionHandler.register('confirm-move', () => WorldController.confirmMove());
                 ActionHandler.register('select-map-tile', (ds) => WorldController.selectMapTile(parseInt(ds.x), parseInt(ds.y)));
