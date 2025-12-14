@@ -2025,7 +2025,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2025.12.12 - 5:30 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2025.12.14 - 9:00 CST";
 
 
         /**
@@ -2586,7 +2586,6 @@
              * @returns {Promise<{storyStubs: Array, activeStory: Object|null, activeNarrative: Object|null}>}
              */
             async loadApplicationData() {
-                // console.log("StoryService: Loading application data..."); 
                 const storyStubs = await DBService.getAllStories();
 
                 // Robust local storage retrieval
@@ -3619,7 +3618,11 @@
                 return p.innerHTML;
             },
 
-            // 1. ADD NEW JSON PARSER (Safe for LLM responses)
+            /**
+             * Safely extracts and parses JSON from a string, handling markdown code blocks.
+             * @param {string} str - The string containing JSON.
+             * @returns {Object|null} - The parsed object or null.
+             */
             extractAndParseJSON(str) {
                 if (!str) return null;
                 // Remove markdown
@@ -3691,7 +3694,7 @@
                     font: "'Inter', sans-serif", backgroundImageURL: '', bubbleOpacity: 0.85,
                     chatTextColor: '#e5e7eb', characterImageMode: 'none',
                     backgroundBlur: 5, textSize: 16, bubbleImageSize: 100,
-                    showPortraitPanel: true, // NEW
+                    showPortraitPanel: true,
                     // ... markdown colors ...
                     md_h1_color: '#818cf8', md_h2_color: '#a5b4fc', md_h3_color: '#c7d2fe',
                     md_bold_color: '#ffffff', md_italic_color: '#9ca3af', md_quote_color: '#9ca3af',
@@ -3707,7 +3710,7 @@
                     creator_notes: "",
                     tags: [],
                     event_master_probability: 15,
-                    enableAnalysis: true // NEW
+                    enableAnalysis: true
                 };
             },
             /**
@@ -5157,7 +5160,7 @@
                 this.state = this._createProxy(initialState);
 
                 const saveNow = () => {
-                    // FIX: Check if auto-save is blocked (e.g., during critical DB migrations or reloads)
+                    // Check if auto-save is blocked (e.g., during critical DB migrations or reloads)
                     if (this._blockAutoSave) return;
 
                     // If we are closing, trigger an immediate save without debounce
@@ -5390,19 +5393,9 @@
             },
 
             /**
-                 * Renders a single chat message bubble.
-                 */
-            /**
-                         * Renders a single chat message bubble.
-                         */
-            /**
-                         * Renders a single chat message bubble.
-                         * Formatted to support arbitrary newlines via 'pre-wrap'.
-                         */
-            /**
-                         * Renders a single chat message bubble.
-                         * Updated to support arbitrary newlines and remove trailing gaps.
-                         */
+             * Renders a single chat message bubble.
+             * Handles Markdown parsing, newline preservation, and image embedding.
+             */
             MessageBubble(msg, index, state) {
                 if (msg.type === 'lore_reveal' || msg.isHidden) return '';
 
@@ -5422,14 +5415,14 @@
                 // 1. Trim source to prevent initial whitespace issues
                 let processedContent = replacer(msg.content).trim();
 
-                // 2. FIX: Preserve Arbitrary Newlines (3 or more)
+                // 2. Preserve Arbitrary Newlines (3 or more)
                 // Standard Markdown collapses \n\n\n into a single paragraph break.
                 // We replace 3+ newlines with explicit <br> tags so they render visually.
                 processedContent = processedContent.replace(/\n{3,}/g, (match) => '<br>'.repeat(match.length));
 
                 const styledContent = processedContent.replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`);
 
-                // 3. FIX: Trim output HTML to remove the trailing newline that 'marked' adds
+                // 3. Trim output HTML to remove the trailing newline that 'marked' adds
                 let contentHTML = DOM.unsafe(marked.parse(styledContent || '').trim());
 
                 // Styling
@@ -5955,7 +5948,7 @@
                 // Cache this list for the lightbox
                 UIManager.RUNTIME.currentLightboxImages = imageData;
 
-                // FIX: If only 1 image, render static and do NOT start interval
+                // If only 1 image, render static and do NOT start interval
                 if (imageData.length === 1) {
                     container.innerHTML = `
                 <img src="${imageData[0].src}" 
@@ -6140,7 +6133,7 @@
                 const state = StateManager.getState();
                 const listHtml = (state.static_entries || []).map(entry => DOM.html`<div data-action="select-static-entry" data-id="${entry.id}" class="p-3 rounded-lg cursor-pointer ${state.selectedStaticEntryId === entry.id ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'} mb-1"><h4 class="font-semibold truncate">${entry.title}</h4></div>`).join('');
 
-                // FIX: Item 9 - Square Add Button at bottom
+                // Item 9 - Square Add Button at bottom
                 const addButtonHtml = `<div class="mt-2 p-2 border-t border-gray-700"><button data-action="add-static-entry" class="w-full py-2 bg-gray-700 hover:bg-indigo-600 text-white rounded flex justify-center items-center transition-colors"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></button></div>`;
 
                 const container = document.getElementById('static-entries-list');
@@ -6196,7 +6189,7 @@
              */
             renderDynamicEntries() {
                 const state = StateManager.getState();
-                // FIX: Ensure Robust ID Comparison (Convert to String) to handle legacy numeric IDs
+                // Ensure Robust ID Comparison (Convert to String) to handle legacy numeric IDs
                 const listHtml = (state.dynamic_entries || []).map(entry => {
                     const isSelected = String(state.selectedDynamicEntryId) === String(entry.id);
                     return DOM.html`
@@ -6357,7 +6350,7 @@
                 // 5. Generate HTML
                 chatWindow.innerHTML = (state.chat_history || [])
                     .map((msg, index) => {
-                        // CRITICAL FIX: Guard against undefined messages during array mutation (Undo/Splice)
+                        // Guard against undefined messages during array mutation (Undo/Splice)
                         if (!msg) return '';
                         return UIComponents.MessageBubble(msg, index, state);
                     })
@@ -6694,10 +6687,8 @@
                 }
 
                 // Priority 2: Story Setting
-                // FIX: Only use the cache if the setting explicitly requests the local IDB image.
-                // ALSO logic fix: If Priority 1 set a backgroundUrl, we should skip this block. 
-                // The original code tried 'if (!backgroundUrl...)' but the second 'else if' was logically separate in a way that might override? 
-                // Actually the original 'else if (!backgroundUrl...' was correct for fallback.
+                // Only use the cache if the setting explicitly requests the local IDB image.
+                // Logic: If Priority 1 set a backgroundUrl, we should skip this block.
 
                 if (!backgroundUrl) {
                     if (state.backgroundImageURL === 'local_idb_background' && UIManager.RUNTIME.globalBackgroundImageCache) {
@@ -6787,47 +6778,7 @@
                 this.renderChat();
             },
 
-            /**
-             * Renders the modal for editing example dialogue (few-shot examples).
-             */
-            renderExampleDialogueModal() {
-                const state = ReactiveStore.state;
-                const examples = state.chat_history.filter(m => m.isHidden);
-                const container = document.getElementById('example-dialogue-modal-content');
-                if (!container) return;
 
-                const listHTML = examples.map((msg, index) => {
-                    const realIndex = state.chat_history.indexOf(msg);
-                    return DOM.html`
-                <div class="bg-black/30 p-3 rounded mb-2 border border-gray-700">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs text-gray-400 font-bold uppercase">${msg.character_id === state.characters.find(c => c.is_user)?.id ? 'User' : 'AI'}</span>
-                        <div class="flex space-x-2">
-                            <button onclick="UIManager.moveExampleDialogueTurn(${realIndex}, 'up')" class="text-gray-400 hover:text-white">▲</button>
-                            <button onclick="UIManager.moveExampleDialogueTurn(${realIndex}, 'down')" class="text-gray-400 hover:text-white">▼</button>
-                            <button onclick="UIManager.deleteExampleDialogueTurn(${realIndex})" class="text-red-400 hover:text-red-300">×</button>
-                        </div>
-                    </div>
-                    <textarea oninput="UIManager.updateExampleDialogueTurn(${realIndex}, 'content', this.value)" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm h-20 resize-y">${msg.content}</textarea>
-                </div>`;
-                }).join('');
-
-                const modalHTML = DOM.html`
-            <div class="p-6 border-b border-gray-700 flex justify-between items-center">
-                <h2 class="text-2xl font-semibold">Edit Example Dialogue</h2>
-                <div class="flex items-center space-x-2">
-                  <button onclick="UIManager.addExampleDialogueTurn()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold py-1 px-3 rounded">+ Add Turn</button>
-                  <button data-action="close-modal" data-id="example-dialogue-modal" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
-                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                  </button>
-                </div>
-            </div>
-            <div class="p-6 overflow-y-auto max-h-[60vh]">
-                ${listHTML.length ? listHTML : '<p class="text-gray-500 italic">No example dialogue yet.</p>'}
-            </div>
-            `;
-                container.innerHTML = modalHTML.toString();
-            },
 
             /**
              * Hydrates a location image from IndexDB into the runtime cache.
@@ -6904,7 +6855,7 @@
 
                             if (isCenter) classList.push('bg-indigo-800/80', 'ring-2', 'ring-indigo-300');
                             else if (location) {
-                                // FIX: If we have a background image, don't use the opaque gray background.
+                                // If we have a background image, don't use the opaque gray background.
                                 // Use a transparent black overlay to ensure text contrast if needed, but let the image shine.
                                 if (imageSrc) classList.push('bg-black/20', 'cursor-pointer', 'hover:ring-2', 'hover:ring-sky-400');
                                 else classList.push('bg-gray-700/80', 'cursor-pointer', 'hover:ring-2', 'hover:ring-sky-400');
@@ -7697,10 +7648,11 @@
 
 
         /**
-         * =================================================================================================
-         * AppController Module
-         * Handles global UI navigation, modals, settings, and generic application state.
-         * =================================================================================================
+         * AppController
+         * 
+         * Central coordinating controller for high-level application logic.
+         * Handling Modal orchestration, Settings management, and Persona logic.
+         * Acts as the bridge between UI events and the Data/State layers.
          */
         const AppController = {
             RUNTIME: {
@@ -7885,9 +7837,6 @@
             /**
              * Fetches available Gemini models and populates the selector.
              */
-            /**
-            * Fetches available Gemini models and populates the selector.
-            */
             async populateGeminiModels() {
                 const selector = document.getElementById('gemini-model-selector');
                 const state = StateManager.getState();
@@ -7958,7 +7907,7 @@
                 const state = ReactiveStore.state;
                 const globalSettings = StateManager.data.globalSettings;
 
-                // FIX: Retrieve defaults to handle uninitialized values (e.g. blank prompts)
+                // Retrieve defaults to handle uninitialized values (e.g. blank prompts)
                 const defaultPrompts = UTILITY.getDefaultSystemPrompts();
                 const defaultUI = UTILITY.getDefaultUiSettings();
                 const allDefaults = { ...defaultPrompts, ...defaultUI };
@@ -7969,7 +7918,7 @@
 
                     const isGlobal = this.CONSTANTS.MODEL_SETTING_KEYS.includes(key);
 
-                    // FIX: Logic to determine value: Global -> State -> Default -> Empty String
+                    // Logic to determine value: Global -> State -> Default -> Empty String
                     let val;
                     if (isGlobal) {
                         val = globalSettings[key];
@@ -7993,7 +7942,7 @@
                         } else {
                             // Update Proxy State
                             state[key] = val;
-                            // FIX: Explicitly trigger the save mechanism to be safe
+                            // Explicitly trigger the save mechanism to be safe
                             if (typeof ReactiveStore.forceSave === 'function') {
                                 ReactiveStore.forceSave();
                             }
@@ -8147,7 +8096,7 @@
                 // API Provider Dropdown
                 const apiProviderSelect = document.getElementById('api-provider-selector');
                 if (apiProviderSelect) {
-                    // FIX: Use Global Settings as source of truth, fallback to 'gemini'
+                    // Use Global Settings as source of truth, fallback to 'gemini'
                     const activeProvider = globalSettings.apiProvider || 'gemini';
                     apiProviderSelect.value = activeProvider;
 
@@ -8317,7 +8266,7 @@
                     return;
                 }
 
-                // FIX: Hydrate image if missing from cache
+                // Hydrate image if missing from cache
                 if (!UIManager.RUNTIME.characterImageCache[persona.id]) {
                     try {
                         const blob = await DBService.getImage(persona.id);
@@ -8442,7 +8391,7 @@
                 // 2. Create New Character Object
                 const newCharId = UTILITY.uuid();
 
-                // FIX: Clone Image Logic
+                // Clone Image Logic:
                 // If persona has an image in IDB, copy it to the new character ID
                 // This ensures the story character has an independent copy of the image
                 let newImageUrl = "";
@@ -8646,10 +8595,6 @@
 
             /**
              * Deletes a story and all associated data.
-             * @param {string} storyId 
-             */
-            /**
-             * Deletes a story and all associated data.
              * @param {string} storyId - The ID of the story to delete.
              */
             async deleteStory(storyId) {
@@ -8686,10 +8631,6 @@
                 }
             },
 
-            /**
-             * Duplicates an entire story structure.
-             * @param {string} storyId 
-             */
             /**
              * Duplicates an entire story structure, including narratives and scenarios.
              * @param {string} storyId - The ID of the story to duplicate.
@@ -8801,10 +8742,6 @@
             /**
              * Updates a specific field of a story object (debounced).
              * This handles updating both the Database and the In-Memory Library Stub.
-             */
-            /**
-             * Updates a specific field of a story object (debounced).
-             * This handles updating both the Database and the In-Memory Library Stub.
              * @param {string} storyId - The ID of the story.
              * @param {string} field - The field to update.
              * @param {*} value - The new value.
@@ -8838,9 +8775,6 @@
                 }
             }, 300),
 
-            /**
-             * Updates a story's tags (debounced).
-             */
             /**
              * Updates a story's tags (debounced).
              * @param {string} storyId - The ID of the story.
@@ -8878,9 +8812,6 @@
 
             /**
              * Loads a specific narrative and reloads the page.
-             */
-            /**
-             * Loads a specific narrative and reloads the page.
              * @param {string} storyId - The ID of the story.
              * @param {string} narrativeId - The ID of the narrative.
              */
@@ -8894,19 +8825,16 @@
 
             /**
              * Creates a new narrative from a scenario template.
-             */
-            /**
-             * Creates a new narrative from a scenario template.
              * @param {string} storyId - The ID of the story.
              * @param {string} scenarioId - The ID of the scenario.
              */
             async createNarrativeFromScenario(storyId, scenarioId) {
                 UIManager.showLoadingSpinner('Creating new narrative...');
                 try {
-                    // FIX: 1. Force save current state to be safe
+                    // 1. Force save current state to be safe
                     if (typeof ReactiveStore !== 'undefined') await ReactiveStore.forceSave();
 
-                    // FIX: 2. Block auto-save to prevent race condition on reload
+                    // 2. Block auto-save to prevent race condition on reload
                     if (typeof ReactiveStore !== 'undefined' && ReactiveStore.blockAutoSave) {
                         ReactiveStore.blockAutoSave();
                     }
@@ -9152,6 +9080,10 @@
                 conceptData: null
             },
 
+            /**
+             * Phase 1 of Story Architect: Generates the initial story concept from a user prompt.
+             * @param {Event} event - The click event from the Generate button.
+             */
             async generateStoryPhase1(event) {
                 const input = document.getElementById('gen-story-prompt');
                 const userPrompt = input.value.trim();
@@ -9227,6 +9159,9 @@
                 }
             },
 
+            /**
+             * Resets the UI to the input phase for regenerating a story concept.
+             */
             retryGenStory() {
                 this.RUNTIME_GEN.draftStory = null;
                 document.getElementById('gen-story-approval-view').classList.add('hidden');
@@ -9234,6 +9169,10 @@
                 document.getElementById('gen-story-input-view').classList.remove('hidden');
             },
 
+            /**
+             * Confirms the generated story concept and proceeds to generate lore, characters, and scenario.
+             * This is the "Phase 2" of the Story Architect flow.
+             */
             async confirmGenStory() {
                 // Read Edited Values
                 const title = document.getElementById('gen-approval-title-input').value;
@@ -9436,6 +9375,12 @@
                 }
             },
 
+            /**
+             * Helper: Calls the AI service with automatic retries for JSON parsing.
+             * @param {string} prompt - The prompt to send.
+             * @param {number} [retries=2] - Number of retry attempts.
+             * @returns {Promise<Object|null>} - The parsed JSON response or null on failure.
+             */
             async _callAIWithRetry(prompt, retries = 2) {
                 for (let i = 0; i <= retries; i++) {
                     try {
@@ -9502,7 +9447,7 @@
                         UIManager.RUNTIME.characterImageCache[primaryAiChar.id] = URL.createObjectURL(imageBlob);
                     }
 
-                    // FIX: Save Background Image if the parser found one (BYAF or JSON)
+                    // Save Background Image if the parser found one (BYAF or JSON)
                     if (backgroundImageBlob) {
                         const bgKey = `bg_${newStory.id}`;
                         await DBService.saveImage(bgKey, backgroundImageBlob);
@@ -9566,8 +9511,8 @@
                                     newStory.name = `${newStory.name} - ${Date.now()}`;
                                 }
 
-                                // 3. CRITICAL FIX: Extract Narratives and Save Data to DB
-                                // We must separate the heavy narrative data from the story object
+                                // 3. Separate heavy narrative data from the story object
+                                // We must separate the heavy narrative data from the story object to ensure the story object remains lightweight.
                                 const narratives = newStory.narratives || [];
                                 const narrativeStubs = narratives.map(n => ({
                                     id: n.id,
@@ -9630,11 +9575,6 @@
              * Replaces the current library with the imported one.
              * @param {Event} event - The file input change event.
              */
-            /**
-                         * Imports a full library backup from a ZIP file.
-                         * Replaces the current library with the imported one.
-                         * @param {Event} event - The file input change event.
-                         */
             async importLibrary(event) {
                 const file = event.target.files[0];
                 if (!file) return;
@@ -9643,7 +9583,7 @@
                 try {
                     const proceed = await UIManager.showConfirmationPromise('WARNING: This will permanently replace your entire story library. Are you sure?');
                     if (proceed) {
-                        // CRITICAL FIX: Stop ReactiveStore from saving the *old* state during the unload/reload cycle.
+                        // Prevent ReactiveStore from saving the *old* state during the unload/reload cycle.
                         // If we don't do this, the 'beforeunload' event will trigger forceSave(), which will 
                         // write the old in-memory state back to the DB, corrupting the fresh import.
                         if (typeof ReactiveStore !== 'undefined') {
@@ -9724,7 +9664,7 @@
                     const library = StateManager.getLibrary();
                     const story = library.stories.find(s => s.id === storyId);
 
-                    // FIX: Fetch the FULL narrative object from DB, because the library only has stubs
+                    // Fetch the FULL narrative object from DB, because the library only has stubs
                     const narrative = await DBService.getNarrative(narrativeId);
 
                     const charSelector = document.getElementById('character-export-selector');
@@ -9741,7 +9681,7 @@
                     let blob, filename;
                     switch (format) {
                         case 'json':
-                            // FIX: Hydrate the narrative stubs with full data
+                            // Hydrate the narrative stubs with full data
                             // The story object in memory only has stubs. We need the real data from IDB.
                             const fullNarratives = await Promise.all(
                                 (story.narratives || []).map(n => DBService.getNarrative(n.id))
@@ -9876,7 +9816,7 @@
                 const library = StateManager.getLibrary();
                 const storyId = library.active_story_id;
 
-                // FIX: Delete Story-Specific Key
+                // Delete Story-Specific Key
                 if (storyId) {
                     await DBService.deleteImage(`bg_${storyId}`);
                 }
@@ -9978,9 +9918,6 @@
 
             /**
              * Handles the primary action button (Send/Write).
-             */
-            /**
-             * Handles the primary action button (Send/Write).
              * Delegates to writeForMe or sendMessage based on input.
              */
             handlePrimaryAction() {
@@ -9991,7 +9928,13 @@
                 const input = document.getElementById('chat-input');
                 input.value.trim() === '' ? this.writeForMe() : this.sendMessage();
             },
-            // 1. NEW: Pure Generation Function (Reused by Quick Create & Story Architect)
+            /**
+             * Pure Generation Function (Reused by Quick Create & Story Architect).
+             * Generates a character profile JSON based on context.
+             * @param {string} name - The name of the character.
+             * @param {string} contextString - The context string for generation.
+             * @returns {Promise<Object>} - The generated character profile.
+             */
             async generateCharacterProfile(name, contextString) {
                 const prompt = `You are a character designer.
                 Based on the context provided, generate a detailed character profile for "${name}".
@@ -10086,9 +10029,6 @@
 
             /**
              * Sends a user message.
-             */
-            /**
-             * Sends a user message.
              * Adds the message, checks triggers, runs Event Master, and triggers AI response.
              */
             async sendMessage() {
@@ -10130,9 +10070,6 @@
                 // 5. Cleanup / Auto-Save logic is handled by ReactiveStore
             },
 
-            /**
-             * Triggers AI to write for the user.
-             */
             /**
              * Triggers the AI to write a message on behalf of the user.
              * Uses a placeholder animation during generation.
@@ -10182,9 +10119,6 @@
 
             /**
              * Regenerates the last AI response.
-             */
-            /**
-             * Regenerates the last AI response.
              * Removes the last message and triggers a new response.
              */
             async handleRegen() {
@@ -10209,9 +10143,6 @@
                 }
             },
 
-            /**
-             * Adds a message to history (Reactive).
-             */
             /**
              * Adds a message to the chat history and updates the state.
              * @param {string} id - The character ID.
@@ -10404,7 +10335,6 @@
 
             // --- AI Generation Logic ---
 
-            // --- Helper for Bug 1 ---
             /**
              * Clears any system error messages from the chat history.
              */
@@ -11019,8 +10949,9 @@
             },
 
             /**
-             * Checks if any dynamic entries should be triggered based on the last message.
-             * @returns {boolean} - True if state changed (entry triggered).
+             * Checks the last message for dynamic entry keyphrases.
+             * If triggered, injects the entry into the history (and optionally removes previous reveals).
+             * @returns {boolean} - True if state changed (requires re-render).
              */
             checkDynamicEntryTriggers() {
                 const state = ReactiveStore.state;
@@ -11212,6 +11143,10 @@
 
             // --- World Map Navigation ---
 
+            /**
+             * Switches the active tab in the World Map modal.
+             * @param {string} tabName - 'move' or 'edit'.
+             */
             switchWorldMapTab(tabName) {
                 this.RUNTIME.activeWorldMapTab = tabName;
                 UIManager.renderWorldMapModal();
@@ -11449,7 +11384,12 @@
                 UIManager.applyStyling();
             },
 
-            // NEW: Pure Generator Function
+            /**
+             * Pure Generator Function.
+             * Generates a 8x8 map grid based on context.
+             * @param {Object} contextObj - The context for generation.
+             * @returns {Promise<Array>} - The generated grid.
+             */
             async generateMapGrid(contextObj) {
                 const promptTemplate = StateManager.getState().prompt_world_map_gen || UTILITY.getDefaultSystemPrompts().prompt_world_map_gen;
                 let prompt = promptTemplate
@@ -11472,7 +11412,11 @@
                 throw new Error("Invalid grid");
             },
 
-            // REFACTORED: UI Handler
+            /**
+             * UI Handler for generating the world map.
+             * Requests user confirmation before overwriting.
+             * @param {Event} event - The click event.
+             */
             async generateWorldMap(event) {
                 const proceed = await UIManager.showConfirmationPromise('Overwrite map with AI generation?');
                 if (!proceed) return;
@@ -12292,7 +12236,7 @@
                     UIManager.renderAll();
                 }
 
-                // FIX: Enable line breaks for single newlines (Chat Style Markdown)
+                // Enable line breaks for single newlines (Chat Style Markdown)
                 if (typeof marked !== 'undefined') {
                     marked.use({ breaks: true, gfm: true });
                 }
