@@ -2025,7 +2025,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2025.12.14 - 9:00 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2025.12.07 - 10:30 CST";
 
 
         /**
@@ -10657,6 +10657,18 @@
                         const header = document.querySelector(`#character-detail-modal-content h2[data-char-id="${id}"]`);
                         if (header) header.textContent = value;
                     }
+                }
+            }, 300),
+
+            /**
+             * Updates a character's tags (debounced).
+             * @param {string} id - The character ID.
+             * @param {string} value - The comma-separated tags string.
+             */
+            updateCharacterTags: debounce(function (id, value) {
+                const char = ReactiveStore.state.characters.find(c => c.id === id);
+                if (char) {
+                    char.tags = value.split(',').map(t => t.trim()).filter(Boolean);
                 }
             }, 300),
 
