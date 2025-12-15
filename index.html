@@ -235,6 +235,11 @@
             display: none;
         }
 
+        /* FIX: Hide redundant close button in horizontal mode */
+        body.layout-horizontal .story-details-close-btn {
+            display: none;
+        }
+
         #mobile-story-title-overlay {
             position: fixed;
             top: 0;
@@ -2025,7 +2030,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2025.12.07 - 10:30 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2025.12.15 - 16:00 CST";
 
 
         /**
@@ -2640,7 +2645,6 @@
                 const safeStaticEntries = JSON.parse(JSON.stringify(currentState.static_entries || []));
                 const safeWorldMap = JSON.parse(JSON.stringify(currentState.worldMap || {}));
                 const safeDynamicEntries = JSON.parse(JSON.stringify(currentState.dynamic_entries || []));
-                const safeScenarios = JSON.parse(JSON.stringify(currentState.scenarios || []));
 
                 // Image Sanitization
                 const sanitizedCharacters = rawCharacters.map(c => {
@@ -2682,7 +2686,6 @@
                         // Sync Structures
                         freshStory.characters = sanitizedCharacters;
                         freshStory.dynamic_entries = safeDynamicEntries;
-                        freshStory.scenarios = safeScenarios;
                         if (currentState.tags) freshStory.tags = currentState.tags;
                         if (currentState.creator_notes) freshStory.creator_notes = currentState.creator_notes;
 
@@ -5603,7 +5606,8 @@
                 activeCinematicBg: 1,
                 globalBackgroundImageCache: null,
                 characterImageCache: {},
-                worldImageCache: {}
+                worldImageCache: {},
+                viewingStoryId: null // FIX: Track currently viewed story for layout switching
             },
 
             /**
@@ -5720,8 +5724,11 @@
                 const tagInput = document.getElementById('lib-tag');
                 const listContainer = document.getElementById('lib-list');
 
-                // 1. Determine Filter Values
-                let { searchTerm, sortBy, filterTag } = filterState;
+                // 1. Determine Layout & Filter Values
+                let { searchTerm, sortBy, filterTag, layout } = filterState;
+
+                // Logic: Use passed layout if available, otherwise detect
+                const isTallScreen = layout ? (layout === 'mobile') : (window.innerHeight > window.innerWidth);
 
                 if (searchTerm === undefined && searchInput) searchTerm = searchInput.value;
                 if (sortBy === undefined && sortInput) sortBy = sortInput.value;
@@ -5761,13 +5768,17 @@
                 }).join('');
 
                 // Update Existing Frame (No wrapping needed, direct innerHTML assignment is safe here)
-                if (listContainer && searchInput) {
+                // FIX: Check if layout structure matches before reusing existing frame
+                const desktopDetailsPanel = document.getElementById('story-details-content-desktop');
+                const isCurrentLayoutMobile = !desktopDetailsPanel; // If desktop panel is missing, we are in mobile structure
+                const layoutMatches = (isTallScreen === isCurrentLayoutMobile);
+
+                if (listContainer && searchInput && layoutMatches) {
                     listContainer.innerHTML = storyListHTML;
                     return;
                 }
 
-                // 4. Generate Full Frame (First Render)
-                const isTallScreen = window.innerHeight > window.innerWidth;
+                // 4. Generate Full Frame (First Render or Layout Switch)
                 const tagOptions = library.tag_cache.map(tag => DOM.html`<option value="${tag}" ${filterTag === tag ? 'selected' : ''}>${tag}</option>`);
 
                 const controlsHTML = DOM.html`
@@ -5808,7 +5819,13 @@
                 const library = StateManager.getLibrary();
                 const story = library.stories.find(s => s.id === storyId);
                 if (!story) return;
-                const isMobile = (window.innerHeight > window.innerWidth);
+
+                // Track for layout switching
+                UIManager.RUNTIME.viewingStoryId = storyId;
+
+                const desktopContainer = document.getElementById('story-details-content-desktop');
+                // FIX: Fallback to mobile modal if the desktop container is missing (e.g. transitional layout state)
+                const isMobile = (window.innerHeight > window.innerWidth) || !desktopContainer;
                 const targetModal = isMobile ? 'story-details-modal' : 'story-library-modal';
 
                 // Componentize Scenarios
@@ -5853,7 +5870,7 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                     <div class="w-px h-6 bg-gray-600/50 mx-2"></div>
-                    <button data-action="close-modal" data-id="${targetModal}" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
+                    <button data-action="close-modal" data-id="${targetModal}" class="story-details-close-btn bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
@@ -7685,7 +7702,9 @@
                 // 2. Specific Setup Logic based on Modal ID
                 switch (modalId) {
                     case 'story-library-modal':
-                        UIManager.renderLibraryInterface();
+                        // Detect layout mode and pass it down
+                        const isMobile = document.body.classList.contains('layout-vertical') || (window.innerHeight > window.innerWidth);
+                        UIManager.renderLibraryInterface({ layout: isMobile ? 'mobile' : 'desktop' });
                         break;
 
                     case 'io-hub-modal':
@@ -7744,6 +7763,11 @@
              */
             closeModal(modalId) {
                 ModalManager.close(modalId);
+
+                // Clear viewingStoryId if closing story details
+                if (modalId === 'story-details-modal' || modalId === 'story-library-modal') {
+                    UIManager.RUNTIME.viewingStoryId = null;
+                }
 
                 // Cleanup Logic
                 if (modalId === 'character-detail-modal') {
@@ -10727,8 +10751,17 @@
                 const char = ReactiveStore.state.characters.find(c => c.id === charId);
                 if (!char) return;
                 if (!char.extra_portraits) char.extra_portraits = [];
+
+                // Capture scroll position
+                const container = document.getElementById('character-detail-modal-content');
+                const scrollTop = container ? container.scrollTop : 0;
+
                 char.extra_portraits.push({ emotion: 'neutral', url: '' });
                 UIManager.openCharacterDetailModal(charId); // Refresh modal
+
+                // Restore scroll position
+                const newContainer = document.getElementById('character-detail-modal-content');
+                if (newContainer) newContainer.scrollTop = scrollTop;
             },
 
             /**
@@ -12359,7 +12392,11 @@
              * Toggles between vertical and horizontal layouts.
              */
             updateLayout() {
-                if (window.innerHeight > window.innerWidth) {
+                const isVertical = window.innerHeight > window.innerWidth;
+                const wasVertical = document.body.classList.contains('layout-vertical');
+                const layoutChanged = isVertical !== wasVertical;
+
+                if (isVertical) {
                     document.body.classList.add('layout-vertical');
                     document.body.classList.remove('layout-horizontal');
                 } else {
@@ -12367,6 +12404,38 @@
                     document.body.classList.remove('layout-vertical');
                 }
                 UIManager.updateSidePortrait();
+
+                // FIX: Force library re-render if layout changed (Mobile <-> Desktop)
+                if (layoutChanged) {
+                    const libModal = document.getElementById('story-library-modal');
+                    if (libModal && !libModal.classList.contains('hidden')) {
+                        // Capture current filter state
+                        const search = document.getElementById('lib-search')?.value;
+                        const sort = document.getElementById('lib-sort')?.value;
+                        const tag = document.getElementById('lib-tag')?.value;
+
+                        // Clear container to bypass 'Early Return' optimization in renderLibraryInterface
+                        const container = document.getElementById('library-content-container');
+                        if (container) container.innerHTML = '';
+
+                        UIManager.renderLibraryInterface({
+                            searchTerm: search,
+                            sortBy: sort,
+                            filterTag: tag
+                        });
+
+                        // Re-open Story Details if one was active
+                        if (UIManager.RUNTIME.viewingStoryId) {
+                            // If switching to Horizontal (Desktop), ensure the Mobile Overlay is hidden
+                            if (!isVertical) {
+                                const mobileOverlay = document.getElementById('story-details-modal');
+                                if (mobileOverlay) mobileOverlay.classList.add('hidden');
+                            }
+                            // Re-trigger open to render in the correct new container
+                            UIManager.openStoryDetails(UIManager.RUNTIME.viewingStoryId);
+                        }
+                    }
+                }
             },
 
 
