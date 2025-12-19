@@ -938,8 +938,7 @@
                 <h2 class="text-2xl font-semibold">Story Library</h2>
                 <div class="flex space-x-2">
                     <button data-action="open-modal" data-target="io-hub-modal"
-                        class="bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg">Import /
-                        Export</button>
+                        class="bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg">Share</button>
 
                     <div class="relative inline-block text-left">
                         <button
@@ -1121,8 +1120,14 @@
                 <h2 class="text-2xl font-semibold">Character Roster</h2>
                 <div class="flex items-center gap-2">
                     <button onclick="NarrativeController.addCharacter()"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Add
-                        Character</button>
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-2 rounded-lg"
+                        title="Add Character">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6">
+                            </path>
+                        </svg>
+                    </button>
                     <button data-action="close-modal" data-id="characters-modal" aria-label="Close"
                         class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1245,7 +1250,7 @@
     <div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center hidden p-4">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="settings-modal"></div>
         <div
-            class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] relative flex flex-col">
+            class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-full max-w-2xl max-h-[85vh] relative flex flex-col overflow-hidden">
             <div class="p-6 flex-shrink-0 border-b border-gray-700 flex justify-between items-start">
                 <div>
                     <h2 class="text-2xl font-semibold mb-4">Settings</h2>
@@ -1269,7 +1274,7 @@
                     </svg>
                 </button>
             </div>
-            <div class="p-6 overflow-y-auto flex-grow min-h-0" id="settings-content-container">...</div>
+            <div class="p-6 md:p-6 p-4 overflow-y-auto flex-grow min-h-0" id="settings-content-container">...</div>
         </div>
     </div>
 
@@ -1364,16 +1369,24 @@
 
     <!-- OpenRouter Model Browser Modal -->
     <div id="openrouter-model-modal" class="fixed inset-0 z-[80] items-center justify-center hidden">
-        <div class="modal-overlay absolute inset-0 bg-black/60" data-action="close-modal" data-id="openrouter-model-modal"></div>
-        <div class="bg-gray-800/95 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-2xl relative flex flex-col max-h-[85vh]">
+        <div class="modal-overlay absolute inset-0 bg-black/60" data-action="close-modal"
+            data-id="openrouter-model-modal"></div>
+        <div
+            class="bg-gray-800/95 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-2xl relative flex flex-col max-h-[85vh]">
             <div class="p-4 border-b border-gray-700 flex justify-between items-center">
                 <h3 class="text-xl font-bold">Browse OpenRouter Models</h3>
-                <button data-action="close-modal" data-id="openrouter-model-modal" class="text-gray-400 hover:text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <button data-action="close-modal" data-id="openrouter-model-modal"
+                    class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
                 </button>
             </div>
             <div class="p-4 border-b border-gray-700">
-                <input type="text" id="openrouter-model-search" class="w-full rounded-lg p-3 bg-gray-900/50 border border-gray-600 focus:border-indigo-500 focus:outline-none" placeholder="Search models by name or provider...">
+                <input type="text" id="openrouter-model-search"
+                    class="w-full rounded-lg p-3 bg-gray-900/50 border border-gray-600 focus:border-indigo-500 focus:outline-none"
+                    placeholder="Search models by name or provider...">
             </div>
             <div id="openrouter-model-list" class="flex-1 overflow-y-auto p-2 min-h-[300px]">
                 <div class="flex items-center justify-center h-full text-gray-400">
@@ -1769,16 +1782,7 @@
         </div>
 
         <div id="settings-prompt-content" class="space-y-2">
-            <details>
-                <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Core Prompts
-                </summary>
-                <div class="p-4 bg-black/20 rounded-b-lg">
-                    <h3 class="text-base font-medium mb-2">System Prompt (Global Fallback)</h3>
-                    <p class="text-gray-400 text-sm mb-2">Used by AI characters who don't have their own specific
-                        instructions.</p>
-                    <textarea id="system-prompt-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea>
-                </div>
-            </details>
+
 
             <details>
                 <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Event Master
@@ -1855,7 +1859,17 @@
                     class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw
                     Prompt</button><button data-action="open-modal" data-target="example-dialogue-modal"
                     class="bg-sky-600/80 hover:bg-sky-500/80 text-white font-bold py-2 px-4 rounded-lg">Edit Example
-                    Dialogue</button></div>
+                    Dialogue</button>
+                <button onclick="StoryService.exportNarrativeHTML()"
+                    class="bg-emerald-600/80 hover:bg-emerald-500/80 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+                    title="Export Narrative as HTML">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                    </svg>
+                    Export
+                </button>
+            </div>
 
             <div class="flex items-center justify-between mb-4 bg-black/20 p-3 rounded-lg border border-gray-700">
                 <div>
@@ -1904,7 +1918,8 @@
             <div>
                 <h3 class="text-lg font-medium mb-2">AI Provider</h3>
                 <select id="api-provider-selector"
-                    class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white">
+                    class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white"
+                    onchange="AppController.setApiProvider(this.value)">
                     <option value="gemini">Gemini</option>
                     <option value="openrouter">OpenRouter</option>
                     <option value="koboldcpp">KoboldCPP</option>
@@ -1912,7 +1927,17 @@
                 </select>
             </div>
             <div id="gemini-settings">
-                <h3 class="text-lg font-medium">Gemini API Settings</h3>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-medium">Gemini API Settings</h3>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank"
+                        class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center">
+                        Get Key
+                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                    </a>
+                </div>
                 <p class="text-gray-400 text-sm mb-2">Required for text generation.</p>
                 <input type="password" id="gemini-api-key-input" class="w-full rounded-lg p-2 mb-3"
                     placeholder="Enter Gemini API key">
@@ -1927,7 +1952,29 @@
                 </select>
             </div>
             <div id="openrouter-settings">
-                <h3 class="text-lg font-medium">OpenRouter API Settings</h3>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-medium">OpenRouter API Settings</h3>
+                    <div class="flex space-x-3">
+                        <a href="https://openrouter.ai/keys" target="_blank"
+                            class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center">
+                            Get Key
+                            <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14">
+                                </path>
+                            </svg>
+                        </a>
+                        <a href="https://openrouter.ai/models" target="_blank"
+                            class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center">
+                            Browse Models
+                            <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14">
+                                </path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
                 <p class="text-gray-400 text-sm mb-2">Your key and the model name.</p>
                 <input type="password" id="openrouter-api-key-input" class="w-full rounded-lg p-2"
                     placeholder="Enter OpenRouter API key">
@@ -1956,7 +2003,17 @@
                 <div id="openrouter-saved-models-list" class="mt-3 flex flex-wrap gap-2"></div>
             </div>
             <div id="koboldcpp-settings">
-                <h3 class="text-lg font-medium">KoboldCPP Settings</h3>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-medium">KoboldCPP Settings</h3>
+                    <a href="https://github.com/LostRuins/koboldcpp/releases" target="_blank"
+                        class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center">
+                        Get Software
+                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                    </a>
+                </div>
                 <p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is
                     running.</p>
                 <input type="text" id="koboldcpp-url-input" class="w-full rounded-lg p-2 mb-4"
@@ -1991,7 +2048,17 @@
                 </div>
             </div>
             <div id="lmstudio-settings">
-                <h3 class="text-lg font-medium">LM Studio Settings</h3>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-medium">LM Studio Settings</h3>
+                    <a href="https://lmstudio.ai/download" target="_blank"
+                        class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center">
+                        Get Software
+                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                    </a>
+                </div>
                 <p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure LM Studio is running
                     with a
                     model loaded. Default URL is http://localhost:1234</p>
@@ -2059,7 +2126,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2025.12.15 - 16:00 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2025.12.195 - 16:00 CST";
 
 
         /**
@@ -2657,6 +2724,188 @@
                 }
                 return { storyStubs, activeStory, activeNarrative };
             },
+
+            /**
+             * Exports the current narrative's chat history as an HTML file.
+             * @param {Object} narrative - The narrative object to export.
+             * @param {Object} activeStory - The active story object, needed for character details.
+             * @returns {Promise<void>}
+             */
+            async exportNarrativeHTML() {
+                console.log("Export initiated...");
+                const state = StateManager.getState();
+                if (!state || !state.chat_history || state.chat_history.length === 0) {
+                    alert('Error: No chat history to export.');
+                    return;
+                }
+
+                // 1. Capture Current Style Settings
+                const defaults = UTILITY.getDefaultUiSettings();
+                const s = state; // shorthand
+
+                const font = s.font || defaults.font;
+                const textSize = s.textSize || defaults.textSize;
+
+                // Markdown Colors
+                const mdH1 = s.md_h1_color || defaults.md_h1_color;
+                const mdH2 = s.md_h2_color || defaults.md_h2_color;
+                const mdH3 = s.md_h3_color || defaults.md_h3_color;
+                const mdBold = s.md_bold_color || defaults.md_bold_color;
+                const mdItalic = s.md_italic_color || defaults.md_italic_color;
+                const mdQuote = s.md_quote_color || defaults.md_quote_color;
+
+                // Generate static HTML for chat history
+                let chatHTML = '';
+                state.chat_history.forEach(msg => {
+                    const charId = msg.character_id;
+                    const char = (state.characters || []).find(c => c.id === charId);
+                    const name = char ? char.name : (msg.character_id === 'user' ? (StateManager.data.globalSettings.userPersona?.name || 'You') : 'Unknown');
+                    const isUser = msg.character_id === 'user';
+
+                    // Character Colors
+                    const defaultColor = isUser ? { base: '#4b5563', bold: '#e5e7eb' } : { base: '#334155', bold: '#94a3b8' };
+                    const charColor = (char && char.color) ? char.color : defaultColor;
+                    const nameColor = charColor.bold;
+
+                    // Bubble Colors (Approximate for export)
+                    const bubbleBg = isUser ? '#1e293b' : '#334155'; // Fallback flat colors
+
+                    chatHTML += `
+            <div class="message ${isUser ? 'user-message' : 'ai-message'}" style="background-color: ${bubbleBg};">
+                <div class="message-header" style="color: ${nameColor};">${name}</div>
+                <div class="message-content">${marked.parse(msg.content)}</div>
+            </div>
+        `;
+                });
+
+                if (!state.name) {
+                    console.warn("Export: Narrative name missing, using default.");
+                }
+                const title = state.name || "Narrative Export";
+                const fullHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>${title}</title>
+    <style>
+        :root {
+            --font-primary: ${font};
+            --text-size: ${textSize}px;
+            --md-h1-color: ${mdH1};
+            --md-h2-color: ${mdH2};
+            --md-h3-color: ${mdH3};
+            --md-bold-color: ${mdBold};
+            --md-italic-color: ${mdItalic};
+            --md-quote-color: ${mdQuote};
+            --chat-text-color: ${s.chatTextColor || '#e5e7eb'};
+        }
+
+        body {
+            background-color: #0f172a;
+            font-family: var(--font-primary);
+            font-size: var(--text-size);
+            padding: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+            color: #cbd5e1;
+        }
+
+        h1.title {
+            color: white;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            color: var(--chat-text-color);
+        }
+
+        .message-header {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            font-size: 0.9em;
+        }
+
+        /* Markdown Styling - Mirroring App Logic */
+        .message-content {
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+
+        .message-content h1 { color: var(--md-h1-color); font-size: 1.5em; font-weight: 700; margin: 0.5em 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.3em; }
+        .message-content h2 { color: var(--md-h2-color); font-size: 1.3em; font-weight: 600; margin: 0.4em 0; }
+        .message-content h3 { color: var(--md-h3-color); font-size: 1.1em; font-weight: 600; margin: 0.3em 0; }
+        .message-content strong { color: var(--md-bold-color); font-weight: 700; }
+        .message-content em { color: var(--md-italic-color); font-style: italic; }
+
+        .message-content blockquote {
+            border-left: 3px solid #6366f1;
+            padding-left: 1rem;
+            color: var(--md-quote-color);
+            font-style: italic;
+            margin: 0.5em 0;
+            background: rgba(0,0,0,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+        }
+
+        .message-content code {
+            background-color: rgba(0,0,0,0.3);
+            padding: 0.1em 0.3em;
+            border-radius: 0.2rem;
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #e2e8f0;
+        }
+
+        .message-content pre {
+            background-color: #1e1e1e;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 0.5em 0;
+        }
+
+        .message-content pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #d4d4d4;
+        }
+
+        .message-content ul, .message-content ol { margin-left: 1.5rem; margin-bottom: 0.5rem; }
+        .message-content p { margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body>
+    <h1 class="title">${title}</h1>
+    <div id="chat-container">
+        ${chatHTML}
+    </div>
+</body>
+</html>`;
+
+                try {
+                    const blob = new Blob([fullHTML], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_export.html`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    alert('Export started.');
+                } catch (e) {
+                    console.error("Export failed:", e);
+                    alert("Export failed: " + e.message);
+                }
+            },
+
+
 
             /**
              * Saves the current active state (narrative and story) to the database.
@@ -6965,6 +7214,7 @@
                     let mapGridHTML = '';
                     for (let y = 0; y < 8; y++) {
                         for (let x = 0; x < 8; x++) {
+                            const location = worldMap.grid.find(loc => loc.coords.x === x && loc.coords.y === y);
                             // 1. Resolve Image for Edit Tab
                             let imageSrc = '';
                             if (location) {
@@ -7231,6 +7481,10 @@
              * Opens the Character Detail modal for editing a character.
              * @param {string} charId - The ID of the character to edit.
              */
+            /**
+             * Opens the Character Detail modal for editing a character.
+             * @param {string} charId - The ID of the character to edit.
+             */
             openCharacterDetailModal(charId) {
                 const state = StateManager.getState();
                 const char = state.characters.find(c => c.id === charId);
@@ -7244,10 +7498,9 @@
                 const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) => {
                     const emo = portrait.emotion || 'happy';
                     const fileInputId = `emo-file-${char.id}-${index}`;
-                    const urlInputId = `emo-url-${char.id}-${index}`;
                     const labelId = `emo-label-${char.id}-${index}`;
                     const cached = (UIManager.RUNTIME.characterImageCache || {})[`${char.id}::emotion::${emo}`];
-                    const hint = cached ? '[local image]' : (portrait.url ? '[url]' : '[none]');
+                    const hint = cached ? '[local image]' : '[none]';
                     return DOM.html`
                 <div class="flex flex-col space-y-2 mt-2 p-2 rounded border border-gray-700/50">
                     <div class="flex items-center space-x-2">
@@ -7258,8 +7511,7 @@
                             <option value="surprised" ${emo === 'surprised' ? 'selected' : ''}>Surprised</option>
                             <option value="neutral" ${emo === 'neutral' ? 'selected' : ''}>Neutral</option>
                         </select>
-                        <input id="${urlInputId}" type="text" value="${portrait.url || ''}" oninput="NarrativeController.updateExtraPortrait('${char.id}', ${index}, 'url', this.value)" class="w-2/3 bg-black/30 border-gray-600 p-1 text-sm" placeholder="Image URL">
-                        <button data-action="remove-extra-portrait" data-id="${char.id}" data-index="${index}" class="text-red-400 hover:text-red-300">X</button>
+                        <button data-action="remove-extra-portrait" data-id="${char.id}" data-index="${index}" class="text-red-400 hover:text-red-300 ml-auto">X</button>
                     </div>
                     <div class="flex items-center justify-between">
                         <label class="text-sm text-gray-400" for="${fileInputId}">Upload local image for <span class="font-semibold">${emo}</span>:</label>
@@ -7274,8 +7526,8 @@
 
                 const modalHTML = DOM.html`
             <div class="p-6 border-b border-gray-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h2 class="text-2xl font-semibold" data-char-id="${char.id}">${char.name}</h2>
+                <div class="flex-grow w-full md:w-auto">
+                    <input type="text" value="${char.name}" oninput="NarrativeController.updateCharacterField('${char.id}', 'name', this.value)" class="text-2xl font-semibold bg-transparent border-b border-transparent hover:border-gray-500 focus:border-indigo-500 transition-colors w-full focus:outline-none" placeholder="Character Name">
                     <div class="flex items-center space-x-2 mt-1">
                         <span class="text-sm text-gray-400">Active in this chat</span>
                         <label class="relative inline-flex items-center cursor-pointer">
@@ -7301,18 +7553,24 @@
                 <details open>
                     <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300">Primary Info</summary>
                     <div class="p-4 space-y-4 bg-black/20 rounded-b-lg">
-                        <input type="text" value="${char.name}" oninput="NarrativeController.updateCharacterField('${char.id}', 'name', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded text-lg" placeholder="Character Name">
+                        
                         <div><label class="text-sm text-gray-400">Short Description (for roster card)</label><input type="text" value="${char.short_description}" oninput="NarrativeController.updateCharacterField('${char.id}', 'short_description', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"></div>
-                        <div>
-                            <label class="text-sm text-gray-400">Default Image</label>
-                            <input type="text" value="${char.image_url}" oninput="NarrativeController.updateCharacterField('${char.id}', 'image_url', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded mb-2" placeholder="Paste URL...">
-                            <input type="file" accept="image/*" data-action-change="upload-local-image" data-id="${char.id}" class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
-                        </div>
+                        
                         <div class="grid grid-cols-2 gap-4">
                             <div><label class="text-sm text-gray-400">Bubble Base Color</label><input type="color" value="${color.base}" oninput="NarrativeController.updateCharacterColor('${char.id}', 'base', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded"></div>
                             <div><label class="text-sm text-gray-400">Name Color</label><input type="color" value="${color.bold}" oninput="NarrativeController.updateCharacterColor('${char.id}', 'bold', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded"></div>
                         </div>
                         <div><label class="text-sm text-gray-400">Tags (comma-separated)</label><input type="text" value="${tagsValue}" oninput="NarrativeController.updateCharacterTags('${char.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"><button data-action="gen-char-tags" data-id="${char.id}" class="text-xs text-sky-400 hover:text-sky-300 mt-1 p-1 bg-sky-600/80 rounded">${this.getAIGenIcon()}</button></div>
+                        
+                        <div class="mt-4 pt-4 border-t border-gray-800">
+                            <label class="text-sm text-gray-400">Default Image</label>
+                            <div class="flex items-start gap-4 mt-2">
+                                <div class="w-64 h-64 flex-shrink-0 bg-gray-800 rounded overflow-hidden border border-gray-600">
+                                    <img src="${this.getPortraitSrc(char) || ''}" class="w-full h-full object-cover">
+                                </div>
+                                <input type="file" accept="image/*" data-action-change="upload-local-image" data-id="${char.id}" class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
+                            </div>
+                        </div>
                     </div>
                 </details>
                 <details>
@@ -7339,7 +7597,6 @@
             </div>
             <div class="p-4 bg-black/20 border-t border-gray-700 flex justify-between">
                 <button data-action="delete-character" data-id="${char.id}" class="text-xs bg-red-900/50 hover:bg-red-700/80 text-red-200 font-semibold py-2 px-3 rounded">Delete</button>
-                <button data-action="close-modal" data-id="character-detail-modal" class="bg-gray-600 hover:bg-gray-700 font-bold py-2 px-4 rounded-lg">Done</button>
             </div>
         `;
                 container.innerHTML = modalHTML.toString();
@@ -8580,16 +8837,26 @@
                     return;
                 }
 
-                container.innerHTML = models.map(model => `
-            <div class="inline-flex items-center bg-black/30 border border-gray-600 rounded-lg overflow-hidden">
-                <button onclick="AppController.selectOpenRouterModel('${model}')" class="px-3 py-1 text-xs text-gray-300 hover:text-white hover:bg-white/10 transition-colors truncate max-w-[200px]" title="Use this model">
-                    ${model}
+                container.innerHTML = models.map(model => {
+                    // Simplify: show only the part after the slash if present
+                    const shortName = model.includes('/') ? model.split('/').slice(1).join('/') : model;
+
+                    // Color logic based on :free suffix
+                    const isFree = model.endsWith(':free');
+                    const borderColor = isFree ? 'border-green-500' : 'border-gray-600';
+                    const textColor = isFree ? 'text-green-200' : 'text-gray-300';
+
+                    return `
+            <div class="inline-flex items-center bg-black/30 border ${borderColor} rounded-lg overflow-hidden" title="${model}">
+                <button onclick="AppController.selectOpenRouterModel('${model}')" class="px-3 py-1 text-xs ${textColor} hover:text-white hover:bg-white/10 transition-colors truncate max-w-[200px]">
+                    ${shortName}
                 </button>
-                <button onclick="AppController.deleteOpenRouterModel('${model}')" class="px-2 py-1 text-xs text-gray-500 hover:text-red-400 hover:bg-black/20 border-l border-gray-600 transition-colors" title="Remove">
+                <button onclick="AppController.deleteOpenRouterModel('${model}')" class="px-2 py-1 text-xs text-gray-500 hover:text-red-400 hover:bg-black/20 border-l ${borderColor} transition-colors" title="Remove">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-        `).join('');
+        `;
+                }).join('');
             },
 
             // --- OpenRouter Model Browser ---
@@ -8672,11 +8939,21 @@
                     return `$${perMillion.toFixed(2)}/M`;
                 };
 
+                const getPriceColor = (price) => {
+                    const val = parseFloat(price || 0) * 1000000;
+                    if (val <= 0.05) return 'text-green-400 font-bold'; // Free or dirt cheap
+                    if (val < 5) return 'text-gray-300'; // Reasonable
+                    return 'text-amber-400'; // Expensive
+                };
+
                 listContainer.innerHTML = sortedModels.map(model => {
                     const isSelected = model.id === currentModel;
                     const promptPrice = formatPrice(model.pricing?.prompt);
                     const completionPrice = formatPrice(model.pricing?.completion);
                     const contextLength = model.context_length ? `${Math.round(model.context_length / 1024)}K ctx` : '';
+
+                    const pColor = getPriceColor(model.pricing?.prompt);
+                    const cColor = getPriceColor(model.pricing?.completion);
 
                     return `
                         <div class="p-3 rounded-lg cursor-pointer transition-colors mb-1 ${isSelected ? 'bg-indigo-600/50 border border-indigo-500' : 'bg-gray-700/50 hover:bg-gray-600/50 border border-transparent'}" onclick="AppController._selectModelFromBrowser('${model.id}')">
@@ -8688,8 +8965,8 @@
                                 ${isSelected ? '<span class="ml-2 text-indigo-300 text-sm whitespace-nowrap">Current</span>' : ''}
                             </div>
                             <div class="flex gap-3 mt-2 text-xs text-gray-400">
-                                <span title="Input price per million tokens">In: ${promptPrice}</span>
-                                <span title="Output price per million tokens">Out: ${completionPrice}</span>
+                                <span title="Input price per million tokens" class="${pColor}">In: ${promptPrice}</span>
+                                <span title="Output price per million tokens" class="${cColor}">Out: ${completionPrice}</span>
                                 ${contextLength ? `<span title="Context window">${contextLength}</span>` : ''}
                             </div>
                         </div>
