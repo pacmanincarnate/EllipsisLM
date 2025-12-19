@@ -1362,6 +1362,27 @@
         </div>
     </div>
 
+    <!-- OpenRouter Model Browser Modal -->
+    <div id="openrouter-model-modal" class="fixed inset-0 z-[80] items-center justify-center hidden">
+        <div class="modal-overlay absolute inset-0 bg-black/60" data-action="close-modal" data-id="openrouter-model-modal"></div>
+        <div class="bg-gray-800/95 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-2xl relative flex flex-col max-h-[85vh]">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-bold">Browse OpenRouter Models</h3>
+                <button data-action="close-modal" data-id="openrouter-model-modal" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-4 border-b border-gray-700">
+                <input type="text" id="openrouter-model-search" class="w-full rounded-lg p-3 bg-gray-900/50 border border-gray-600 focus:border-indigo-500 focus:outline-none" placeholder="Search models by name or provider...">
+            </div>
+            <div id="openrouter-model-list" class="flex-1 overflow-y-auto p-2 min-h-[300px]">
+                <div class="flex items-center justify-center h-full text-gray-400">
+                    <span>Loading models...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Hidden template for settings tabs -->
     <div id="settings-templates" class="hidden">
 
@@ -1914,6 +1935,14 @@
                 <div class="mt-2 flex space-x-2">
                     <input type="text" id="openrouter-model-input" class="flex-grow rounded-lg p-2"
                         placeholder="Enter model name (e.g. anthropic/claude-3-opus)">
+                    <button onclick="AppController.openOpenRouterModelBrowser()"
+                        class="bg-gray-700 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-lg transition-colors"
+                        title="Browse models">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </button>
                     <button onclick="AppController.saveOpenRouterModel()"
                         class="bg-gray-700 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-lg transition-colors"
                         title="Save to list">
@@ -3385,11 +3414,40 @@
              */
             async callOpenRouter(prompt, signal) {
                 const state = StateManager.getState();
-                if (!state.openRouterKey || !state.openRouterModel) throw new Error("OpenRouter API key or model not set.");
-                const res = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.openRouterKey}` }, body: JSON.stringify({ model: state.openRouterModel, messages: [{ role: 'user', content: prompt }] }), signal });
+                const global = StateManager.data.globalSettings;
+                const apiKey = global.openRouterKey || state.openRouterKey;
+                const model = state.openRouterModel || global.openRouterModel;
+                if (!apiKey || !model) throw new Error("OpenRouter API key or model not set.");
+                const res = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }] }), signal });
                 if (!res.ok) { let errorDetails = `Status: ${res.status} ${res.statusText}.`; try { const errorJson = await res.json(); errorDetails += ` Message: ${errorJson.error.message || JSON.stringify(errorJson.error)}`; } catch (e) { errorDetails += ` Response body: ${await res.text()}`; } throw new Error(`API Error: ${errorDetails}`); }
                 const data = await res.json();
                 return data.choices[0].message.content;
+            },
+            /**
+             * Fetches available models from OpenRouter API.
+             * @returns {Promise<Array>} Array of model objects with id, name, pricing, context_length, etc.
+             */
+            async fetchOpenRouterModels() {
+                const state = StateManager.getState();
+                const global = StateManager.data.globalSettings;
+                const apiKey = global.openRouterKey || state.openRouterKey;
+                const headers = { 'Content-Type': 'application/json' };
+                if (apiKey) {
+                    headers['Authorization'] = `Bearer ${apiKey}`;
+                }
+                const res = await fetch('https://openrouter.ai/api/v1/models', { method: 'GET', headers });
+                if (!res.ok) {
+                    let errorDetails = `Status: ${res.status} ${res.statusText}.`;
+                    try {
+                        const errorJson = await res.json();
+                        errorDetails += ` Message: ${errorJson.error?.message || JSON.stringify(errorJson.error)}`;
+                    } catch (e) {
+                        errorDetails += ` Response body: ${await res.text()}`;
+                    }
+                    throw new Error(`Failed to fetch OpenRouter models: ${errorDetails}`);
+                }
+                const data = await res.json();
+                return data.data || [];
             },
             /**
              * Calls the KoboldCPP API.
@@ -8532,6 +8590,127 @@
                 </button>
             </div>
         `).join('');
+            },
+
+            // --- OpenRouter Model Browser ---
+
+            /**
+             * Opens the OpenRouter model browser modal and fetches available models.
+             */
+            async openOpenRouterModelBrowser() {
+                const listContainer = document.getElementById('openrouter-model-list');
+                const searchInput = document.getElementById('openrouter-model-search');
+
+                // Reset search input
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+
+                // Show loading state
+                if (listContainer) {
+                    listContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-400"><span>Loading models...</span></div>';
+                }
+
+                this.openModal('openrouter-model-modal');
+
+                try {
+                    const models = await APIService.fetchOpenRouterModels();
+                    this._openRouterModelsList = models;
+                    this._renderOpenRouterModelList(models);
+
+                    // Setup search handler with debounce
+                    if (searchInput) {
+                        searchInput.oninput = debounce((e) => {
+                            const query = e.target.value.toLowerCase().trim();
+                            const filtered = query ? models.filter(m =>
+                                m.id.toLowerCase().includes(query) ||
+                                (m.name && m.name.toLowerCase().includes(query))
+                            ) : models;
+                            this._renderOpenRouterModelList(filtered);
+                        }, 200);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch OpenRouter models:', error);
+                    if (listContainer) {
+                        listContainer.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-red-400 p-4">
+                            <span class="text-center">Failed to load models.</span>
+                            <span class="text-center text-sm mt-1">${error.message}</span>
+                            <button onclick="AppController.openOpenRouterModelBrowser()" class="mt-4 bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-white">Retry</button>
+                        </div>`;
+                    }
+                }
+            },
+
+            /**
+             * Renders the OpenRouter model list in the browser modal.
+             * @param {Array} models - Array of model objects to render.
+             */
+            _renderOpenRouterModelList(models) {
+                const listContainer = document.getElementById('openrouter-model-list');
+                if (!listContainer) return;
+
+                if (!models || models.length === 0) {
+                    listContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-400"><span>No models found</span></div>';
+                    return;
+                }
+
+                const global = StateManager.data.globalSettings;
+                const state = StateManager.getState();
+                const currentModel = global.openRouterModel || state.openRouterModel;
+
+                // Sort models: selected first, then alphabetically by name
+                const sortedModels = [...models].sort((a, b) => {
+                    if (a.id === currentModel) return -1;
+                    if (b.id === currentModel) return 1;
+                    return (a.name || a.id).localeCompare(b.name || b.id);
+                });
+
+                const formatPrice = (price) => {
+                    if (!price || price === 0) return 'Free';
+                    const perMillion = parseFloat(price) * 1000000;
+                    if (perMillion < 0.01) return '<$0.01/M';
+                    return `$${perMillion.toFixed(2)}/M`;
+                };
+
+                listContainer.innerHTML = sortedModels.map(model => {
+                    const isSelected = model.id === currentModel;
+                    const promptPrice = formatPrice(model.pricing?.prompt);
+                    const completionPrice = formatPrice(model.pricing?.completion);
+                    const contextLength = model.context_length ? `${Math.round(model.context_length / 1024)}K ctx` : '';
+
+                    return `
+                        <div class="p-3 rounded-lg cursor-pointer transition-colors mb-1 ${isSelected ? 'bg-indigo-600/50 border border-indigo-500' : 'bg-gray-700/50 hover:bg-gray-600/50 border border-transparent'}" onclick="AppController._selectModelFromBrowser('${model.id}')">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-medium text-white truncate">${model.name || model.id}</div>
+                                    <div class="text-xs text-gray-400 truncate">${model.id}</div>
+                                </div>
+                                ${isSelected ? '<span class="ml-2 text-indigo-300 text-sm whitespace-nowrap">Current</span>' : ''}
+                            </div>
+                            <div class="flex gap-3 mt-2 text-xs text-gray-400">
+                                <span title="Input price per million tokens">In: ${promptPrice}</span>
+                                <span title="Output price per million tokens">Out: ${completionPrice}</span>
+                                ${contextLength ? `<span title="Context window">${contextLength}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            /**
+             * Selects a model from the browser and populates the input field.
+             * @param {string} modelId - The model ID to select.
+             */
+            _selectModelFromBrowser(modelId) {
+                const input = document.getElementById('openrouter-model-input');
+                if (input) {
+                    input.value = modelId;
+                    // Trigger input event to sync with globalSettings
+                    input.dispatchEvent(new Event('input'));
+                }
+                // Also update ReactiveStore.state directly (like apiProvider does)
+                ReactiveStore.state.openRouterModel = modelId;
+                this.closeModal('openrouter-model-modal');
             }
         };
 
