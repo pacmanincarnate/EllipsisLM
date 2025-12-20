@@ -885,7 +885,8 @@
                 style="padding: 1rem; border-top: 1px solid; border-top-color: color-mix(in srgb, var(--chat-text-color) 50%, transparent);">
                 <textarea id="chat-input"
                     class="flex-grow bg-black/30 border border-gray-800 rounded-lg p-2 color: black"
-                    placeholder="Enter your message..." rows="4" style="color: var(--chat-text-color)"></textarea>
+                    placeholder="Enter your message..." rows="4"
+                    style="color: var(--chat-text-color); font-family: var(--chat-font-family);"></textarea>
                 <div class="flex flex-col space-y-2" style="width: 8.5rem;">
                     <select id="ai-character-selector" aria-label="Select Character"
                         class="bg-black/30 border border-gray-600 rounded-lg p-2 w-full mb-2 text-xs truncate"></select>
@@ -1048,6 +1049,17 @@
                             separated)</label>
                         <input type="text" id="gen-approval-tags-input"
                             class="gen-input w-full text-sm text-indigo-300">
+                    </div>
+                    <div class="flex items-center space-x-3 pt-2">
+                        <div
+                            class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="gen-approval-map-toggle" checked
+                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer text-indigo-600 focus:ring-0 checked:right-0 checked:border-indigo-600 right-4" />
+                            <label for="gen-approval-map-toggle"
+                                class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                        </div>
+                        <label for="gen-approval-map-toggle"
+                            class="text-sm text-gray-300 cursor-pointer font-bold">Generate World Map</label>
                     </div>
                 </div>
 
@@ -1251,7 +1263,8 @@
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="settings-modal"></div>
         <div
             class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-full max-w-2xl max-h-[85vh] relative flex flex-col overflow-hidden">
-            <div class="p-6 flex-shrink-0 border-b border-gray-700 flex justify-between items-start">
+            <div class="p-6 flex-shrink-0 border-b border-gray-700 flex justify-between items-start"
+                style="padding-bottom: .1rem;">
                 <div>
                     <h2 class="text-2xl font-semibold mb-4">Settings</h2>
                     <div class="flex -mb-px space-x-4">
@@ -1274,7 +1287,8 @@
                     </svg>
                 </button>
             </div>
-            <div class="p-6 md:p-6 p-4 overflow-y-auto flex-grow min-h-0" id="settings-content-container">...</div>
+            <div class="p-4 md:p-6 pb-24 md:pb-6 overflow-y-auto flex-grow min-h-0 overscroll-auto"
+                id="settings-content-container">...</div>
         </div>
     </div>
 
@@ -1782,7 +1796,21 @@
         </div>
 
         <div id="settings-prompt-content" class="space-y-2">
-
+            <div class="flex space-x-2 pt-4"><button onclick="NarrativeController.viewRawPrompt()"
+                    class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw
+                    Prompt</button><button data-action="open-modal" data-target="example-dialogue-modal"
+                    class="bg-sky-600/80 hover:bg-sky-500/80 text-white font-bold py-2 px-4 rounded-lg">Edit Example
+                    Dialogue</button>
+                <button onclick="StoryService.exportNarrativeHTML()"
+                    class="bg-emerald-600/80 hover:bg-emerald-500/80 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+                    title="Export Narrative as HTML">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                    </svg>
+                    Export
+                </button>
+            </div>
 
             <details>
                 <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Event Master
@@ -1855,21 +1883,6 @@
                         rows="4"></textarea>
                 </div>
             </details>
-            <div class="flex space-x-2 pt-4"><button onclick="NarrativeController.viewRawPrompt()"
-                    class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw
-                    Prompt</button><button data-action="open-modal" data-target="example-dialogue-modal"
-                    class="bg-sky-600/80 hover:bg-sky-500/80 text-white font-bold py-2 px-4 rounded-lg">Edit Example
-                    Dialogue</button>
-                <button onclick="StoryService.exportNarrativeHTML()"
-                    class="bg-emerald-600/80 hover:bg-emerald-500/80 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
-                    title="Export Narrative as HTML">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                    </svg>
-                    Export
-                </button>
-            </div>
 
             <div class="flex items-center justify-between mb-4 bg-black/20 p-3 rounded-lg border border-gray-700">
                 <div>
@@ -2126,7 +2139,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2025.12.195 - 16:00 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2025.12.15 - 16:00 CST";
 
 
         /**
@@ -2745,6 +2758,7 @@
 
                 const font = s.font || defaults.font;
                 const textSize = s.textSize || defaults.textSize;
+                const bubbleOpacity = s.bubbleOpacity !== undefined ? s.bubbleOpacity : 1.0;
 
                 // Markdown Colors
                 const mdH1 = s.md_h1_color || defaults.md_h1_color;
@@ -2754,26 +2768,44 @@
                 const mdItalic = s.md_italic_color || defaults.md_italic_color;
                 const mdQuote = s.md_quote_color || defaults.md_quote_color;
 
+                // Support function for opacity
+                const hexToRgba = (hex, alpha) => {
+                    if (!hex) return hex;
+                    // Handle shorthand hex
+                    if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+                        let c = hex.substring(1).split('');
+                        if (c.length === 3) {
+                            c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+                        }
+                        c = '0x' + c.join('');
+                        return 'rgba(' + [(c >> 16) & 255, (c >> 8) & 255, c & 255].join(',') + ',' + alpha + ')';
+                    }
+                    return hex;
+                };
+
                 // Generate static HTML for chat history
                 let chatHTML = '';
                 state.chat_history.forEach(msg => {
                     const charId = msg.character_id;
                     const char = (state.characters || []).find(c => c.id === charId);
-                    const name = char ? char.name : (msg.character_id === 'user' ? (StateManager.data.globalSettings.userPersona?.name || 'You') : 'Unknown');
-                    const isUser = msg.character_id === 'user';
+                    const isUser = (char && char.is_user) || msg.character_id === 'user';
+                    const name = char ? char.name : (isUser ? (StateManager.data.globalSettings.userPersona?.name || 'You') : 'Unknown');
 
                     // Character Colors
                     const defaultColor = isUser ? { base: '#4b5563', bold: '#e5e7eb' } : { base: '#334155', bold: '#94a3b8' };
                     const charColor = (char && char.color) ? char.color : defaultColor;
                     const nameColor = charColor.bold;
 
-                    // Bubble Colors (Approximate for export)
-                    const bubbleBg = isUser ? '#1e293b' : '#334155'; // Fallback flat colors
+                    // Bubble Colors: Respect stored characteristic and opacity
+                    const bubbleBg = hexToRgba(charColor.base, bubbleOpacity);
+
+                    // Apply Smart Quotes
+                    const smartContent = (msg.content || '').replace(/(["“][^"”]*["”])/g, '<span class="dialogue-quote">$1</span>');
 
                     chatHTML += `
             <div class="message ${isUser ? 'user-message' : 'ai-message'}" style="background-color: ${bubbleBg};">
                 <div class="message-header" style="color: ${nameColor};">${name}</div>
-                <div class="message-content">${marked.parse(msg.content)}</div>
+                <div class="message-content">${marked.parse(smartContent)}</div>
             </div>
         `;
                 });
@@ -2815,6 +2847,13 @@
             border-bottom: 1px solid #334155;
             padding-bottom: 1rem;
             margin-bottom: 2rem;
+        }
+
+        /* Smart Quotation Styling */
+        .dialogue-quote {
+            color: inherit;
+            filter: saturate(175%) opacity(75%) drop-shadow(1px 1px 5px black);
+            font-weight: 500;
         }
 
         .message {
@@ -5741,13 +5780,7 @@
                 const imgSrc = UIManager.getPortraitSrc(character, msg.emotion);
 
                 if (state.characterImageMode === 'bubble' && imgSrc) {
-                    contentHTML = DOM.html`
-                <img src="${imgSrc}" 
-                     class="bubble-char-image cursor-pointer hover:opacity-90 transition-opacity" 
-                     data-action="view-chat-image" 
-                     data-src="${imgSrc}" 
-                     title="View Full Size">
-                ${contentHTML}`;
+                    contentHTML = DOM.html`<img src="${imgSrc}" class="bubble-char-image cursor-pointer hover:opacity-90 transition-opacity" data-action="view-chat-image" data-src="${imgSrc}" title="View Full Size">${contentHTML}`;
                 }
 
                 const defaultColor = character.is_user
@@ -6946,16 +6979,34 @@
             showTypingIndicator(charId, text = "is thinking...") {
                 this.hideTypingIndicator();
                 const chatWindow = document.getElementById('chat-window');
-                const name = (StateManager.getState().characters || []).find(c => c.id === charId)?.name || 'System';
+                const state = StateManager.getState();
+                const character = (state.characters || []).find(c => c.id === charId);
+                const name = character?.name || 'System';
+
+                // Color Logic
+                const defaultColor = (character && character.is_user)
+                    ? { base: '#4b5563', bold: '#e5e7eb' }
+                    : { base: '#334155', bold: '#94a3b8' };
+
+                const charColor = (character && character.color) ? character.color : defaultColor;
+                const bubbleOpacity = state.bubbleOpacity !== undefined ? state.bubbleOpacity : 0.95;
+
+                const topColor = UTILITY.hexToRgba(charColor.base, bubbleOpacity);
+                const bottomColor = UTILITY.hexToRgba(UTILITY.darkenHex(charColor.base, 10), bubbleOpacity);
+
+                const bubbleStyle = `background-image: linear-gradient(to bottom, ${topColor}, ${bottomColor});`;
+                const nameStyle = `color: ${charColor.bold};`;
+                const textStyle = `color: ${state.chatTextColor || '#e5e7eb'};`;
+
                 const indicator = document.createElement('div');
                 indicator.id = 'typing-indicator';
 
                 indicator.className = 'chat-bubble-container';
                 indicator.innerHTML = DOM.html`
             <div class="mb-4 flex flex-col items-start">
-                <p class="font-bold text-sm mb-1">${name}</p>
-                <div class="p-3 bg-gray-700/80 rounded-lg typing-bubble-pulse">
-                    <p class="italic">${text}</p>
+                <p class="font-bold text-sm mb-1" style="${DOM.unsafe(nameStyle)}">${name}</p>
+                <div class="p-3 rounded-lg typing-bubble-pulse" style="${DOM.unsafe(bubbleStyle)}">
+                    <p class="italic" style="${DOM.unsafe(textStyle)}">${text}</p>
                 </div>
             </div>`.toString();
 
@@ -7525,8 +7576,8 @@
                 const color = char.color || { base: '#334155', bold: '#94a3b8' };
 
                 const modalHTML = DOM.html`
-            <div class="p-6 border-b border-gray-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div class="flex-grow w-full md:w-auto">
+            <div class="p-6 border-b border-gray-700 flex flex-row justify-between items-center gap-2">
+                <div class="flex-grow min-w-0">
                     <input type="text" value="${char.name}" oninput="NarrativeController.updateCharacterField('${char.id}', 'name', this.value)" class="text-2xl font-semibold bg-transparent border-b border-transparent hover:border-gray-500 focus:border-indigo-500 transition-colors w-full focus:outline-none" placeholder="Character Name">
                     <div class="flex items-center space-x-2 mt-1">
                         <span class="text-sm text-gray-400">Active in this chat</span>
@@ -7557,17 +7608,17 @@
                         <div><label class="text-sm text-gray-400">Short Description (for roster card)</label><input type="text" value="${char.short_description}" oninput="NarrativeController.updateCharacterField('${char.id}', 'short_description', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"></div>
                         
                         <div class="grid grid-cols-2 gap-4">
-                            <div><label class="text-sm text-gray-400">Bubble Base Color</label><input type="color" value="${color.base}" oninput="NarrativeController.updateCharacterColor('${char.id}', 'base', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded"></div>
-                            <div><label class="text-sm text-gray-400">Name Color</label><input type="color" value="${color.bold}" oninput="NarrativeController.updateCharacterColor('${char.id}', 'bold', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded"></div>
+                            <div><label class="text-sm text-gray-400" style="padding-right: 1rem;">Bubble Base Color</label><input type="color" value="${color.base}" oninput="NarrativeController.updateCharacterColor('${char.id}', 'base', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded" style="width: 4rem;"></div>
+                            <div><label class="text-sm text-gray-400" style="padding-right: 1rem;">Name Color</label><input type="color" value="${color.bold}" oninput="NarrativeController.updateCharacterColor('${char.id}', 'bold', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded" style="width: 4rem;"></div>
                         </div>
                         <div><label class="text-sm text-gray-400">Tags (comma-separated)</label><input type="text" value="${tagsValue}" oninput="NarrativeController.updateCharacterTags('${char.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"><button data-action="gen-char-tags" data-id="${char.id}" class="text-xs text-sky-400 hover:text-sky-300 mt-1 p-1 bg-sky-600/80 rounded">${this.getAIGenIcon()}</button></div>
                         
                         <div class="mt-4 pt-4 border-t border-gray-800">
                             <label class="text-sm text-gray-400">Default Image</label>
                             <div class="flex items-start gap-4 mt-2">
-                                <div class="w-64 h-64 flex-shrink-0 bg-gray-800 rounded overflow-hidden border border-gray-600">
-                                    <img src="${this.getPortraitSrc(char) || ''}" class="w-full h-full object-cover">
-                                </div>
+                                ${this.getPortraitSrc(char) ? DOM.html`<div class="w-64 h-64 flex-shrink-0 bg-gray-800 rounded overflow-hidden border border-gray-600">
+                                    <img src="${this.getPortraitSrc(char)}" class="w-full h-full object-cover">
+                                </div>` : ''}
                                 <input type="file" accept="image/*" data-action-change="upload-local-image" data-id="${char.id}" class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
                             </div>
                         </div>
@@ -9659,6 +9710,7 @@
                 const summary = document.getElementById('gen-approval-summary-input').value;
                 const tagsStr = document.getElementById('gen-approval-tags-input').value;
                 const tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
+                const shouldGenerateMap = document.getElementById('gen-approval-map-toggle').checked;
 
                 // UI Switch
                 document.getElementById('gen-story-approval-view').classList.remove('flex');
@@ -9738,7 +9790,7 @@
                                 is_user: charDef.role === 'User',
                                 is_active: true,
                                 is_narrator: charDef.role === 'PrimaryAI' && !roster.some(r => r.role === 'User'),
-                                color: { base: charData.color_hex || '#4b5563', bold: '#ffffff' },
+                                color: NarrativeController.CONSTANTS.CHARACTER_COLORS[i % NarrativeController.CONSTANTS.CHARACTER_COLORS.length],
                                 image_url: '',
                                 extra_portraits: []
                             });
@@ -9787,17 +9839,22 @@
                     // STEP 6: SMART MAP SEEDING
                     updateUI(90, "Singing the world into existence...");
                     let grid = UTILITY.createDefaultMapGrid();
-                    try {
-                        // Extract Titles and Content for seeding
-                        const loreDetails = draft.static_entries.map(e => `${e.title}: ${e.content}`).join('\n');
-                        const mapContext = {
-                            characters: draft.characters.map(c => c.name).join(', '),
-                            static_lore: `${contextSummary}\nKey worldbuilding to respond to and expand upon with locations that are authentic and logical within the story framework and scale. Provide a physical description of the location, along with any importance within the environment or scenario:\n${loreDetails}`,
-                            recent_events: firstMsg
-                        };
-                        grid = await WorldController.generateMapGrid(mapContext);
-                    } catch (e) {
-                        console.warn("Map Gen Failed, using default", e);
+
+                    if (shouldGenerateMap) {
+                        try {
+                            // Extract Titles and Content for seeding
+                            const loreDetails = draft.static_entries.map(e => `${e.title}: ${e.content}`).join('\n');
+                            const mapContext = {
+                                characters: draft.characters.map(c => c.name).join(', '),
+                                static_lore: `${contextSummary}\nKey worldbuilding to respond to and expand upon with locations that are authentic and logical within the story framework and scale. Provide a physical description of the location, along with any importance within the environment or scenario:\n${loreDetails}`,
+                                recent_events: firstMsg
+                            };
+                            grid = await WorldController.generateMapGrid(mapContext);
+                        } catch (e) {
+                            console.warn("Map Gen Failed, using default", e);
+                        }
+                    } else {
+                        console.log("Skipping map generation per user request.");
                     }
 
                     // FINAL SAVE
