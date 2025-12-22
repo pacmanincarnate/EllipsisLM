@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -849,6 +850,9 @@
                             onclick="AppController.openSettingsToTab('model'); AppController.toggleMobileMenu(); return false;"
                             class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Model</a>
                         <a href="#"
+                            onclick="AppController.openSettingsToTab('image-gen'); AppController.toggleMobileMenu(); return false;"
+                            class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Image Gen</a>
+                        <a href="#"
                             onclick="AppController.openSettingsToTab('personas'); AppController.toggleMobileMenu(); return false;"
                             class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Users</a>
                     </div>
@@ -1271,9 +1275,12 @@
                         <button id="settings-tab-appearance" onclick="AppController.switchSettingsTab('appearance')"
                             class="pb-2 font-semibold border-b-2 border-indigo-500 text-white transition-colors">Appearance</button>
                         <button id="settings-tab-prompt" onclick="AppController.switchSettingsTab('prompt')"
-                            class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Prompt</button>
+                            class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Prompts</button>
                         <button id="settings-tab-model" onclick="AppController.switchSettingsTab('model')"
                             class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Model</button>
+                        <button id="settings-tab-image-gen" onclick="AppController.switchSettingsTab('image-gen')"
+                            class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Image
+                            Gen</button>
                         <button id="settings-tab-personas" onclick="AppController.switchSettingsTab('personas')"
                             class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Users</button>
                     </div>
@@ -1412,6 +1419,8 @@
 
     <!-- Hidden template for settings tabs -->
     <div id="settings-templates" class="hidden">
+        <!-- IMAGE GEN SETTINGS -->
+
 
         <div id="settings-appearance-content" class="space-y-6">
             <div>
@@ -2083,6 +2092,134 @@
                 </div>
             </div>
         </div>
+
+        <div id="settings-image-gen-content">
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-400 mb-2">Image Generation Backend</label>
+                <select id="image-gen-backend" data-setting-key="imageGenBackend"
+                    class="w-full rounded-lg p-3 bg-gray-700 border border-gray-600 text-white focus:border-indigo-500 transition-colors"
+                    onchange="AppController.updateImageGenSettingsVisibility()">
+                    <option value="disabled">Disabled</option>
+                    <option value="koboldcpp">Local (Stable Diffusion / KoboldCPP)</option>
+                    <option value="openrouter">Cloud (OpenRouter / DALL-E)</option>
+                </select>
+            </div>
+
+            <!-- KoboldCPP / Local SD Settings -->
+            <div id="image-gen-kobold-settings" class="space-y-4">
+                <h4 class="font-bold text-gray-300">KoboldCPP / SDAPI Settings</h4>
+                <div>
+                    <label class="block text-xs uppercase text-gray-500 font-bold mb-1">API URL</label>
+                    <input type="text" id="image-gen-kobold-url" data-setting-key="koboldImageGenUrl"
+                        placeholder="http://localhost:5001"
+                        class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                    <p class="text-xs text-gray-500 mt-1">Must expose <code>/sdapi/v1/txt2img</code>.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs uppercase text-gray-500 font-bold mb-1">Width</label>
+                        <input type="number" id="image-gen-width" data-setting-key="imageGenWidth" placeholder="512"
+                            class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase text-gray-500 font-bold mb-1">Height</label>
+                        <input type="number" id="image-gen-height" data-setting-key="imageGenHeight" placeholder="512"
+                            class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs uppercase text-gray-500 font-bold mb-1">CFG Scale (Guidance)</label>
+                    <input type="number" id="kobold-cfg-scale" data-setting-key="koboldImageGenCfg" placeholder="7"
+                        step="0.5"
+                        class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs uppercase text-gray-500 font-bold mb-1">Sampler</label>
+                        <input type="text" id="kobold-sampler" data-setting-key="koboldImageGenSampler"
+                            placeholder="Euler"
+                            class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase text-gray-500 font-bold mb-1">Scheduler</label>
+                        <input type="text" id="kobold-scheduler" data-setting-key="koboldImageGenScheduler"
+                            placeholder="simple"
+                            class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs uppercase text-gray-500 font-bold mb-1">Steps</label>
+                    <input type="number" id="kobold-steps" data-setting-key="koboldImageGenSteps" placeholder="20"
+                        class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- OpenRouter Settings -->
+            <div id="image-gen-openrouter-settings" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-sm font-bold text-gray-400 mb-1">OpenRouter API Key</label>
+                    <input type="password" id="image-gen-openrouter-key-input"
+                        class="w-full rounded-lg p-2 bg-black/20 border border-gray-600 text-white"
+                        placeholder="sk-or-...">
+                    <p class="text-xs text-gray-500 mt-1">Leave blank to use the main OpenRouter key.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-400 mb-1">Model ID</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="image-gen-openrouter-model-input"
+                            class="flex-grow rounded-lg p-2 bg-black/20 border border-gray-600 text-white"
+                            placeholder="openai/dall-e-3">
+                        <button onclick="AppController.openOpenRouterImageModelBrowser()"
+                            class="bg-gray-700 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-lg transition-colors"
+                            title="Browse models">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="AppController.saveOpenRouterImageModel()"
+                            class="bg-gray-700 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-lg transition-colors"
+                            title="Save to list">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="image-gen-openrouter-saved-models-list" class="mt-3 flex flex-wrap gap-2"></div>
+            </div>
+
+
+
+
+            <!-- Visual Master Settings -->
+            <div class="mt-6 border-t border-gray-700 pt-4">
+                <label class="block text-sm font-bold text-gray-400 mb-2">Visual Master Probability (Scene
+                    Generation)</label>
+                <div class="flex items-center space-x-4">
+                    <input type="range" id="visual-master-probability-slider"
+                        class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" min="0" max="100"
+                        step="5" value="0"
+                        oninput="document.getElementById('visual-master-prob-value').textContent = this.value + '%'">
+                    <span id="visual-master-prob-value"
+                        class="text-sm font-bold text-indigo-400 w-12 text-right">0%</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Chance for the AI to spontaneously generate an image of the scene.
+                </p>
+            </div>
+
+            <div class="mt-6 p-4 bg-gray-800 rounded-lg flex items-center justify-between">
+                <span id="img-gen-status" class="text-gray-400 text-sm">Status: Not Checked</span>
+                <button
+                    onclick="ImageGenerationService.testConnection().then(ok => document.getElementById('img-gen-status').textContent = ok ? 'Status: Online ✅' : 'Status: Offline ❌')"
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 px-3 rounded transition-colors">
+                    Test Connection
+                </button>
+            </div>
+        </div>
+    </div>
     </div>
 
     <div id="lightbox-modal"
@@ -2139,7 +2276,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2025.12.15 - 16:00 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2025.12.22 - 16:00 CST";
 
 
         /**
@@ -2685,6 +2822,246 @@
                 });
             }
         };
+
+        /**
+         * =================================================================================================
+         * ImageGenerationService Module
+         * Handles interactions with Text-to-Image APIs (KoboldCPP / OpenRouter).
+         * =================================================================================================
+         */
+        const ImageGenerationService = {
+
+            /**
+             * Generates an image based on the provided prompt and settings.
+             * @param {string} prompt - The positive prompt.
+             * @param {string} negativePrompt - The negative prompt.
+             * @param {Object} options - Override options (width, height, etc.).
+             * @returns {Promise<Blob>} - The generated image as a Blob.
+             */
+            async generateImage(prompt, negativePrompt = "", options = {}) {
+                const globalSettings = StateManager.data.globalSettings;
+                const backend = globalSettings.imageGenBackend || 'koboldcpp'; // 'koboldcpp' or 'openrouter'
+
+                if (backend === 'disabled') {
+                    console.log("Image generation is disabled.");
+                    return null;
+                }
+
+                if (backend === 'koboldcpp') {
+                    return this._generateKoboldCPP(prompt, negativePrompt, options);
+                } else if (backend === 'openrouter') {
+                    return this._generateOpenRouter(prompt, options);
+                } else {
+                    throw new Error(`Unknown image generation backend: ${backend}`);
+                }
+            },
+
+            /**
+             * Tests the connection to the configured backend.
+             * @returns {Promise<boolean>}
+             */
+            async testConnection() {
+                const globalSettings = StateManager.data.globalSettings;
+                const backend = globalSettings.imageGenBackend || 'koboldcpp';
+
+                try {
+                    if (backend === 'koboldcpp') {
+                        const url = (globalSettings.koboldImageGenUrl || "http://localhost:5001").replace(/\/$/, "");
+                        const res = await fetch(`${url}/sdapi/v1/options`, { method: 'GET' }); // Check SDAPI options
+                        return res.ok;
+                    } else if (backend === 'openrouter') {
+                        // No easy lightweight check for OR image gen specifically, so we assume valid if we can hit models
+                        const key = globalSettings.imageGenOpenRouterKey;
+                        if (!key) return false;
+                        const res = await fetch("https://openrouter.ai/api/v1/models", {
+                            headers: { "Authorization": `Bearer ${key}` }
+                        });
+                        return res.ok;
+                    }
+                } catch (e) {
+                    console.error("ImageGen Connection Test Failed:", e);
+                    return false;
+                }
+                return false;
+            },
+
+            // --- Internal Adapters ---
+
+            /**
+             * KoboldCPP (SDAPI Compatible) Adapter
+             */
+            async _generateKoboldCPP(prompt, negativePrompt, options) {
+                const globalSettings = StateManager.data.globalSettings;
+                const url = (globalSettings.koboldImageGenUrl || "http://localhost:5001").replace(/\/$/, "");
+
+                const width = options.width || globalSettings.imageGenWidth || 512;
+                const height = options.height || globalSettings.imageGenHeight || 512;
+                const steps = parseInt(globalSettings.koboldImageGenSteps || 20);
+
+                const payload = {
+                    prompt: prompt,
+                    negative_prompt: negativePrompt || "",
+                    width: width,
+                    height: height,
+                    steps: steps,
+                    cfg_scale: parseFloat(globalSettings.koboldImageGenCfg || 7),
+                    sampler_name: globalSettings.koboldImageGenSampler || "Euler",
+                    scheduler: globalSettings.koboldImageGenScheduler || "simple",
+                    send_images: true,
+                    save_images: false,
+                };
+
+                try {
+                    const response = await fetch(`${url}/sdapi/v1/txt2img`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        throw new Error(`KoboldCPP Error (${response.status}): ${errText}`);
+                    }
+
+                    const data = await response.json();
+                    if (data.images && data.images.length > 0) {
+                        // Kobold/SDAPI returns base64 string
+                        return UTILITY.base64ToBlob(data.images[0], 'image/png');
+                    } else {
+                        throw new Error("KoboldCPP returned no images.");
+                    }
+                } catch (e) {
+                    console.error("KoboldCPP Image Gen Failed:", e);
+                    throw e;
+                }
+            },
+
+            /**
+             * OpenRouter (OpenAI Compatible) Adapter
+             */
+            async _generateOpenRouter(prompt, options) {
+                const globalSettings = StateManager.data.globalSettings;
+                const key = globalSettings.imageGenOpenRouterKey;
+
+                if (!key) throw new Error("OpenRouter API Key is missing.");
+
+                // Default to Flux 1 Schnell as it is widely supported and fast on OpenRouter
+                const model = globalSettings.imageGenOpenRouterModel || "black-forest-labs/flux-1-schnell";
+
+                // OpenRouter uses the Chat Completions endpoint for Image Generation models
+                // We send a user message with the prompt.
+                // We add a System Prompt to force the model to behave like a generator and not a chatbot.
+                const payload = {
+                    model: model,
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are an image generation tool. Generate the image requested by the user and output ONLY the image URL. Do not add any conversational text, pleasantries, or explanations. Just the URL."
+                        },
+                        { role: "user", content: prompt }
+                    ],
+                    // NEW: Required by OpenRouter for image models
+                    extra_body: {
+                        modalities: ["image", "text"]
+                    }
+                };
+
+                console.log("OpenRouter Image Req:", payload);
+
+                try {
+                    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                        method: 'POST',
+                        headers: {
+                            "Authorization": `Bearer ${key}`,
+                            "Content-Type": "application/json",
+                            "HTTP-Referer": window.location.href,
+                            "X-Title": "Ellipsis LM"
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        throw new Error(`OpenRouter Error (${response.status}): ${errText}`);
+                    }
+
+                    const data = await response.json();
+                    console.log("OpenRouter Image Res:", data);
+
+                    if (data.choices && data.choices.length > 0) {
+                        const message = data.choices[0].message;
+
+                        // 0. Priority Check: OpenRouter/OpenAI 'images' array (Standard for GenAI)
+                        if (message.images && message.images.length > 0) {
+                            const imgData = message.images[0];
+                            const url = (imgData.image_url && imgData.image_url.url) ? imgData.image_url.url : imgData.url;
+                            if (url) {
+                                console.log("OpenRouter: Found structured image URL/DataURI");
+                                return await (await fetch(url)).blob();
+                            }
+                        }
+
+                        const content = message.content || "";
+
+                        // 1. Check for Markdown Image Syntax: ![alt](url)
+                        const mdMatch = content.match(/!\[.*?\]\((.*?)\)/);
+                        if (mdMatch) {
+                            return await (await fetch(mdMatch[1])).blob();
+                        }
+
+                        // 2. Check for raw URL
+                        // Improvement: Robust Regex to capture http/https URLs, excluding trailing punctuation/brackets
+                        const urlRegex = /https?:\/\/[^\s<>)\]}]+/;
+                        const urlMatch = content.match(urlRegex);
+
+                        if (urlMatch) {
+                            let url = urlMatch[0];
+                            // Clean trailing punctuation if regex was too greedy (e.g. terminating dot or comma)
+                            url = url.replace(/[.,;!?]$/, '');
+
+                            console.log("OpenRouter: Extracting URL:", url);
+
+                            try {
+                                const imgRes = await fetch(url);
+                                const blob = await imgRes.blob();
+                                if (blob.type.startsWith('image/')) return blob;
+                            } catch (e) {
+                                console.warn("Failed to fetch extracted URL:", url);
+                            }
+                        }
+
+                        // 3. Check for Base64 Data URL or Raw Base64
+                        const trimmedContent = content.trim();
+                        if (trimmedContent.startsWith('data:image')) {
+                            return await (await fetch(trimmedContent)).blob();
+                        }
+
+                        // 4. Check for Raw Base64 (common in some Flux/SD integrations via OR)
+                        // A simple heuristic: long string, no spaces, likely base64 chars
+                        if (trimmedContent.length > 100 && !trimmedContent.includes(' ') && /^[A-Za-z0-9+/=]+$/.test(trimmedContent)) {
+                            console.log("OpenRouter: Detected Raw Base64");
+                            return await (await fetch(`data:image/png;base64,${trimmedContent}`)).blob();
+                        }
+
+                        // 5. Special Case: Some APIs return `b64_json` in the message content (incorrectly) or as a separate field we missed
+                        if (data.choices[0].message.b64_json) {
+                            return await (await fetch(`data:image/png;base64,${data.choices[0].message.b64_json}`)).blob();
+                        }
+
+                        // Debug: Log the full content to help the user identify why it failed
+                        console.warn("OpenRouter Content (No Image Found):", content);
+                        throw new Error(`OpenRouter response content did not contain a recognizable image. Content start: "${content.substring(0, 100)}..." (See Console for full output)`);
+                    }
+
+                    throw new Error("OpenRouter response was empty (no choices).");
+
+                } catch (e) {
+                    console.error("OpenRouter Image Gen Failed:", e);
+                    throw e;
+                }
+            },
+        };
+
 
         /**
          * StoryService Module (Data Abstraction Layer)
@@ -3948,6 +4325,21 @@
          * Includes UUID generation, HTML escaping, color manipulation, and default settings.
          */
         const UTILITY = {
+            /**
+             * Converts a base64 string to a Blob.
+             * @param {string} base64 - The base64 string.
+             * @param {string} mimeType - The mime type (e.g., 'image/png').
+             * @returns {Blob}
+             */
+            base64ToBlob(base64, mimeType = 'image/png') {
+                const byteCharacters = atob(base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                return new Blob([byteArray], { type: mimeType });
+            },
             /**
              * Generates a UUID v4.
              * @returns {string}
@@ -5748,6 +6140,32 @@
             MessageBubble(msg, index, state) {
                 if (msg.type === 'lore_reveal' || msg.isHidden) return '';
 
+                if (msg.type === 'visual_event') {
+                    const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                    return DOM.html`
+                        <div class="chat-bubble-container w-full my-6 flex flex-col items-center animate-fade-in" data-message-index="${index}">
+                            <div class="visual-event-card bg-gray-900 border border-gray-700 rounded-xl overflow-hidden max-w-lg w-full shadow-2xl relative group transform hover:scale-[1.01] transition-all duration-300">
+                                <div class="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+                                     <button onclick="NarrativeController.handleVisualAction('save', '${msg.image_key}')" class="bg-black/50 hover:bg-indigo-600 p-2 rounded-full text-white backdrop-blur-md transition-colors" title="Save to Device">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                     </button>
+                                     <button onclick="NarrativeController.handleVisualAction('background', '${msg.image_key}')" class="bg-black/50 hover:bg-emerald-600 p-2 rounded-full text-white backdrop-blur-md transition-colors" title="Set as Background">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                     </button>
+                                     <button data-action="confirm-delete-message" data-index="${index}" class="bg-black/50 hover:bg-red-500/80 p-2 rounded-full text-white backdrop-blur-md transition-colors" title="Delete">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                     </button>
+                                </div>
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-visual-key="${msg.image_key}" class="w-full h-auto object-cover min-h-[256px] bg-gray-800" alt="Generated Scene" onload="UIManager.hydrateVisualImage(this)">
+                                <div class="p-4 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent absolute bottom-0 w-full pt-12">
+                                    <div class="flex items-end justify-between">
+                                        <p class="text-white/90 text-sm font-serif italic drop-shadow-md line-clamp-3 hover:line-clamp-none transition-all cursor-help" title="${UTILITY.escapeHTML(msg.content)}">${msg.content}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+
                 if (msg.type === 'system_event') {
                     return DOM.html`<div class="w-full text-center my-2"><p class="text-sm italic text-gray-400">${msg.content}</p></div>`;
                 }
@@ -5796,6 +6214,16 @@
 
                 const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
+                let imageGenBtn = '';
+                try {
+                    // Safe check for image gen and proper HTML wrapping
+                    const allowImageGen = (typeof StateManager !== 'undefined' && StateManager.data && StateManager.data.globalSettings && StateManager.data.globalSettings.imageGenBackend !== 'disabled');
+
+                    if (allowImageGen) {
+                        imageGenBtn = `<button onclick="VisualMaster.triggerVisualEvent(${index}, this)" class="text-gray-400 hover:text-indigo-400" title="Generate Image"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></button>`;
+                    }
+                } catch (e) { console.warn("Chat Render Error (Image Gen):", e); }
+
                 // HTML Container (Single line to prevent pre-wrap issues)
                 return DOM.html`
             <div class="chat-bubble-container ${msg.isNew ? 'new-message' : ''}" data-message-index="${index}">
@@ -5809,6 +6237,7 @@
                      </p>
                      <span class="timestamp text-xs text-gray-500">${timestamp}</span>
                      <div class="action-btn-group flex ml-2 space-x-4">
+                        ${DOM.unsafe(imageGenBtn)}
                         <button data-action="create-static-from-message" data-index="${index}" class="text-gray-400 hover:text-emerald-300" title="Create Static Memory"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></button>
                         <button data-action="chat-edit" data-index="${index}" class="text-gray-400 hover:text-white" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
                         <button data-action="confirm-delete-message" data-index="${index}" class="text-gray-400 hover:text-red-400" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
@@ -5975,6 +6404,16 @@
              */
             getAIGenIcon() {
                 return DOM.unsafe(`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>`);
+            },
+
+            /**
+             * Checks if image generation is enabled globally.
+             * @returns {boolean}
+             */
+            isImageGenEnabled() {
+                // Safe access to StateManager
+                if (typeof StateManager === 'undefined' || !StateManager.data || !StateManager.data.globalSettings) return true;
+                return StateManager.data.globalSettings.imageGenBackend !== 'disabled';
             },
 
             /**
@@ -7066,10 +7505,13 @@
                 // Logic: If Priority 1 set a backgroundUrl, we should skip this block.
 
                 if (!backgroundUrl) {
-                    if (state.backgroundImageURL === 'local_idb_background' && UIManager.RUNTIME.globalBackgroundImageCache) {
-                        backgroundUrl = UIManager.RUNTIME.globalBackgroundImageCache;
+                    // Handle any local_idb_ prefix by checking the cache
+                    if (state.backgroundImageURL && state.backgroundImageURL.startsWith('local_idb_')) {
+                        if (UIManager.RUNTIME.globalBackgroundImageCache) {
+                            backgroundUrl = UIManager.RUNTIME.globalBackgroundImageCache;
+                        }
                     }
-                    else if (state.backgroundImageURL && state.backgroundImageURL !== 'local_idb_background') {
+                    else if (state.backgroundImageURL) {
                         backgroundUrl = state.backgroundImageURL;
                     }
                 }
@@ -7412,12 +7854,18 @@
                         ${DOM.unsafe(imageDisplayHTML)}
                         <div class="flex items-center justify-between bg-black/20 p-2 rounded border border-gray-700">
                             <span class="text-xs text-gray-500">Source: ${imageHint}</span>
-                            <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded transition-colors shadow-sm">
-                                Upload New
-                                <input type="file" accept="image/*" 
-                                       onchange="WorldController.handleWorldMapLocationImageUpload(event, ${selectedMapTile.coords.x}, ${selectedMapTile.coords.y})"
-                                       class="hidden">
-                            </label>
+                            <div class="flex gap-2">
+                                ${UIManager.isImageGenEnabled() ? DOM.html`<button data-action="gen-location-image" data-x="${selectedMapTile.coords.x}" data-y="${selectedMapTile.coords.y}" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-1 px-3 rounded transition-colors shadow-sm flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    Generate
+                                </button>` : ''}
+                                <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded transition-colors shadow-sm">
+                                    Upload New
+                                    <input type="file" accept="image/*" 
+                                           onchange="WorldController.handleWorldMapLocationImageUpload(event, ${selectedMapTile.coords.x}, ${selectedMapTile.coords.y})"
+                                           class="hidden">
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -7507,6 +7955,44 @@
             },
 
             /**
+             * Hydrates a visual event image from IndexedDB.
+             * @param {HTMLImageElement} img - The image element.
+             */
+            async hydrateVisualImage(img) {
+                const key = img.getAttribute('data-visual-key');
+                if (!key || img.dataset.loaded === "true") return;
+
+                img.dataset.loaded = "true";
+                // Only pulse if not already src? But img.src is empty initially.
+                // img.parentElement.classList.add("animate-pulse"); 
+
+                try {
+                    // Check Cache
+                    if (typeof VisualMaster !== 'undefined' && VisualMaster.RUNTIME.imageUrls[key]) {
+                        img.src = VisualMaster.RUNTIME.imageUrls[key];
+                        return;
+                    }
+
+                    const blob = await DBService.getImage(key);
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        // Cache it
+                        if (typeof VisualMaster !== 'undefined') {
+                            VisualMaster.RUNTIME.imageUrls[key] = url;
+                        }
+                        img.src = url;
+                        img.onload = null;
+                    } else {
+                        img.alt = "[Image Expired]";
+                        img.style.display = 'none';
+                    }
+                } catch (e) {
+                    console.error("Failed to hydrate visual:", e);
+                    img.alt = "[Error]";
+                }
+            },
+
+            /**
              * Retrieves the appropriate portrait URL for a character and emotion.
              * Checks cache and local storage before falling back to URL.
              * @param {Object} character - The character object.
@@ -7542,6 +8028,8 @@
                 if (!char) return;
                 const container = document.getElementById('character-detail-modal-content');
 
+                const canGenImage = UIManager.isImageGenEnabled();
+
                 let currentRole = 'none';
                 if (char.is_user) currentRole = 'user';
                 else if (char.is_narrator) currentRole = 'narrator';
@@ -7565,10 +8053,15 @@
                         <button data-action="remove-extra-portrait" data-id="${char.id}" data-index="${index}" class="text-red-400 hover:text-red-300 ml-auto">X</button>
                     </div>
                     <div class="flex items-center justify-between">
-                        <label class="text-sm text-gray-400" for="${fileInputId}">Upload local image for <span class="font-semibold">${emo}</span>:</label>
+                        <label class="text-sm text-gray-400" for="${fileInputId}">Upload ${canGenImage ? 'or Generate ' : ''}for <span class="font-semibold">${emo}</span>:</label>
                         <span id="${labelId}" class="text-xs text-gray-400">${hint}</span>
                     </div>
-                    <input id="${fileInputId}" type="file" accept="image/*" data-action-change="upload-emo-image" data-id="${char.id}" data-index="${index}" class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
+                    <div class="flex space-x-2">
+                        <input id="${fileInputId}" type="file" accept="image/*" data-action-change="upload-emo-image" data-id="${char.id}" data-index="${index}" class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
+                        ${canGenImage ? DOM.html`<button onclick="NarrativeController.openCharacterImageGenerator('${char.id}', 'extra', ${index})" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 rounded flex items-center justify-center transition-colors" title="Generate">
+                             ${this.getAIGenIcon()}
+                        </button>` : ''}
+                    </div>
                 </div>`;
                 });
 
@@ -7616,10 +8109,18 @@
                         <div class="mt-4 pt-4 border-t border-gray-800">
                             <label class="text-sm text-gray-400">Default Image</label>
                             <div class="flex items-start gap-4 mt-2">
-                                ${this.getPortraitSrc(char) ? DOM.html`<div class="w-64 h-64 flex-shrink-0 bg-gray-800 rounded overflow-hidden border border-gray-600">
+                                ${this.getPortraitSrc(char) ? DOM.html`<div class="w-64 h-64 flex-shrink-0 bg-gray-800 rounded overflow-hidden border border-gray-600 relative group">
                                     <img src="${this.getPortraitSrc(char)}" class="w-full h-full object-cover">
+                                    ${canGenImage ? DOM.html`<button onclick="NarrativeController.openCharacterImageGenerator('${char.id}', 'primary')" class="absolute bottom-2 right-2 bg-indigo-600/90 hover:bg-indigo-500 text-white text-xs font-bold p-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity" title="Generate New">
+                                        ${this.getAIGenIcon()}
+                                    </button>` : ''}
                                 </div>` : ''}
-                                <input type="file" accept="image/*" data-action-change="upload-local-image" data-id="${char.id}" class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
+                                <div class="flex-grow flex flex-row items-center gap-2">
+                                    <input type="file" accept="image/*" data-action-change="upload-local-image" data-id="${char.id}" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
+                                    ${canGenImage ? DOM.html`<button onclick="NarrativeController.openCharacterImageGenerator('${char.id}', 'primary')" class="w-10 h-10 flex-shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white rounded flex items-center justify-center transition-colors shadow-sm" title="Generate Portrait">
+                                        ${this.getAIGenIcon()}
+                                    </button>` : ''}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -7985,6 +8486,118 @@
             },
 
             /**
+             * Opens a Generic Image Generator Modal.
+             * @param {Object} options - Configuration for the generator.
+             * @param {string} options.title - Header title.
+             * @param {string} options.initialPrompt - Default prompt text.
+             * @param {string|null} [options.initialNegative] - Default negative prompt.
+             * @param {Function} options.onSave - Async callback(blob) when user clicks Save.
+             */
+            openGenericImageGenerator(opts) {
+                const { title, initialPrompt, initialNegative = null, onSave } = opts;
+                // Remove existing if any
+                const existing = document.getElementById('image-gen-modal');
+                if (existing) existing.remove();
+
+                const modal = document.createElement('div');
+                modal.id = 'image-gen-modal';
+                modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] modal-overlay hidden';
+                modal.innerHTML = `
+                             <div class="bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-gray-700">
+                                <div class="px-6 py-4 border-b border-gray-700 flex justify-between items-center bg-gray-900/50 rounded-t-lg">
+                                    <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+                                        ${title}
+                                    </h3>
+                                    <button onclick="AppController.closeModal('image-gen-modal')" class="text-gray-400 hover:text-white">&times;</button>
+                                </div>
+                                <div id="image-gen-content" class="p-6 overflow-y-auto space-y-4">
+                                     <div>
+                                        <label class="block text-sm font-bold text-gray-400 mb-1">Prompt</label>
+                                        <textarea id="gen-img-prompt" class="w-full bg-black/30 border-gray-600 p-3 rounded h-24 resize-none focus:border-indigo-500 font-mono text-sm">${initialPrompt}</textarea>
+                                    </div>
+                                    <div>
+                                         <label class="block text-sm font-bold text-gray-400 mb-1">Negative Prompt (Optional)</label>
+                                         <input type="text" id="gen-img-neg" value="${initialNegative || 'nsfw, text, watermark, bad anatomy, blurry'}" class="w-full bg-black/30 border-gray-600 p-2 rounded focus:border-indigo-500">
+                                    </div>
+                                    
+                                    <div id="gen-result-area" class="mt-4 min-h-[300px] flex items-center justify-center bg-black/20 border-2 border-dashed border-gray-700 rounded-lg relative overflow-hidden group">
+                                        <span class="text-gray-500 text-sm">Preview will appear here</span>
+                                    </div>
+
+                                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-700 mt-4">
+                                         <button onclick="AppController.closeModal('image-gen-modal')" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancel</button>
+                                         <div class="flex-grow"></div>
+                                         <button id="btn-do-generate" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-lg transition-all shadow-lg shadow-indigo-900/50 flex items-center gap-2">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            Generate
+                                         </button>
+                                    </div>
+                                </div>
+                            </div>
+                         `;
+                document.body.appendChild(modal);
+
+                // Bind Generate Action
+                document.getElementById('btn-do-generate').onclick = async (e) => {
+                    const prompt = document.getElementById('gen-img-prompt').value;
+                    const neg = document.getElementById('gen-img-neg').value;
+                    const resultArea = document.getElementById('gen-result-area');
+                    const btn = e.target.closest('button');
+
+                    btn.disabled = true;
+                    btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...`;
+
+                    try {
+                        const blob = await ImageGenerationService.generateImage(prompt, neg);
+                        const url = URL.createObjectURL(blob);
+
+                        // Render Result with Save Options
+                        resultArea.innerHTML = `
+                            <img src="${url}" class="w-full h-full object-contain">
+                            <div class="absolute bottom-0 left-0 right-0 bg-black/80 p-3 flex justify-center gap-4 backdrop-blur-sm transition-transform translate-y-full group-hover:translate-y-0">
+                                <button id="btn-save-img" class="bg-green-600 hover:bg-green-500 text-white font-bold py-1 px-4 rounded shadow-lg text-sm flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    Save & Use
+                                </button>
+                                <button id="btn-discard-img" class="bg-red-600/80 hover:bg-red-500 text-white font-bold py-1 px-4 rounded shadow-lg text-sm">Discard</button>
+                            </div>
+                        `;
+                        resultArea.classList.remove('border-dashed', 'border-gray-700');
+                        resultArea.classList.add('border-indigo-500');
+
+                        // Move Save bar up immediately on mobile/touch? No, hover is fine for now, or ensure it's visible.
+                        // Actually, let's make it always visible on completion to be safe.
+                        resultArea.querySelector('div').classList.remove('translate-y-full', 'group-hover:translate-y-0');
+
+                        // Save Handler
+                        document.getElementById('btn-save-img').onclick = async () => {
+                            try {
+                                await onSave(blob);
+                                AppController.closeModal('image-gen-modal');
+                            } catch (err) {
+                                alert("Failed to save image: " + err.message);
+                            }
+                        };
+
+                        // Discard Handler
+                        document.getElementById('btn-discard-img').onclick = () => {
+                            resultArea.innerHTML = '<span class="text-gray-500 text-sm">Preview will appear here</span>';
+                            resultArea.classList.add('border-dashed', 'border-gray-700');
+                            resultArea.classList.remove('border-indigo-500');
+                        };
+
+                    } catch (err) {
+                        resultArea.innerHTML = `<div class="text-red-400 p-4 text-center font-bold">Generation Failed</div><div class="text-red-300 text-xs px-4 pb-4 text-center">${err.message}</div>`;
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = 'Generate'; // Reset Label
+                    }
+                };
+
+                AppController.openModal('image-gen-modal');
+            },
+
+            /**
              * Updates the primary action button to "Stop Generation" mode.
              */
             setButtonToStopMode() {
@@ -8030,6 +8643,14 @@
 
 
 
+
+
+
+
+
+
+
+
         /**
          * AppController
          * 
@@ -8046,7 +8667,11 @@
                 MODEL_SETTING_KEYS: [
                     'geminiApiKey', 'openRouterKey', 'openRouterModel',
                     'koboldcpp_url', 'koboldcpp_template', 'koboldcpp_min_p', 'koboldcpp_dry', 'lmstudio_url',
-                    'geminiModel' // Added
+                    'geminiModel',
+                    // Image Gen Keys
+                    'imageGenBackend', 'koboldImageGenUrl', 'imageGenOpenRouterKey', 'imageGenOpenRouterModel',
+                    'imageGenWidth', 'imageGenHeight',
+                    'koboldImageGenCfg', 'koboldImageGenSampler', 'koboldImageGenScheduler', 'koboldImageGenSteps'
                 ]
             },
 
@@ -8171,7 +8796,7 @@
 
                 const templates = document.getElementById('settings-templates');
                 let maxHeight = 0;
-                ['appearance', 'prompt', 'model'].forEach(tabName => {
+                ['appearance', 'prompt', 'model', 'image-gen'].forEach(tabName => {
                     const content = templates.querySelector(`#settings-${tabName}-content`);
                     if (content) {
                         document.body.appendChild(content); // Temporarily append to measure
@@ -8188,7 +8813,7 @@
              */
             switchSettingsTab(tabName) {
                 this.RUNTIME.activeSettingsTab = tabName;
-                const tabs = ['appearance', 'prompt', 'model', 'personas'];
+                const tabs = ['appearance', 'prompt', 'model', 'personas', 'image-gen'];
                 const container = document.getElementById('settings-content-container');
                 const template = document.getElementById(`settings-${tabName}-content`);
 
@@ -8221,6 +8846,38 @@
                     this.renderSavedOpenRouterModels();
                     // NEW: Populate Gemini Models dynamically
                     this.populateGeminiModels();
+                } else if (tabName === 'image-gen') {
+                    // Dynamic show/hide based on backend
+                    const backendSelect = document.getElementById('image-gen-backend-selector');
+                    const koboldSettings = document.getElementById('image-gen-kobold-settings');
+                    const openRouterSettings = document.getElementById('image-gen-openrouter-settings');
+
+                    // NEW: Render saved image models
+                    this.renderSavedOpenRouterImageModels();
+
+
+
+                    // Initial Visibility Check (handled by bindSettingsListeners primarily, but we force one check)
+                    setTimeout(() => AppController.updateImageGenSettingsVisibility(), 50);
+
+                    // Test Connection Button
+                    const testBtn = document.getElementById('test-image-gen-connection-btn');
+                    const statusEl = document.getElementById('image-gen-connection-status');
+                    if (testBtn) {
+                        testBtn.onclick = async () => {
+                            if (statusEl) { statusEl.textContent = "Testing..."; statusEl.className = "text-yellow-400 text-xs mt-2"; }
+                            const result = await ImageGenerationService.testConnection();
+                            if (statusEl) {
+                                if (result) {
+                                    statusEl.textContent = "Connection Successful!";
+                                    statusEl.className = "text-green-400 text-xs mt-2";
+                                } else {
+                                    statusEl.textContent = "Connection Failed. Check URL/Key.";
+                                    statusEl.className = "text-red-400 text-xs mt-2";
+                                }
+                            }
+                        };
+                    }
                 }
             },
 
@@ -8374,6 +9031,44 @@
                     });
                 };
 
+                // --- Bindings: Image Generation Tab ---
+                if (document.getElementById('image-gen-backend')) setListener('image-gen-backend', 'imageGenBackend', () => {
+                    // Trigger visibility update if valid
+                    AppController.updateImageGenSettingsVisibility();
+                });
+                if (document.getElementById('image-gen-kobold-url')) setListener('image-gen-kobold-url', 'koboldImageGenUrl');
+                if (document.getElementById('image-gen-width')) setListener('image-gen-width', 'imageGenWidth');
+                if (document.getElementById('image-gen-height')) setListener('image-gen-height', 'imageGenHeight');
+                if (document.getElementById('image-gen-openrouter-key-input')) setListener('image-gen-openrouter-key-input', 'imageGenOpenRouterKey');
+                if (document.getElementById('image-gen-openrouter-model-input')) setListener('image-gen-openrouter-model-input', 'imageGenOpenRouterModel');
+
+                // Kobold Extended Settings
+                if (document.getElementById('kobold-cfg-scale')) setListener('kobold-cfg-scale', 'koboldImageGenCfg');
+                if (document.getElementById('kobold-sampler')) setListener('kobold-sampler', 'koboldImageGenSampler');
+                if (document.getElementById('kobold-scheduler')) setListener('kobold-scheduler', 'koboldImageGenScheduler');
+                if (document.getElementById('kobold-steps')) setListener('kobold-steps', 'koboldImageGenSteps');
+
+                // Visual Master Persistence Fix
+                const vmSlider = document.getElementById('visual-master-probability-slider');
+                if (vmSlider) {
+                    const vmValue = document.getElementById('visual-master-prob-value');
+                    // Initialize: Prefer Global -> State -> 0
+                    const savedVal = globalSettings.visual_master_probability !== undefined ? globalSettings.visual_master_probability : (state.visual_master_probability || 0);
+                    state.visual_master_probability = savedVal; // Sync state
+                    vmSlider.value = savedVal;
+                    if (vmValue) vmValue.textContent = `${savedVal}%`;
+
+                    vmSlider.addEventListener('input', (e) => {
+                        const val = parseInt(e.target.value);
+                        state.visual_master_probability = val;
+                        // Persist globally
+                        globalSettings.visual_master_probability = val;
+                        StateManager.saveGlobalSettings();
+                        if (vmValue) vmValue.textContent = `${val}%`;
+                    });
+                }
+
+
                 // --- Bindings: Model Tab ---
                 if (document.getElementById('gemini-api-key-input')) setListener('gemini-api-key-input', 'geminiApiKey');
                 if (document.getElementById('openrouter-api-key-input')) setListener('openrouter-api-key-input', 'openRouterKey');
@@ -8521,8 +9216,33 @@
                         }
                     });
                 }
+
+                // Force visibility update on init
+                AppController.updateImageGenSettingsVisibility();
             },
 
+            /**
+             * Updates visibility of Image Generation settings based on selected backend.
+             * Called by HTML onchange event.
+             */
+            updateImageGenSettingsVisibility() {
+                const backendSelect = document.getElementById('image-gen-backend-selector');
+                const koboldSettings = document.getElementById('image-gen-kobold-settings');
+                const openRouterSettings = document.getElementById('image-gen-openrouter-settings');
+
+                if (!backendSelect) return;
+
+                const val = backendSelect.value;
+
+                if (koboldSettings) {
+                    koboldSettings.style.display = val === 'koboldcpp' ? 'block' : 'none';
+                }
+                if (openRouterSettings) {
+                    openRouterSettings.style.display = val === 'openrouter' ? 'block' : 'none';
+                    // Ensure the hidden class is removed if present
+                    if (val === 'openrouter') openRouterSettings.classList.remove('hidden');
+                }
+            },
 
             /**
              * Helper: Updates font setting via Reactive Store.
@@ -8825,6 +9545,45 @@
             // --- OpenRouter Saved Models Logic ---
 
             /**
+             * Updates visibility of Image Generation settings based on selected backend.
+             */
+            updateImageGenSettingsVisibility() {
+                const backendSelect = document.getElementById('image-gen-backend');
+                if (!backendSelect) return;
+                const val = backendSelect.value;
+
+                const koboldSettings = document.getElementById('image-gen-kobold-settings');
+                const openRouterSettings = document.getElementById('image-gen-openrouter-settings');
+
+                // Toggle Visual Master controls
+                const vmSlider = document.getElementById('visual-master-probability-slider');
+                const isDisabled = val === 'disabled';
+
+                if (vmSlider) {
+                    vmSlider.disabled = isDisabled;
+                    // Visual feedback
+                    if (isDisabled) {
+                        vmSlider.parentElement.classList.add('opacity-50', 'pointer-events-none');
+                    } else {
+                        vmSlider.parentElement.classList.remove('opacity-50', 'pointer-events-none');
+                    }
+                }
+
+                if (koboldSettings) {
+                    const show = val === 'koboldcpp';
+                    koboldSettings.style.display = show ? 'block' : 'none';
+                    if (show) koboldSettings.classList.remove('hidden');
+                    else koboldSettings.classList.add('hidden');
+                }
+                if (openRouterSettings) {
+                    const show = val === 'openrouter';
+                    openRouterSettings.style.display = show ? 'block' : 'none';
+                    if (show) openRouterSettings.classList.remove('hidden');
+                    else openRouterSettings.classList.add('hidden');
+                }
+            },
+
+            /**
              * Saves the current OpenRouter model string to the global settings.
              */
             saveOpenRouterModel() {
@@ -8912,12 +9671,20 @@
 
             // --- OpenRouter Model Browser ---
 
+            // --- OpenRouter Model Browser ---
+
             /**
              * Opens the OpenRouter model browser modal and fetches available models.
+             * @param {string} [mode='text'] - 'text' or 'image'.
              */
-            async openOpenRouterModelBrowser() {
+            async openOpenRouterModelBrowser(mode = 'text') {
+                this.RUNTIME.modelBrowserMode = mode;
+
                 const listContainer = document.getElementById('openrouter-model-list');
                 const searchInput = document.getElementById('openrouter-model-search');
+
+                // Ensure search input is visible (in case hidden by Image Browser)
+                if (searchInput) searchInput.style.display = 'block';
 
                 // Reset search input
                 if (searchInput) {
@@ -8932,7 +9699,60 @@
                 this.openModal('openrouter-model-modal');
 
                 try {
-                    const models = await APIService.fetchOpenRouterModels();
+                    let models = await APIService.fetchOpenRouterModels();
+
+                    if (models.length > 0) {
+                        console.groupCollapsed("OpenRouter Model Fetch Debug");
+                        console.log("Total Models Fetched:", models.length);
+                        console.log("Sample Model 0:", models[0]);
+                        console.groupEnd();
+                    }
+
+                    // Filter based on mode
+                    if (mode === 'image') {
+                        models = models.filter(m => {
+                            const id = m.id.toLowerCase();
+
+                            // 1. Check root properties (Some APIs put it here)
+                            if (m.modalities && Array.isArray(m.modalities) && m.modalities.includes('image')) return true;
+
+                            // 2. Check Architecture Object
+                            if (m.architecture) {
+                                // Legacy: modality string (e.g., 'text->image')
+                                if (m.architecture.modality && String(m.architecture.modality).includes('->image')) return true;
+
+                                // New: output_modalities
+                                if (m.architecture.output_modalities && Array.isArray(m.architecture.output_modalities) && m.architecture.output_modalities.includes('image')) return true;
+                            }
+
+                            // 3. String Heuristics (Robust Fallback)
+                            if (id.includes('dall-e') ||
+                                id.includes('diffusion') ||
+                                id.includes('flux') ||
+                                id.includes('midjourney') ||
+                                id.includes('imagen') ||
+                                id.includes('recraft') ||
+                                id.includes('ideogram')) return true;
+
+                            return false;
+                        });
+                        console.log(`Filtered Image Models: ${models.length}`);
+                    } else {
+                        // Text Mode: Filter out known strict image generators to reduce noise
+                        models = models.filter(m => {
+                            const id = m.id.toLowerCase();
+                            const mod = m.architecture?.modality;
+                            if (mod && String(mod) === 'text->image') return false; // Strict image
+
+                            // Exclude obvious image-only models (heuristics)
+                            // Note: GPT-4 Vision is text->text (input image, output text), so we keep it.
+                            if (id.includes('dall-e')) return false;
+                            if (id.includes('stable-diffusion') || id.includes('stabilityai/stable-diffusion')) return false;
+                            if (id.includes('flux') && !id.includes('text')) return false; // Flux usually image
+                            return true;
+                        });
+                    }
+
                     this._openRouterModelsList = models;
                     this._renderOpenRouterModelList(models);
 
@@ -8953,10 +9773,17 @@
                         listContainer.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-red-400 p-4">
                             <span class="text-center">Failed to load models.</span>
                             <span class="text-center text-sm mt-1">${error.message}</span>
-                            <button onclick="AppController.openOpenRouterModelBrowser()" class="mt-4 bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-white">Retry</button>
+                            <button onclick="AppController.openOpenRouterModelBrowser('${mode}')" class="mt-4 bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-white">Retry</button>
                         </div>`;
                     }
                 }
+            },
+
+            /**
+             * Helper to open the browser in Image Mode.
+             */
+            async openOpenRouterImageModelBrowser() {
+                await this.openOpenRouterModelBrowser('image');
             },
 
             /**
@@ -8974,7 +9801,14 @@
 
                 const global = StateManager.data.globalSettings;
                 const state = StateManager.getState();
-                const currentModel = global.openRouterModel || state.openRouterModel;
+
+                // Determine current model based on mode
+                let currentModel;
+                if (this.RUNTIME.modelBrowserMode === 'image') {
+                    currentModel = global.imageGenOpenRouterModel || state.imageGenOpenRouterModel;
+                } else {
+                    currentModel = global.openRouterModel || state.openRouterModel;
+                }
 
                 // Sort models: selected first, then alphabetically by name
                 const sortedModels = [...models].sort((a, b) => {
@@ -9030,15 +9864,108 @@
              * @param {string} modelId - The model ID to select.
              */
             _selectModelFromBrowser(modelId) {
-                const input = document.getElementById('openrouter-model-input');
+                if (this.RUNTIME.modelBrowserMode === 'image') {
+                    // Image Mode Selection
+                    const input = document.getElementById('image-gen-openrouter-model-input');
+                    if (input) {
+                        input.value = modelId;
+                        input.dispatchEvent(new Event('input')); // Sync with Global/State
+                    }
+                    ReactiveStore.state.imageGenOpenRouterModel = modelId;
+                } else {
+                    // Text Mode Selection (Default)
+                    const input = document.getElementById('openrouter-model-input');
+                    if (input) {
+                        input.value = modelId;
+                        input.dispatchEvent(new Event('input'));
+                    }
+                    ReactiveStore.state.openRouterModel = modelId;
+                }
+
+                this.closeModal('openrouter-model-modal');
+            },
+
+            // --- OpenRouter Image Model Management ---
+
+            /**
+             * Saves the current OpenRouter image model string to the global settings.
+             */
+            saveOpenRouterImageModel() {
+                const input = document.getElementById('image-gen-openrouter-model-input');
+                if (!input) return;
+
+                const value = input.value.trim();
+                if (!value) return;
+
+                const globalSettings = StateManager.data.globalSettings;
+                if (!globalSettings.savedOpenRouterImageModels) globalSettings.savedOpenRouterImageModels = [];
+
+                // Avoid duplicates
+                if (!globalSettings.savedOpenRouterImageModels.includes(value)) {
+                    globalSettings.savedOpenRouterImageModels.push(value);
+                    StateManager.saveGlobalSettings();
+                    this.renderSavedOpenRouterImageModels();
+                }
+            },
+
+            /**
+             * Deletes a saved OpenRouter image model from the global settings.
+             * @param {string} modelName - The name of the model to delete.
+             */
+            deleteOpenRouterImageModel(modelName) {
+                const globalSettings = StateManager.data.globalSettings;
+                if (!globalSettings.savedOpenRouterImageModels) return;
+
+                if (confirm(`Remove "${modelName}" from saved image models?`)) {
+                    globalSettings.savedOpenRouterImageModels = globalSettings.savedOpenRouterImageModels.filter(m => m !== modelName);
+                    StateManager.saveGlobalSettings();
+                    this.renderSavedOpenRouterImageModels();
+                }
+            },
+
+            /**
+             * Selects a saved OpenRouter image model and updates the input field.
+             * @param {string} modelName - The name of the model to select.
+             */
+            selectOpenRouterImageModel(modelName) {
+                const input = document.getElementById('image-gen-openrouter-model-input');
                 if (input) {
-                    input.value = modelId;
-                    // Trigger input event to sync with globalSettings
+                    input.value = modelName;
+                    // Manually trigger the input event to update the Global Settings via the listener
                     input.dispatchEvent(new Event('input'));
                 }
-                // Also update ReactiveStore.state directly (like apiProvider does)
-                ReactiveStore.state.openRouterModel = modelId;
-                this.closeModal('openrouter-model-modal');
+            },
+
+            /**
+             * Renders the list of saved OpenRouter image models in the settings modal.
+             */
+            renderSavedOpenRouterImageModels() {
+                const container = document.getElementById('image-gen-openrouter-saved-models-list');
+                if (!container) return;
+
+                const globalSettings = StateManager.data.globalSettings;
+                const models = globalSettings.savedOpenRouterImageModels || [];
+
+                if (models.length === 0) {
+                    container.innerHTML = '<span class="text-xs text-gray-500 italic">No saved models.</span>';
+                    return;
+                }
+
+                container.innerHTML = models.map(model => {
+                    // Simplify: show only the part after the slash if present
+                    const shortName = model.includes('/') ? model.split('/').slice(1).join('/') : model;
+
+                    return `
+            <div class="inline-flex items-center bg-black/30 border border-gray-600 rounded-lg overflow-hidden" title="${model}">
+                <button onclick="AppController.selectOpenRouterImageModel('${model}')" class="px-3 py-1 text-xs text-gray-300 hover:text-white hover:bg-white/10 transition-colors truncate max-w-[200px]">
+                    ${shortName}
+                </button>
+                <button onclick="AppController.deleteOpenRouterImageModel('${model}')" class="px-2 py-1 text-xs text-gray-500 hover:text-red-400 hover:bg-black/20 border-l border-gray-600 transition-colors" title="Remove">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        `;
+                }).join('');
             }
         };
 
@@ -9770,7 +10697,7 @@
                         }
                     } catch (e) { console.warn("Relationship gen failed, skipping."); }
 
-                    // STEP 4: CHARACTERS (Sequential with Relationship Injection)
+                    // STEP 4: CHARACTERS (Sequential with Relationship Injection & Image Generation)
                     for (let i = 0; i < roster.length; i++) {
                         const charDef = roster[i];
                         updateUI(35 + (i * 10), `Breathing life into ${charDef.name}...`);
@@ -9780,8 +10707,31 @@
                         const charData = await NarrativeController.generateCharacterProfile(charDef.name, charContext);
 
                         if (charData) {
+                            const charId = UTILITY.uuid();
+                            let imageUrl = '';
+
+                            // --- AUTOMATED IMAGE GENERATION ---
+                            // Only attempt if we have a backend configured (implicit check via service)
+                            try {
+                                updateUI(35 + (i * 10) + 5, `Painting ${charDef.name}...`);
+                                const imagePrompt = `portrait of ${charDef.name}, ${charData.short_description || charData.description}, ${charDef.archetype}, detailed face, fantasy art, masterpiece`;
+                                console.log(`Auto-Generating Image for ${charDef.name}:`, imagePrompt);
+
+                                const blob = await ImageGenerationService.generateImage(imagePrompt);
+                                if (blob) {
+                                    await DBService.saveImage(charId, blob);
+                                    imageUrl = `local_idb_${charId}`;
+                                    // Pre-cache for immediate display upon story load
+                                    UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
+                                }
+                            } catch (imgErr) {
+                                console.warn(`Failed to auto-generate image for ${charDef.name}:`, imgErr);
+                                // Proceed without image
+                            }
+                            // ----------------------------------
+
                             draft.characters.push({
-                                id: UTILITY.uuid(),
+                                id: charId,
                                 name: charDef.name,
                                 description: charData.description || "No description.",
                                 short_description: charData.short_description || "A character.",
@@ -9791,7 +10741,7 @@
                                 is_active: true,
                                 is_narrator: charDef.role === 'PrimaryAI' && !roster.some(r => r.role === 'User'),
                                 color: NarrativeController.CONSTANTS.CHARACTER_COLORS[i % NarrativeController.CONSTANTS.CHARACTER_COLORS.length],
-                                image_url: '',
+                                image_url: imageUrl,
                                 extra_portraits: []
                             });
                         }
@@ -10428,6 +11378,170 @@
 
         /**
          * =================================================================================================
+         * VisualMaster Module
+         * Orchestrates scene visualization events separate from the Event Master.
+         * =================================================================================================
+         */
+        const VisualMaster = {
+            RUNTIME: {
+                isProcessing: false,
+                imageUrls: {}
+            },
+
+            /**
+             * Checks if a visual event should be triggered.
+             */
+            async checkTrigger() {
+                if (this.RUNTIME.isProcessing) return;
+
+                const state = ReactiveStore.state;
+                // Guard: Probability Check
+                const probability = parseFloat(state.visual_master_probability || 0);
+                if (probability <= 0) return;
+
+                // Dice Roll
+                if (Math.random() * 100 > probability) return;
+
+                // Trigger Visual Event
+                this.RUNTIME.isProcessing = true;
+                // Visual cues shouldn't block the user from typing, but we show a spinner
+                UIManager.showLoadingSpinner("Visual Master: Painting the scene...");
+
+                try {
+                    console.log("Visual Master: 🎲 Roll successful. Generating scene...");
+                    await this.triggerVisualEvent();
+                } catch (e) {
+                    console.warn("Visual Master failed:", e);
+                } finally {
+                    this.RUNTIME.isProcessing = false;
+                    UIManager.hideLoadingSpinner();
+                }
+            },
+
+            /**
+             * Orchestrates the visual generation process.
+             * @param {number} [atIndex] - Optional index to generate from (history slicing).
+             * @param {HTMLElement} [btnElement] - Optional button element to show loading state.
+             */
+            async triggerVisualEvent(atIndex = null, btnElement = null) {
+                const state = ReactiveStore.state;
+
+                // 1. Determine Range
+                let historySlice;
+                let contextDescription = "";
+
+                if (typeof atIndex === 'number') {
+                    // Specific point in history: [atIndex-4 ... atIndex]
+                    // Safe slice handling
+                    const start = Math.max(0, atIndex - 4);
+                    const end = atIndex + 1; // slice end is exclusive
+                    historySlice = state.chat_history.slice(start, end);
+                    contextDescription = `(Context: History at message #${atIndex})`;
+                } else {
+                    // Default: Last 5 messages
+                    historySlice = state.chat_history.slice(-5);
+                }
+
+                // 1.5 Build Context (Last 5 messages)
+                const recentHistory = historySlice
+                    .filter(m => m && m.type === 'chat' && !m.isHidden)
+                    .map(m => {
+                        const char = state.characters.find(c => c.id === m.character_id);
+                        return `${char ? char.name : 'Unknown'}: ${m.content}`;
+                    })
+                    .join('\n');
+
+                // 2. Gather Personas & Location
+                const activeChars = state.characters.filter(c => c.is_active || c.is_user); // Include user? Usually yes if they are in the scene
+                const charPersonas = activeChars.map(c => `${c.name}: ${c.description.substring(0, 300)}`).join('\n\n');
+
+                let locationContext = "";
+                if (state.worldMap && state.worldMap.currentLocation) {
+                    const loc = state.worldMap.grid.find(l => l.coords.x === state.worldMap.currentLocation.x && l.coords.y === state.worldMap.currentLocation.y);
+                    if (loc) locationContext = `Location: ${loc.name} - ${loc.description}`;
+                }
+
+                // 2. Generate Prompt using AI
+                const systemPrompt = "You are a visual director. Based on the recent dialogue and the character/location context provided, describe the current visual scene in detail for an image generator (DALL-E 3/Stable Diffusion). Focus on atmosphere, lighting, and key subjects. Output ONLY the visual description.";
+
+                const prompt = `${systemPrompt}\n\nCHARACTERS:\n${charPersonas}\n\nSETTING:\n${locationContext}\n\nDIALOGUE:\n${recentHistory}\n\nKey:`;
+
+                const visualDescription = await APIService.callAI(prompt, false);
+                if (!visualDescription) throw new Error("Failed to generate visual description.");
+
+                // 3. Generate Image
+                // UI feedback on button if present
+                let originalIcon = '';
+                if (btnElement) {
+                    originalIcon = btnElement.innerHTML;
+                    btnElement.innerHTML = `<svg class="animate-spin h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                    btnElement.disabled = true;
+                } else {
+                    UIManager.showLoadingSpinner();
+                }
+
+                try {
+                    // 3. Generate Image
+                    const blob = await ImageGenerationService.generateImage(
+                        visualDescription, // prompt
+                        "nsfw, nude, naked, bad anatomy, text, watermark, blurry, low quality", // negativePrompt
+                        { // options
+                            width: StateManager.data.globalSettings.imageGenWidth || 512,
+                            height: StateManager.data.globalSettings.imageGenHeight || 512,
+                            steps: StateManager.data.globalSettings.koboldImageGenSteps || 20
+                        }
+                    );
+
+                    if (!blob) throw new Error("Image generation failed.");
+
+                    // 4. Save Ephemeral Blob to IDB
+                    const imageId = `visual_event_${Date.now()}`;
+                    await DBService.saveImage(imageId, blob);
+
+                    // 5. Add to Chat History
+                    const visualEntry = {
+                        type: 'visual_event',
+                        content: visualDescription, // The prompt/caption
+                        image_key: imageId,
+                        timestamp: new Date().toISOString(),
+                        isNew: true
+                    };
+
+                    // CRITICAL FIX: Insert AFTER the triggering index, or push if at end
+                    if (typeof atIndex === 'number' && atIndex < state.chat_history.length - 1) {
+                        // Splice into array using splice (ReactiveStore should trap this)
+                        state.chat_history.splice(atIndex + 1, 0, visualEntry);
+                    } else {
+                        state.chat_history.push(visualEntry);
+                    }
+
+                    await ReactiveStore.forceSave();
+
+                    // Scroll to bottom only if we pushed to end, otherwise maybe scroll to index?
+                    if (typeof atIndex !== 'number' || atIndex >= state.chat_history.length - 2) {
+                        setTimeout(() => {
+                            const chatWindow = document.getElementById('chat-window');
+                            if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
+                        }, 50);
+                    }
+
+                } catch (err) {
+                    console.error("Visual Event Error:", err);
+                    UIManager.showNotification("Visual generation failed: " + err.message, "error");
+                } finally {
+                    if (btnElement) {
+                        btnElement.innerHTML = originalIcon;
+                        btnElement.disabled = false;
+                    } else {
+                        UIManager.hideLoadingSpinner();
+                    }
+                }
+            }
+        };
+
+
+        /**
+         * =================================================================================================
          * NarrativeController Module
          * Handles Chat, Characters, AI Generation, and Interaction Logic.
          * =================================================================================================
@@ -10599,6 +11713,11 @@
                 // 3. Run Event Master (BLOCKING)
                 // This "cuts in line" before the character replies.
                 await this.checkEventMaster();
+
+                // 3.5. Run Visual Master
+                if (typeof VisualMaster !== 'undefined') {
+                    await VisualMaster.checkTrigger();
+                }
 
                 // 4. Trigger Character Response
                 // The character will now see the Event Master's instruction in the prompt context.
@@ -10869,6 +11988,48 @@
                 ReactiveStore.forceSave();
 
             }, 500),
+
+            /**
+             * Handles actions for visual events (Save, Set Background).
+             * @param {string} action - 'save' or 'background'.
+             * @param {string} key - The IndexedDB key of the image.
+             */
+            async handleVisualAction(action, key) {
+                if (!key) return;
+                const blob = await DBService.getImage(key);
+                if (!blob) { alert("Image not found locally."); return; }
+
+                if (action === 'save') {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Ellipsis_Scene_${Date.now()}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } else if (action === 'background') {
+                    if (confirm("Set this image as the background for this story?")) {
+                        // Save as persistent background
+                        const library = StateManager.getLibrary();
+                        const storyId = library.active_story_id;
+                        if (!storyId) return;
+
+                        const bgKey = `bg_story_${storyId}`;
+                        await DBService.saveImage(bgKey, blob);
+
+                        // Update State
+                        StateManager.getState().backgroundImageURL = `local_idb_${bgKey}`;
+                        await ReactiveStore.forceSave();
+
+                        // Visual Feedback
+                        // UIManager.applyStyling handles the actual CSS update via subscription
+                        // But we want to ensure the blob is fresh in cache if needed?
+                        // UI should handle local_idb prefix by checking DB.
+                        alert("Background updated.");
+                    }
+                }
+            },
 
             // --- AI Generation Logic ---
 
@@ -11419,6 +12580,34 @@
             },
 
             /**
+             * Opens the Generic Image Generator for a character.
+             * @param {string} charId - The Character ID.
+             * @param {string} type - 'primary' or 'extra'.
+             * @param {number} [index] - Index for extra emotions.
+             */
+            openCharacterImageGenerator(charId, type = 'primary', index = null) {
+                const state = StateManager.getState();
+                const char = state.characters.find(c => c.id === charId);
+                if (!char) return;
+
+                // Use the full persona description (up to 500 chars to avoid URL limit issues if passed around, but effectively full)
+                const initialPrompt = char.description.substring(0, 500);
+
+                UIManager.openGenericImageGenerator({
+                    title: `Generate: ${char.name}`,
+                    initialPrompt: initialPrompt,
+                    onSave: async (blob) => {
+                        if (type === 'primary') {
+                            await this.handleLocalImageUpload({ target: { files: [new File([blob], "generated_portrait.png", { type: "image/png" })] } }, charId);
+                        } else {
+                            await this.handleLocalEmotionImageUpload({ target: { files: [new File([blob], "generated_emotion.png", { type: "image/png" })] } }, charId, index);
+                        }
+                        UIManager.renderCharacters();
+                    }
+                });
+            },
+
+            /**
              * Generates tags for a character using AI.
              * @param {Event} event - The click event.
              * @param {string} charId - The character ID.
@@ -11678,11 +12867,14 @@
                 }
 
                 AppController.openModal('view-raw-prompt-modal');
-            }
+            },
+
+
+
+
+
+
         };
-
-
-
 
         /**
          * =================================================================================================
@@ -12080,6 +13272,27 @@
                     UIManager.renderLocalStaticEntriesList();
                     UIManager.renderLocalStaticEntryDetails();
                 }
+            },
+
+            /**
+             * Opens the Generic Image Generator for a location.
+             */
+            openLocationImageGenerator() {
+                const { selectedMapTile } = this.RUNTIME;
+                if (!selectedMapTile) return;
+
+                // Prioritize the AI-generated prompt if available, else usage Name + Description
+                const promptContent = selectedMapTile.prompt || selectedMapTile.description || "";
+                const initialPrompt = `${selectedMapTile.name}: ${promptContent}`;
+
+                UIManager.openGenericImageGenerator({
+                    title: `Generate: ${selectedMapTile.name}`,
+                    initialPrompt: initialPrompt,
+                    onSave: async (blob) => {
+                        await this.handleWorldMapLocationImageUpload({ target: { files: [new File([blob], "generated_location.png", { type: "image/png" })] } }, selectedMapTile.coords.x, selectedMapTile.coords.y);
+                        // Modal re-render is handled by upload
+                    }
+                });
             },
 
             /**
@@ -12579,6 +13792,7 @@
                 ActionHandler.register('gen-static-ai', (ds, e) => WorldController.generateStaticEntryContentAI(e, ds.id));
                 ActionHandler.register('delete-static-entry', (ds) => WorldController.deleteStaticEntry(ds.id));
                 ActionHandler.register('check-world-info', () => WorldController.checkWorldInfoAgent());
+                ActionHandler.register('gen-location-image', (ds) => WorldController.openLocationImageGenerator());
 
                 ActionHandler.register('add-dynamic-entry', () => WorldController.addDynamicEntry());
                 ActionHandler.register('select-dynamic-entry', (ds) => WorldController.selectDynamicEntry(ds.id));
@@ -12790,6 +14004,7 @@
                     ReactiveStore.subscribe('selectedDynamicEntryId', () => { UIManager.renderDynamicEntries(); UIManager.renderDynamicEntryDetails(); });
 
                     // Initial Render
+                    AppController.updateImageGenSettingsVisibility();
                     UIManager.applyStyling();
                     UIManager.renderAll();
                 }
@@ -12899,6 +14114,9 @@
                 if (regenBtn) regenBtn.addEventListener('click', () => NarrativeController.handleRegen());
                 if (undoBtn) undoBtn.addEventListener('click', () => NarrativeController.undoLastTurn());
             },
+
+
+
 
             /**
              * Updates the layout based on window dimensions.
