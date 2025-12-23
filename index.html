@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -1747,8 +1746,17 @@
                     <div class="flex space-x-2">
                         <input type="file" id="background-image-upload" accept="image/*"
                             class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
+                        <button onclick="AppController.openBackgroundImageGenerator()"
+                            class="bg-indigo-600/80 hover:bg-indigo-700/80 text-white font-bold py-1 px-3 rounded-lg flex items-center gap-1 flex-shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                </path>
+                            </svg>
+                            Generate
+                        </button>
                         <button id="background-image-clear"
-                            class="bg-red-600/80 hover:bg-red-700/80 text-white font-bold py-1 px-3 rounded-lg">Clear</button>
+                            class="bg-red-600/80 hover:bg-red-700/80 text-white font-bold py-1 px-3 rounded-lg flex-shrink-0">Clear</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -1835,6 +1843,27 @@
                             (%):</label>
                         <input type="number" id="event-master-prob-input" min="0" max="100"
                             class="w-20 rounded-lg p-2 text-center" placeholder="15">
+                    </div>
+                </div>
+            </details>
+            <details>
+                <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Visual Master
+                </summary>
+                <div class="p-4 bg-black/20 rounded-b-lg">
+                    <h3 class="text-base font-medium mb-2">Visual Master</h3>
+                    <p class="text-gray-400 text-sm mb-2">Automatically generates visuals for the scene based on chat
+                        context.</p>
+                    <div class="mt-3 flex items-center space-x-4">
+                        <label for="visual-master-prob-input" class="text-gray-400 text-sm font-bold">Trigger
+                            Probability
+                            (%):</label>
+                        <input type="number" id="visual-master-prob-input" min="0" max="100"
+                            class="w-20 rounded-lg p-2 text-center" placeholder="0">
+                    </div>
+                    <div class="mt-3">
+                        <label class="text-xs text-gray-400 block mb-1">Visual Master Prompt (Base)</label>
+                        <textarea id="visual-master-prompt-input" class="w-full rounded-lg p-2 resize-y" rows="3"
+                            placeholder="Describe the artistic style..."></textarea>
                     </div>
                 </div>
             </details>
@@ -2191,24 +2220,6 @@
                 <div id="image-gen-openrouter-saved-models-list" class="mt-3 flex flex-wrap gap-2"></div>
             </div>
 
-
-
-
-            <!-- Visual Master Settings -->
-            <div class="mt-6 border-t border-gray-700 pt-4">
-                <label class="block text-sm font-bold text-gray-400 mb-2">Visual Master Probability (Scene
-                    Generation)</label>
-                <div class="flex items-center space-x-4">
-                    <input type="range" id="visual-master-probability-slider"
-                        class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" min="0" max="100"
-                        step="5" value="0"
-                        oninput="document.getElementById('visual-master-prob-value').textContent = this.value + '%'">
-                    <span id="visual-master-prob-value"
-                        class="text-sm font-bold text-indigo-400 w-12 text-right">0%</span>
-                </div>
-                <p class="text-xs text-gray-500 mt-1">Chance for the AI to spontaneously generate an image of the scene.
-                </p>
-            </div>
 
             <div class="mt-6 p-4 bg-gray-800 rounded-lg flex items-center justify-between">
                 <span id="img-gen-status" class="text-gray-400 text-sm">Status: Not Checked</span>
@@ -4469,7 +4480,8 @@
                     prompt_entry_gen: "Generate a detailed and informative encyclopedia-style entry for a lore topic titled '{title}'. If relevant, use the following triggers as context: '{triggers}'.",
                     prompt_location_memory_gen: "You are an archivist. Read the following chat transcript that occurred at a specific location. Summarize the key events, character developments, and important facts into a concise, single paragraph. This will serve as a memory for what happened at that location.\n\nTRANSCRIPT:\n{transcript}",
                     prompt_story_notes_gen: "Based on the following story context (characters, lore), generate a brief, 1-2 sentence creator's note or 'blurb' for this story to show in a library.\n\nCONTEXT:\n{context}",
-                    prompt_story_tags_gen: "Based on the following story context (characters, lore), generate 3-5 relevant, one-word, comma-separated tags for this story (e.g., fantasy, sci-fi, mystery, horror, romance).\n\nCONTEXT:\n{context}"
+                    prompt_story_tags_gen: "Based on the following story context (characters, lore), generate 3-5 relevant, one-word, comma-separated tags for this story (e.g., fantasy, sci-fi, mystery, horror, romance).\n\nCONTEXT:\n{context}",
+                    visual_master_base_prompt: "You are a visual director. Based on the provided chat history, characters, and location, generate a high-quality, vivid, and detailed image generation prompt that captures the current scene. Focus on atmosphere, lighting, and key subjects. Output ONLY the visual description."
                 };
             },
             /**
@@ -8419,6 +8431,39 @@
             },
 
             /**
+             * Displays a toast notification.
+             */
+            showNotification(message, type = 'info') {
+                const container = document.getElementById('notification-container') || (() => {
+                    const d = document.createElement('div');
+                    d.id = 'notification-container';
+                    d.className = 'fixed top-20 right-4 z-[90] flex flex-col gap-2 pointer-events-none';
+                    document.body.appendChild(d);
+                    return d;
+                })();
+
+                const toast = document.createElement('div');
+                toast.className = `max-w-xs p-4 rounded-lg shadow-2xl text-white font-medium backdrop-blur-md transition-all duration-300 transform translate-x-full opacity-0 pointer-events-auto border border-white/10 ${type === 'error' ? 'bg-red-600/90' :
+                        type === 'success' ? 'bg-green-600/90' :
+                            'bg-indigo-600/90'
+                    }`;
+                toast.textContent = message;
+
+                container.appendChild(toast);
+
+                // Animate In
+                requestAnimationFrame(() => {
+                    toast.classList.remove('translate-x-full', 'opacity-0');
+                });
+
+                // Remove after delay
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            },
+
+            /**
              * Displays a report modal after a bulk import operation.
              * @param {Array<string>} importedStoryNames - List of successfully imported stories.
              * @param {Array<Object>} failedFiles - List of files that failed to import.
@@ -9048,27 +9093,6 @@
                 if (document.getElementById('kobold-scheduler')) setListener('kobold-scheduler', 'koboldImageGenScheduler');
                 if (document.getElementById('kobold-steps')) setListener('kobold-steps', 'koboldImageGenSteps');
 
-                // Visual Master Persistence Fix
-                const vmSlider = document.getElementById('visual-master-probability-slider');
-                if (vmSlider) {
-                    const vmValue = document.getElementById('visual-master-prob-value');
-                    // Initialize: Prefer Global -> State -> 0
-                    const savedVal = globalSettings.visual_master_probability !== undefined ? globalSettings.visual_master_probability : (state.visual_master_probability || 0);
-                    state.visual_master_probability = savedVal; // Sync state
-                    vmSlider.value = savedVal;
-                    if (vmValue) vmValue.textContent = `${savedVal}%`;
-
-                    vmSlider.addEventListener('input', (e) => {
-                        const val = parseInt(e.target.value);
-                        state.visual_master_probability = val;
-                        // Persist globally
-                        globalSettings.visual_master_probability = val;
-                        StateManager.saveGlobalSettings();
-                        if (vmValue) vmValue.textContent = `${val}%`;
-                    });
-                }
-
-
                 // --- Bindings: Model Tab ---
                 if (document.getElementById('gemini-api-key-input')) setListener('gemini-api-key-input', 'geminiApiKey');
                 if (document.getElementById('openrouter-api-key-input')) setListener('openrouter-api-key-input', 'openRouterKey');
@@ -9117,6 +9141,35 @@
                     const input = document.getElementById('event-master-prob-input');
                     if (input.value === '' || input.value === undefined) input.value = 10;
                 }
+
+                // Event Master Prompt (Base)
+                if (document.getElementById('event-master-prompt-input')) {
+                    setListener('event-master-prompt-input', 'event_master_base_prompt');
+                    // Ensure default display if missing
+                    const input = document.getElementById('event-master-prompt-input');
+                    if (!input.value) {
+                        const def = UTILITY.getDefaultSystemPrompts().event_master_base_prompt;
+                        input.value = def;
+                        if (!state.event_master_base_prompt) state.event_master_base_prompt = def;
+                    }
+                }
+
+                // Visual Master Probability
+                if (document.getElementById('visual-master-prob-input')) {
+                    setListener('visual-master-prob-input', 'visual_master_probability');
+                }
+
+                // Visual Master Prompt (Base) - NEW BINDING
+                if (document.getElementById('visual-master-prompt-input')) {
+                    setListener('visual-master-prompt-input', 'visual_master_base_prompt');
+                    const input = document.getElementById('visual-master-prompt-input');
+                    if (!input.value) {
+                        const def = UTILITY.getDefaultSystemPrompts().visual_master_base_prompt || "";
+                        input.value = def;
+                        if (!state.visual_master_base_prompt) state.visual_master_base_prompt = def;
+                    }
+                }
+
                 if (document.getElementById('prompt-persona-gen-input')) setListener('prompt-persona-gen-input', 'prompt_persona_gen');
                 if (document.getElementById('prompt-world-map-gen-input')) setListener('prompt-world-map-gen-input', 'prompt_world_map_gen');
                 if (document.getElementById('prompt-location-gen-input')) setListener('prompt-location-gen-input', 'prompt_location_gen');
@@ -9271,6 +9324,23 @@
 
                 // Re-bind to show/hide correct sections
                 this.bindSettingsListeners();
+            },
+
+            /**
+             * Opens the generator for the story background.
+             */
+            openBackgroundImageGenerator() {
+                UIManager.openGenericImageGenerator({
+                    title: 'Generate Background',
+                    initialPrompt: 'A cinematic, high-resolution background landscape...',
+                    onSave: async (blob) => {
+                        const file = new File([blob], "generated_background.png", { type: "image/png" });
+                        if (typeof LibraryController !== 'undefined') {
+                            await LibraryController.handleBackgroundImageUpload({ target: { files: [file] } });
+                        }
+                        AppController.closeModal('image-gen-modal');
+                    }
+                });
             },
 
             // --- User Persona Methods ---
@@ -11462,7 +11532,7 @@
                 }
 
                 // 2. Generate Prompt using AI
-                const systemPrompt = "You are a visual director. Based on the recent dialogue and the character/location context provided, describe the current visual scene in detail for an image generator (DALL-E 3/Stable Diffusion). Focus on atmosphere, lighting, and key subjects. Output ONLY the visual description.";
+                const systemPrompt = state.visual_master_base_prompt || UTILITY.getDefaultSystemPrompts().visual_master_base_prompt;
 
                 const prompt = `${systemPrompt}\n\nCHARACTERS:\n${charPersonas}\n\nSETTING:\n${locationContext}\n\nDIALOGUE:\n${recentHistory}\n\nKey:`;
 
@@ -11474,8 +11544,11 @@
                 let originalIcon = '';
                 if (btnElement) {
                     originalIcon = btnElement.innerHTML;
-                    btnElement.innerHTML = `<svg class="animate-spin h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                    btnElement.innerHTML = `<svg class="animate-spin h-4 w-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
                     btnElement.disabled = true;
+                    btnElement.classList.add('cursor-not-allowed');
+                    // Notify the user globally as well
+                    UIManager.showNotification("Visual Master: Generating scene...", "info");
                 } else {
                     UIManager.showLoadingSpinner();
                 }
@@ -11532,6 +11605,7 @@
                     if (btnElement) {
                         btnElement.innerHTML = originalIcon;
                         btnElement.disabled = false;
+                        btnElement.classList.remove('cursor-not-allowed');
                     } else {
                         UIManager.hideLoadingSpinner();
                     }
@@ -12015,18 +12089,25 @@
                         const storyId = library.active_story_id;
                         if (!storyId) return;
 
-                        const bgKey = `bg_story_${storyId}`;
-                        await DBService.saveImage(bgKey, blob);
+                        // Use standard key format (bg_UUID)
+                        const bgKey = `bg_${storyId}`;
+                        const saved = await DBService.saveImage(bgKey, blob);
+                        if (!saved) { alert("Failed to save background."); return; }
+
+                        // Update Cache immediately (Critical for applyStyling)
+                        if (UIManager.RUNTIME.globalBackgroundImageCache) URL.revokeObjectURL(UIManager.RUNTIME.globalBackgroundImageCache);
+                        UIManager.RUNTIME.globalBackgroundImageCache = URL.createObjectURL(blob);
 
                         // Update State
-                        StateManager.getState().backgroundImageURL = `local_idb_${bgKey}`;
+                        StateManager.getState().backgroundImageURL = 'local_idb_background';
                         await ReactiveStore.forceSave();
 
-                        // Visual Feedback
-                        // UIManager.applyStyling handles the actual CSS update via subscription
-                        // But we want to ensure the blob is fresh in cache if needed?
-                        // UI should handle local_idb prefix by checking DB.
-                        alert("Background updated.");
+                        // Apply
+                        UIManager.applyStyling();
+
+                        // Update UI hint if setting modal is open
+                        const bgHint = document.getElementById('background-image-hint');
+                        if (bgHint) bgHint.textContent = 'Current: [Visual Master Image]';
                     }
                 }
             },
