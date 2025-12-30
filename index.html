@@ -6236,13 +6236,48 @@
                     }
                 } catch (e) { console.warn("Chat Render Error (Image Gen):", e); }
 
+                // Swipe navigation UI (only for AI messages with swipes)
+                const hasSwipes = msg.swipes && msg.swipes.length > 1;
+                const isLastAIMessage = !character.is_user && index === state.chat_history.map((m, i) => ({m, i})).filter(x => x.m.type === 'chat' && !state.characters.find(c => c.id === x.m.character_id)?.is_user).pop()?.i;
+                const swipeIndex = msg.swipeIndex || 0;
+                const swipeCount = msg.swipes ? msg.swipes.length : 1;
+
+                let swipeNavHTML = '';
+                if (!character.is_user) {
+                    // Show swipe nav for AI messages
+                    const canSwipePrev = hasSwipes && swipeIndex > 0;
+                    const canSwipeNext = hasSwipes && swipeIndex < swipeCount - 1;
+
+                    swipeNavHTML = `
+                        <div class="swipe-nav flex items-center justify-center gap-3 mt-1 py-1">
+                            <button data-action="swipe-prev" data-index="${index}"
+                                class="swipe-btn p-1 rounded ${canSwipePrev ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 cursor-not-allowed'}"
+                                title="Previous swipe" ${canSwipePrev ? '' : 'disabled'}>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            </button>
+                            <span class="swipe-counter text-xs text-gray-500 min-w-[40px] text-center">${swipeCount > 1 ? `${swipeIndex + 1}/${swipeCount}` : ''}</span>
+                            <button data-action="swipe-next" data-index="${index}"
+                                class="swipe-btn p-1 rounded ${canSwipeNext ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 cursor-not-allowed'}"
+                                title="Next swipe" ${canSwipeNext ? '' : 'disabled'}>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </button>
+                            ${isLastAIMessage ? `
+                            <button data-action="add-swipe" data-index="${index}"
+                                class="swipe-btn p-1 rounded text-gray-400 hover:text-indigo-400 hover:bg-gray-700 ml-2"
+                                title="Generate new alternative">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            </button>
+                            ` : ''}
+                        </div>`;
+                }
+
                 // HTML Container (Single line to prevent pre-wrap issues)
                 return DOM.html`
             <div class="chat-bubble-container ${msg.isNew ? 'new-message' : ''}" data-message-index="${index}">
                 <div class="bubble-header">
-                     <p class="font-bold text-sm cursor-pointer hover:underline decoration-dotted underline-offset-4" 
+                     <p class="font-bold text-sm cursor-pointer hover:underline decoration-dotted underline-offset-4"
                         ${DOM.unsafe(characterNameColor)}
-                        data-action="open-character-detail" 
+                        data-action="open-character-detail"
                         data-id="${character.id}"
                         title="Open Character Details">
                         ${character.name}
@@ -6255,7 +6290,7 @@
                         <button data-action="confirm-delete-message" data-index="${index}" class="text-gray-400 hover:text-red-400" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                     </div>
                 </div>
-                <div class="bubble-body rounded-lg px-3 py-2" style="${DOM.unsafe(bubbleStyle)}"><div id="message-content-${index}" class="whitespace-pre-wrap" style="color: ${state.chatTextColor}; font-family: ${state.font};">${contentHTML}</div></div></div>`;
+                <div class="bubble-body rounded-lg px-3 py-2" style="${DOM.unsafe(bubbleStyle)}"><div id="message-content-${index}" class="whitespace-pre-wrap" style="color: ${state.chatTextColor}; font-family: ${state.font};">${contentHTML}</div></div>${DOM.unsafe(swipeNavHTML)}</div>`;
             },
 
             /**
@@ -7319,7 +7354,10 @@
                     type: 'chat',
                     emotion: emotion,
                     timestamp: new Date().toISOString(),
-                    isNew: true
+                    isNew: true,
+                    swipes: [],      // Array to store alternative responses
+                    swipeIndex: 0,   // Current swipe being displayed
+                    swipeEmotions: [] // Emotions for each swipe
                 };
 
                 // Suppress full re-render (Prevent Start Blink)
@@ -7375,6 +7413,15 @@
                         // Update the TRUE state now that we are done
                         state.chat_history[messageIndex].content = fullText;
                         state.chat_history[messageIndex].isNew = false;
+
+                        // Initialize swipes with first response
+                        if (!state.chat_history[messageIndex].swipes) {
+                            state.chat_history[messageIndex].swipes = [];
+                            state.chat_history[messageIndex].swipeEmotions = [];
+                        }
+                        state.chat_history[messageIndex].swipes.push(fullText);
+                        state.chat_history[messageIndex].swipeEmotions.push(emotion);
+                        state.chat_history[messageIndex].swipeIndex = state.chat_history[messageIndex].swipes.length - 1;
 
                         // Manually clean up the 'new-message' class from the DOM
                         // Since we are skipping the re-render, we must update the class manually
@@ -11777,6 +11824,10 @@
                 const messageContent = input.value.trim();
                 if (!messageContent) return;
 
+                // 0. Commit current swipe selection for the last AI message
+                // When user replies, the currently viewed swipe becomes the canonical response
+                this.commitSwipeSelection();
+
                 // 1. Add user message immediately
                 this.addMessageToHistory(userChar.id, messageContent);
                 input.value = '';
@@ -11849,7 +11900,7 @@
 
             /**
              * Regenerates the last AI response.
-             * Removes the last message and triggers a new response.
+             * Adds a new swipe to the last AI message instead of replacing it.
              */
             async handleRegen() {
                 const state = ReactiveStore.state;
@@ -11866,10 +11917,148 @@
                 const lastChar = lastMsg ? state.characters.find(c => c.id === lastMsg.character_id) : null;
 
                 if (lastChar && !lastChar.is_user && lastMsg.character_id === selectedCharId) {
-                    this.undoLastTurn();
-                    await this.triggerAIResponse(selectedCharId);
+                    // Generate new swipe for existing AI message
+                    await this.generateSwipe(lastMsg);
                 } else {
                     await this.triggerAIResponse(selectedCharId);
+                }
+            },
+
+            /**
+             * Generates a new swipe (alternative response) for an existing AI message.
+             * @param {Object} targetMessage - The message object to add a swipe to.
+             */
+            async generateSwipe(targetMessage) {
+                const state = ReactiveStore.state;
+                const targetIndex = state.chat_history.indexOf(targetMessage);
+                if (targetIndex === -1) return;
+
+                const targetId = targetMessage.character_id;
+
+                // Setup UI for Generation
+                UIManager.showTypingIndicator(targetId);
+                UIManager.setButtonToStopMode();
+                this.RUNTIME.activeRequestAbortController = new AbortController();
+
+                try {
+                    // Build prompt (excluding the current message we're regenerating)
+                    const prompt = PromptBuilder.buildPrompt(targetId);
+                    const responseText = await APIService.callAI(prompt, false, this.RUNTIME.activeRequestAbortController.signal);
+
+                    // Analyze for emotion
+                    let emotion = 'neutral';
+                    try {
+                        const aiAnalysis = await this.analyzeTurn(responseText);
+                        emotion = aiAnalysis.emotion;
+                    } catch (err) {
+                        console.warn("Sentiment analysis failed, defaulting to neutral.");
+                    }
+
+                    UIManager.hideTypingIndicator();
+
+                    // Initialize swipes array if not present (for old messages)
+                    if (!targetMessage.swipes) {
+                        targetMessage.swipes = [targetMessage.content];
+                        targetMessage.swipeEmotions = [targetMessage.emotion || 'neutral'];
+                        targetMessage.swipeIndex = 0;
+                    }
+
+                    // Add new swipe
+                    targetMessage.swipes.push(responseText);
+                    targetMessage.swipeEmotions.push(emotion);
+                    targetMessage.swipeIndex = targetMessage.swipes.length - 1;
+
+                    // Update displayed content
+                    targetMessage.content = responseText;
+                    targetMessage.emotion = emotion;
+
+                    // Force UI update
+                    UIManager.renderChat();
+
+                } catch (error) {
+                    if (error.name === 'AbortError') console.log("Stopped.");
+                    else this.addSystemMessageToHistory(`AI Error: ${error.message}`);
+                    UIManager.hideTypingIndicator();
+                } finally {
+                    UIManager.setButtonToSendMode();
+                    this.RUNTIME.activeRequestAbortController = null;
+                    UIManager.hideTypingIndicator();
+                }
+            },
+
+            /**
+             * Navigates to the previous swipe for a message.
+             * @param {number} index - The message index.
+             */
+            swipePrev(index) {
+                const msg = ReactiveStore.state.chat_history[index];
+                if (!msg || !msg.swipes || msg.swipes.length <= 1) return;
+
+                if (msg.swipeIndex > 0) {
+                    msg.swipeIndex--;
+                    msg.content = msg.swipes[msg.swipeIndex];
+                    msg.emotion = msg.swipeEmotions[msg.swipeIndex] || 'neutral';
+                    UIManager.renderChat();
+                }
+            },
+
+            /**
+             * Navigates to the next swipe for a message.
+             * @param {number} index - The message index.
+             */
+            swipeNext(index) {
+                const msg = ReactiveStore.state.chat_history[index];
+                if (!msg || !msg.swipes || msg.swipes.length <= 1) return;
+
+                if (msg.swipeIndex < msg.swipes.length - 1) {
+                    msg.swipeIndex++;
+                    msg.content = msg.swipes[msg.swipeIndex];
+                    msg.emotion = msg.swipeEmotions[msg.swipeIndex] || 'neutral';
+                    UIManager.renderChat();
+                }
+            },
+
+            /**
+             * Adds a new swipe to a message by generating a new AI response.
+             * @param {number} index - The message index.
+             */
+            async addSwipe(index) {
+                const msg = ReactiveStore.state.chat_history[index];
+                if (!msg) return;
+
+                // Verify this is an AI message
+                const character = ReactiveStore.state.characters.find(c => c.id === msg.character_id);
+                if (!character || character.is_user) return;
+
+                await this.generateSwipe(msg);
+            },
+
+            /**
+             * Commits the current swipe selection for the last AI message.
+             * Called when user sends a message - the viewed swipe becomes canonical.
+             * Clears unused swipes to save storage.
+             */
+            commitSwipeSelection() {
+                const state = ReactiveStore.state;
+                const history = state.chat_history;
+
+                // Find the last AI chat message
+                for (let i = history.length - 1; i >= 0; i--) {
+                    const msg = history[i];
+                    if (msg.type !== 'chat') continue;
+
+                    const character = state.characters.find(c => c.id === msg.character_id);
+                    if (!character || character.is_user) continue;
+
+                    // Found the last AI message
+                    if (msg.swipes && msg.swipes.length > 1) {
+                        // Keep only the current swipe content (already in msg.content)
+                        // Clear the swipes array to save storage
+                        msg.swipes = [msg.content];
+                        msg.swipeEmotions = [msg.emotion || 'neutral'];
+                        msg.swipeIndex = 0;
+                    }
+                    break;
                 }
             },
 
@@ -13837,6 +14026,9 @@
                 ActionHandler.register('chat-copy', (ds) => NarrativeController.copyMessage(ds.index));
                 ActionHandler.register('chat-edit', (ds) => NarrativeController.openEditModal(ds.index));
                 ActionHandler.register('chat-delete', (ds) => NarrativeController.deleteMessage(ds.index));
+                ActionHandler.register('swipe-prev', (ds) => NarrativeController.swipePrev(parseInt(ds.index)));
+                ActionHandler.register('swipe-next', (ds) => NarrativeController.swipeNext(parseInt(ds.index)));
+                ActionHandler.register('add-swipe', (ds) => NarrativeController.addSwipe(parseInt(ds.index)));
                 ActionHandler.register('quick-create-character', () => NarrativeController.quickCreateCharacter());
 
                 ActionHandler.register('move-example-turn', (ds) => NarrativeController.moveExampleDialogueTurn(parseInt(ds.index), ds.direction));
