@@ -6236,34 +6236,36 @@
                     }
                 } catch (e) { console.warn("Chat Render Error (Image Gen):", e); }
 
-                // Swipe navigation UI (only for AI messages with swipes)
+                // Swipe navigation UI - only show if multiple swipes exist OR it's the last AI message
                 const hasSwipes = msg.swipes && msg.swipes.length > 1;
                 const isLastAIMessage = !character.is_user && index === state.chat_history.map((m, i) => ({m, i})).filter(x => x.m.type === 'chat' && !state.characters.find(c => c.id === x.m.character_id)?.is_user).pop()?.i;
                 const swipeIndex = msg.swipeIndex || 0;
                 const swipeCount = msg.swipes ? msg.swipes.length : 1;
 
                 let swipeNavHTML = '';
-                if (!character.is_user) {
-                    // Show swipe nav for AI messages
+                // Only show nav if: has multiple swipes to navigate OR is last AI message (for regenerate)
+                if (!character.is_user && (hasSwipes || isLastAIMessage)) {
                     const canSwipePrev = hasSwipes && swipeIndex > 0;
                     const canSwipeNext = hasSwipes && swipeIndex < swipeCount - 1;
 
                     swipeNavHTML = `
                         <div class="swipe-nav flex items-center justify-center gap-3 mt-1 py-1">
+                            ${hasSwipes ? `
                             <button data-action="swipe-prev" data-index="${index}"
                                 class="swipe-btn p-1 rounded ${canSwipePrev ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 cursor-not-allowed'}"
                                 title="Previous swipe" ${canSwipePrev ? '' : 'disabled'}>
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                             </button>
-                            <span class="swipe-counter text-xs text-gray-500 min-w-[40px] text-center">${swipeCount > 1 ? `${swipeIndex + 1}/${swipeCount}` : ''}</span>
+                            <span class="swipe-counter text-xs text-gray-500 min-w-[40px] text-center">${swipeIndex + 1}/${swipeCount}</span>
                             <button data-action="swipe-next" data-index="${index}"
                                 class="swipe-btn p-1 rounded ${canSwipeNext ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 cursor-not-allowed'}"
                                 title="Next swipe" ${canSwipeNext ? '' : 'disabled'}>
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                             </button>
+                            ` : ''}
                             ${isLastAIMessage ? `
                             <button data-action="add-swipe" data-index="${index}"
-                                class="swipe-btn p-1 rounded text-gray-400 hover:text-indigo-400 hover:bg-gray-700 ml-2"
+                                class="swipe-btn p-1 rounded text-gray-400 hover:text-indigo-400 hover:bg-gray-700 ${hasSwipes ? 'ml-2' : ''}"
                                 title="Generate new alternative">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                             </button>
