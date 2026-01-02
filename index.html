@@ -850,10 +850,13 @@
                             class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Model</a>
                         <a href="#"
                             onclick="AppController.openSettingsToTab('image-gen'); AppController.toggleMobileMenu(); return false;"
-                            class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Image Gen</a>
+                            class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Images</a>
+                        <a href="#"
+                            onclick="AppController.openSettingsToTab('export'); AppController.toggleMobileMenu(); return false;"
+                            class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Export</a>
                         <a href="#"
                             onclick="AppController.openSettingsToTab('personas'); AppController.toggleMobileMenu(); return false;"
-                            class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">Users</a>
+                            class="block pl-8 pr-4 py-3 text-white hover:bg-gray-700">User Personas</a>
                     </div>
                 </div>
             </div>
@@ -942,7 +945,7 @@
                 <h2 class="text-2xl font-semibold">Story Library</h2>
                 <div class="flex space-x-2">
                     <button data-action="open-modal" data-target="io-hub-modal"
-                        class="bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg">Share</button>
+                        class="bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg">Import</button>
 
                     <div class="relative inline-block text-left">
                         <button
@@ -1199,8 +1202,7 @@
                     <div id="static-entry-details"
                         class="w-full md:w-2/3 bg-black/30 rounded-lg p-4 overflow-y-auto flex-1 md:flex-none md:h-full">
                         <div id="static-entry-details-content" class="h-full">
-                            <div class="text-gray-400 flex items-center justify-center h-full">Select a static
-                                entry.
+                            <div class="text-gray-400 flex items-center justify-center h-full">Select a static entry.
                             </div>
                         </div>
                     </div>
@@ -1213,8 +1215,7 @@
                     <div id="dynamic-entry-details"
                         class="w-full md:w-2/3 bg-black/30 rounded-lg p-4 overflow-y-auto flex-1 md:flex-none md:h-full">
                         <div id="dynamic-entry-details-content" class="h-full">
-                            <div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic
-                                entry.
+                            <div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.
                             </div>
                         </div>
                     </div>
@@ -1268,20 +1269,22 @@
             class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-full max-w-2xl max-h-[85vh] relative flex flex-col overflow-hidden">
             <div class="p-6 flex-shrink-0 border-b border-gray-700 flex justify-between items-start"
                 style="padding-bottom: .1rem;">
-                <div>
+                <div class="min-w-0 flex-1">
                     <h2 class="text-2xl font-semibold mb-4">Settings</h2>
-                    <div class="flex -mb-px space-x-4">
+                    <div class="flex -mb-px space-x-4 overflow-x-auto no-scrollbar pb-1"
+                        style="-webkit-overflow-scrolling: touch; scrollbar-width: none;">
                         <button id="settings-tab-appearance" onclick="AppController.switchSettingsTab('appearance')"
-                            class="pb-2 font-semibold border-b-2 border-indigo-500 text-white transition-colors">Appearance</button>
+                            class="pb-2 font-semibold border-b-2 border-indigo-500 text-white transition-colors flex-shrink-0">Appearance</button>
                         <button id="settings-tab-prompt" onclick="AppController.switchSettingsTab('prompt')"
-                            class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Prompts</button>
+                            class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors flex-shrink-0">Prompts</button>
                         <button id="settings-tab-model" onclick="AppController.switchSettingsTab('model')"
-                            class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Model</button>
+                            class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors flex-shrink-0">Model</button>
                         <button id="settings-tab-image-gen" onclick="AppController.switchSettingsTab('image-gen')"
-                            class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Image
-                            Gen</button>
+                            class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors flex-shrink-0">Images</button>
+                        <button id="settings-tab-export" onclick="AppController.switchSettingsTab('export')"
+                            class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors flex-shrink-0">Export</button>
                         <button id="settings-tab-personas" onclick="AppController.switchSettingsTab('personas')"
-                            class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">Users</button>
+                            class="pb-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors flex-shrink-0">Users</button>
                     </div>
                 </div>
                 <button data-action="close-modal" data-id="settings-modal"
@@ -1438,22 +1441,17 @@
                             <option value="'Lora', serif" style="font-family: 'Lora', serif">Lora (Serif)</option>
                             <option value="'Domine', serif" style="font-family: 'Domine', serif">Domine (Bold Serif)
                             </option>
-                            <option value="'Roboto Slab', serif" style="font-family: 'Roboto Slab', serif">Roboto
-                                Slab
+                            <option value="'Roboto Slab', serif" style="font-family: 'Roboto Slab', serif">Roboto Slab
                                 (Slab)</option>
-                            <option value="'EB Garamond', serif" style="font-family: 'EB Garamond', serif">EB
-                                Garamond
+                            <option value="'EB Garamond', serif" style="font-family: 'EB Garamond', serif">E Garamond
                                 (Classic)</option>
                             <option value="'Cormorant Garamond', serif"
-                                style="font-family: 'Cormorant Garamond', serif">Cormorant Garamond (Elegant)
-                            </option>
-                            <option value="'Comic Neue', sans-serif" style="font-family: 'Comic Neue', sans-serif">
-                                Comic
+                                style="font-family: 'Cormorant Garamond', serif">Cormorant Garamond (Elegant)</option>
+                            <option value="'Comic Neue', sans-serif" style="font-family: 'Comic Neue', sans-serif">Comic
                                 Neue (Comic)</option>
                             <option value="'Caveat', cursive" style="font-family: 'Caveat', cursive">Caveat
                                 (Handwriting)</option>
-                            <option value="'Patrick Hand', cursive" style="font-family: 'Patrick Hand', cursive">
-                                Patrick
+                            <option value="'Patrick Hand', cursive" style="font-family: 'Patrick Hand', cursive">Patrick
                                 Hand (Neat Hand)</option>
                             <option value="'Dancing Script', cursive" style="font-family: 'Dancing Script', cursive">
                                 Dancing Script (Cursive)</option>
@@ -1812,129 +1810,261 @@
             </div>
         </div>
 
-        <div id="settings-prompt-content" class="space-y-2">
-            <div class="flex space-x-2 pt-4"><button onclick="NarrativeController.viewRawPrompt()"
-                    class="bg-gray-600/80 hover:bg-gray-500/80 text-white font-bold py-2 px-4 rounded-lg">View Raw
-                    Prompt</button><button data-action="open-modal" data-target="example-dialogue-modal"
-                    class="bg-sky-600/80 hover:bg-sky-500/80 text-white font-bold py-2 px-4 rounded-lg">Edit Example
-                    Dialogue</button>
-                <button onclick="StoryService.exportNarrativeHTML()"
-                    class="bg-emerald-600/80 hover:bg-emerald-500/80 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
-                    title="Export Narrative as HTML">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div id="settings-prompt-content" class="space-y-6">
+            <!-- Action Buttons -->
+            <div class="flex justify-center flex-wrap gap-4 pt-2 pb-6 border-b border-gray-700/30">
+                <button onclick="NarrativeController.viewRawPrompt()"
+                    class="flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 hover:border-gray-500 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-sm">
+                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
                     </svg>
-                    Export
+                    <span>View Raw Prompt</span>
+                </button>
+                <button data-action="open-modal" data-target="example-dialogue-modal"
+                    class="flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 hover:border-gray-500 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-sm">
+                    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z">
+                        </path>
+                    </svg>
+                    <span>Edit Example Dialogue</span>
                 </button>
             </div>
 
-            <details>
-                <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Event Master
-                </summary>
-                <div class="p-4 bg-black/20 rounded-b-lg">
-                    <h3 class="text-base font-medium mb-2">Event Master Prompt</h3>
-                    <p class="text-gray-400 text-sm mb-2">Define the base instruction for the Event Master.</p>
-                    <textarea id="event-master-prompt-input" class="w-full rounded-lg p-2 resize-y" rows="4"></textarea>
+            <!-- Global Settings Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-gray-900/30 p-4 rounded-lg border border-gray-700/50">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Response
+                        Length</label>
+                    <div class="relative">
+                        <select id="response-length-selector"
+                            class="w-full appearance-none rounded-lg p-3 bg-gray-800 border border-gray-600 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                            <option value="short">Short (1-2 Sentences)</option>
+                            <option value="medium">Medium (2-4 Sentences)</option>
+                            <option value="normal">Default (Unconstrained)</option>
+                            <option value="long">Long (Detailed)</option>
+                            <option value="novel">Novel (Creative Writing)</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7">
+                                </path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
 
-                    <div class="mt-3 flex items-center space-x-4">
-                        <label for="event-master-prob-input" class="text-gray-400 text-sm font-bold">Trigger
-                            Probability
-                            (%):</label>
-                        <input type="number" id="event-master-prob-input" min="0" max="100"
-                            class="w-20 rounded-lg p-2 text-center" placeholder="15">
+                <!-- AI Analysis Toggle -->
+                <div
+                    class="flex items-center justify-between bg-gray-900/30 p-4 rounded-lg border border-gray-700/50 hover:bg-gray-900/40 transition-colors">
+                    <div>
+                        <span class="text-gray-200 font-medium block">Enable AI Analysis</span>
+                        <span class="text-xs text-gray-500">Auto-detects emotions and location changes. Disabling saves
+                            tokens.</span>
                     </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="enable-analysis-toggle" class="sr-only peer">
+                        <div
+                            class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                        </div>
+                    </label>
                 </div>
-            </details>
-            <details>
-                <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Visual Master
-                </summary>
-                <div class="p-4 bg-black/20 rounded-b-lg">
-                    <h3 class="text-base font-medium mb-2">Visual Master</h3>
-                    <p class="text-gray-400 text-sm mb-2">Automatically generates visuals for the scene based on chat
-                        context.</p>
-                    <div class="mt-3 flex items-center space-x-4">
-                        <label for="visual-master-prob-input" class="text-gray-400 text-sm font-bold">Trigger
-                            Probability
-                            (%):</label>
-                        <input type="number" id="visual-master-prob-input" min="0" max="100"
-                            class="w-20 rounded-lg p-2 text-center" placeholder="0">
-                    </div>
-                    <div class="mt-3">
-                        <label class="text-xs text-gray-400 block mb-1">Visual Master Prompt (Base)</label>
-                        <textarea id="visual-master-prompt-input" class="w-full rounded-lg p-2 resize-y" rows="3"
-                            placeholder="Describe the artistic style..."></textarea>
-                    </div>
-                </div>
-            </details>
-            <details>
-                <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Persona Generation
-                    Prompt</summary>
-                <div class="p-4 bg-black/20 rounded-b-lg">
-                    <p class="text-gray-400 text-sm mb-2">Used by the AI button on a character's persona. Use
-                        <code>{concept}</code> for the existing text.
-                    </p><textarea id="prompt-persona-gen-input" class="w-full rounded-lg p-2 resize-y"
-                        rows="4"></textarea>
-                </div>
-            </details>
-            <details>
-                <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">World Map
-                    Generation
-                    Prompt</summary>
-                <div class="p-4 bg-black/20 rounded-b-lg">
-                    <p class="text-gray-400 text-sm mb-2">Used to generate the entire world map. Use
-                        <code>{characters}</code>, <code>{static}</code>, and <code>{recent}</code>.
-                    </p><textarea id="prompt-world-map-gen-input" class="w-full rounded-lg p-2 resize-y"
-                        rows="6"></textarea>
-                </div>
-            </details>
-            <details>
-                <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Location Prompt
-                    Generation</summary>
-                <div class="p-4 bg-black/20 rounded-b-lg">
-                    <p class="text-gray-400 text-sm mb-2">Used to generate a location's detailed prompt. Use
-                        <code>{name}</code> and <code>{description}</code>.
-                    </p><textarea id="prompt-location-gen-input" class="w-full rounded-lg p-2 resize-y"
-                        rows="4"></textarea>
-                </div>
-            </details>
-            <details>
-                <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Memory Entry
-                    Generation
-                </summary>
-                <div class="p-4 bg-black/20 rounded-b-lg">
-                    <p class="text-gray-400 text-sm mb-2">Used for Static/Dynamic memory entries. Use
-                        <code>{title}</code> and <code>{triggers}</code>.
-                    </p><textarea id="prompt-entry-gen-input" class="w-full rounded-lg p-2 resize-y"
-                        rows="4"></textarea>
-                </div>
-            </details>
-            <details>
-                <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 py-2">Location Memory
-                    Summary
-                </summary>
-                <div class="p-4 bg-black/20 rounded-b-lg">
-                    <p class="text-gray-400 text-sm mb-2">Used to auto-summarize events when you leave a location.
-                        Use
-                        <code>{transcript}</code>.
-                    </p><textarea id="prompt-location-memory-gen-input" class="w-full rounded-lg p-2 resize-y"
-                        rows="4"></textarea>
-                </div>
-            </details>
-
-            <div class="flex items-center justify-between mb-4 bg-black/20 p-3 rounded-lg border border-gray-700">
-                <div>
-                    <span class="text-gray-300 font-medium block">Enable AI Analysis</span>
-                    <span class="text-xs text-gray-500">Auto-detects emotions and location changes. Disabling saves
-                        tokens.</span>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="enable-analysis-toggle" class="sr-only peer">
-                    <div
-                        class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
-                    </div>
-                </label>
             </div>
+
+            <div class="space-y-3 pt-4">
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Masters & Logic</h3>
+
+                <!-- Event Master -->
+                <details
+                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
+                    <summary
+                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
+                        <span class="font-medium text-gray-200">Event Master</span>
+                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </summary>
+                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
+                        <p class="text-gray-400 text-sm mb-3">Define the base instruction for the Event Master, which
+                            injects plot twists.</p>
+                        <textarea id="event-master-prompt-input"
+                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y mb-4 font-mono"
+                            rows="4"></textarea>
+
+                        <div
+                            class="flex items-center justify-between bg-black/20 rounded-lg p-3 border border-gray-700/50">
+                            <label for="event-master-prob-input" class="text-gray-300 text-sm font-medium">Trigger
+                                Probability</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" id="event-master-prob-input" min="0" max="100"
+                                    class="w-16 bg-gray-800 border border-gray-600 rounded-md p-1.5 text-center text-white text-sm focus:border-indigo-500"
+                                    placeholder="0">
+                                <span class="text-gray-500 text-sm">%</span>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <!-- Visual Master -->
+                <details
+                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
+                    <summary
+                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
+                        <span class="font-medium text-gray-200">Visual Master</span>
+                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </summary>
+                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
+                        <p class="text-gray-400 text-sm mb-3">Automatically generates visuals for the scene based on
+                            chat context.</p>
+
+                        <div
+                            class="flex items-center justify-between bg-black/20 rounded-lg p-3 border border-gray-700/50 mb-4">
+                            <label for="visual-master-prob-input" class="text-gray-300 text-sm font-medium">Trigger
+                                Probability</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" id="visual-master-prob-input" min="0" max="100"
+                                    class="w-16 bg-gray-800 border border-gray-600 rounded-md p-1.5 text-center text-white text-sm focus:border-indigo-500"
+                                    placeholder="0">
+                                <span class="text-gray-500 text-sm">%</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase font-bold block mb-2">Visual Master Prompt
+                                (Base)</label>
+                            <textarea id="visual-master-prompt-input"
+                                class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
+                                rows="3" placeholder="Describe the artistic style..."></textarea>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <div class="space-y-3 pt-4">
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Generation Prompts</h3>
+
+                <!-- Persona Gen -->
+                <details
+                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
+                    <summary
+                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
+                        <span class="font-medium text-gray-200">Persona Generation</span>
+                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </summary>
+                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
+                        <p class="text-gray-400 text-sm mb-3">Used by the AI button on a character's persona. Variable:
+                            <code class="bg-black/40 px-1 rounded text-indigo-300">{concept}</code>
+                        </p>
+                        <textarea id="prompt-persona-gen-input"
+                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
+                            rows="4"></textarea>
+                    </div>
+                </details>
+
+                <!-- World Map Gen -->
+                <details
+                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
+                    <summary
+                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
+                        <span class="font-medium text-gray-200">World Map Generation</span>
+                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </summary>
+                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
+                        <p class="text-gray-400 text-sm mb-3">Generates the entire world map. Variables: <code
+                                class="bg-black/40 px-1 rounded text-indigo-300">{characters}</code>, <code
+                                class="bg-black/40 px-1 rounded text-indigo-300">{static}</code>, <code
+                                class="bg-black/40 px-1 rounded text-indigo-300">{recent}</code></p>
+                        <textarea id="prompt-world-map-gen-input"
+                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
+                            rows="6"></textarea>
+                    </div>
+                </details>
+
+                <!-- Location Gen -->
+                <details
+                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
+                    <summary
+                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
+                        <span class="font-medium text-gray-200">Location Prompt Generation</span>
+                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </summary>
+                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
+                        <p class="text-gray-400 text-sm mb-3">Generates a location's detailed prompt. Variables: <code
+                                class="bg-black/40 px-1 rounded text-indigo-300">{name}</code>, <code
+                                class="bg-black/40 px-1 rounded text-indigo-300">{description}</code></p>
+                        <textarea id="prompt-location-gen-input"
+                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
+                            rows="4"></textarea>
+                    </div>
+                </details>
+
+                <!-- Memory Entry Gen -->
+                <details
+                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
+                    <summary
+                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
+                        <span class="font-medium text-gray-200">Memory Entry Generation</span>
+                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </summary>
+                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
+                        <p class="text-gray-400 text-sm mb-3">Used for Static/Dynamic memory entries. Variables: <code
+                                class="bg-black/40 px-1 rounded text-indigo-300">{title}</code>, <code
+                                class="bg-black/40 px-1 rounded text-indigo-300">{triggers}</code></p>
+                        <textarea id="prompt-entry-gen-input"
+                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
+                            rows="4"></textarea>
+                    </div>
+                </details>
+
+                <!-- Location Memory Summary -->
+                <details
+                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
+                    <summary
+                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
+                        <span class="font-medium text-gray-200">Location Memory Summary</span>
+                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </summary>
+                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
+                        <p class="text-gray-400 text-sm mb-3">Auto-summarizes events when leaving a location. Variable:
+                            <code class="bg-black/40 px-1 rounded text-indigo-300">{transcript}</code>
+                        </p>
+                        <textarea id="prompt-location-memory-gen-input"
+                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
+                            rows="4"></textarea>
+                    </div>
+                </details>
+            </div>
+
+
         </div>
         <div id="settings-personas-content" class="h-full flex flex-col">
             <div class="flex-grow flex flex-col md:flex-row gap-4 min-h-0 h-[60vh]">
@@ -2230,7 +2360,95 @@
                 </button>
             </div>
         </div>
-    </div>
+
+        <!-- NEW: Export Settings Content -->
+        <div id="settings-export-content">
+            <div class="space-y-6">
+                <!-- Current Narrative Export Section -->
+                <div class="bg-black/20 p-4 rounded-lg border border-gray-700">
+                    <h3 class="text-lg font-medium text-white mb-2">Export Current Narrative</h3>
+                    <p class="text-gray-400 text-sm mb-4">Choose a format to save your current story.</p>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-bold text-gray-400 mb-2">Primary Character</label>
+                        <select id="export-primary-character-selector"
+                            class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white focus:border-indigo-500">
+                            <option value="">Auto-detect (First AI)</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">For PNG/BYAF exports. Defaults to first AI character if
+                            not selected.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <!-- ZIP Export -->
+                        <button onclick="LibraryController.exportStoryAs('zip')"
+                            class="group flex items-center justify-center space-x-2 bg-gray-900/40 border border-blue-500/30 hover:border-blue-400 hover:bg-blue-500/10 text-gray-200 hover:text-white font-medium py-3 px-4 rounded-lg transition-all duration-200">
+                            <svg class="w-5 h-5 text-blue-500 group-hover:text-blue-400 transition-colors" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                            <span>ZIP <span class="text-xs opacity-60 ml-1">(Recommended)</span></span>
+                        </button>
+
+                        <!-- JSON Export -->
+                        <button onclick="LibraryController.exportStoryAs('json')"
+                            class="group flex items-center justify-center space-x-2 bg-gray-900/40 border border-indigo-500/30 hover:border-indigo-400 hover:bg-indigo-500/10 text-gray-200 hover:text-white font-medium py-3 px-4 rounded-lg transition-all duration-200">
+                            <svg class="w-5 h-5 text-indigo-500 group-hover:text-indigo-400 transition-colors"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            <span>JSON <span class="text-xs opacity-60 ml-1">(Data Only)</span></span>
+                        </button>
+
+                        <!-- PNG Export -->
+                        <button onclick="LibraryController.exportStoryAs('png')"
+                            class="group flex items-center justify-center space-x-2 bg-gray-900/40 border border-pink-500/30 hover:border-pink-400 hover:bg-pink-500/10 text-gray-200 hover:text-white font-medium py-3 px-4 rounded-lg transition-all duration-200">
+                            <svg class="w-5 h-5 text-pink-500 group-hover:text-pink-400 transition-colors" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                </path>
+                            </svg>
+                            <span>PNG <span class="text-xs opacity-60 ml-1">(Card)</span></span>
+                        </button>
+
+                        <!-- BYAF Export -->
+                        <button onclick="LibraryController.exportStoryAs('byaf')"
+                            class="group flex items-center justify-center space-x-2 bg-gray-900/40 border border-amber-500/30 hover:border-amber-400 hover:bg-amber-500/10 text-gray-200 hover:text-white font-medium py-3 px-4 rounded-lg transition-all duration-200">
+                            <svg class="w-5 h-5 text-amber-500 group-hover:text-amber-400 transition-colors" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4">
+                                </path>
+                            </svg>
+                            <span>BYAF <span class="text-xs opacity-60 ml-1">(Backyard)</span></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Full Library Export -->
+                <div class="bg-black/20 p-4 rounded-lg border border-gray-700">
+                    <h3 class="text-lg font-medium text-white mb-2">Create Library Backup</h3>
+                    <p class="text-gray-400 text-sm mb-4">Export your entire library including all stories, characters,
+                        and
+                        settings.</p>
+                    <button onclick="LibraryController.exportLibrary()"
+                        class="w-full group flex items-center justify-center space-x-2 bg-gray-900/60 hover:bg-emerald-900/20 border border-gray-600 hover:border-emerald-500/50 text-gray-200 hover:text-emerald-100 font-medium py-4 px-6 rounded-lg transition-all duration-200">
+                        <svg class="w-6 h-6 text-gray-400 group-hover:text-emerald-400 transition-colors" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2">
+                            </path>
+                        </svg>
+                        <span>Export Full Library Backup (ZIP)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="lightbox-modal"
@@ -2287,7 +2505,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2025.12.22 - 16:00 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.02.02 - 10:00 CST";
 
 
         /**
@@ -2605,6 +2823,19 @@
                         console.error("DBService.saveImage Exception:", e);
                         resolve(false);
                     }
+                });
+            },
+
+            async getAllKeys(storeName) {
+                if (!(await this.ensure())) return [];
+                return new Promise((resolve) => {
+                    try {
+                        const tx = this.db.transaction([storeName], "readonly");
+                        const store = tx.objectStore(storeName);
+                        const req = store.getAllKeys();
+                        req.onsuccess = () => resolve(req.result || []);
+                        req.onerror = () => resolve([]);
+                    } catch (e) { resolve([]); }
                 });
             },
 
@@ -3388,9 +3619,12 @@
                     if (freshStory) {
                         freshStory.last_modified = new Date().toISOString();
 
+
                         // Sync Structures
                         freshStory.characters = sanitizedCharacters;
                         freshStory.dynamic_entries = safeDynamicEntries;
+                        freshStory.static_entries = safeStaticEntries; // Sync Knowledge
+
                         if (currentState.tags) freshStory.tags = currentState.tags;
                         if (currentState.creator_notes) freshStory.creator_notes = currentState.creator_notes;
 
@@ -3409,10 +3643,11 @@
                             'md_bold_font', 'md_italic_font', 'md_quote_font',
 
                             // Core Prompts
-                            'system_prompt',
+                            'system_prompt', 'responseLength',
 
                             // Event Master
                             'event_master_base_prompt', 'event_master_prompt', 'event_master_probability',
+                            'visual_master_probability', // Visual Master Probability
 
                             // Generation Prompts
                             'prompt_persona_gen', 'prompt_world_map_gen', 'prompt_location_gen',
@@ -3811,6 +4046,8 @@
                     if (savedSettingsJSON) parsedSettings = JSON.parse(savedSettingsJSON);
                 } catch (error) { parsedSettings = {}; }
                 this.data.globalSettings = { ...defaults, ...parsedSettings };
+                // Cleanup legacy keys that are now story-specific
+                delete this.data.globalSettings.responseLength;
             },
 
             /**
@@ -4461,8 +4698,9 @@
                 return {
                     creator_notes: "",
                     tags: [],
-                    event_master_probability: 15,
-                    enableAnalysis: true
+                    event_master_probability: 0,
+                    enableAnalysis: false,
+                    responseLength: 'normal'
                 };
             },
             /**
@@ -4481,7 +4719,8 @@
                     prompt_location_memory_gen: "You are an archivist. Read the following chat transcript that occurred at a specific location. Summarize the key events, character developments, and important facts into a concise, single paragraph. This will serve as a memory for what happened at that location.\n\nTRANSCRIPT:\n{transcript}",
                     prompt_story_notes_gen: "Based on the following story context (characters, lore), generate a brief, 1-2 sentence creator's note or 'blurb' for this story to show in a library.\n\nCONTEXT:\n{context}",
                     prompt_story_tags_gen: "Based on the following story context (characters, lore), generate 3-5 relevant, one-word, comma-separated tags for this story (e.g., fantasy, sci-fi, mystery, horror, romance).\n\nCONTEXT:\n{context}",
-                    visual_master_base_prompt: "You are a visual director. Based on the provided chat history, characters, and location, generate a high-quality, vivid, and detailed image generation prompt that captures the current scene. Focus on atmosphere, lighting, and key subjects. Output ONLY the visual description."
+                    visual_master_base_prompt: "You are a visual director. Based on the provided chat history, characters, and location, generate a high-quality, vivid, and detailed image generation prompt that captures the current scene. Focus on atmosphere, lighting, and key subjects. Output ONLY the visual description.",
+                    prompt_auto_static_knowledge: "You are an automated archivist. Analyze the recent conversation transcript. Identify all significant new facts, rules, or lore details established in this text that should be permanently recorded in the static knowledge base. Ignore trivial actions or movements. If a valid fact is found, respond with a JSON object: { \"title\": \"Topic\", \"content\": \"Concise summary of the fact.\" }. If nothing important occurred, return { \"title\": null }.\n\nTRANSCRIPT:\n{transcript}"
                 };
             },
             /**
@@ -4798,6 +5037,16 @@
                 });
                 p += "\n### INSTRUCTION\n";
                 p += components.isForUser ? `Generate the next creative response for the user's character, ${components.charToAct.name}.` : `Generate the next response for ${components.charToAct.name}. Stay in character.`;
+
+                // Response Length Instruction
+                const responseLength = state.responseLength || 'normal';
+                if (!components.charToAct.is_narrator) {
+                    if (responseLength === 'short') p += " Keep the response concise and under two sentences.";
+                    else if (responseLength === 'medium') p += " Keep the response between two to four sentences.";
+                    else if (responseLength === 'long') p += " Be descriptive, verbose, and detailed in your response.";
+                    else if (responseLength === 'novel') p += " Continue writing a long-form addition to the text that builds on the current actions, describes the scene, and contributes to world-building.";
+                }
+
                 p += " Do not repeat the character's name in the response itself.\n[CHARACTER_TO_ACT]: " + components.charToAct.name;
                 return p;
             },
@@ -4825,6 +5074,14 @@
                     : `Write the next chat message for ${components.charToAct.name}. Stay in character.`;
                 instruction += " Do not write any prefix like 'Character Name:'.";
 
+                // Response Length Instruction
+                const responseLength = state.responseLength || 'normal';
+                if (!components.charToAct.is_narrator) {
+                    if (responseLength === 'short') instruction += " Your response should be concise and under two sentences.";
+                    else if (responseLength === 'medium') instruction += " Keep the response between two to four sentences.";
+                    else if (responseLength === 'long') instruction += " Be descriptive, verbose, and detailed in your response.";
+                    else if (responseLength === 'novel') instruction += " Continue writing a long-form addition to the text that builds on the current actions, describes the scene, and contributes to world-building.";
+                }
                 if (template === 'none') return this.buildDefaultPrompt(components, replacer);
 
                 // --- LLAMA 3 ---
@@ -5056,6 +5313,11 @@
                 if (lowerCaseName.endsWith('.png')) {
                     return this._parseV2Card(file, skipImages);
                 } else if (lowerCaseName.endsWith('.zip') || lowerCaseName.endsWith('.byaf')) {
+                    // Peek inside ZIP to distinguish between BYAF and Ellipsis ZIP
+                    const zip = await JSZip.loadAsync(file);
+                    if (zip.file('narrative.json')) {
+                        return this._parseStoryZip(zip, file, skipImages);
+                    }
                     return this._parseBYAF(file, skipImages);
                 } else if (lowerCaseName.endsWith('.json')) {
                     return this._parseEllipsisJSON(file);
@@ -5221,6 +5483,431 @@
             },
 
             /**
+             * Exports a story as a comprehensive ZIP archive.
+             * Includes narrative.html (viewable), narrative.json (data), and an images folder.
+             * @param {Object} story - The story object.
+             * @param {Object} narrative - The narrative object.
+             * @returns {Promise<Blob>} - The ZIP blob.
+             */
+            async exportStoryAsZip(story, narrative) {
+                const zip = new JSZip();
+                const imagesFolder = zip.folder("images");
+                const imageMap = new Map(); // key -> filename
+                const log = []; // Debug log
+                const logMsg = (msg) => { console.log(msg); log.push(msg); };
+
+                logMsg(`Exporting ZIP for story: ${story.name} (${story.id})`);
+                logMsg(`Characters: ${story.characters.length}`);
+
+                // Pre-fetch all image keys for fuzzy matching
+                const allImageKeys = await DBService.getAllKeys("characterImages");
+                logMsg(`Total DB Image Keys: ${allImageKeys.length}`);
+
+                // Helper to add image to ZIP and track filename
+                const addImage = async (key, filenamePrefix) => {
+                    if (!key) return;
+                    // Since we might try multiple keys for the same conceptual image, verify we haven't already exported this KEY.
+                    if (imageMap.has(key)) return;
+
+                    // Check if we already have this blob under a DIFFERENT key? 
+                    // Hard to check blob equality without fetching. Let's rely on key uniqueness.
+
+                    let blob = null;
+                    let successKey = key;
+
+                    // Strategy 1: Direct Lookup
+                    try {
+                        blob = await DBService.getImage(key);
+                    } catch (e) { }
+
+                    // Strategy 2: Prefix/Suffix Variations
+                    if (!blob && !key.startsWith('http')) {
+                        const candidates = [
+                            `local_idb_${key}`,
+                            key.replace('local_idb_', ''),
+                            // Try finding key in allImageKeys that ENDS with the ID (uuid)
+                            // This covers 'local_idb_UUID' matching 'UUID'
+                            ...allImageKeys.filter(k => typeof k === 'string' && (k.includes(key) || key.includes(k)))
+                        ];
+
+                        // Deduplicate and filter candidates
+                        const uniqueCandidates = [...new Set(candidates)].filter(c => c !== key);
+
+                        for (const cand of uniqueCandidates) {
+                            if (blob) break;
+                            logMsg(`  > Trying fallback key: ${cand} for ${key}`);
+                            blob = await DBService.getImage(cand);
+                            if (blob) successKey = cand;
+                        }
+                    }
+
+                    if (blob) {
+                        const ext = blob.type.split('/')[1] || 'png';
+                        const safeExt = ext === 'jpeg' ? 'jpg' : ext;
+
+                        // Sanitize filename
+                        const safePrefix = filenamePrefix.replace(/[^a-z0-9_-]/gi, '_');
+                        // Use the ORIGINAL key for suffix to keep file name consistent with expectation, 
+                        // unless it's way too long, then use hash or slice.
+                        const safeKeySuffix = key.replace(/[^a-z0-9]/gi, '').substring(0, 12);
+                        const filename = `${safePrefix}_${safeKeySuffix}.${safeExt}`;
+
+                        imagesFolder.file(filename, blob);
+                        imageMap.set(key, `images/${filename}`); // Map the ORIGINAL key request to this file
+
+                        // If we found it via a fallback key, ALSO map the fallback key just in case
+                        if (successKey !== key) {
+                            imageMap.set(successKey, `images/${filename}`);
+                        }
+
+                        logMsg(`  [OK] Added: ${filename} (Size: ${blob.size}, Key: ${key}, FoundAt: ${successKey})`);
+                    } else {
+                        if (!key.startsWith('http')) {
+                            logMsg(`  [FAIL] Could not find image for key: ${key}`);
+                        }
+                    }
+                };
+
+                // 1. Export Character Images
+                for (const char of story.characters) {
+                    logMsg(`Processing Character: ${char.name} (${char.id})`);
+                    if (char.image_url) await addImage(char.image_url, `char_${char.name}`);
+                    // ALWAYS try the ID as a fallback / primary for local images
+                    await addImage(char.id, `char_${char.name}`);
+
+                    if (char.extra_portraits) {
+                        for (const p of char.extra_portraits) {
+                            const emoKey = `${char.id}::emotion::${p.emotion}`;
+                            await addImage(emoKey, `char_${char.name}_${p.emotion}`);
+                        }
+                    }
+                }
+
+                // 2. Export Location Images (if any) and Story Background
+                if (story.backgroundImageURL && !story.backgroundImageURL.startsWith('http')) {
+                    await addImage(story.backgroundImageURL, 'background');
+                    // Also try bg_${story.id} just in case
+                    await addImage(`bg_${story.id}`, 'background_legacy');
+                }
+
+                // Scan World Map for location images (assuming they are keys)
+                if (narrative.state.worldMap && narrative.state.worldMap.grid) {
+                    for (const loc of narrative.state.worldMap.grid) {
+                        const locKey = `location::${loc.coords.x},${loc.coords.y}`;
+                        // Try explicit key
+                        await addImage(locKey, `loc_${loc.coords.x}_${loc.coords.y}`);
+                        // Try URL if present
+                        if (loc.imageUrl && !loc.imageUrl.startsWith('http')) {
+                            await addImage(loc.imageUrl, `loc_${loc.coords.x}_${loc.coords.y}_ref`);
+                        }
+                    }
+                }
+
+                // 3. Export Visual Event Images from Chat History
+                if (narrative.state.chat_history) {
+                    for (const msg of narrative.state.chat_history) {
+                        if (msg.type === 'visual_event' && msg.image_key) {
+                            await addImage(msg.image_key, 'visual');
+                        }
+                    }
+                }
+
+                // 4. Generate JSON Data
+                // Hydrate full narratives like in JSON export
+                // We need to fetch ALL narratives associated with the story to make it a complete backup
+                // But the user might only strictly care about the active one + context?
+                // The task says "Export ZIP Archive" (singular narrative implicitly?) -> No, typically "Export Story" implies the whole thing.
+                // The original code tried fetching all.
+                const fullNarratives = await Promise.all((story.narratives || []).map(n => DBService.getNarrative(n.id)));
+                const exportObj = JSON.parse(JSON.stringify(story));
+                exportObj.narratives = fullNarratives.filter(n => n);
+
+                zip.file("narrative.json", JSON.stringify(exportObj, null, 2));
+
+                // 5. Generate HTML
+                const htmlContent = this._generateNarrativeHTML(story, narrative, imageMap);
+                zip.file("narrative.html", htmlContent);
+                zip.file("image_manifest.json", JSON.stringify(Object.fromEntries(imageMap), null, 2));
+
+                // 6. Debug Log
+                zip.file("_debug_export_log.txt", log.join('\n'));
+
+                return zip.generateAsync({ type: "blob" });
+            },
+
+            /**
+             * Generates a standalone HTML string for the narrative.
+             * @param {Object} story - The story object.
+             * @param {Object} narrative - The narrative object.
+             * @param {Map} imageMap - Map of DB keys to ZIP relative paths.
+             * @returns {string} - The HTML string.
+             */
+            _generateNarrativeHTML(story, narrative, imageMap) {
+                const state = narrative.state;
+                const title = story.name + " - " + narrative.name;
+                const defaults = UTILITY.getDefaultUiSettings();
+                const settings = { ...defaults, ...story }; // Merge defaults with story settings
+
+                // CSS Variables Extraction
+                const cssVars = `
+            :root {
+                --font-primary: ${settings.font || 'Inter, sans-serif'};
+                --text-size: ${settings.textSize || 16}px;
+                --md-h1-color: ${settings.md_h1_color || defaults.md_h1_color};
+                --md-h2-color: ${settings.md_h2_color || defaults.md_h2_color};
+                --md-h3-color: ${settings.md_h3_color || defaults.md_h3_color};
+                --md-bold-color: ${settings.md_bold_color || defaults.md_bold_color};
+                --md-italic-color: ${settings.md_italic_color || defaults.md_italic_color};
+                --md-quote-color: ${settings.md_quote_color || defaults.md_quote_color};
+                --chat-text-color: ${settings.chatTextColor || '#e5e7eb'};
+                --brand-color: #6366f1;
+            }
+                `;
+
+                // Render Chat History
+                let chatHTML = '';
+                (state.chat_history || []).forEach(msg => {
+                    if (msg.isHidden || msg.type === 'lore_reveal') return;
+
+                    // Handle Visual Events
+                    if (msg.type === 'visual_event') {
+                        const imgPath = imageMap.get(msg.image_key);
+                        if (imgPath) {
+                            chatHTML += `
+                            <div class="message visual-event" style="text-align: center; margin: 2rem 0;">
+                                <img src="${imgPath}" alt="Visual Event" style="max-width: 100%; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                            </div>`;
+                        }
+                        return;
+                    }
+
+                    // Handle Chat Messages
+                    const charId = msg.character_id;
+                    const char = story.characters.find(c => c.id === charId);
+                    const isUser = (char && char.is_user) || msg.character_id === 'user';
+                    const name = char ? char.name : (isUser ? 'You' : 'Unknown');
+
+                    // Colors & Styles
+                    const charColor = (char && char.color) ? char.color : (isUser ? { base: '#4b5563', bold: '#e5e7eb' } : { base: '#334155', bold: '#94a3b8' });
+                    const bubbleOpacity = settings.bubbleOpacity !== undefined ? settings.bubbleOpacity : 1.0;
+                    // Hex to RGBA helper
+                    const hexToRgba = (hex, alpha) => {
+                        if (!hex) return hex;
+                        if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+                            let c = hex.substring(1).split('');
+                            if (c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+                            c = '0x' + c.join('');
+                            return 'rgba(' + [(c >> 16) & 255, (c >> 8) & 255, c & 255].join(',') + ',' + alpha + ')';
+                        }
+                        return hex;
+                    };
+                    const bubbleBg = hexToRgba(charColor.base, bubbleOpacity);
+
+                    // Avatar (if valid)
+                    let avatarHTML = '';
+                    let avatarKey = char?.image_url;
+                    if (!avatarKey && char?.id) avatarKey = char.id; // Fallback for local images
+
+                    if (avatarKey && imageMap.has(avatarKey)) {
+                        avatarHTML = `<img src="${imageMap.get(avatarKey)}" class="avatar" style="float: left; width: 50px; height: 50px; border-radius: 50%; margin-right: 1rem; object-fit: cover;">`;
+                    } else if (char?.image_url && char.image_url.startsWith('http')) {
+                        avatarHTML = `<img src="${char.image_url}" class="avatar" style="float: left; width: 50px; height: 50px; border-radius: 50%; margin-right: 1rem; object-fit: cover;">`;
+                    }
+
+                    // Smart Quotes
+                    const smartContent = (msg.content || '').replace(/(["“][^"”]*["”])/g, '<span class="dialogue-quote">$1</span>');
+
+                    chatHTML += `
+                    <div class="message ${isUser ? 'user-message' : 'ai-message'}" style="background-color: ${bubbleBg}; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; overflow: hidden; color: var(--chat-text-color);">
+                        ${avatarHTML}
+                        <div class="message-header" style="color: ${charColor.bold}; font-weight: bold; margin-bottom: 0.5rem;">${name}</div>
+                        <div class="message-content" style="line-height: 1.5; white-space: pre-wrap;">${marked.parse(smartContent)}</div>
+                    </div>`;
+                });
+
+                return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>
+        ${cssVars}
+        body { background-color: #0f172a; font-family: var(--font-primary); font-size: var(--text-size); padding: 2rem; max-width: 900px; margin: 0 auto; color: #cbd5e1; }
+        a { color: var(--brand-color); }
+        .dialogue-quote { color: inherit; filter: saturate(175%) opacity(75%) drop-shadow(1px 1px 5px black); font-weight: 500; }
+        .message-content blockquote { border-left: 3px solid var(--brand-color); padding-left: 1rem; font-style: italic; background: rgba(0,0,0,0.2); padding: 0.5rem 1rem; border-radius: 0.25rem; }
+        .message-content code { background-color: rgba(0,0,0,0.3); padding: 0.1em 0.3em; border-radius: 0.2rem; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1 style="color: white; border-bottom: 1px solid #334155; padding-bottom: 1rem; margin-bottom: 2rem;">${title}</h1>
+    <div id="chat-container">
+        ${chatHTML}
+    </div>
+</body>
+</html>`;
+            },
+
+            /**
+             * Parses the new ZIP format (Import).
+             * @param {JSZip} zip - The loaded ZIP object.
+             * @param {File} file - The original file (unused but kept for signature).
+             * @param {boolean} skipImages - Whether to skip importing images.
+             * @returns {Promise<Object>} - The parsed story object.
+             */
+            async _parseStoryZip(zip, file, skipImages) {
+                const jsonFile = zip.file("narrative.json");
+                if (!jsonFile) throw new Error("ZIP does not contain 'narrative.json'.");
+                const jsonStr = await jsonFile.async("string");
+                const story = JSON.parse(jsonStr);
+
+                // --- SAFE IMPORT: ID Remapping ---
+                // We MUST generate new IDs for everything to prevent overwriting existing stories/characters
+                // if the user imports a ZIP that originated from this same library.
+
+                story.id = UTILITY.uuid();
+                // Add timestamp to name to avoid confusion if same name exists
+                // (Controller handles name dupe check too, but this helps)
+                // story.name = `${story.name} (Imported)`; // Optional, let controller handle duplicate names
+
+                const charIdMap = {};
+                (story.characters || []).forEach(c => {
+                    const oldId = c.id;
+                    const newId = UTILITY.uuid();
+                    c.id = newId;
+                    charIdMap[oldId] = newId;
+                });
+
+                // Helper to remap IDs in history
+                const remapHistory = (history) => {
+                    if (!Array.isArray(history)) return;
+                    history.forEach(msg => {
+                        if (msg.character_id && charIdMap[msg.character_id]) {
+                            msg.character_id = charIdMap[msg.character_id];
+                        }
+                    });
+                };
+
+                // Helper to remap active character IDs
+                const remapActiveIds = (ids) => {
+                    if (!Array.isArray(ids)) return ids;
+                    return ids.map(id => charIdMap[id] || id);
+                };
+
+                // 1. Remap Scenarios
+                (story.scenarios || []).forEach(s => {
+                    s.id = UTILITY.uuid();
+                    remapHistory(s.example_dialogue);
+                    if (s.active_character_ids) {
+                        s.active_character_ids = remapActiveIds(s.active_character_ids);
+                    }
+                });
+
+                // 2. Remap Narratives (both stubs and full objects if present)
+                // In ZIP export, 'narratives' are full objects.
+                (story.narratives || []).forEach(n => {
+                    n.id = UTILITY.uuid();
+                    if (n.state) {
+                        remapHistory(n.state.chat_history);
+                        if (n.state.static_entries) {
+                            n.state.static_entries.forEach(e => e.id = UTILITY.uuid());
+                        }
+                    }
+                    if (n.active_character_ids) {
+                        n.active_character_ids = remapActiveIds(n.active_character_ids);
+                    }
+                });
+
+                // 3. Remap Dynamic Entries
+                (story.dynamic_entries || []).forEach(e => e.id = UTILITY.uuid());
+
+                // --- End ID Remapping ---
+
+                // Process Images
+                const manifestFile = zip.file("image_manifest.json");
+                let imageManifest = {};
+                if (manifestFile) {
+                    try {
+                        imageManifest = JSON.parse(await manifestFile.async("string"));
+                    } catch (e) {
+                        console.warn("Failed to parse image_manifest.json", e);
+                    }
+                }
+
+                if (!skipImages) {
+                    // We iterate sequentially to avoid memory spikes ("piecemeal" processing)
+                    for (const [oldKey, path] of Object.entries(imageManifest)) {
+                        const imgFile = zip.file(path);
+                        if (imgFile) {
+                            try {
+                                const blob = await imgFile.async("blob");
+
+                                // DETERMINE NEW KEY
+                                let newKey = oldKey; // Default to old key (e.g. for non-ID keys)
+
+                                // Check if oldKey contains a remapped Character ID
+                                // key format: local_idb_UUID or just UUID
+                                // We check against the keys of charIdMap
+                                const matchingOldId = Object.keys(charIdMap).find(oid => oldKey.includes(oid));
+
+                                if (matchingOldId) {
+                                    // Replace the old ID part with the new ID
+                                    newKey = oldKey.replace(matchingOldId, charIdMap[matchingOldId]);
+                                } else if (oldKey === `bg_${story.id}` || oldKey.includes('bg_')) {
+                                    // Handle background specific key logic if needed
+                                    // But since we regenerated story.id at top, we just need to construct new key
+                                    // Wait, we don't know the OLD story ID easily unless we parse it out.
+                                    // If key is 'bg_OLDSTORYID', we want 'bg_NEWSTORYID'.
+                                    // Heuristic: if it looks like a background key, assign it to current story
+                                    if (oldKey.startsWith('bg_')) {
+                                        newKey = `bg_${story.id}`;
+                                    }
+                                }
+
+                                // Update the Story/Character reference to point to this new key
+                                // Characters:
+                                const relatedChar = story.characters.find(c => c.image_url === oldKey);
+                                if (relatedChar) {
+                                    relatedChar.image_url = newKey;
+                                }
+
+                                // Extra Portraits:
+                                story.characters.forEach(c => {
+                                    if (c.extra_portraits) {
+                                        c.extra_portraits.forEach(p => {
+                                            // emotion key: CHARID::emotion::EMOTION
+                                            // Since we remapped c.id already, and matchingOldId logic above handles the key replacement...
+                                            // The key in manifest is OLD key. 
+                                            // The key in c.extra_portraits (if any) ? extra_portraits doesn't store keys usually, 
+                                            // the logic constructs them dynamically: ID::emotion::Name.
+                                            // So we just need to ensure the IMAGE is saved under the NEW ID-based key.
+                                            // If newKey was correctly transformed using charIdMap replacement, we are good.
+                                        });
+                                    }
+                                });
+
+                                // Story Background:
+                                if (story.backgroundImageURL === oldKey) {
+                                    story.backgroundImageURL = newKey;
+                                }
+
+                                await DBService.saveImage(newKey, blob);
+
+                            } catch (e) {
+                                console.warn(`Failed to import image ${oldKey} from ${path}`, e);
+                            }
+                        }
+                    }
+                }
+
+                return { story, imageBlob: null };
+            },
+
+
+
+
+            /**
              * Parses an Ellipsis JSON file.
              * @param {File} file - The JSON file.
              * @returns {Promise<Object>} - The parsed story object.
@@ -5265,11 +5952,23 @@
                 // We need to prepare them for the DB
                 story.narratives.forEach(n => {
                     // Ensure ID is unique/remapped (already handled by ID remapping logic previously applied)
+                    // We generate a new ID to ensure this imported narrative doesn't overwrite an existing one
+                    n.id = UTILITY.uuid();
 
                     // If this is a FULL narrative (has state), we must allow it to be passed 
                     // back to the controller to be saved to the 'narratives' store.
                     // However, LibraryController.handleFileUpload expects the story object 
                     // to contain the full narratives in the .narratives array so it can loop and save them.
+
+                    // 1. Remap Active Character IDs
+                    if (n.active_character_ids) {
+                        n.active_character_ids = (n.active_character_ids || []).map(id => charIdMap[id] || id);
+                    }
+
+                    // 2. Remap Chat History Character IDs
+                    if (n.state?.chat_history) {
+                        remapHistory(n.state.chat_history);
+                    }
 
                     // Ensure IDs are consistent
                     if (n.state?.static_entries) {
@@ -5556,6 +6255,17 @@
                 }
                 const allGreetings = [v2Data.first_mes || `The story of ${aiChar.name} begins.`];
                 if (Array.isArray(v2Data.alternate_greetings)) allGreetings.push(...v2Data.alternate_greetings);
+
+                // NEW: Parse V2 Scenario into Static Entry
+                const staticEntries = [];
+                if (v2Data.scenario) {
+                    staticEntries.push({
+                        id: UTILITY.uuid(),
+                        title: "Imported Scenario",
+                        content: v2Data.scenario.replace(/{{char}}/g, aiChar.name).replace(/{{user}}/g, "{user}")
+                    });
+                }
+
                 story.scenarios = [];
                 allGreetings.forEach((greeting, index) => {
                     const scenarioName = index === 0 ? "Imported Start" : `Alternate Start ${index}`;
@@ -5568,12 +6278,13 @@
                         dynamic_entries: JSON.parse(JSON.stringify(story.dynamic_entries)),
                         prompts: JSON.parse(JSON.stringify(promptSnapshot)),
                         example_dialogue: JSON.parse(JSON.stringify(exampleDialogue)),
-                        static_entries: [],
+                        static_entries: JSON.parse(JSON.stringify(staticEntries)),
                         worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
                     });
                 });
                 const narrative = this._createEmptyEllipsisNarrative("Imported Chat");
                 narrative.active_character_ids = activeIDs;
+                narrative.state.static_entries = JSON.parse(JSON.stringify(staticEntries));
                 if (exampleDialogue.length > 0) narrative.state.chat_history.push(...JSON.parse(JSON.stringify(exampleDialogue)));
                 const firstScenario = story.scenarios[0];
                 if (firstScenario && firstScenario.message) {
@@ -5749,7 +6460,7 @@
                     model: "", temperature: 1.0, topP: 0.9, minP: 0.1,
                     firstMessages: [{ text: firstMessageText, characterID: primaryChar.id }],
                     formattingInstructions: primaryChar.model_instructions || "", grammar: "", repeatPenalty: 1.05, repeatLastN: 256, topK: 30, minPEnabled: false,
-                    narrative: (narrative.state.static_entries || []).find(e => e.title === "Starting Scenario")?.content || "",
+                    narrative: (narrative.state.static_entries || []).map(e => e.content).join('\n\n'),
                     promptTemplate: null, messages: []
                 };
                 const manifest = {
@@ -7403,20 +8114,26 @@
                         }
 
                         // Final Scroll Logic
-                        if (bubbleEl && !structureChanged) {
-                            // Only do smooth scroll if we didn't just blow away the DOM with renderChat
+                        // Final Scroll Logic
+                        if (structureChanged) {
+                            // If structure changed, DOM was rebuilt. Re-acquire bubble.
+                            const msgEl = document.getElementById(`message-content-${messageIndex}`);
+                            if (msgEl) bubbleEl = msgEl.closest('.chat-bubble-container');
+                        }
+
+                        if (bubbleEl) {
+                            // Force alignment to the top of the message
+                            // Use 'auto' (instant) to prevent browser fighting
                             window.requestAnimationFrame(() => {
-                                bubbleEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                bubbleEl.scrollIntoView({ behavior: 'auto', block: 'start' });
                                 setTimeout(() => {
                                     this.RUNTIME.suppressChatRender = false;
                                 }, 100);
                             });
-                        } else if (structureChanged) {
-                            // If we re-rendered, just ensure we are at the bottom or near the new content
-                            const chatWindow = document.getElementById('chat-window');
-                            if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
                         } else {
                             this.RUNTIME.suppressChatRender = false;
+                            const chatWindow = document.getElementById('chat-window');
+                            if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
                         }
                     }
                 }, 5);
@@ -7426,13 +8143,14 @@
              * Displays a typing indicator for a specific character.
              * @param {string} charId - The ID of the character thinking.
              * @param {string} [text="is thinking..."] - The text to display.
+             * @param {string} [nameOverride=null] - Optional override for the character name (e.g. for Scriptwriter).
              */
-            showTypingIndicator(charId, text = "is thinking...") {
+            showTypingIndicator(charId, text = "is thinking...", nameOverride = null) {
                 this.hideTypingIndicator();
                 const chatWindow = document.getElementById('chat-window');
                 const state = StateManager.getState();
                 const character = (state.characters || []).find(c => c.id === charId);
-                const name = character?.name || 'System';
+                const name = nameOverride || character?.name || 'System';
 
                 // Color Logic
                 const defaultColor = (character && character.is_user)
@@ -8214,89 +8932,65 @@
 
             /**
              * Renders the Import/Export Hub modal.
-             * Provides options for importing files/folders and exporting stories/libraries.
+             * Repurposed to handle Imports only. Exports moved to Settings.
              */
             renderIOHubModal() {
                 const modalContent = document.getElementById('io-hub-modal-content');
 
-                const library = StateManager.getLibrary();
-                const storyOptions = library.stories
-                    .map(s => DOM.html`<option value="${s.id}">${s.name}</option>`)
-                    .join('');
-
                 const hubHTML = DOM.html`
             <div class="p-6 border-b border-gray-700 flex justify-between items-center">
-                <h2 class="text-2xl font-semibold">Import / Export Hub</h2>
+                <h2 class="text-2xl font-semibold">Library Import</h2>
                 <button data-action="close-modal" data-id="io-hub-modal" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
             <div class="p-6 overflow-y-auto">
-                <div class="grid md:grid-cols-2 gap-8">
+                <div class="max-w-2xl mx-auto space-y-8">
                     
-                    <!-- === IMPORT COLUMN === -->
+                    <!-- === IMPORT OPTIONS === -->
                     <div class="space-y-6">
-                        <h3 class="text-xl font-bold border-b pb-2 border-gray-600">Import</h3>
                         
-                        <div>
-                            <p class="text-sm text-gray-300 mb-2">Import a single Story from a V2 PNG, BYAF, or Ellipsis JSON file.</p>
-                            <label for="single-file-upload" class="cursor-pointer">
-                                <div class="border-2 border-dashed border-gray-500 rounded-lg p-6 text-center bg-black/20 hover:bg-black/40">
-                                    <p class="font-semibold text-indigo-300">Click to upload a file</p>
-                                    <p class="text-xs text-gray-400 mt-1">.png, .byaf, .zip, .json</p>
+                        <div class="bg-black/20 p-6 rounded-lg border border-gray-700/50">
+                            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                                <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                Import Single File
+                            </h3>
+                            <p class="text-sm text-gray-300 mb-4">Import a single Story from a V2 PNG, BYAF, or Ellipsis JSON file.</p>
+                            <label for="single-file-upload" class="cursor-pointer group">
+                                <div class="border-2 border-dashed border-gray-600 group-hover:border-indigo-500 rounded-lg p-8 text-center bg-gray-800/30 group-hover:bg-gray-800/60 transition-all">
+                                    <p class="font-semibold text-indigo-300 group-hover:text-indigo-200 text-lg">Click to upload a file</p>
+                                    <p class="text-xs text-gray-400 mt-2">Supported: .png (V2), .byaf, .zip, .json</p>
                                 </div>
                             </label>
                             <input id="single-file-upload" type="file" class="hidden" accept=".png,.byaf,.zip,.json" data-action-change="handle-file-upload">
                         </div>
 
-                        <div>
-                            <p class="text-sm text-gray-300 mb-2">Import an entire folder of V2 PNG or BYAF files at once.</p>
-                            <button data-action="handle-bulk-import" class="w-full mt-2 bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg">Select Folder to Import</button>
+                        <div class="bg-black/20 p-6 rounded-lg border border-gray-700/50">
+                            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                                <svg class="w-6 h-6 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                Bulk Import
+                            </h3>
+                            <p class="text-sm text-gray-300 mb-4">Import an entire folder of V2 PNG or BYAF files at once.</p>
+                            <button data-action="handle-bulk-import" class="w-full bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                Select Folder to Import
+                            </button>
                         </div>
 
-                        <div>
-                            <p class="text-sm text-gray-300 mb-2">Replace your current library with an Ellipsis Library ZIP file. <span class="font-bold text-red-400">Warning: This is a destructive action.</span></p>
-                            <label class="w-full mt-2 bg-red-800/80 hover:bg-red-900/80 text-white font-bold py-2 px-4 rounded-lg inline-block text-center cursor-pointer">
-                                <span>Import Library (ZIP)</span>
+                        <div class="bg-red-900/10 p-6 rounded-lg border border-red-900/30">
+                            <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-red-400">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                Restore Library Backup
+                            </h3>
+                            <p class="text-sm text-gray-300 mb-4">Replace your current library with an Ellipsis Library ZIP file. <span class="font-bold text-red-400">Warning: This is a destructive action.</span></p>
+                            <label class="w-full bg-red-800/80 hover:bg-red-900/80 text-white font-bold py-3 px-4 rounded-lg inline-flex items-center justify-center gap-2 cursor-pointer transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                <span>Import Library Package (ZIP)</span>
                                 <input type="file" class="hidden" accept=".zip" data-action-change="import-library">
                             </label>
                         </div>
                     </div>
 
-                    <!-- === EXPORT COLUMN === -->
-                    <div class="space-y-4">
-                        <h3 class="text-xl font-bold border-b pb-2 border-gray-600">Export</h3>
-                        
-                        <div>
-                            <label for="story-export-selector" class="block text-sm font-medium text-gray-300">1. Select Story to Export</label>
-                            <select id="story-export-selector" class="w-full mt-1 bg-black/30 p-2 rounded-lg border-gray-600" onchange="UIManager.populateNarrativeSelector()">
-                                <option value="">-- Select a Story --</option>
-                                ${DOM.unsafe(storyOptions)}
-                            </select>
-                        </div>
-                        <div>
-                            <label for="narrative-export-selector" class="block text-sm font-medium text-gray-300">2. Select Narrative</label>
-                            <select id="narrative-export-selector" class="w-full mt-1 bg-black/30 p-2 rounded-lg border-gray-600" onchange="UIManager.populateCharacterSelector()"></select>
-                        </div>
-                        <div id="character-export-selector-container" class="hidden">
-                            <label for="character-export-selector" class="block text-sm font-medium text-gray-300">3. Select Primary Character (for V2/BYAF)</label>
-                            <select id="character-export-selector" class="w-full mt-1 bg-black/30 p-2 rounded-lg border-gray-600"></select>
-                        </div>
-                        <div>
-                            <p class="block text-sm font-medium text-gray-300 mt-2">4. Choose Export Format</p>
-                            <div class="grid grid-cols-3 gap-2 mt-2">
-                                <button data-action="export-story" data-format="json" class="bg-indigo-600/80 hover:bg-indigo-700/80 text-white font-bold py-2 px-3 rounded-lg">JSON</button>
-                                <button data-action="export-story" data-format="png" class="bg-sky-600/80 hover:bg-sky-700/80 text-white font-bold py-2 px-3 rounded-lg">V2 PNG</button>
-                                <button data-action="export-story" data-format="byaf" class="bg-emerald-600/80 hover:bg-emerald-700/80 text-white font-bold py-2 px-3 rounded-lg">BYAF</button>
-                            </div>
-                        </div>
-                         
-                         <hr class="border-gray-600 !mt-8">
-                        <div>
-                            <p class="text-sm text-gray-300 mb-2">Save a backup of your entire library, including all images.</p>
-                            <button data-action="export-library" class="w-full mt-2 bg-gray-600/80 hover:bg-gray-700/80 text-white font-bold py-2 px-4 rounded-lg">Export Library (ZIP)</button>
-                        </div>
-                    </div>
                 </div>
             </div>
             <div class="p-4 bg-black/20 border-t border-gray-700 flex justify-end">
@@ -8305,45 +8999,6 @@
         `;
 
                 modalContent.innerHTML = hubHTML.toString();
-                this.populateNarrativeSelector();
-            },
-
-            /**
-             * Populates the narrative selector dropdown based on the selected story.
-             */
-            populateNarrativeSelector() {
-                const storyId = document.getElementById('story-export-selector').value;
-                const narrativeSelector = document.getElementById('narrative-export-selector');
-                narrativeSelector.innerHTML = '';
-                if (storyId) {
-                    const story = StateManager.getLibrary().stories.find(s => s.id === storyId);
-                    if (story && story.narratives) {
-                        narrativeSelector.innerHTML = story.narratives.map(n => DOM.html`<option value="${n.id}">${n.name}</option>`).join('');
-                    }
-                }
-                this.populateCharacterSelector();
-            },
-
-            /**
-             * Populates the character selector dropdown based on the selected story/narrative.
-             */
-            populateCharacterSelector() {
-                const storyId = document.getElementById('story-export-selector').value;
-                const charContainer = document.getElementById('character-export-selector-container');
-                const charSelector = document.getElementById('character-export-selector');
-                charSelector.innerHTML = '';
-                if (storyId) {
-                    const story = StateManager.getLibrary().stories.find(s => s.id === storyId);
-                    const aiChars = story.characters.filter(c => !c.is_user);
-                    if (aiChars.length > 0) {
-                        charSelector.innerHTML = aiChars.map(c => DOM.html`<option value="${c.id}">${c.name}</option>`).join('');
-                        charContainer.classList.remove('hidden');
-                    } else {
-                        charContainer.classList.add('hidden');
-                    }
-                } else {
-                    charContainer.classList.add('hidden');
-                }
             },
 
             /**
@@ -8444,8 +9099,8 @@
 
                 const toast = document.createElement('div');
                 toast.className = `max-w-xs p-4 rounded-lg shadow-2xl text-white font-medium backdrop-blur-md transition-all duration-300 transform translate-x-full opacity-0 pointer-events-auto border border-white/10 ${type === 'error' ? 'bg-red-600/90' :
-                        type === 'success' ? 'bg-green-600/90' :
-                            'bg-indigo-600/90'
+                    type === 'success' ? 'bg-green-600/90' :
+                        'bg-indigo-600/90'
                     }`;
                 toast.textContent = message;
 
@@ -8841,7 +9496,7 @@
 
                 const templates = document.getElementById('settings-templates');
                 let maxHeight = 0;
-                ['appearance', 'prompt', 'model', 'image-gen'].forEach(tabName => {
+                ['appearance', 'prompt', 'model', 'image-gen', 'export'].forEach(tabName => {
                     const content = templates.querySelector(`#settings-${tabName}-content`);
                     if (content) {
                         document.body.appendChild(content); // Temporarily append to measure
@@ -8858,7 +9513,7 @@
              */
             switchSettingsTab(tabName) {
                 this.RUNTIME.activeSettingsTab = tabName;
-                const tabs = ['appearance', 'prompt', 'model', 'personas', 'image-gen'];
+                const tabs = ['appearance', 'prompt', 'model', 'personas', 'image-gen', 'export'];
                 const container = document.getElementById('settings-content-container');
                 const template = document.getElementById(`settings-${tabName}-content`);
 
@@ -8922,6 +9577,22 @@
                                 }
                             }
                         };
+                    }
+                } else if (tabName === 'export') {
+                    const selector = document.getElementById('export-primary-character-selector');
+                    if (selector) {
+                        const currentVal = selector.value;
+                        selector.innerHTML = '<option value="">Auto-detect (First AI)</option>';
+                        const state = StateManager.getState();
+                        if (state && state.characters && Array.isArray(state.characters)) {
+                            state.characters.forEach(c => {
+                                const opt = document.createElement('option');
+                                opt.value = c.id;
+                                opt.textContent = `${c.name || 'Unnamed'}${c.is_user ? ' (User)' : ''}`;
+                                if (c.id === currentVal) opt.selected = true;
+                                selector.appendChild(opt);
+                            });
+                        }
                     }
                 }
             },
@@ -9002,7 +9673,8 @@
                 // Retrieve defaults to handle uninitialized values (e.g. blank prompts)
                 const defaultPrompts = UTILITY.getDefaultSystemPrompts();
                 const defaultUI = UTILITY.getDefaultUiSettings();
-                const allDefaults = { ...defaultPrompts, ...defaultUI };
+                const defaultStory = UTILITY.getDefaultStorySettings();
+                const allDefaults = { ...defaultPrompts, ...defaultUI, ...defaultStory };
 
                 const setListener = (id, key, callback) => {
                     const input = document.getElementById(id);
@@ -9120,6 +9792,9 @@
                 if (document.getElementById('blur-slider')) setupSlider('blur-slider', 'blur-value', 'backgroundBlur');
                 if (document.getElementById('text-size-slider')) setupSlider('text-size-slider', 'text-size-value', 'textSize');
                 if (document.getElementById('bubble-image-size-slider')) setupSlider('bubble-image-size-slider', 'bubble-image-size-value', 'bubbleImageSize');
+
+                // Response Length Binding
+                if (document.getElementById('response-length-selector')) setListener('response-length-selector', 'responseLength');
 
                 // Background Hint Update
                 const bgHint = document.getElementById('background-image-hint');
@@ -11202,38 +11877,47 @@
              * Exports the current story in the specified format (JSON, PNG, BYAF).
              * @param {string} format - The format to export as ('json', 'png', 'byaf').
              */
+            /**
+             * Exports the current story in the specified format (JSON, PNG, BYAF).
+             * @param {string} format - The format to export as ('json', 'png', 'byaf').
+             */
             async exportStoryAs(format) {
-                const storyId = document.getElementById('story-export-selector').value;
-                const narrativeId = document.getElementById('narrative-export-selector').value;
+                const library = StateManager.getLibrary();
+                const storyId = library.active_story_id;
+                const narrativeId = library.active_narrative_id;
 
                 if (!storyId || !narrativeId) {
-                    alert("Please select a story and a narrative to export.");
+                    alert("Please load a story to export.");
                     return;
                 }
 
-                if (format !== 'json') {
+                if (format !== 'json' && format !== 'zip') {
                     const proceed = await UIManager.showConfirmationPromise("Exporting to a non-Ellipsis format may result in data loss. Continue?");
                     if (!proceed) return;
                 }
 
                 UIManager.showLoadingSpinner(`Exporting as ${format.toUpperCase()}...`);
                 try {
-                    const library = StateManager.getLibrary();
-                    const story = library.stories.find(s => s.id === storyId);
+                    // Fetch the FULL Story object from DB to ensure we have all characters and metadata
+                    // The library stub is insufficient for export, especially for ZIPs which need image checks
+                    const story = await DBService.getStory(storyId);
 
-                    // Fetch the FULL narrative object from DB, because the library only has stubs
+                    // Fetch the FULL narrative object from DB
                     const narrative = await DBService.getNarrative(narrativeId);
 
-                    const charSelector = document.getElementById('character-export-selector');
-                    const primaryCharId = (format === 'png' || format === 'byaf') ? charSelector?.value : null;
-
-                    if (!story) throw new Error("Story not found.");
+                    if (!story) throw new Error("Story not found in database.");
                     if (!narrative) throw new Error("Narrative data not found in database.");
+
+                    // Default to the first non-user character (The "AI")
+                    const selectorVal = document.getElementById('export-primary-character-selector')?.value;
+                    const primaryCharId = selectorVal || story.characters?.find(c => !c.is_user)?.id;
 
                     // Ensure state exists to prevent crashes if data is malformed
                     if (!narrative.state) narrative.state = { worldMap: {}, chat_history: [], static_entries: [] };
 
-                    if ((format === 'png' || format === 'byaf') && !primaryCharId) throw new Error("Primary character required.");
+                    if ((format === 'png' || format === 'byaf') && !primaryCharId) {
+                        throw new Error("No AI character found to export.");
+                    }
 
                     let blob, filename;
                     switch (format) {
@@ -11259,6 +11943,10 @@
                         case 'byaf':
                             blob = await ImportExportService.exportStoryAsBYAF(story, narrative, primaryCharId);
                             filename = `${story.name}.byaf`;
+                            break;
+                        case 'zip':
+                            blob = await ImportExportService.exportStoryAsZip(story, narrative);
+                            filename = `${story.name}.zip`;
                             break;
                     }
 
@@ -11464,6 +12152,9 @@
             async checkTrigger() {
                 if (this.RUNTIME.isProcessing) return;
 
+                // Guard: Global Image Gen Disabled
+                if (typeof UIManager !== 'undefined' && !UIManager.isImageGenEnabled()) return;
+
                 const state = ReactiveStore.state;
                 // Guard: Probability Check
                 const probability = parseFloat(state.visual_master_probability || 0);
@@ -11494,6 +12185,12 @@
              * @param {HTMLElement} [btnElement] - Optional button element to show loading state.
              */
             async triggerVisualEvent(atIndex = null, btnElement = null) {
+                // Guard: Global Image Gen Disabled
+                if (typeof UIManager !== 'undefined' && !UIManager.isImageGenEnabled()) {
+                    UIManager.showNotification("Image generation is disabled in settings.", "warning");
+                    return;
+                }
+
                 const state = ReactiveStore.state;
 
                 // 1. Determine Range
@@ -11671,7 +12368,7 @@
                 Infer their personality, appearance, and role.
                 Respond with VALID JSON ONLY:
                 {
-                    "description": "Full personality and physical description, written in 3rd person (approx 150 words).",
+                    "description": "Full personality and physical description.",
                     "short_description": "A very brief, one-sentence summary.",
                     "tags": ["tag1", "tag2", "tag3"],
                     "model_instructions": "Specific instructions for the AI on how to roleplay this character (e.g., 'Act as ${name}, speak in a rough tone...')",
@@ -11749,6 +12446,57 @@
                 } finally {
                     // 8. Always hide the spinner, whether we succeeded or failed
                     UIManager.hideLoadingSpinner();
+                }
+            },
+
+            /**
+             * Checks if it's time to generate static knowledge (every 6 messages).
+             */
+            async checkAutoStaticKnowledge() {
+                const state = ReactiveStore.state;
+                if (state.messageCounter > 0 && state.messageCounter % 6 === 0) {
+                    const history = state.chat_history;
+                    // Get last 6 chat messages
+                    const recent = history.filter(m => m.type === 'chat').slice(-6);
+                    if (recent.length < 6) return;
+
+                    const transcript = recent.map(m => {
+                        const char = state.characters.find(c => c.id === m.character_id);
+                        return `${char ? char.name : 'Unknown'}: ${m.content}`;
+                    }).join('\n');
+
+                    const promptTemplate = state.prompt_auto_static_knowledge || UTILITY.getDefaultSystemPrompts().prompt_auto_static_knowledge;
+                    const prompt = promptTemplate.replace('{transcript}', transcript);
+
+                    try {
+                        // Silent update (no notification unless successful)
+                        const response = await APIService.callAI(prompt);
+                        const rawData = UTILITY.extractAndParseJSON(response);
+                        if (!rawData) return;
+
+                        const entries = Array.isArray(rawData) ? rawData : [rawData];
+                        let addedCount = 0;
+
+                        if (!state.static_entries) state.static_entries = [];
+
+                        for (const data of entries) {
+                            if (data && data.title && data.content) {
+                                state.static_entries.push({
+                                    id: UTILITY.uuid(),
+                                    title: data.title,
+                                    content: data.content
+                                });
+                                addedCount++;
+                            }
+                        }
+
+                        if (addedCount > 0) {
+                            UIManager.showNotification(`New Knowledge: ${addedCount} entr${addedCount > 1 ? 'ies' : 'y'} added.`);
+                            ReactiveStore.forceSave();
+                        }
+                    } catch (e) {
+                        console.warn("Auto-Static Knowledge failed:", e);
+                    }
                 }
             },
 
@@ -11858,7 +12606,7 @@
 
                 let selectedCharId = document.getElementById('ai-character-selector').value;
                 if (selectedCharId === 'any') {
-                    selectedCharId = this.determineNextSpeaker(false);
+                    selectedCharId = await this.determineNextSpeaker(false);
                 }
 
                 // Check if last message was AI
@@ -11907,6 +12655,7 @@
 
                 if (type === 'chat') {
                     ReactiveStore.state.messageCounter++;
+                    this.checkAutoStaticKnowledge();
                 }
 
                 // Await the save operation to ensure iOS persistence
@@ -12157,7 +12906,15 @@
 
                 // 2. Determine Speaker
                 const selectorVal = document.getElementById('ai-character-selector').value;
-                const targetId = charId || (selectorVal === 'any' ? this.determineNextSpeaker(isAfterMove) : selectorVal);
+                let targetId = charId;
+
+                if (!targetId) {
+                    if (selectorVal === 'any') {
+                        targetId = await this.determineNextSpeaker(isAfterMove);
+                    } else {
+                        targetId = selectorVal;
+                    }
+                }
 
                 if (!targetId) return;
 
@@ -12233,36 +12990,143 @@
             },
 
             /**
-             * Determines the next speaker based on heuristics and history.
+             * Determines the next speaker using an LLM "Scriptwriter" agent.
              * @param {boolean} isAfterMove - Whether this follows a location move.
-             * @returns {string|null} - The ID of the next speaker.
+             * @returns {Promise<string|null>} - The ID of the next speaker.
              */
-            determineNextSpeaker(isAfterMove) {
+            async determineNextSpeaker(isAfterMove) {
                 const state = ReactiveStore.state;
-                let pool = state.characters.filter(c => !c.is_user && c.is_active);
+                const pool = state.characters.filter(c => !c.is_user && c.is_active);
+
                 if (pool.length === 0) return null;
-                if (pool.length === 1) return pool[0].id;
+                if (pool.length === 1 && !isAfterMove) return pool[0].id; // Optimization for single char
 
-                if (isAfterMove) {
-                    const narrators = pool.filter(c => c.is_narrator);
-                    if (narrators.length > 0) return narrators[Math.floor(Math.random() * narrators.length)].id;
-                }
+                UIManager.showTypingIndicator(null, "...", "...");
 
-                // Simple heuristic scoring
-                const scores = {};
-                pool.forEach(c => scores[c.id] = c.is_narrator ? 0 : 1);
+                try {
+                    // 1. Gather Context
+                    const activeChars = pool.map(c => c.name).join(', ');
 
-                // Weight recent speakers lower
-                const history = state.chat_history.slice(-5).reverse();
-                history.forEach((msg, idx) => {
-                    if (msg.type === 'chat' && scores[msg.character_id] !== undefined) {
-                        scores[msg.character_id] -= (5 - idx) * 0.2; // Decay
+                    // Supporting cast: Non-active chars that have spoken recently (last 8 messages)
+                    const recentMsgIds = [...new Set(state.chat_history.slice(-8).map(m => m.character_id))];
+                    const supportingChars = state.characters
+                        .filter(c => !c.is_user && !c.is_active && !c.is_narrator && recentMsgIds.includes(c.id))
+                        .map(c => c.name)
+                        .join(', ');
+
+                    const narrators = state.characters.filter(c => c.is_narrator).map(c => c.name).join(', ');
+
+                    const recentHistory = state.chat_history.slice(-10).map(m => {
+                        const char = state.characters.find(c => c.id === m.character_id);
+                        return `${char ? char.name : 'System'}: ${m.content}`;
+                    }).join('\n');
+
+                    // 2. Construct Scriptwriter Prompt
+                    const prompt = `You are a scriptwriter responsible for selecting the next character to respond in an ongoing roleplay. 
+The list of existing characters in the roleplay is provided below. You may select any of these characters *or* choose an unlisted character if it makes sense within the roleplay.
+For example, if the characters are ordering drinks, 'Bartender' might be an appropriate next responder even if not listed.
+Always prioritize characters actively participating in the roleplay, either responding or mentioned.
+
+Active characters: ${activeChars || "None"}
+Supporting characters: ${supportingChars || "None"}
+Narrators: ${narrators || "None"}
+
+RECENT CONVERSATION:
+${recentHistory}
+
+Format your response as follows:
+\`\`\`
+[Active characters: List of currently participating characters.]
+[Top 3: Three most likely responders.]
+[Selection: The chosen next responder.]
+\`\`\`
+
+Rules:
+1. Names must be exact.
+2. The selected character’s name **must** be the last line of the response.
+3. Character lists are comma-separated.
+
+Now, you shall respond in the exact format noted above to determine the next character to respond in the roleplay.`;
+
+                    console.log("[Scriptwriter Prompt]:", prompt);
+
+                    // 3. Call AI
+                    const response = await APIService.callAI(prompt, false);
+                    console.log("[Scriptwriter Response]:", response);
+
+                    // 4. Parse Selection
+                    let selection = null;
+                    const selectionMatch = response.match(/\[Selection:\s*(.*?)\]/i);
+
+                    if (selectionMatch && selectionMatch[1]) {
+                        selection = selectionMatch[1].trim();
+                        // Remove any trailing punctuation or markdown
+                        selection = selection.replace(/['"`\.]*$/, '');
+                    } else {
+                        // Fallback: Search for known names
+                        const allChars = state.characters.filter(c => !c.is_user);
+                        // Priority search: Active > Supporting > Narrator
+                        const priorityList = [...pool, ...state.characters.filter(c => !c.is_user && !c.is_active)];
+
+                        for (const char of priorityList) {
+                            if (response.includes(char.name)) {
+                                selection = char.name;
+                                break;
+                            }
+                        }
                     }
-                });
 
-                const weights = pool.map(c => Math.max(0.1, scores[c.id]));
-                const winner = UTILITY.weightedChoice(pool, weights);
-                return winner ? winner.id : pool[0].id;
+                    if (!selection) {
+                        UIManager.showNotification("Scriptwriter could not determine next speaker.", "error");
+                        return null;
+                    }
+
+                    console.log(`Scriptwriter selected: ${selection}`);
+
+                    // 5. Resolve Selection to ID
+                    // Try exact match
+                    let targetChar = state.characters.find(c => c.name.toLowerCase() === selection.toLowerCase());
+
+                    if (!targetChar) {
+                        // Unlisted Character Logic
+                        // Verify it's not a user error (fuzzy match?)
+                        // For now, strict creation as per plan
+
+                        const aiCount = state.characters.filter(c => !c.is_user).length;
+                        const color = this.CONSTANTS.CHARACTER_COLORS[aiCount % this.CONSTANTS.CHARACTER_COLORS.length];
+
+                        targetChar = {
+                            id: UTILITY.uuid(),
+                            name: selection, // Original casing
+                            description: "A character in the scene.",
+                            short_description: "Unlisted character",
+                            model_instructions: "", // Default prompt applies
+                            image_url: "",
+                            extra_portraits: [],
+                            tags: ["unlisted"],
+                            is_user: false,
+                            is_active: false, // Keep them inactive so they don't flood the selector? 
+                            // Actually, if they speak, they become part of history. 
+                            // User might want to adopt them.
+                            color: color,
+                            is_narrator: false
+                        };
+
+                        state.characters.push(targetChar);
+                        await ReactiveStore.forceSave(); // Persist immediately
+
+                        UIManager.showNotification(`New character '${selection}' entered the scene.`, "info");
+                    }
+
+                    return targetChar.id;
+
+                } catch (error) {
+                    console.error("Scriptwriter Error:", error);
+                    UIManager.showNotification("Error determining next speaker.", "error");
+                    return null;
+                } finally {
+                    UIManager.hideTypingIndicator(); // Ensure bubble is removed
+                }
             },
 
             /**
@@ -13413,6 +14277,15 @@
                 const newEntry = { id: UTILITY.uuid(), title: "New Static Entry", content: "" };
                 ReactiveStore.state.static_entries.push(newEntry);
                 ReactiveStore.state.selectedStaticEntryId = newEntry.id;
+
+                // Force re-render of the list and details
+                // WorldController (which owns the UI for this) needs to be triggered.
+                // Since this method is seemingly part of WorldController logic that leaked into Narrative or similar?
+                // Wait, addStaticEntry is usually in WorldController or AppController?
+                // Looking at the context, this seems to be inside WorldController...
+                // Let's assume WorldController context.
+                this.renderStaticEntriesList();
+                this.renderStaticEntryDetails();
             },
 
             /**
