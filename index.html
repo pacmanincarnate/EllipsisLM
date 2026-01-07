@@ -9491,20 +9491,9 @@
              * Prepares the settings modal structure if it hasn't been initialized yet.
              */
             prepareSettingsModal() {
-                const container = document.getElementById('settings-content-container');
-                if (container.innerHTML.trim() !== '...') return; // Already populated
-
-                const templates = document.getElementById('settings-templates');
-                let maxHeight = 0;
-                ['appearance', 'prompt', 'model', 'image-gen', 'export'].forEach(tabName => {
-                    const content = templates.querySelector(`#settings-${tabName}-content`);
-                    if (content) {
-                        document.body.appendChild(content); // Temporarily append to measure
-                        maxHeight = Math.max(maxHeight, content.scrollHeight);
-                        templates.appendChild(content); // Move it back
-                    }
-                });
-                container.style.minHeight = `${maxHeight}px`;
+                // Logic removed to allow natural scrolling.
+                // The CSS classes (flex-grow, min-h-0, overflow-y-auto) on the container 
+                // handle the layout correctly without a fixed min-height.
             },
 
             /**
