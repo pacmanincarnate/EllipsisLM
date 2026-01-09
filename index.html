@@ -14774,10 +14774,10 @@ Now, you shall respond in the exact format noted above to determine the next cha
                 }
 
                 // iOS Safari doesn't recognize custom file extensions like .byaf in file picker
-                // Use permissive filter on iOS so users can actually select .byaf files
+                // Remove accept attribute entirely on iOS so users can actually select .byaf files
                 if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
                     const fileInput = document.getElementById('single-file-upload');
-                    if (fileInput) fileInput.setAttribute('accept', '*/*');
+                    if (fileInput) fileInput.removeAttribute('accept');
                 }
 
                 // 1. Initialize Core Services
