@@ -8962,7 +8962,7 @@
                                     <p class="text-xs text-gray-400 mt-2">Supported: .png (V2), .byaf, .zip, .json</p>
                                 </div>
                             </label>
-                            <input id="single-file-upload" type="file" class="hidden" accept=".png,.byaf,.zip,.json" data-action-change="handle-file-upload">
+                            <input id="single-file-upload" type="file" class="hidden" accept=".png,.byaf,.zip,.json,image/png,application/zip,application/json" data-action-change="handle-file-upload">
                         </div>
 
                         <div class="bg-black/20 p-6 rounded-lg border border-gray-700/50">
@@ -14771,6 +14771,13 @@ Now, you shall respond in the exact format noted above to determine the next cha
             async init() {
                 if ('scrollRestoration' in history) {
                     history.scrollRestoration = 'manual';
+                }
+
+                // iOS Safari doesn't recognize custom file extensions like .byaf in file picker
+                // Use permissive filter on iOS so users can actually select .byaf files
+                if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                    const fileInput = document.getElementById('single-file-upload');
+                    if (fileInput) fileInput.setAttribute('accept', '*/*');
                 }
 
                 // 1. Initialize Core Services
