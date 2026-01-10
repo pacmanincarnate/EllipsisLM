@@ -945,7 +945,7 @@
                 <h2 class="text-2xl font-semibold">Story Library</h2>
                 <div class="flex space-x-2">
                     <button data-action="open-modal" data-target="io-hub-modal"
-                        class="bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg">Import</button>
+                        class="bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg">Manage</button>
 
                     <div class="relative inline-block text-left">
                         <button
@@ -2062,6 +2062,30 @@
                             rows="4"></textarea>
                     </div>
                 </details>
+
+                <!-- Auto Static Knowledge Gen -->
+                <details
+                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
+                    <summary
+                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
+                        <span class="font-medium text-gray-200">Auto-Knowledge Generation</span>
+                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </summary>
+                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
+                        <p class="text-gray-400 text-sm mb-3">Runs in background every 6 turns to generate static
+                            knowledge. Variable:
+                            <code class="bg-black/40 px-1 rounded text-indigo-300">{transcript}</code> (Auto-appended if
+                            missing)
+                        </p>
+                        <textarea id="prompt-auto-static-knowledge-input"
+                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
+                            rows="4"></textarea>
+                    </div>
+                </details>
             </div>
 
 
@@ -2505,7 +2529,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.02.02 - 10:00 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.01.10 - 10:00 CST";
 
 
         /**
@@ -3651,7 +3675,8 @@
 
                             // Generation Prompts
                             'prompt_persona_gen', 'prompt_world_map_gen', 'prompt_location_gen',
-                            'prompt_entry_gen', 'prompt_location_memory_gen', 'prompt_story_notes_gen', 'prompt_story_tags_gen'
+                            'prompt_entry_gen', 'prompt_location_memory_gen', 'prompt_story_notes_gen', 'prompt_story_tags_gen',
+                            'prompt_auto_static_knowledge'
                         ];
 
                         settingsKeys.forEach(key => {
@@ -4720,7 +4745,7 @@
                     prompt_story_notes_gen: "Based on the following story context (characters, lore), generate a brief, 1-2 sentence creator's note or 'blurb' for this story to show in a library.\n\nCONTEXT:\n{context}",
                     prompt_story_tags_gen: "Based on the following story context (characters, lore), generate 3-5 relevant, one-word, comma-separated tags for this story (e.g., fantasy, sci-fi, mystery, horror, romance).\n\nCONTEXT:\n{context}",
                     visual_master_base_prompt: "You are a visual director. Based on the provided chat history, characters, and location, generate a high-quality, vivid, and detailed image generation prompt that captures the current scene. Focus on atmosphere, lighting, and key subjects. Output ONLY the visual description.",
-                    prompt_auto_static_knowledge: "You are an automated archivist. Analyze the recent conversation transcript. Identify all significant new facts, rules, or lore details established in this text that should be permanently recorded in the static knowledge base. Ignore trivial actions or movements. If a valid fact is found, respond with a JSON object: { \"title\": \"Topic\", \"content\": \"Concise summary of the fact.\" }. If nothing important occurred, return { \"title\": null }.\n\nTRANSCRIPT:\n{transcript}"
+                    prompt_auto_static_knowledge: "You are an automated archivist. Analyze the recent conversation transcript and the EXISTING static knowledge base. Your goal is to keep the knowledge base up-to-date and concise.\n\nTASKS:\n1. Identify SIGNIFICANT new facts, rules, or lore established in the transcript.\n2. Review EXISTING entries to avoid redundancy.\n3. If a new fact updates or contradicts an existing entry, propose an update to that entry using its exact current Title.\n4. If a fact is completely new, propose a new entry.\n\nEXISTING KNOWLEDGE:\n{existing_knowledge}\n\nTRANSCRIPT:\n{transcript}\n\nOUTPUT FORMAT:\nRespond with a valid JSON object or array of objects: { \"title\": \"Exact Title\", \"content\": \"Updated or New Content\" }.\nIf no changes are needed, return { \"title\": null }."
                 };
             },
             /**
@@ -4874,16 +4899,16 @@
             },
 
             /**
-             * Retrieves a slice of chat history, filtering out hidden messages.
+             * Retrieves a slice of chat history, filtering out hidden messages in a smart way.
              * @param {Array} history - The chat history.
-             * @param {number} chatMessageCount - The number of messages to retrieve.
+             * @param {number} maxSpaces - The maximum number of space characters to include (proxy for token limit).
              * @returns {Array} - The history slice.
              * @private
              */
-            _getSmartHistorySlice(history, chatMessageCount) {
+            _getSmartHistorySlice(history, maxSpaces = 8000) {
                 if (!Array.isArray(history)) return [];
 
-                let chatCount = 0;
+                let currentSpaceCount = 0;
                 let startIndex = history.length;
 
                 // Loop backwards
@@ -4893,9 +4918,20 @@
                     // Safety check for undefined/null messages
                     if (!msg) continue;
 
+                    let spacesInMessage = 0;
+                    if (!msg.isHidden) {
+                        const content = msg.content || '';
+                        spacesInMessage = (content.split(" ").length - 1);
+                    }
+
+                    // If adding this message would exceed the limit, stop here
+                    if (currentSpaceCount + spacesInMessage > maxSpaces) {
+                        break;
+                    }
+
+                    // Include this message
                     startIndex = i;
-                    if (msg.type === 'chat' && !msg.isHidden) chatCount++;
-                    if (chatCount >= chatMessageCount) break;
+                    currentSpaceCount += spacesInMessage;
                 }
                 return history.slice(startIndex);
             },
@@ -4974,7 +5010,7 @@
                             return true;
                         })
                         .map(c => `### Character: ${c.name}\n\n${replacer(c.description)}`)
-                        .join('\n\n'), history: this._getSmartHistorySlice(state.chat_history || [], 10),
+                        .join('\n\n'), history: this._getSmartHistorySlice(state.chat_history || [], 8000),
                     charToAct: charToAct,
                     isForUser: isForUser,
                     location_context: locationContext,
@@ -8087,6 +8123,12 @@
                         state.chat_history[messageIndex].content = fullText;
                         state.chat_history[messageIndex].isNew = false;
 
+                        // Increment Counter & Check for Static Knowledge (AI Turn)
+                        state.messageCounter = (state.messageCounter || 0) + 1;
+                        if (typeof NarrativeController !== 'undefined') {
+                            NarrativeController.checkAutoStaticKnowledge();
+                        }
+
                         // Manually clean up the 'new-message' class from the DOM
                         // Since we are skipping the re-render, we must update the class manually
                         if (bubbleEl) bubbleEl.classList.remove('new-message');
@@ -8939,53 +8981,74 @@
 
                 const hubHTML = DOM.html`
             <div class="p-6 border-b border-gray-700 flex justify-between items-center">
-                <h2 class="text-2xl font-semibold">Library Import</h2>
+                <h2 class="text-2xl font-semibold">Library Management</h2>
                 <button data-action="close-modal" data-id="io-hub-modal" class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
             <div class="p-6 overflow-y-auto">
-                <div class="max-w-2xl mx-auto space-y-8">
+                <div class="max-w-3xl mx-auto space-y-8">
                     
-                    <!-- === IMPORT OPTIONS === -->
-                    <div class="space-y-6">
+                    <!-- === EXPORT SECTION === -->
+                    <div class="space-y-4">
+                        <h3 class="text-xs uppercase tracking-wider text-gray-400 font-bold border-b border-gray-700 pb-2">Share</h3>
                         
-                        <div class="bg-black/20 p-6 rounded-lg border border-gray-700/50">
-                            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
-                                <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                Import Single File
+                        <div class="bg-indigo-900/20 p-6 rounded-lg border border-indigo-500/30 hover:border-indigo-500/50 transition-colors">
+                            <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-indigo-300">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Export Library Backup
                             </h3>
-                            <p class="text-sm text-gray-300 mb-4">Import a single Story from a V2 PNG, BYAF, or Ellipsis JSON file.</p>
-                            <label for="single-file-upload" class="cursor-pointer group">
-                                <div class="border-2 border-dashed border-gray-600 group-hover:border-indigo-500 rounded-lg p-8 text-center bg-gray-800/30 group-hover:bg-gray-800/60 transition-all">
-                                    <p class="font-semibold text-indigo-300 group-hover:text-indigo-200 text-lg">Click to upload a file</p>
-                                    <p class="text-xs text-gray-400 mt-2">Supported: .png (V2), .byaf, .zip, .json</p>
-                                </div>
-                            </label>
-                            <input id="single-file-upload" type="file" class="hidden" accept=".png,.byaf,.zip,.json" data-action-change="handle-file-upload">
-                        </div>
-
-                        <div class="bg-black/20 p-6 rounded-lg border border-gray-700/50">
-                            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
-                                <svg class="w-6 h-6 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                                Bulk Import
-                            </h3>
-                            <p class="text-sm text-gray-300 mb-4">Import an entire folder of V2 PNG or BYAF files at once.</p>
-                            <button data-action="handle-bulk-import" class="w-full bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                                Select Folder to Import
+                            <p class="text-sm text-gray-300 mb-4">Create a portable backup of your entire library (Stories, Characters, Settings, and Images) as a ZIP archive.</p>
+                            <button data-action="export-library" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Download Library (ZIP)
                             </button>
                         </div>
+                    </div>
 
-                        <div class="bg-red-900/10 p-6 rounded-lg border border-red-900/30">
-                            <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-red-400">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                Restore Library Backup
-                            </h3>
-                            <p class="text-sm text-gray-300 mb-4">Replace your current library with an Ellipsis Library ZIP file. <span class="font-bold text-red-400">Warning: This is a destructive action.</span></p>
-                            <label class="w-full bg-red-800/80 hover:bg-red-900/80 text-white font-bold py-3 px-4 rounded-lg inline-flex items-center justify-center gap-2 cursor-pointer transition-colors">
+                    <!-- === IMPORT SECTION === -->
+                    <div class="space-y-4">
+                        <h3 class="text-xs uppercase tracking-wider text-gray-400 font-bold border-b border-gray-700 pb-2">Import & Restore</h3>
+
+                        <!-- Grid for Standard Imports -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Single File -->
+                            <div class="bg-black/20 p-5 rounded-lg border border-gray-700/50 flex flex-col">
+                                <h3 class="font-bold mb-2 flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    Import File
+                                </h3>
+                                <p class="text-xs text-gray-400 mb-4 flex-grow">Import a Story or Character from .json, .png, .byaf, or .zip.</p>
+                                <label for="single-file-upload" class="cursor-pointer">
+                                    <div class="border border-dashed border-gray-600 hover:border-indigo-500 rounded-lg p-3 text-center bg-gray-800/30 hover:bg-gray-800/60 transition-all">
+                                        <span class="text-sm font-semibold text-indigo-300">Select File</span>
+                                    </div>
+                                    <input id="single-file-upload" type="file" class="hidden" accept=".png,.byaf,.zip,.json" data-action-change="handle-file-upload">
+                                </label>
+                            </div>
+
+                            <!-- Bulk Import -->
+                            <div class="bg-black/20 p-5 rounded-lg border border-gray-700/50 flex flex-col">
+                                <h3 class="font-bold mb-2 flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                    Bulk Import
+                                </h3>
+                                <p class="text-xs text-gray-400 flex-grow mb-4">Import an entire folder of character cards or stories.</p>
+                                <button data-action="handle-bulk-import" class="w-full bg-teal-600/20 hover:bg-teal-600/40 text-teal-200 border border-teal-600/50 font-bold py-2 px-3 rounded-lg transition-colors text-sm">
+                                    Select Folder
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Full Restore -->
+                        <div class="bg-red-900/10 p-5 rounded-lg border border-red-900/30 mt-4">
+                            <h3 class="font-bold mb-2 flex items-center gap-2 text-red-400">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                <span>Import Library Package (ZIP)</span>
+                                Restore Full Library
+                            </h3>
+                            <p class="text-xs text-gray-400 mb-3">Replace current library with a backup ZIP. <span class="font-bold text-red-400">Destructive: Overwrites existing data.</span></p>
+                            <label class="w-full bg-red-900/40 hover:bg-red-800/60 text-white/90 font-bold py-2 px-4 rounded-lg inline-flex items-center justify-center gap-2 cursor-pointer transition-colors text-sm">
+                                <span>Upload Backup (ZIP)</span>
                                 <input type="file" class="hidden" accept=".zip" data-action-change="import-library">
                             </label>
                         </div>
@@ -9685,17 +9748,12 @@
 
                     input.value = (val !== undefined && val !== null) ? val : '';
 
-                    const debouncedCallback = debounce(function (e) {
-                        // Determine value
-                        const val = e.target.value;
-
+                    // Define debounced saver to prevent DB thrashing
+                    const debouncedSaver = debounce(function (callback) {
                         if (isGlobal) {
-                            globalSettings[key] = val;
                             StateManager.saveGlobalSettings();
                         } else {
-                            // Update Proxy State
-                            state[key] = val;
-                            // Explicitly trigger the save mechanism to be safe
+                            // Explicitly trigger the save mechanism
                             if (typeof ReactiveStore.forceSave === 'function') {
                                 ReactiveStore.forceSave();
                             }
@@ -9703,7 +9761,24 @@
                         if (callback) callback();
                     }.bind(this), 500);
 
-                    input.addEventListener('input', debouncedCallback);
+                    // Create Input Handler
+                    const inputHandler = (e) => {
+                        const newVal = e.target.value;
+
+                        if (isGlobal) {
+                            globalSettings[key] = newVal;
+                            // Sync runtime immediately
+                            state[key] = newVal;
+                        } else {
+                            // Update Proxy State immediately
+                            state[key] = newVal;
+                        }
+
+                        // Schedule Save
+                        debouncedSaver(callback);
+                    };
+
+                    input.addEventListener('input', inputHandler);
                 };
 
                 // Helper: Bind range sliders
@@ -9723,6 +9798,7 @@
 
                         if (isGlobal) {
                             globalSettings[stateKey] = newValue;
+                            state[stateKey] = newValue; // Sync runtime
                         } else {
                             state[stateKey] = newValue;
                         }
@@ -9839,6 +9915,7 @@
                 if (document.getElementById('prompt-location-gen-input')) setListener('prompt-location-gen-input', 'prompt_location_gen');
                 if (document.getElementById('prompt-entry-gen-input')) setListener('prompt-entry-gen-input', 'prompt_entry_gen');
                 if (document.getElementById('prompt-location-memory-gen-input')) setListener('prompt-location-memory-gen-input', 'prompt_location_memory_gen');
+                if (document.getElementById('prompt-auto-static-knowledge-input')) setListener('prompt-auto-static-knowledge-input', 'prompt_auto_static_knowledge');
 
                 // Toggle for Analysis
                 const analysisToggle = document.getElementById('enable-analysis-toggle');
@@ -12347,11 +12424,32 @@
              * @returns {Promise<Object>} - The generated character profile.
              */
             async generateCharacterProfile(name, contextString) {
-                const prompt = `You are a character designer.
-                Based on the context provided, generate a detailed character profile for "${name}".
-                
-                CONTEXT:
-                ${contextString}
+                const state = (typeof ReactiveStore !== 'undefined' && ReactiveStore.state) ? ReactiveStore.state : {};
+                let userPrompt = state.prompt_persona_gen;
+
+                // Fallback to default if empty
+                if (!userPrompt && typeof UTILITY !== 'undefined') {
+                    userPrompt = UTILITY.getDefaultSystemPrompts().prompt_persona_gen;
+                }
+
+                // If still empty (safety fallback), use a minimal default
+                if (!userPrompt) {
+                    userPrompt = "You are a character designer.";
+                }
+
+                // Variable Substitution
+                let instruction = userPrompt.replace(/{name}/g, name);
+
+                // Handle Context Injection
+                // If the user's prompt doesn't explicitly include the {concept} variable, we append the context structure automatically.
+                if (instruction.includes('{concept}')) {
+                    instruction = instruction.replace(/{concept}/g, contextString);
+                } else {
+                    instruction += `\n\nBased on the context provided below, generate a detailed character profile for ${name}.\n\nCONTEXT:\n${contextString}`;
+                }
+
+                // Construct final prompt with Mandatory JSON Schema
+                const prompt = `${instruction}
                 
                 INSTRUCTIONS:
                 Infer their personality, appearance, and role.
@@ -12380,7 +12478,11 @@
                 // 2. Dice Roll: Configurable Chance
                 // Strictly parse probability to prevent NaN causing 100% trigger rate
                 let probability = parseInt(state.event_master_probability);
-                if (isNaN(probability)) probability = 15; // Default if invalid
+                // Fix: Default to 0 (Disabled) if invalid or undefined (Legacy mismatch fix)
+                if (isNaN(probability)) probability = 0;
+
+                // Guard: Strict disable if probability is 0 (or less)
+                if (probability <= 0) return;
 
                 // Logic: If random roll (0-100) is GREATER than probability, we SKIP.
                 // Example: Prob 15. Roll 20. 20 > 15 is True. Return (Skip).
@@ -12454,8 +12556,29 @@
                         return `${char ? char.name : 'Unknown'}: ${m.content}`;
                     }).join('\n');
 
-                    const promptTemplate = state.prompt_auto_static_knowledge || UTILITY.getDefaultSystemPrompts().prompt_auto_static_knowledge;
-                    const prompt = promptTemplate.replace('{transcript}', transcript);
+                    // Prepare Existing Knowledge
+                    const existingKnowledgeStr = (state.static_entries || [])
+                        .map(e => `Title: ${e.title}\nContent: ${e.content}`)
+                        .join('\n\n') || "No existing knowledge.";
+
+                    let promptTemplate = state.prompt_auto_static_knowledge || UTILITY.getDefaultSystemPrompts().prompt_auto_static_knowledge;
+
+                    // Robust handling: Inject {transcript}
+                    let prompt = promptTemplate;
+                    if (prompt.includes('{transcript}')) {
+                        prompt = prompt.replace('{transcript}', transcript);
+                    } else {
+                        prompt = prompt + "\n\nTranscript:\n" + transcript;
+                    }
+
+                    // Robust handling: Inject {existing_knowledge}
+                    if (prompt.includes('{existing_knowledge}')) {
+                        prompt = prompt.replace('{existing_knowledge}', existingKnowledgeStr);
+                    } else {
+                        // If placeholder missing, append it before the transcript context if possible, or just at the end.
+                        // Appending at the end is safest for visibility.
+                        prompt = prompt + "\n\nEXISTING KNOWLEDGE BASE:\n" + existingKnowledgeStr;
+                    }
 
                     try {
                         // Silent update (no notification unless successful)
@@ -12464,23 +12587,35 @@
                         if (!rawData) return;
 
                         const entries = Array.isArray(rawData) ? rawData : [rawData];
-                        let addedCount = 0;
+                        let changeCount = 0;
 
                         if (!state.static_entries) state.static_entries = [];
 
                         for (const data of entries) {
-                            if (data && data.title && data.content) {
-                                state.static_entries.push({
-                                    id: UTILITY.uuid(),
-                                    title: data.title,
-                                    content: data.content
-                                });
-                                addedCount++;
+                            if (data && data.title && data.content && data.title !== 'null') {
+                                // Check for existing entry by Title (Case-insensitive)
+                                const existingEntry = state.static_entries.find(e => e.title.toLowerCase() === data.title.toLowerCase());
+
+                                if (existingEntry) {
+                                    // Update content if different
+                                    if (existingEntry.content !== data.content) {
+                                        existingEntry.content = data.content;
+                                        changeCount++;
+                                    }
+                                } else {
+                                    // Create new
+                                    state.static_entries.push({
+                                        id: UTILITY.uuid(),
+                                        title: data.title,
+                                        content: data.content
+                                    });
+                                    changeCount++;
+                                }
                             }
                         }
 
-                        if (addedCount > 0) {
-                            UIManager.showNotification(`New Knowledge: ${addedCount} entr${addedCount > 1 ? 'ies' : 'y'} added.`);
+                        if (changeCount > 0) {
+                            UIManager.showNotification(`Auto-Knowledge: ${changeCount} update${changeCount > 1 ? 's' : ''} recorded.`);
                             ReactiveStore.forceSave();
                         }
                     } catch (e) {
@@ -13010,7 +13145,11 @@
                         return `${char ? char.name : 'System'}: ${m.content}`;
                     }).join('\n');
 
-                    // 2. Construct Scriptwriter Prompt
+                    // Identify User Character to explicitly exclude
+                    const userChar = state.characters.find(c => c.is_user);
+                    const userCharName = userChar ? userChar.name : "User";
+
+                    // 2. Construct Scriptwriter Prompt (JSON Mode)
                     const prompt = `You are a scriptwriter responsible for selecting the next character to respond in an ongoing roleplay. 
 The list of existing characters in the roleplay is provided below. You may select any of these characters *or* choose an unlisted character if it makes sense within the roleplay.
 For example, if the characters are ordering drinks, 'Bartender' might be an appropriate next responder even if not listed.
@@ -13020,48 +13159,83 @@ Active characters: ${activeChars || "None"}
 Supporting characters: ${supportingChars || "None"}
 Narrators: ${narrators || "None"}
 
+RELEVANT CONTEXT:
+The character "${userCharName}" is the User player. You must NEVER select "${userCharName}" as the next speaker. The User decides when they speak.
+
 RECENT CONVERSATION:
 ${recentHistory}
 
-Format your response as follows:
-\`\`\`
-[Active characters: List of currently participating characters.]
-[Top 3: Three most likely responders.]
-[Selection: The chosen next responder.]
-\`\`\`
+Return a valid JSON object with the following structure:
+{
+    "active_characters": ["List of currently participating characters"],
+    "top_3_candidates": ["Three most likely responders (strings)"],
+    "selection": "The chosen next responder (string)"
+}
 
 Rules:
 1. Names must be exact.
-2. The selected character’s name **must** be the last line of the response.
-3. Character lists are comma-separated.
-
-Now, you shall respond in the exact format noted above to determine the next character to respond in the roleplay.`;
+2. Do NOT select "${userCharName}".
+3. Output ONLY valid JSON.`;
 
                     console.log("[Scriptwriter Prompt]:", prompt);
 
                     // 3. Call AI
-                    const response = await APIService.callAI(prompt, false);
+                    const response = await APIService.callAI(prompt, true);
                     console.log("[Scriptwriter Response]:", response);
 
                     // 4. Parse Selection
-                    let selection = null;
-                    const selectionMatch = response.match(/\[Selection:\s*(.*?)\]/i);
+                    const data = UTILITY.extractAndParseJSON(response);
+                    let selection = data ? data.selection : null;
 
-                    if (selectionMatch && selectionMatch[1]) {
-                        selection = selectionMatch[1].trim();
-                        // Remove any trailing punctuation or markdown
-                        selection = selection.replace(/['"`\.]*$/, '');
-                    } else {
-                        // Fallback: Search for known names
-                        const allChars = state.characters.filter(c => !c.is_user);
-                        // Priority search: Active > Supporting > Narrator
+                    if (!selection && typeof response === 'string') {
+                        // Fallback: simple text scan if JSON failed
                         const priorityList = [...pool, ...state.characters.filter(c => !c.is_user && !c.is_active)];
-
                         for (const char of priorityList) {
                             if (response.includes(char.name)) {
                                 selection = char.name;
                                 break;
                             }
+                        }
+                    }
+
+                    if (selection && selection.toLowerCase() === userCharName.toLowerCase()) {
+                        console.warn("Scriptwriter tried to select User despite instructions. Attempting fallback...");
+
+                        let fallbackFound = false;
+                        // Try parsed candidates first
+                        const candidatesList = (data && Array.isArray(data.top_3_candidates)) ? data.top_3_candidates : [];
+                        for (const candidate of candidatesList) {
+                            if (candidate && typeof candidate === 'string' && candidate.toLowerCase() !== userCharName.toLowerCase()) {
+                                console.info(`Redirecting selection from User to fallback candidate: ${candidate}`);
+                                selection = candidate;
+                                fallbackFound = true;
+                                break;
+                            }
+                        }
+
+                        // Parse Top 3 from response to find an alternative (Legacy disabled)
+                        const top3Match = null; // response.match(/\[Top 3:\s*(.*?)\]/i);
+                        // let fallbackFound = false; // Declared above
+
+                        if (top3Match && top3Match[1]) {
+                            // Split by comma, trim whitespace and punctuation
+                            const candidates = top3Match[1].split(',').map(s => s.trim().replace(/['"`\.]*$/, ''));
+
+                            for (const candidate of candidates) {
+                                // Ignore if candidate is empty or is the user
+                                if (candidate && candidate.toLowerCase() !== userCharName.toLowerCase()) {
+                                    console.info(`Redirecting selection from User to fallback candidate: ${candidate}`);
+                                    selection = candidate;
+                                    fallbackFound = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!fallbackFound) {
+                            console.warn("No valid fallback found in Top 3. Aborting.");
+                            // Return null to stop generation
+                            return null;
                         }
                     }
 
@@ -13592,11 +13766,33 @@ Now, you shall respond in the exact format noted above to determine the next cha
 
             /**
              * Compiles a regex for a keyword trigger.
+             * Supports '*' wildcard for matching variable word parts.
              * @param {string} keyword - The keyword to match.
              * @returns {RegExp} - The compiled regex.
              * @private
              */
             _compileTriggerRegex(keyword) {
+                // Handle wildcards if present
+                if (keyword.includes('*')) {
+                    // Split content by wildcard to escape parts separately
+                    const parts = keyword.split('*').map(p => p.replace(/[.+?^${}()|[\]\\]/g, '\\$&'));
+
+                    // Construct regex pattern
+                    // \w* acts as the wildcard (0 or more word characters)
+                    const pattern = parts.join('\\w*');
+
+                    // Determine boundaries
+                    // If start has wildcard (e.g. *able), we still generally want \b to ensure we match a word part,
+                    // but standard English tokenization logic implies we are matching relative to word starts/ends.
+                    // However, standard expectation: "*able" matches "lovable". "lovable" starts with 'l', which is a boundary.
+                    // But effectively we are just replacing * with \w*.
+                    // So '*able' becomes '\w*able'. We wrap in \b to ensure it is a whole word match context.
+                    // Example: \b\w*able\b matches "lovable" (match, whole word) but NOT "enabler" (no match at end)
+
+                    return new RegExp(`\\b${pattern}\\b`, 'i');
+                }
+
+                // Default: Exact whole-word match
                 // Escape special regex characters
                 const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 // Matches whole word/phrase, case insensitive
@@ -13606,16 +13802,35 @@ Now, you shall respond in the exact format noted above to determine the next cha
             /**
              * Parses a trigger string into groups and probability chance.
              * @param {string} triggersStr - The raw trigger string.
-             * @returns {Object} - { groups: Array, chance: number }.
+             * @returns {Object} - { groups: Array, chance: number, chanceOperator: 'AND'|'OR' }.
              */
             parseTriggers(triggersStr) {
-                if (!triggersStr) return { groups: [], chance: 0 };
-                const parts = triggersStr.split(',').map(s => s.trim());
-                const chancePart = parts.find(p => p.match(/^\d+\s*\%$/));
-                const chance = chancePart ? parseInt(chancePart.replace('%', '')) : 0;
-                const keywordParts = parts.filter(p => p && !p.match(/^\d+\s*\%$/));
+                if (!triggersStr) return { groups: [], chance: 0, chanceOperator: 'OR' };
 
-                const groups = keywordParts.map(part => {
+                let chance = 0;
+                let chanceOperator = 'OR';
+                let cleanTriggers = triggersStr;
+
+                // Regex to find chance pattern: "AND 50%", "50%", ", 50%", " 50%"
+                // Matches optional separator (start, space, comma), optional AND, digits, %
+                const chanceRegex = /(?:^|[\s,])(?:(AND)\s+)?(\d+)\s*%/i;
+                const match = triggersStr.match(chanceRegex);
+
+                if (match) {
+                    if (match[1] && match[1].toUpperCase() === 'AND') {
+                        chanceOperator = 'AND';
+                    }
+                    chance = parseInt(match[2], 10);
+
+                    // Remove the matched chance part from the string to leave just keywords
+                    // We replace with a space to avoid merging adjacent words if delimiters were consumed
+                    cleanTriggers = triggersStr.replace(match[0], ' ');
+                }
+
+                // Split the remaining string by commas to get keyword groups
+                const parts = cleanTriggers.split(',').map(s => s.trim()).filter(Boolean);
+
+                const groups = parts.map(part => {
                     if (part.includes(' XOR ')) {
                         const keywords = part.split(' XOR ').map(k => k.trim().toLowerCase()).filter(Boolean);
                         if (keywords.length === 2) return { type: 'XOR', keywords };
@@ -13626,7 +13841,7 @@ Now, you shall respond in the exact format noted above to determine the next cha
                     }
                     return { type: 'OR', keywords: [part.toLowerCase()] };
                 });
-                return { groups, chance };
+                return { groups, chance, chanceOperator };
             },
 
             /**
@@ -13645,7 +13860,7 @@ Now, you shall respond in the exact format noted above to determine the next cha
 
                 (state.dynamic_entries || []).forEach(entry => {
                     // 1. Check triggers
-                    const { groups, chance } = this.parseTriggers(entry.triggers);
+                    const { groups, chance, chanceOperator } = this.parseTriggers(entry.triggers);
 
                     const keywordMatch = groups.some(group => {
                         const patterns = group.keywords.map(kw => this._compileTriggerRegex(kw));
@@ -13659,8 +13874,23 @@ Now, you shall respond in the exact format noted above to determine the next cha
                         }
                     });
 
+                    const chanceRolled = (Math.random() * 100 < chance);
+                    let shouldTrigger = false;
+
+                    // If NO keywords, we rely solely on chance (classic random encounter)
+                    // If keywords exist, we apply the operator
+                    if (groups.length === 0) {
+                        shouldTrigger = chanceRolled;
+                    } else {
+                        if (chanceOperator === 'AND') {
+                            shouldTrigger = keywordMatch && chanceRolled;
+                        } else {
+                            shouldTrigger = keywordMatch || chanceRolled;
+                        }
+                    }
+
                     // 2. If triggered:
-                    if (keywordMatch || (Math.random() * 100 < chance)) {
+                    if (shouldTrigger) {
 
                         // 3. De-duplicate: Look-behind 20 messages
                         const searchWindowStart = Math.max(0, state.chat_history.length - 20);
@@ -13683,7 +13913,21 @@ Now, you shall respond in the exact format noted above to determine the next cha
                         const contentIndex = entry.current_index || 0;
                         if (!entry.content_fields || entry.content_fields.length === 0) return;
 
-                        const contentToReveal = entry.content_fields[contentIndex];
+                        let contentToReveal = entry.content_fields[contentIndex];
+
+                        // 4a. Variable Substitution: {{option 1, option 2}}
+                        // Regex finds all occurrences of double-braces {{...}}
+                        if (contentToReveal && typeof contentToReveal === 'string') {
+                            contentToReveal = contentToReveal.replace(/\{\{(.+?)\}\}/g, (match, inner) => {
+                                // Split by comma, trim whitespace
+                                const options = inner.split(',').map(s => s.trim());
+                                // Pick random
+                                if (options.length > 0) {
+                                    return options[Math.floor(Math.random() * options.length)];
+                                }
+                                return match; // Return original if empty
+                            });
+                        }
 
                         let nextIndex = contentIndex + 1;
                         if (nextIndex >= entry.content_fields.length) {
@@ -13759,15 +14003,20 @@ Now, you shall respond in the exact format noted above to determine the next cha
              * Displays the raw prompt that would be sent to the AI.
              * Useful for debugging.
              */
-            viewRawPrompt() {
+            async viewRawPrompt() {
                 const state = ReactiveStore.state;
 
                 // 1. Determine who the prompt is for
                 let charId = document.getElementById('ai-character-selector').value;
-                if (charId === 'any') charId = this.determineNextSpeaker(false);
+                if (charId === 'any') {
+                    // Fix: Await the async determination
+                    charId = await this.determineNextSpeaker(false);
+                }
 
                 if (!charId) {
-                    alert("No active AI character found to build a prompt for.");
+                    // If determineNextSpeaker failed or returned null, it handles its own notifications usually.
+                    // But just in case:
+                    console.warn("Could not determine character for Raw Prompt view.");
                     return;
                 }
 
@@ -13776,6 +14025,7 @@ Now, you shall respond in the exact format noted above to determine the next cha
 
                 // 3. Generate Metadata Header for the view
                 let metaInfo = `--- DEBUG INFO ---\n`;
+                metaInfo += `Target Character ID: ${charId}\n`;
                 metaInfo += `Active Provider: ${state.apiProvider}\n`;
 
                 if (state.apiProvider === 'koboldcpp') {
