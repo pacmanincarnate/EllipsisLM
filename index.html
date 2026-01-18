@@ -543,6 +543,22 @@
             animation: pulseOpacity 1.5s infinite;
         }
 
+        @keyframes flashOutline {
+            0% {
+                outline: 2px solid var(--chat-text-color);
+                outline-offset: -2px;
+            }
+
+            100% {
+                outline: 2px solid transparent;
+                outline-offset: -2px;
+            }
+        }
+
+        .flash-outline {
+            animation: flashOutline 0.4s ease-out;
+        }
+
         /* ==========================================================================
            6. CINEMATIC MODE STYLES
            ========================================================================== */
@@ -732,14 +748,13 @@
                         class="bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
                         title="Story Library"
                         style="border-color: color-mix(in srgb, var(--chat-text-color) 50%, transparent); border-width: 2px;">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h7"></path>
-                            <path d="M4 6h16M4 12h16M4 18h7" stroke-linecap="round" stroke-linejoin="round"
-                                stroke-width="2"></path>
-                            <path d="M18 18v-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-                            <path d="M15 12h6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-library-big-icon lucide-library-big">
+                            <rect width="8" height="18" x="3" y="3" rx="1" />
+                            <path d="M7 3v18" />
+                            <path
+                                d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z" />
                         </svg>
                     </button>
 
@@ -749,56 +764,70 @@
                 </div>
 
                 <div class="flex space-x-2">
+
                     <button data-action="quick-create-character"
                         class="bg-gray-700/40 hover:bg-indigo-500/80 text-white font-bold py-2 px-4 rounded-lg"
                         title="Quickly Generate Character from Chat">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z">
-                            </path>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-user-plus-icon lucide-user-plus">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <line x1="19" x2="19" y1="8" y2="14" />
+                            <line x1="22" x2="16" y1="11" y2="11" />
                         </svg>
                     </button>
                     <button data-action="open-modal" data-target="characters-modal"
                         class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg" title="Characters
-					"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A5.965 5.965 0 0112 13a5.965 5.965 0 013 1.803">
-                            </path>
+					"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-users-icon lucide-users">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <path d="M16 3.128a4 4 0 0 1 0 7.744" />
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                            <circle cx="9" cy="7" r="4" />
                         </svg></button>
                     <button data-action="open-modal" data-target="world-map-modal"
                         class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
-                        title="World Map"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m-6 4v.01">
-                            </path>
+                        title="World Map"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418" />
                         </svg></button>
                     <button data-action="open-modal" data-target="knowledge-modal"
                         class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
-                        title="Knowledge"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253z">
-                            </path>
+                        title="Knowledge"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-form-icon lucide-form">
+                            <path d="M4 14h6" />
+                            <path d="M4 2h10" />
+                            <rect x="4" y="18" width="16" height="4" rx="1" />
+                            <rect x="4" y="6" width="16" height="4" rx="1" />
                         </svg></button>
                     <button data-action="check-world-info"
                         class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
-                        title="Update Static Memory"><svg class="w-6 h-6" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
-                            </path>
+                        title="Update Static Memory"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-list-plus-icon lucide-list-plus">
+                            <path d="M16 5H3" />
+                            <path d="M11 12H3" />
+                            <path d="M16 19H3" />
+                            <path d="M18 9v6" />
+                            <path d="M21 12h-6" />
                         </svg></button>
                     <button data-action="open-modal" data-target="settings-modal"
                         class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold py-2 px-4 rounded-lg"
-                        title="Settings"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066 2.573c-.94-1.543.826 3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
-                            </path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg></button>
+                        title="Settings">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-settings2-icon lucide-settings-2">
+                            <path d="M14 17H5" />
+                            <path d="M19 7h-9" />
+                            <circle cx="17" cy="17" r="3" />
+                            <circle cx="7" cy="7" r="3" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -807,10 +836,10 @@
                 <div class="relative" id="hamburger-menu-button-container">
                     <button id="hamburger-menu-button" data-action="toggle-mobile-menu" aria-label="Toggle Menu"
                         class="bg-gray-700/80 hover:bg-gray-600/80 text-white p-2 rounded-lg">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16"></path>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                         </svg>
                     </button>
                     <div id="mobile-menu"
@@ -887,45 +916,62 @@
             </div>
 
             <!-- Chat Input & Controls -->
-            <div id="chat-input-container" class="flex items-start space-x-2 sm:space-x-4"
+            <div id="chat-input-container" class="relative flex flex-shrink-0 space-x-2 sm:space-x-4"
                 style="padding: 1rem; border-top: 1px solid; border-top-color: color-mix(in srgb, var(--chat-text-color) 50%, transparent);">
-                <textarea id="chat-input"
-                    class="flex-grow bg-black/30 border border-gray-800 rounded-lg p-2 color: black"
-                    placeholder="Enter your message..." rows="4"
-                    style="color: var(--chat-text-color); font-family: var(--chat-font-family);"></textarea>
-                <div class="flex flex-col space-y-2" style="width: 8.5rem;">
+
+                <!-- Resizer Handle -->
+                <div id="chat-resizer"
+                    class="absolute top-0 left-0 right-0 h-4 -mt-2 cursor-ns-resize z-50 hover:bg-white/10 transition-colors w-full"
+                    title="Drag to resize / Double-click to reset"></div>
+
+                <!-- Input Wrapper with Bolt Button -->
+                <div class="flex-grow relative">
+                    <textarea id="chat-input"
+                        class="w-full h-full bg-black/30 border border-gray-800 rounded-lg p-2 resize-none"
+                        placeholder="Enter your message..." rows="4"
+                        style="color: var(--chat-text-color); font-family: var(--chat-font-family); padding-right: 2.5rem;"></textarea>
+
+                    <!-- Bolt "Continue" Button -->
+                    <button id="bolt-btn" onclick="NarrativeController.handleBoltAction()"
+                        class="absolute bottom-2 right-2 text-gray-400 hover:text-white transition-colors opacity-50 hover:opacity-100 z-10 p-1 rounded"
+                        title="Continue writing...">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-zap">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="flex flex-col space-y-2" style="width: 6rem;">
                     <select id="ai-character-selector" aria-label="Select Character"
                         class="bg-black/30 border border-gray-600 rounded-lg p-2 w-full mb-2 text-xs truncate"></select>
                     <div class="flex items-center justify-center space-x-1">
                         <button id="primary-action-btn"
-                            class="bg-indigo-600/50 hover:bg-indigo-600/80 text-white font-bold p-2 rounded-lg transition-colors"
-                            title="Send / Write for Me">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="22" y1="2" x2="11" y2="13"></line>
-                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold p-2 rounded-lg transition-colors flex-grow"
+                            title="Send (Empty = AI Reply)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="lucide lucide-message-square-more-icon lucide-message-square-more"
+                                style="display: inline;">
+                                <path
+                                    d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
+                                <path d="M12 11h.01" />
+                                <path d="M16 11h.01" />
+                                <path d="M8 11h.01" />
                             </svg>
                         </button>
 
                         <button id="regen-btn"
-                            class="bg-sky-600/40 hover:bg-sky-600/70 text-white font-bold p-2 rounded-lg transition-colors"
-                            title="Regenerate / New Response">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round">
+                            class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold p-2 rounded-lg transition-colors flex-grow"
+                            title="Regenerate">
+                            <svg class="w-6 h-6 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                                 <path d="M3 3v5h5"></path>
                                 <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
                                 <path d="M16 21h5v-5"></path>
-                            </svg>
-                        </button>
-
-                        <button id="undo-btn"
-                            class="bg-gray-600/40 hover:bg-gray-500/70 text-white font-bold p-2 rounded-lg transition-colors"
-                            title="Undo Last Turn">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M9 14 4 9l5-5" />
-                                <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
                             </svg>
                         </button>
                     </div>
@@ -945,7 +991,14 @@
                 <h2 class="text-2xl font-semibold">Story Library</h2>
                 <div class="flex space-x-2">
                     <button data-action="open-modal" data-target="io-hub-modal"
-                        class="bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg">Manage</button>
+                        class="bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg"
+                        title="Manage / Import / Export">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
+                        </svg>
+                    </button>
 
                     <div class="relative inline-block text-left">
                         <button
@@ -1872,6 +1925,21 @@
                         </div>
                     </label>
                 </div>
+
+                <!-- Auto-Knowledge Toggle -->
+                <div
+                    class="flex items-center justify-between bg-gray-900/30 p-4 rounded-lg border border-gray-700/50 hover:bg-gray-900/40 transition-colors">
+                    <div>
+                        <span class="text-gray-200 font-medium block">Auto-Knowledge Agent</span>
+                        <span class="text-xs text-gray-500">Automatically creates and updates static knowledge.</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="enable-auto-knowledge-toggle" class="sr-only peer">
+                        <div
+                            class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                        </div>
+                    </label>
+                </div>
             </div>
 
             <div class="space-y-3 pt-4">
@@ -1965,8 +2033,9 @@
                         </svg>
                     </summary>
                     <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
-                        <p class="text-gray-400 text-sm mb-3">Used by the AI button on a character's persona. Variable:
-                            <code class="bg-black/40 px-1 rounded text-indigo-300">{concept}</code>
+                        <p class="text-gray-400 text-sm mb-3">Used by the AI button on a character's persona. Variables:
+                            <code class="bg-black/40 px-1 rounded text-indigo-300">{concept}</code>, <code
+                                class="bg-black/40 px-1 rounded text-indigo-300">{name}</code>
                         </p>
                         <textarea id="prompt-persona-gen-input"
                             class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
@@ -2077,9 +2146,9 @@
                     </summary>
                     <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
                         <p class="text-gray-400 text-sm mb-3">Runs in background every 6 turns to generate static
-                            knowledge. Variable:
-                            <code class="bg-black/40 px-1 rounded text-indigo-300">{transcript}</code> (Auto-appended if
-                            missing)
+                            knowledge. Variables:
+                            <code class="bg-black/40 px-1 rounded text-indigo-300">{transcript}</code>,
+                            <code class="bg-black/40 px-1 rounded text-indigo-300">{existing_knowledge}</code>
                         </p>
                         <textarea id="prompt-auto-static-knowledge-input"
                             class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
@@ -2506,6 +2575,63 @@
             class="absolute bottom-6 left-0 right-0 text-center text-white/80 font-bold text-xl drop-shadow-md">
         </div>
     </div>
+    </div>
+
+    <!-- Crop Modal -->
+    <div id="crop-modal"
+        class="fixed inset-0 z-[200] bg-black/90 hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div
+            class="bg-gray-800 rounded-lg p-6 w-full max-w-xl flex flex-col h-[85vh] shadow-2xl border border-gray-700">
+            <h3 class="text-white font-bold mb-4 text-lg">Crop Character Portrait</h3>
+            <p class="text-xs text-gray-400 mb-2">Drag to pan. Scroll or use slider to zoom.</p>
+
+            <div class="flex-grow bg-black/50 relative overflow-hidden flex items-center justify-center border border-gray-600 rounded-lg cursor-move select-none"
+                id="crop-container">
+                <img id="crop-target"
+                    class="max-w-none origin-center pointer-events-none transition-transform duration-75 ease-out"
+                    style="transform: translate(0px, 0px) scale(1);">
+                <!-- Overlay Frame (Variable Aspect Ratio) -->
+                <div id="crop-overlay-frame"
+                    class="absolute pointer-events-none border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.7)] rounded-sm transition-all duration-200"
+                    style="width: 300px; height: 450px;"></div>
+            </div>
+
+            <div class="mt-6 space-y-4">
+                <div class="flex items-center space-x-4">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+                    </svg>
+                    <input type="range" id="crop-scale" min="0.1" max="3" step="0.01" value="1"
+                        class="w-full accent-indigo-500 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div class="flex justify-center gap-2">
+                    <button onclick="CropController.setAspectRatio(300, 450)"
+                        class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">2:3</button>
+                    <button onclick="CropController.setAspectRatio(400, 400)"
+                        class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">1:1</button>
+                    <button onclick="CropController.setAspectRatio(400, 300)"
+                        class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">4:3</button>
+                    <button onclick="CropController.setAspectRatio(480, 270)"
+                        class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">16:9</button>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-700/50">
+                    <button onclick="CropController.cancel()"
+                        class="px-5 py-2.5 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 hover:text-white transition-colors font-medium">Cancel</button>
+                    <button onclick="CropController.confirm()"
+                        class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 font-bold transition-all flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
+                            </path>
+                        </svg>
+                        Crop & Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
 
@@ -2529,7 +2655,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.01.10 - 10:00 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.01.17 - 21:45 CST";
 
 
         /**
@@ -4705,9 +4831,9 @@
              */
             getDefaultUiSettings() {
                 return {
-                    font: "'Inter', sans-serif", backgroundImageURL: '', bubbleOpacity: 0.85,
-                    chatTextColor: '#e5e7eb', characterImageMode: 'none',
-                    backgroundBlur: 5, textSize: 16, bubbleImageSize: 100,
+                    font: "'Inter', sans-serif", backgroundImageURL: '', bubbleOpacity: 0.35,
+                    chatTextColor: '#cdc6b6', characterImageMode: 'none',
+                    backgroundBlur: 3, textSize: 16, bubbleImageSize: 100,
                     showPortraitPanel: true,
                     // ... markdown colors ...
                     md_h1_color: '#818cf8', md_h2_color: '#a5b4fc', md_h3_color: '#c7d2fe',
@@ -4737,7 +4863,7 @@
                     system_prompt: 'You are a master storyteller. Follow instructions precisely.',
                     event_master_base_prompt: 'You are a secret Event Master. Read the chat. Generate a brief, secret instruction for AI characters to introduce a logical but unexpected event.',
                     event_master_prompt: 'You are a secret Event Master. Read the chat. Generate a brief, secret instruction for AI characters to introduce a logical but unexpected event.',
-                    prompt_persona_gen: "Embellish this character concept into a rich, detailed, and compelling persona description, focusing on detailed appearance, personality, goals, relationships, and backstory. CONCEPT: \"{concept}\"",
+                    prompt_persona_gen: "Embellish this character concept into a rich, detailed, and compelling persona description, focusing on detailed appearance, personality, goals, relationships, and backstory.\n\nNAME: \"{name}\"\nCONCEPT: \"{concept}\"",
                     prompt_world_map_gen: "Based on the following story context, generate a genre-appropriate 8x8 grid of interconnected fantasy locations. The central location (4,4) should be a neutral starting point. Attempt to include locations mentioned in the context.\nCONTEXT:\nCHARACTERS:\n{characters}\n\nSTATIC LORE:\n{static}\n\nRECENT EVENTS:\n{recent}\n\nRespond with a valid JSON object: { \"grid\": [ { \"coords\": {\"x\":int, \"y\":int}, \"name\": \"string\", \"description\": \"string (one-line summary)\", \"prompt\": \"string (a rich, detailed paragraph for the AI)\", \"imageUrl\": \"\" } ] }. The grid must contain exactly 64 locations.",
                     prompt_location_gen: "Generate a rich, detailed, and evocative paragraph-long prompt for a fantasy location named '{name}' which is briefly described as '{description}'. This prompt will be given to an AI storyteller to describe the scene.",
                     prompt_entry_gen: "Generate a detailed and informative encyclopedia-style entry for a lore topic titled '{title}'. If relevant, use the following triggers as context: '{triggers}'.",
@@ -4940,9 +5066,10 @@
              * Builds the main prompt for the AI.
              * @param {string} charToActId - The ID of the character acting.
              * @param {boolean} [isForUser=false] - Whether the prompt is for the user.
+             * @param {Array|null} [historyOverride=null] - Optional override for chat history (e.g. for regeneration).
              * @returns {string} - The constructed prompt.
              */
-            buildPrompt(charToActId, isForUser = false) {
+            buildPrompt(charToActId, isForUser = false, historyOverride = null) {
                 const state = StateManager.getState();
                 const charToAct = state.characters.find(c => c.id === charToActId);
                 if (!charToAct) return "";
@@ -5010,7 +5137,7 @@
                             return true;
                         })
                         .map(c => `### Character: ${c.name}\n\n${replacer(c.description)}`)
-                        .join('\n\n'), history: this._getSmartHistorySlice(state.chat_history || [], 8000),
+                        .join('\n\n'), history: this._getSmartHistorySlice(historyOverride || state.chat_history || [], 8000),
                     charToAct: charToAct,
                     isForUser: isForUser,
                     location_context: locationContext,
@@ -6045,13 +6172,22 @@
             async _parseBYAF(file, skipImages) {
                 const zip = await JSZip.loadAsync(file);
                 const characterFile = zip.file(/character\.json$/i)[0];
-                const scenarioFile = zip.file(/scenario\d*\.json$/i)[0];
+                const scenarioFiles = zip.file(/scenario\d*\.json$/i);
+
                 const imageFile = zip.file(/\.png$/i)[0];
-                if (!characterFile || !scenarioFile) throw new Error("Archive is missing character.json or scenario.json.");
-                const byafData = {
-                    character: JSON.parse(await characterFile.async('string')),
-                    scenario: JSON.parse(await scenarioFile.async('string')),
-                };
+                if (!characterFile) throw new Error("Archive is missing character.json.");
+
+                const characterData = JSON.parse(await characterFile.async('string'));
+                const scenariosData = [];
+
+                if (scenarioFiles && scenarioFiles.length > 0) {
+                    for (const f of scenarioFiles) {
+                        try {
+                            scenariosData.push(JSON.parse(await f.async('string')));
+                        } catch (e) { console.warn("Failed to parse a scenario file", e); }
+                    }
+                }
+
                 let imageBlob = null;
                 if (!skipImages && imageFile) {
                     const imageFileBlob = await imageFile.async('blob');
@@ -6067,7 +6203,7 @@
                     } catch (e) { console.warn("Failed to extract BYAF background:", e); }
                 }
 
-                return { story: this._convertBYAFtoEllipsis(byafData), imageBlob };
+                return { story: this._convertBYAFtoEllipsis(characterData, scenariosData), imageBlob };
             },
 
             /**
@@ -6076,19 +6212,26 @@
              * @returns {Object} - The Ellipsis story object.
              * @private
              */
-            _convertBYAFtoEllipsis(byafData) {
-                const { character, scenario } = byafData;
+            _convertBYAFtoEllipsis(characterData, scenariosData) {
+                const character = characterData;
                 const story = this._createEmptyEllipsisStory();
                 story.name = character.displayName || character.name || "Imported Character";
                 story.tags = character.tags || [];
 
-                const userChar = { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "User.", model_instructions: "Act as User.", is_user: true, is_active: true, image_url: '', tags: [], is_narrator: false };
+                const userChar = {
+                    id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "User.",
+                    model_instructions: "Act as User.", is_user: true, is_active: true, image_url: '', tags: [], is_narrator: false
+                };
+
+                // Use first scenario for default model instructions match
+                const firstScenarioRaw = (scenariosData && scenariosData.length > 0) ? scenariosData[0] : {};
+
                 const aiChar = {
                     id: UTILITY.uuid(),
                     name: character.displayName || character.name,
                     description: character.persona || "",
                     short_description: (character.persona || "").split('.')[0] + '.',
-                    model_instructions: scenario.formattingInstructions || "Act as {character}.",
+                    model_instructions: firstScenarioRaw.formattingInstructions || "Act as {character}.",
                     image_url: '',
                     extra_portraits: [],
                     tags: character.tags || [],
@@ -6110,7 +6253,6 @@
                     const lower = name.toLowerCase();
                     if (nameToId[lower]) return nameToId[lower];
 
-                    // Create Ghost
                     const newId = UTILITY.uuid();
                     const newChar = {
                         id: newId, name: name, description: "Imported character.", short_description: "Imported.",
@@ -6121,90 +6263,160 @@
                     return newId;
                 };
 
-                // Parse Chat History / Examples
+                /**
+                 * Parses BYAF messages (both exampleMessages and narrative messages)
+                 * @param {Array} msgs - The messages array
+                 * @param {boolean} isHidden - Whether these are hidden example turns
+                 * @returns {Array} - The parsed turns
+                 */
                 const parseMessages = (msgs, isHidden) => {
                     const output = [];
                     if (!msgs) return output;
 
-                    // BYAF/SillyTavern text format often is "Name: Message" or just Message
-                    // If it's structured data (BYAF), it might have characterID or name fields?
-                    // Standard BYAF scenario.exampleMessages is array of { text: "..." }
-
                     msgs.forEach(msg => {
-                        let content = msg.text || "";
-                        let charId = aiChar.id; // Default to main char
+                        let content = "";
+                        let charId = aiChar.id;
 
-                        // Regex for "Name: Content" patterns common in logs
-                        // We look for the start of the string
-                        const match = content.match(/^(.+?):/);
-                        if (match) {
-                            const name = match[1].trim();
-                            // Special BYAF placeholders
-                            if (name === '#{user}' || name === '{{user}}') charId = userChar.id;
-                            else if (name === '#{character}' || name === '{{char}}') charId = aiChar.id;
-                            else {
-                                // It's a named speaker (e.g. "Alice: Hello")
-                                charId = resolveCharacter(name);
+                        // 1. Extract content and determine speaker based on msg structure
+                        if (msg.type === 'human') {
+                            content = msg.text || "";
+                            charId = userChar.id;
+                        } else if (msg.type === 'ai') {
+                            // Find the active output or use the last one
+                            if (msg.outputs && msg.outputs.length > 0) {
+                                let activeOutput = msg.outputs.find(o => o.activeTimestamp);
+                                if (!activeOutput) activeOutput = msg.outputs[msg.outputs.length - 1];
+                                content = activeOutput.text || "";
+                            } else {
+                                content = msg.text || "";
                             }
-                            // Strip the prefix for clean display
-                            content = content.substring(match[0].length).trim();
+                            charId = aiChar.id;
+                        } else {
+                            // Standard message object (used in exampleMessages)
+                            content = msg.text || "";
+                            charId = aiChar.id; // Default to AI
                         }
 
-                        output.push({
-                            character_id: charId,
-                            content: content,
-                            type: 'chat',
-                            emotion: 'neutral',
-                            timestamp: new Date().toISOString(),
-                            isHidden: isHidden
-                        });
+                        // 2. Further refine speaker via name prefixes if present (common in multi-char stories)
+                        const match = content.match(/^(.+?):/);
+                        if (match) {
+                            const foundName = match[1].trim();
+                            if (foundName === '#{user}' || foundName === '{{user}}') {
+                                charId = userChar.id;
+                                content = content.substring(match[0].length).trim();
+                            } else if (foundName === '#{character}' || foundName === '{{char}}') {
+                                charId = aiChar.id;
+                                content = content.substring(match[0].length).trim();
+                            } else if (foundName.match(/^[a-zA-Z0-9_\s]{2,20}$/)) { // Heuristic: Looks like a name?
+                                // Only process as name prefix if it's not starting with # or {
+                                charId = resolveCharacter(foundName);
+                                content = content.substring(match[0].length).trim();
+                            }
+                        }
+
+                        // 3. Strip Trailing Prompts (common in BYAF/SillyTavern exports to prompt next speaker)
+                        const trailingTokens = [
+                            '#{user}:', '{{user}}:', '{{user}}', '#{character}:', '{{char}}:', '{{char}}',
+                            '#You:', 'You:', '#{user}', '#{character}'
+                        ];
+                        // Also strip user character's specific name if it's a prompt
+                        if (userChar.name) {
+                            trailingTokens.push(`${userChar.name}:`, `#${userChar.name}:`);
+                        }
+
+                        let stripped = true;
+                        while (stripped) {
+                            stripped = false;
+                            const trimmed = content.trim();
+                            for (const token of trailingTokens) {
+                                if (trimmed.endsWith(token)) {
+                                    content = trimmed.slice(0, -token.length).trim();
+                                    stripped = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (content.trim()) {
+                            output.push({
+                                character_id: charId,
+                                content: content,
+                                type: 'chat',
+                                emotion: 'neutral',
+                                timestamp: msg.createdAt || new Date().toISOString(),
+                                isHidden: isHidden
+                            });
+                        }
                     });
                     return output;
                 };
 
-                const exampleDialogue = parseMessages(scenario.exampleMessages, true);
+                // De-duplication map for Scenarios
+                const scenarioMessageToId = new Map();
 
-                // Static Entries
-                const staticEntries = [];
-                if (scenario.narrative) {
-                    staticEntries.push({ id: UTILITY.uuid(), title: "Starting Scenario", content: scenario.narrative });
+                // Process Scenarios
+                if (!scenariosData || scenariosData.length === 0) {
+                    scenariosData = [{ title: "Default", prompt: "Interact with the character.", exampleMessages: [] }];
                 }
 
-                // Scenarios
-                const activeIDs = story.characters.map(c => c.id);
-                const firstMes = (scenario.firstMessages && scenario.firstMessages[0]?.text) || `The story of ${aiChar.name} begins.`;
+                scenariosData.forEach((scenario, index) => {
+                    const exampleDialogue = parseMessages(scenario.exampleMessages, true);
+                    const staticEntries = [];
+                    if (scenario.narrative) {
+                        staticEntries.push({ id: UTILITY.uuid(), title: "Scenario Context", content: scenario.narrative });
+                    }
 
-                story.scenarios.push({
-                    id: UTILITY.uuid(),
-                    name: "Imported Start",
-                    message: firstMes,
-                    active_character_ids: activeIDs,
-                    dynamic_entries: [], // (Populate from loreItems if present)
-                    example_dialogue: exampleDialogue,
-                    static_entries: staticEntries,
-                    worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] },
-                    prompts: UTILITY.getDefaultSystemPrompts()
+                    const firstMes = (scenario.firstMessages && scenario.firstMessages[0]?.text) || `The story begins.`;
+
+                    // SCENARIO DE-DUPLICATION:
+                    // If we have seen this exact first message before, we associate the narrative with the existing scenario.
+                    let scenarioId = scenarioMessageToId.get(firstMes);
+
+                    if (!scenarioId) {
+                        const newScenario = {
+                            id: UTILITY.uuid(),
+                            name: scenario.title || `Scenario ${index + 1}`,
+                            message: firstMes,
+                            active_character_ids: story.characters.map(c => c.id),
+                            dynamic_entries: [],
+                            example_dialogue: exampleDialogue,
+                            static_entries: staticEntries,
+                            worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] },
+                            prompts: UTILITY.getDefaultSystemPrompts()
+                        };
+                        story.scenarios.push(newScenario);
+                        scenarioId = newScenario.id;
+                        scenarioMessageToId.set(firstMes, scenarioId);
+                    }
+
+                    // NARRATIVE CREATION (One per unique chat history)
+                    const narrative = this._createEmptyEllipsisNarrative(scenario.title || "Imported Chat");
+                    const activeScenario = story.scenarios.find(s => s.id === scenarioId);
+                    narrative.active_character_ids = activeScenario.active_character_ids;
+
+                    // 1. Initial Message
+                    if (activeScenario.message) {
+                        narrative.state.chat_history.push({
+                            character_id: aiChar.id, content: activeScenario.message, type: 'chat',
+                            emotion: 'neutral', timestamp: new Date().toISOString(), isHidden: false
+                        });
+                        narrative.state.messageCounter = 1;
+                    }
+
+                    // 2. Chat history from 'messages' array (Unique to Narrative)
+                    if (scenario.messages && scenario.messages.length > 0) {
+                        const history = parseMessages(scenario.messages, false);
+                        history.forEach(turn => {
+                            narrative.state.chat_history.push(turn);
+                            narrative.state.messageCounter++;
+                        });
+                    }
+
+                    narrative.state.static_entries = JSON.parse(JSON.stringify(activeScenario.static_entries));
+                    story.narratives.push(narrative);
                 });
 
-                // Narrative
-                const narrative = this._createEmptyEllipsisNarrative("Imported Chat");
-                narrative.active_character_ids = activeIDs;
-                narrative.state.static_entries = JSON.parse(JSON.stringify(staticEntries));
-                narrative.state.chat_history.push(...exampleDialogue);
-
-                if (firstMes) {
-                    narrative.state.chat_history.push({
-                        character_id: aiChar.id,
-                        content: firstMes,
-                        type: 'chat',
-                        emotion: 'neutral',
-                        timestamp: new Date().toISOString(),
-                        isHidden: false
-                    });
-                    narrative.state.messageCounter = 1;
-                }
-
-                // Lore Items (Dynamic Entries)
+                // Lore Items / Global Dynamic Entries
                 if (character.loreItems) {
                     story.dynamic_entries = character.loreItems.map(item => ({
                         id: UTILITY.uuid(),
@@ -6216,7 +6428,6 @@
                     }));
                 }
 
-                story.narratives.push(narrative);
                 return story;
             },
 
@@ -6983,10 +7194,17 @@
                     }
                 } catch (e) { console.warn("Chat Render Error (Image Gen):", e); }
 
-                // HTML Container (Single line to prevent pre-wrap issues)
+                // Bubble Body with ClickHandler for Version Cycling
+                // We add a data-attribute to indicate if it has versions for optional CSS cues
+                const hasVersions = msg.versions && msg.versions.length > 1;
+                // Version Hint moved to Header
+                const versionHint = hasVersions
+                    ? DOM.html`<span id="version-hint-${index}" class="text-[12px] text-gray-500 ml-2 select-none self-center" title="Click bubble to view ${msg.versions.length} versions">v${(msg.currentVersion || 0) + 1}/${msg.versions.length}</span>`
+                    : DOM.html`<span id="version-hint-${index}"></span>`;
+
                 return DOM.html`
             <div class="chat-bubble-container ${msg.isNew ? 'new-message' : ''}" data-message-index="${index}">
-                <div class="bubble-header">
+                <div class="bubble-header flex items-baseline">
                      <p class="font-bold text-sm cursor-pointer hover:underline decoration-dotted underline-offset-4" 
                         ${DOM.unsafe(characterNameColor)}
                         data-action="open-character-detail" 
@@ -6994,15 +7212,22 @@
                         title="Open Character Details">
                         ${character.name}
                      </p>
-                     <span class="timestamp text-xs text-gray-500">${timestamp}</span>
-                     <div class="action-btn-group flex ml-2 space-x-4">
+                     ${versionHint}
+                     <span class="timestamp text-xs text-gray-500 ml-2">${timestamp}</span>
+                     <div class="action-btn-group flex ml-auto space-x-4 pl-2">
                         ${DOM.unsafe(imageGenBtn)}
                         <button data-action="create-static-from-message" data-index="${index}" class="text-gray-400 hover:text-emerald-300" title="Create Static Memory"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></button>
                         <button data-action="chat-edit" data-index="${index}" class="text-gray-400 hover:text-white" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
                         <button data-action="confirm-delete-message" data-index="${index}" class="text-gray-400 hover:text-red-400" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                     </div>
                 </div>
-                <div class="bubble-body rounded-lg px-3 py-2" style="${DOM.unsafe(bubbleStyle)}"><div id="message-content-${index}" class="whitespace-pre-wrap" style="color: ${state.chatTextColor}; font-family: ${state.font};">${contentHTML}</div></div></div>`;
+                <div class="bubble-body rounded-lg px-3 py-2 cursor-pointer transition-all duration-200 relative" 
+                     style="${DOM.unsafe(bubbleStyle)}" 
+                     onclick="NarrativeController.cycleMessageVersion(${index})"
+                     title="${hasVersions ? 'Click to cycle versions' : ''}">
+                     <div id="message-content-${index}" class="whitespace-pre-wrap relative" style="color: ${state.chatTextColor}; font-family: ${state.font};">${contentHTML}</div>
+                </div>
+            </div>`;
             },
 
             /**
@@ -8041,144 +8266,17 @@
 
 
             /**
-             * Simulates a streaming response from the AI.
-             * Updates the chat UI character by character.
+             * Processes and displays the full response from the AI immediately.
+             * (Formerly startStreamingResponse, streaming effect removed per user request).
              * @param {string} charId - The ID of the speaking character.
-             * @param {string} fullText - The full text to stream.
+             * @param {string} fullText - The full text to display.
              * @param {string} emotion - The emotion of the character.
+             * @param {number|null} targetMessageIndex - If set, updates an existing message (Versioning support).
              */
-            startStreamingResponse(charId, fullText, emotion) {
-                if (this.RUNTIME.streamingInterval) clearInterval(this.RUNTIME.streamingInterval);
-
-                const state = ReactiveStore.state;
-                const chatWindow = document.getElementById('chat-window');
-
-                // 1. LOCK THE DB
-                if (typeof ReactiveStore.pauseSaving === 'function') {
-                    ReactiveStore.pauseSaving();
+            startStreamingResponse(charId, fullText, emotion, targetMessageIndex = null) {
+                if (typeof NarrativeController !== 'undefined') {
+                    NarrativeController.startStreamingResponse(charId, fullText, emotion, targetMessageIndex);
                 }
-
-                // 2. Create the "Empty" Message in State
-                const messageIndex = state.chat_history.length;
-                const newMessage = {
-                    character_id: charId,
-                    content: "",
-                    type: 'chat',
-                    emotion: emotion,
-                    timestamp: new Date().toISOString(),
-                    isNew: true
-                };
-
-                // Suppress full re-render (Prevent Start Blink)
-                this.RUNTIME.suppressChatRender = true;
-                state.chat_history.push(newMessage);
-                this.RUNTIME.suppressChatRender = false;
-
-                // Manually append the new bubble
-                const newBubbleHTML = UIComponents.MessageBubble(newMessage, messageIndex, state);
-                if (chatWindow) {
-                    chatWindow.insertAdjacentHTML('beforeend', newBubbleHTML.toString());
-                }
-
-                // 3. Locate the DOM Element
-                const messageContentEl = document.getElementById(`message-content-${messageIndex}`);
-                const bubbleEl = messageContentEl ? messageContentEl.closest('.chat-bubble-container') : null;
-
-                if (!messageContentEl) {
-                    if (typeof ReactiveStore.resumeSaving === 'function') ReactiveStore.resumeSaving();
-                    return;
-                }
-
-                // 4. The Animation Loop
-                const words = fullText.split(/(\s+)/);
-                let currentText = "";
-                let wordIndex = 0;
-
-                this.RUNTIME.streamingInterval = setInterval(() => {
-                    if (wordIndex < words.length) {
-                        currentText += words[wordIndex];
-
-                        const styledContent = currentText.replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`);
-                        const fullHTML = DOM.unsafe(marked.parse(styledContent || ''));
-
-                        let finalHTML = fullHTML.toString();
-                        const character = state.characters.find(c => c.id === charId);
-
-                        if (state.characterImageMode === 'bubble' && character) {
-                            const imgSrc = this.getPortraitSrc(character, emotion);
-                            if (imgSrc) finalHTML = `<img src="${imgSrc}" class="bubble-char-image">${finalHTML}`;
-                        }
-
-                        messageContentEl.innerHTML = finalHTML;
-                        wordIndex++;
-                    } else {
-                        // 5. FINISH: Commit Data
-                        clearInterval(this.RUNTIME.streamingInterval);
-                        this.RUNTIME.streamingInterval = null;
-
-                        // FIX: Keep suppression ON during post-processing
-                        this.RUNTIME.suppressChatRender = true;
-
-                        // Update the TRUE state now that we are done
-                        state.chat_history[messageIndex].content = fullText;
-                        state.chat_history[messageIndex].isNew = false;
-
-                        // Increment Counter & Check for Static Knowledge (AI Turn)
-                        state.messageCounter = (state.messageCounter || 0) + 1;
-                        if (typeof NarrativeController !== 'undefined') {
-                            NarrativeController.checkAutoStaticKnowledge();
-                        }
-
-                        // Manually clean up the 'new-message' class from the DOM
-                        // Since we are skipping the re-render, we must update the class manually
-                        if (bubbleEl) bubbleEl.classList.remove('new-message');
-
-                        // 6. UNLOCK DB (Triggers save, but render is still suppressed)
-                        if (typeof ReactiveStore.resumeSaving === 'function') {
-                            ReactiveStore.resumeSaving();
-                        }
-
-                        // Check for Dynamic Entries (May modify state)
-                        // We keep suppression ON so if a lore entry is added, we don't blink the whole chat.
-                        // Note: If a lore entry IS added, it won't appear until the next interaction. 
-                        // This is a trade-off for smoothness, but acceptable for "hidden" lore. 
-                        // If you want Lore Reveals to appear instantly, we would need to manually append them here too.
-                        let structureChanged = false;
-                        if (typeof NarrativeController !== 'undefined') {
-                            structureChanged = NarrativeController.checkDynamicEntryTriggers();
-                        }
-
-                        // If dynamic entries modified the array structure (splicing out old entries),
-                        // the DOM indices are now stale. We MUST force a re-render to align them.
-                        if (structureChanged) {
-                            this.RUNTIME.suppressChatRender = false;
-                            this.renderChat(); // Force update to fix edit buttons
-                        }
-
-                        // Final Scroll Logic
-                        // Final Scroll Logic
-                        if (structureChanged) {
-                            // If structure changed, DOM was rebuilt. Re-acquire bubble.
-                            const msgEl = document.getElementById(`message-content-${messageIndex}`);
-                            if (msgEl) bubbleEl = msgEl.closest('.chat-bubble-container');
-                        }
-
-                        if (bubbleEl) {
-                            // Force alignment to the top of the message
-                            // Use 'auto' (instant) to prevent browser fighting
-                            window.requestAnimationFrame(() => {
-                                bubbleEl.scrollIntoView({ behavior: 'auto', block: 'start' });
-                                setTimeout(() => {
-                                    this.RUNTIME.suppressChatRender = false;
-                                }, 100);
-                            });
-                        } else {
-                            this.RUNTIME.suppressChatRender = false;
-                            const chatWindow = document.getElementById('chat-window');
-                            if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
-                        }
-                    }
-                }, 5);
             },
 
             /**
@@ -8883,9 +8981,14 @@
                             <div class="flex items-start gap-4 mt-2">
                                 ${this.getPortraitSrc(char) ? DOM.html`<div class="w-64 h-64 flex-shrink-0 bg-gray-800 rounded overflow-hidden border border-gray-600 relative group">
                                     <img src="${this.getPortraitSrc(char)}" class="w-full h-full object-cover">
-                                    ${canGenImage ? DOM.html`<button onclick="NarrativeController.openCharacterImageGenerator('${char.id}', 'primary')" class="absolute bottom-2 right-2 bg-indigo-600/90 hover:bg-indigo-500 text-white text-xs font-bold p-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity" title="Generate New">
-                                        ${this.getAIGenIcon()}
-                                    </button>` : ''}
+                                    <div class="absolute bottom-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onclick="NarrativeController.openImageCropper('${char.id}', 'primary')" class="bg-black/70 hover:bg-black text-white text-xs font-bold p-1 px-2 rounded backdrop-blur-sm" title="Crop Image">
+                                            Crop
+                                        </button>
+                                        ${canGenImage ? DOM.html`<button onclick="NarrativeController.openCharacterImageGenerator('${char.id}', 'primary')" class="bg-indigo-600/90 hover:bg-indigo-500 text-white text-xs font-bold p-1 rounded shadow-lg" title="Generate New">
+                                            ${this.getAIGenIcon()}
+                                        </button>` : ''}
+                                    </div>
                                 </div>` : ''}
                                 <div class="flex-grow flex flex-row items-center gap-2">
                                     <input type="file" accept="image/*" data-action-change="upload-local-image" data-id="${char.id}" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
@@ -9371,7 +9474,7 @@
                 button.classList.remove('bg-indigo-600/50', 'hover:bg-indigo-600/80');
                 button.classList.add('bg-red-700/60', 'hover:bg-red-700/80');
                 // FIX: Updated Stop Icon (Rounded Square)
-                button.innerHTML = DOM.unsafe(`<svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>`);
+                button.innerHTML = DOM.unsafe(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-square-icon lucide-square" style="display: inline;"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>`);
 
                 setTimeout(() => {
                     button.onclick = () => NarrativeController.stopGeneration();
@@ -9379,17 +9482,17 @@
             },
 
             /**
-             * Updates the primary action button to "Send / Write for Me" mode.
+             * Updates the primary action button to "Send / Generate Next" mode.
              */
             setButtonToSendMode() {
                 const button = document.getElementById('primary-action-btn');
                 if (!button) return;
                 button.onclick = () => NarrativeController.handlePrimaryAction();
-                button.title = "Send / Write for Me";
+                button.title = "Send / Generate Next";
                 button.classList.remove('bg-red-700/60', 'hover:bg-red-700/80');
-                button.classList.add('bg-indigo-600/50', 'hover:bg-indigo-600/80');
+                button.classList.add('bg-gray-700/40', 'hover:bg-gray-600/80');
                 // FIX: Updated Send Icon (Paper Plane)
-                button.innerHTML = DOM.unsafe(`<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`);
+                button.innerHTML = DOM.unsafe(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square-more-icon lucide-message-square-more" style="display: inline;"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path d="M12 11h.01"/><path d="M16 11h.01"/><path d="M8 11h.01"/></svg>`);
             },
         };
 
@@ -9916,6 +10019,16 @@
                 if (document.getElementById('prompt-entry-gen-input')) setListener('prompt-entry-gen-input', 'prompt_entry_gen');
                 if (document.getElementById('prompt-location-memory-gen-input')) setListener('prompt-location-memory-gen-input', 'prompt_location_memory_gen');
                 if (document.getElementById('prompt-auto-static-knowledge-input')) setListener('prompt-auto-static-knowledge-input', 'prompt_auto_static_knowledge');
+
+                // Auto-Knowledge Toggle
+                const autoKnowToggle = document.getElementById('enable-auto-knowledge-toggle');
+                if (autoKnowToggle) {
+                    autoKnowToggle.checked = state.enableAutoStaticKnowledge !== false; // Default true
+                    autoKnowToggle.addEventListener('change', (e) => {
+                        state.enableAutoStaticKnowledge = e.target.checked;
+                        if (typeof ReactiveStore.forceSave === 'function') ReactiveStore.forceSave();
+                    });
+                }
 
                 // Toggle for Analysis
                 const analysisToggle = document.getElementById('enable-analysis-toggle');
@@ -12406,15 +12519,122 @@
 
             /**
              * Handles the primary action button (Send/Write).
-             * Delegates to writeForMe or sendMessage based on input.
+             * Delegates to triggerAIResponse (if empty) or sendMessage (if text present).
              */
             handlePrimaryAction() {
                 if (!StateManager.getLibrary().active_story_id) {
                     UIManager.showConfirmationModal("Please load or create a story from the Story Library first.", () => AppController.openModal('story-library-modal'));
                     return;
                 }
+
+                // New logic: Empty = Trigger AI. Text = Send.
                 const input = document.getElementById('chat-input');
-                input.value.trim() === '' ? this.writeForMe() : this.sendMessage();
+                if (input.value.trim() === '') {
+                    this.triggerAIResponse(null); // Pass turn to AI
+                } else {
+                    this.sendMessage();
+                }
+            },
+
+            /**
+             * Handles the "Bolt" button action (Continue Writing).
+             * Sends the current input + history to AI to complete the sentence.
+             */
+            async handleBoltAction() {
+                if (!StateManager.getLibrary().active_story_id) return;
+                const input = document.getElementById('chat-input');
+                const userText = input.value;
+
+                // Show loading state
+                const boltBtn = document.getElementById('bolt-btn');
+                const originalIcon = boltBtn ? boltBtn.innerHTML : '';
+                if (boltBtn) {
+                    boltBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                    boltBtn.disabled = true;
+                }
+
+                try {
+                    const state = ReactiveStore.state;
+                    const userChar = state.characters.find(c => c.is_user);
+                    if (!userChar) {
+                        UIManager.showNotification("User character not found. Set a character as 'User' in the roster.", "warning");
+                        return;
+                    }
+
+                    // 1. Replacer for placeholders (Mirroring PromptBuilder)
+                    const replacer = (text) => {
+                        if (typeof text !== 'string') return '';
+                        return text.replace(/{character}/g, userChar.name).replace(/{user}/g, userChar.name);
+                    };
+
+                    // 2. Build Knowledge Context (World + Location)
+                    let knowledge = (state.static_entries || [])
+                        .map(e => `### ${e.title}\n${replacer(e.content)}`)
+                        .join('\n\n');
+
+                    let locationContext = '';
+                    if (state.worldMap && state.worldMap.grid.length > 0) {
+                        const { grid, currentLocation } = state.worldMap;
+                        const currentLoc = grid.find(l => l.coords.x === currentLocation.x && l.coords.y === currentLocation.y);
+                        if (currentLoc && currentLoc.name) {
+                            locationContext = `CURRENT LOCATION: ${currentLoc.name}\n${currentLoc.prompt || '(No detailed description available.)'}\n\n`;
+                            if (currentLoc.local_static_entries && currentLoc.local_static_entries.length > 0) {
+                                locationContext += "--- LOCATION-SPECIFIC KNOWLEDGE ---\n" +
+                                    currentLoc.local_static_entries.map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`).join('\n\n') + "\n\n";
+                            }
+                        }
+                    }
+
+                    // 3. History (Last 20 messages for context)
+                    const history = state.chat_history.slice(-20)
+                        .filter(m => m.type === 'chat' && !m.isHidden)
+                        .map(m => {
+                            const char = state.characters.find(c => c.id === m.character_id);
+                            return `[${char ? char.name : 'Unknown'}:]\n${m.content}`;
+                        })
+                        .join('\n\n');
+
+                    // 4. Construct Prompt
+                    let prompt = `${replacer(userChar.model_instructions || state.system_prompt)}\n\n`;
+                    if (locationContext) prompt += `## LOCATION CONTEXT\n${locationContext}\n`;
+                    if (knowledge) prompt += `## WORLD KNOWLEDGE\n${knowledge}\n\n`;
+                    prompt += `## RECENT CONVERSATION\n${history}\n\n`;
+
+                    if (userText.trim().length > 0) {
+                        prompt += `Begin your response with the following and continue writing for ${userChar.name}:\n${userText}\n\n[${userChar.name}: ] `;
+                    } else {
+                        prompt += `Generate the next creative response for ${userChar.name}. Stay in character.\n\n[${userChar.name}: ] `;
+                    }
+
+                    // 5. Call AI
+                    const continuation = await APIService.callAI(prompt, false);
+
+                    // 6. Append logic
+                    if (continuation) {
+                        let finalResult = continuation.trim();
+                        // Strip echoed prefix if the model repeats it (common for some chat models)
+                        if (userText.trim() && finalResult.toLowerCase().startsWith(userText.trim().toLowerCase())) {
+                            finalResult = finalResult.substring(userText.trim().length).trim();
+                        }
+
+                        // Add spacing if needed
+                        const separator = (input.value.length > 0 && !input.value.endsWith(' ')) ? ' ' : '';
+                        input.value = input.value + separator + finalResult;
+                        input.focus();
+
+                        // Trigger auto-expand if implementation exists
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+
+                } catch (e) {
+                    console.error("Bolt Action Failed:", e);
+                    UIManager.showNotification("Failed to continue text.", "error");
+                } finally {
+                    if (boltBtn) {
+                        boltBtn.innerHTML = originalIcon;
+                        boltBtn.disabled = false;
+                    }
+                }
             },
             /**
              * Pure Generation Function (Reused by Quick Create & Story Architect).
@@ -12545,6 +12765,9 @@
              */
             async checkAutoStaticKnowledge() {
                 const state = ReactiveStore.state;
+                // Check toggle (Default to true if undefined)
+                if (state.enableAutoStaticKnowledge === false) return;
+
                 if (state.messageCounter > 0 && state.messageCounter % 6 === 0) {
                     const history = state.chat_history;
                     // Get last 6 chat messages
@@ -12672,76 +12895,204 @@
                 // 5. Cleanup / Auto-Save logic is handled by ReactiveStore
             },
 
+            // --- Streaming & UI ---
+
             /**
-             * Triggers the AI to write a message on behalf of the user.
-             * Uses a placeholder animation during generation.
+             * Processes and displays the full response from the AI immediately.
+             * (Formerly startStreamingResponse, streaming effect removed per user request).
+             * @param {string} charId - The ID of the speaking character.
+             * @param {string} fullText - The full text to display.
+             * @param {string} emotion - The emotion of the character.
+             * @param {number|null} targetMessageIndex - If set, updates an existing message (Versioning support).
              */
-            async writeForMe() {
-                if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
-                // Clear errors here too
-                this.clearSystemErrors();
+            startStreamingResponse(charId, fullText, emotion, targetMessageIndex = null) {
+                if (this.RUNTIME.streamingInterval) clearInterval(this.RUNTIME.streamingInterval);
+                this.RUNTIME.streamingInterval = null;
+
                 const state = ReactiveStore.state;
-                const userChar = state.characters.find(c => c.is_user);
-                if (!userChar) return;
-                const input = document.getElementById('chat-input');
 
-                UIManager.setButtonToStopMode();
-                this.RUNTIME.activeRequestAbortController = new AbortController();
-
-                // Start Placeholder Animation
-                // Cycles through: "." -> ". ." -> ". . ."
-                let dotFrame = 0;
-                input.placeholder = ".";
-
-                this.RUNTIME.placeholderInterval = setInterval(() => {
-                    dotFrame = (dotFrame + 1) % 3;
-                    // Create string based on frame: 0=".", 1=". .", 2=". . ."
-                    input.placeholder = Array(dotFrame + 1).fill(".").join(" ");
-                }, 500);
-
-                try {
-                    const prompt = PromptBuilder.buildPrompt(userChar.id, true);
-                    const response = await APIService.callAI(prompt, false, this.RUNTIME.activeRequestAbortController.signal);
-                    input.value = response;
-                } catch (error) {
-                    if (error.name === 'AbortError') console.log("Write For Me stopped.");
-                    else console.error("Write for Me failed:", error);
-                } finally {
-                    // Stop Animation & Restore Original Text
-                    if (this.RUNTIME.placeholderInterval) {
-                        clearInterval(this.RUNTIME.placeholderInterval);
-                        this.RUNTIME.placeholderInterval = null;
-                    }
-                    input.placeholder = "Enter your message...";
-
-                    UIManager.setButtonToSendMode();
-                    this.RUNTIME.activeRequestAbortController = null;
+                // 1. LOCK THE DB (Prevent intermediate saves during state mutation)
+                if (typeof ReactiveStore.pauseSaving === 'function') {
+                    ReactiveStore.pauseSaving();
                 }
+
+                let messageIndex;
+                let newMessage;
+
+                if (targetMessageIndex !== null && state.chat_history[targetMessageIndex]) {
+                    // VERSIONING PATH: Update Existing Message
+                    messageIndex = targetMessageIndex;
+                    newMessage = state.chat_history[messageIndex];
+
+                    // Initialize versions if missing
+                    if (!newMessage.versions) {
+                        newMessage.versions = [{ content: newMessage.content, emotion: newMessage.emotion }];
+                        newMessage.currentVersion = 0;
+                    }
+
+                    // Push NEW version immediately
+                    newMessage.versions.push({ content: fullText, emotion: emotion });
+                    newMessage.currentVersion = newMessage.versions.length - 1;
+
+                    // Update main display fields
+                    newMessage.content = fullText;
+                    newMessage.emotion = emotion;
+                    newMessage.timestamp = new Date().toISOString();
+                    newMessage.isNew = false;
+                } else {
+                    // STANDARD PATH: Create New Message
+                    messageIndex = state.chat_history.length;
+                    newMessage = {
+                        character_id: charId,
+                        content: fullText,
+                        type: 'chat',
+                        emotion: emotion,
+                        timestamp: new Date().toISOString(),
+                        isNew: true,
+                        versions: [{ content: fullText, emotion: emotion }],
+                        currentVersion: 0
+                    };
+
+                    state.chat_history.push(newMessage);
+
+                    // Increment Counter (Only on NEW messages)
+                    state.messageCounter = (state.messageCounter || 0) + 1;
+                }
+
+                // 2. Render UI
+                // We use UIManager.renderChat() to ensure everything is in sync
+                UIManager.renderChat();
+
+                // 3. Post-Processing
+                // Check if it's time to generate static knowledge (every 6 messages)
+                if (targetMessageIndex === null && typeof NarrativeController !== 'undefined') {
+                    NarrativeController.checkAutoStaticKnowledge();
+                }
+
+                // Check for Dynamic Entries (Revealed Lore)
+                if (typeof NarrativeController !== 'undefined') {
+                    const structureChanged = NarrativeController.checkDynamicEntryTriggers();
+                    // If lore was revealed, we re-render to show notification/scroll
+                    if (structureChanged) {
+                        UIManager.renderChat();
+                    }
+                }
+
+                // 4. UNLOCK DB (Triggers save)
+                if (typeof ReactiveStore.resumeSaving === 'function') {
+                    ReactiveStore.resumeSaving();
+                }
+
+                // Final Scroll Ensure
+                const chatWindow = document.getElementById('chat-window');
+                if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
             },
 
             /**
-             * Regenerates the last AI response.
-             * Removes the last message and triggers a new response.
+             * Regenerates the last AI response with Versioning.
              */
             async handleRegen() {
                 const state = ReactiveStore.state;
                 if (!StateManager.getLibrary().active_narrative_id) { alert("Load a narrative first."); return; }
                 if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
 
-                let selectedCharId = document.getElementById('ai-character-selector').value;
-                if (selectedCharId === 'any') {
-                    selectedCharId = await this.determineNextSpeaker(false);
+                const history = state.chat_history;
+                let targetIndex = -1;
+
+                // Search backwards for the last meaningful event
+                for (let i = history.length - 1; i >= 0; i--) {
+                    const msg = history[i];
+                    if (msg.type === 'chat' && !msg.isHidden) {
+                        const char = state.characters.find(c => c.id === msg.character_id);
+
+                        // If we hit an AI character first, we regenerate THAT message.
+                        if (char && !char.is_user) {
+                            targetIndex = i;
+                            break;
+                        }
+
+                        // If we hit a User message first, we assume the user wants a NEW response to this message.
+                        if (char && char.is_user) {
+                            break; // Stop searching, targetIndex remains -1
+                        }
+                    }
                 }
 
-                // Check if last message was AI
-                const lastMsg = state.chat_history.filter(m => m.type === 'chat').pop();
-                const lastChar = lastMsg ? state.characters.find(c => c.id === lastMsg.character_id) : null;
-
-                if (lastChar && !lastChar.is_user && lastMsg.character_id === selectedCharId) {
-                    this.undoLastTurn();
-                    await this.triggerAIResponse(selectedCharId);
+                if (targetIndex !== -1) {
+                    // Update Mode: Regenerate the existing bubble
+                    const msg = history[targetIndex];
+                    await this.triggerAIResponse(msg.character_id, '', false, targetIndex);
                 } else {
-                    await this.triggerAIResponse(selectedCharId);
+                    // New Mode: Just trigger a fresh response logic
+                    let targetId = document.getElementById('ai-character-selector').value;
+                    if (targetId === 'any') targetId = null;
+                    if (!targetId) targetId = await this.determineNextSpeaker(false);
+                    await this.triggerAIResponse(targetId);
+                }
+            },
+
+            /**
+             * Cycles through versions of a message.
+             * @param {number} index - The index of the message in chat_history.
+             */
+            async cycleMessageVersion(index) {
+                const state = ReactiveStore.state;
+                const msg = state.chat_history[index];
+                if (!msg || !msg.versions || msg.versions.length <= 1) return;
+
+                // Increment version index, loop back to 0
+                const nextVer = ((msg.currentVersion || 0) + 1) % msg.versions.length;
+
+                // Save
+                // Suppress Global Render during this update to prevent scroll jump
+                UIManager.RUNTIME.suppressChatRender = true;
+                msg.currentVersion = nextVer;
+                msg.content = msg.versions[nextVer].content;
+                msg.emotion = msg.versions[nextVer].emotion;
+                await ReactiveStore.forceSave();
+                UIManager.RUNTIME.suppressChatRender = false;
+
+                // Optimized Update: Direct DOM manipulation to avoid full re-render
+                const bubbleContainer = document.querySelector(`.chat-bubble-container[data-message-index="${index}"]`);
+                if (bubbleContainer) {
+                    const contentEl = document.getElementById(`message-content-${index}`);
+                    const hintEl = document.getElementById(`version-hint-${index}`);
+
+                    // 1. Update Content
+                    if (contentEl) {
+                        const rawContent = msg.versions[nextVer].content;
+                        // Basic Markdown + Quote Styling
+                        const styledContent = rawContent.replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`);
+                        let finalHTML = DOM.unsafe(marked.parse(styledContent || ''));
+
+                        // Re-apply character image if in bubble mode
+                        const char = state.characters.find(c => c.id === msg.character_id);
+                        if (state.characterImageMode === 'bubble' && char) {
+                            const imgSrc = UIManager.getPortraitSrc(char, msg.versions[nextVer].emotion);
+                            if (imgSrc) finalHTML = `<img src="${imgSrc}" class="bubble-char-image">${finalHTML}`;
+                        }
+
+                        contentEl.innerHTML = finalHTML;
+                    }
+
+                    // 2. Update Hint
+                    // Now utilizing the stable ID we added to UIComponents.MessageBubble
+                    if (hintEl) {
+                        hintEl.textContent = `v${nextVer + 1}/${msg.versions.length}`;
+                        hintEl.className = "text-[10px] text-gray-500 ml-2 select-none self-center"; // Ensure visibility
+                    }
+
+                    // 3. Flash Effect on Bubble Body
+                    const bubbleBody = bubbleContainer.querySelector('.bubble-body');
+                    if (bubbleBody) {
+                        bubbleBody.classList.remove('flash-outline');
+                        void bubbleBody.offsetWidth; // Trigger reflow
+                        bubbleBody.classList.add('flash-outline');
+                        setTimeout(() => bubbleBody.classList.remove('flash-outline'), 400);
+                    }
+                } else {
+                    // Fallback
+                    UIManager.renderChat();
                 }
             },
 
@@ -12803,16 +13154,18 @@
 
             /**
              * Deletes a single message by index.
-             * @param {number} index - The index of the message.
              */
             deleteMessage(index) {
-                UIManager.showConfirmationModal('Delete this message?', () => {
-                    const msg = ReactiveStore.state.chat_history[index];
-                    if (msg && msg.type === 'chat') {
-                        ReactiveStore.state.messageCounter--;
-                    }
-                    ReactiveStore.state.chat_history.splice(index, 1);
-                });
+                const state = ReactiveStore.state;
+
+                // Optimized Delete for Last Message (No Confirm)
+                if (index === state.chat_history.length - 1) {
+                    this.executeDelete(index, 'single');
+                } else {
+                    UIManager.showConfirmationModal('Delete this message?', () => {
+                        this.executeDelete(index, 'single');
+                    });
+                }
             },
 
             /**
@@ -12820,7 +13173,17 @@
              * @param {number} index - The index of the message.
              */
             confirmDeleteMessage(index) {
-                UIManager.showDeleteMessageOptions(index);
+                const state = ReactiveStore.state;
+
+                // Optimized Delete: Check if any VISIBLE chat message follows this one
+                const followingMessages = state.chat_history.slice(index + 1);
+                const hasFollowingChat = followingMessages.some(m => m.type === 'chat' && !m.isHidden);
+
+                if (!hasFollowingChat) {
+                    this.executeDelete(index, 'single');
+                } else {
+                    UIManager.showDeleteMessageOptions(index);
+                }
             },
 
             /**
@@ -13010,8 +13373,9 @@
              * @param {string|null} charId - The ID of the character to speak.
              * @param {string} userMessage - The user's last message (for analysis).
              * @param {boolean} isAfterMove - Whether this follows a location move.
+             * @param {number|null} targetMessageIndex - Index of message to overwrite (regen/versioning).
              */
-            async triggerAIResponse(charId = null, userMessage = '', isAfterMove = false) {
+            async triggerAIResponse(charId = null, userMessage = '', isAfterMove = false, targetMessageIndex = null) {
                 const state = ReactiveStore.state;
 
                 // Clear previous error messages before starting new generation
@@ -13043,13 +13407,28 @@
                 if (!targetId) return;
 
                 // 3. Setup UI for Generation
-                UIManager.showTypingIndicator(targetId);
+                if (targetMessageIndex !== null) {
+                    // REGEN MODE: Don't show new typing bubble.
+                    // Instead, clear the existing message to indicate processing.
+                    const msgEl = document.getElementById(`message-content-${targetMessageIndex}`);
+                    if (msgEl) {
+                        msgEl.innerHTML = '<span class="animate-pulse text-gray-500">...</span>';
+                        // Also update state so if a render happens, it doesn't revert immediately
+                        state.chat_history[targetMessageIndex].content = "is rethinking...";
+                    }
+                } else {
+                    // NORMAL MODE: Show typing indicator at bottom
+                    UIManager.showTypingIndicator(targetId);
+                }
+
                 UIManager.setButtonToStopMode();
                 this.RUNTIME.activeRequestAbortController = new AbortController();
 
                 try {
                     // 4. Generate Response
-                    const prompt = PromptBuilder.buildPrompt(targetId);
+                    // Fix: Provide clean history context if regenerating (exclude the old message)
+                    const historyOverride = targetMessageIndex !== null ? state.chat_history.slice(0, targetMessageIndex) : null;
+                    const prompt = PromptBuilder.buildPrompt(targetId, false, historyOverride);
                     const responseText = await APIService.callAI(prompt, false, this.RUNTIME.activeRequestAbortController.signal);
 
                     // 5. Analyze for Emotion/Location (Parallel)
@@ -13078,7 +13457,8 @@
 
                     // 6. Stream Result
                     UIManager.hideTypingIndicator();
-                    UIManager.startStreamingResponse(targetId, responseText, emotion);
+                    // Pass the targetMessageIndex to enable versioning update
+                    this.startStreamingResponse(targetId, responseText, emotion, targetMessageIndex);
 
                 } catch (error) {
                     if (error.name === 'AbortError') console.log("Stopped.");
@@ -13588,19 +13968,19 @@ Rules:
                 const char = ReactiveStore.state.characters.find(c => c.id === charId);
                 if (!char || !char.extra_portraits[index]) return;
 
-                try {
-                    const emotion = char.extra_portraits[index].emotion || 'neutral';
-                    const blob = await ImageProcessor.processImageAsBlob(file);
-                    const key = `${charId}::emotion::${emotion}`;
+                CropController.open(file, async (blob) => {
+                    try {
+                        const emotion = char.extra_portraits[index].emotion || 'neutral';
+                        const key = `${charId}::emotion::${emotion}`;
 
-                    await DBService.saveImage(key, blob);
-                    UIManager.RUNTIME.characterImageCache[key] = URL.createObjectURL(blob);
-
-                    // Clear manual URL to indicate local preference
-                    char.extra_portraits[index].url = '';
-
-                    UIManager.openCharacterDetailModal(charId);
-                } catch (e) { alert("Image upload failed."); }
+                        await DBService.saveImage(key, blob);
+                        UIManager.RUNTIME.characterImageCache[key] = URL.createObjectURL(blob);
+                        // Clear manual URL
+                        char.extra_portraits[index].url = '';
+                        UIManager.openCharacterDetailModal(charId);
+                    } catch (e) { alert("Image upload failed."); }
+                });
+                event.target.value = '';
             },
 
             // --- Example Dialogue Logic ---
@@ -13755,13 +14135,16 @@ Rules:
             async handleLocalImageUpload(event, charId) {
                 const file = event.target.files[0];
                 if (!file) return;
-                try {
-                    const blob = await ImageProcessor.processImageAsBlob(file);
-                    await DBService.saveImage(charId, blob);
-                    UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
-                    this.updateCharacterField(charId, 'image_url', ''); // Clear legacy
-                    UIManager.renderCharacters();
-                } catch (e) { alert("Image upload failed."); }
+
+                CropController.open(file, async (blob) => {
+                    try {
+                        await DBService.saveImage(charId, blob);
+                        UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
+                        this.updateCharacterField(charId, 'image_url', ''); // Clear legacy
+                        UIManager.renderCharacters();
+                    } catch (e) { alert("Image upload failed."); }
+                });
+                event.target.value = '';
             },
 
             /**
@@ -14053,11 +14436,181 @@ Rules:
                 AppController.openModal('view-raw-prompt-modal');
             },
 
+            /**
+             * Opens the image cropper for an existing character image.
+             */
+            async openImageCropper(charId, type = 'primary', index = null) {
+                const state = ReactiveStore.state;
+                const char = state.characters.find(c => c.id === charId);
+                if (!char) return;
+
+                let key = charId;
+                if (type === 'extra' && index !== null) {
+                    // Extra portrait is tricky, we don't store them as blobs usually?
+                    // The schema says extra_portraits is metadata?
+                    // Ah, schema says "characterImages" store has keys like `uuid::emotion::happy`.
+                    // We need to re-construct the key.
+                    // If index is passed, we can look up the emotion in char.extra_portraits
+                    const portrait = char.extra_portraits[index];
+                    if (portrait && portrait.emotion) {
+                        key = `${char.id}::emotion::${portrait.emotion}`;
+                    }
+                }
+
+                try {
+                    const blob = await DBService.getImage(key);
+                    if (!blob) return alert("No image found to crop.");
+
+                    CropController.open(blob, async (newBlob) => {
+                        await DBService.saveImage(key, newBlob);
+
+                        // Update runtime cache
+                        UIManager.RUNTIME.characterImageCache[key] = URL.createObjectURL(newBlob);
+
+                        // Force UI refresh
+                        UIManager.renderCharacterDetailModal(charId);
+                    });
+                } catch (e) {
+                    console.error("Failed to load image for cropping:", e);
+                    alert("Could not load image.");
+                }
+            },
 
 
 
 
 
+
+        };
+
+
+        /**
+         * CropController Module
+         * Handles image cropping interface.
+         */
+        const CropController = {
+            RUNTIME: {
+                file: null, img: null, scale: 1, posX: 0, posY: 0,
+                isDragging: false, startX: 0, startY: 0, callback: null,
+                cropWidth: 300, cropHeight: 450 // Default 2:3
+            },
+
+            open(file, onConfirm) {
+                // Determine source: File object or Blob/Url from IDB
+                this.RUNTIME.file = file;
+                this.RUNTIME.callback = onConfirm;
+                this.RUNTIME.scale = 1;
+                this.RUNTIME.posX = 0;
+                this.RUNTIME.posY = 0;
+
+                // Reset to default Portrait 2:3
+                this.setAspectRatio(300, 450);
+
+                const img = document.getElementById('crop-target');
+                // Handle both File objects and Blobs (passed as URL usually, but file handles it)
+                if (file instanceof File || file instanceof Blob) {
+                    img.src = URL.createObjectURL(file);
+                } else {
+                    // Assume it's a string URL? Not supported by current calls, safe fallback
+                    img.src = file;
+                }
+
+                // Reset transform
+                img.style.transform = `translate(0px, 0px) scale(1)`;
+
+                document.getElementById('crop-scale').value = 1;
+                document.getElementById('crop-modal').classList.remove('hidden');
+                document.getElementById('crop-modal').classList.add('flex');
+            },
+
+            setAspectRatio(width, height) {
+                this.RUNTIME.cropWidth = width;
+                this.RUNTIME.cropHeight = height;
+
+                const overlay = document.getElementById('crop-overlay-frame');
+                if (overlay) {
+                    overlay.style.width = `${width}px`;
+                    overlay.style.height = `${height}px`;
+                }
+            },
+
+            cancel() {
+                document.getElementById('crop-modal').classList.add('hidden');
+                document.getElementById('crop-modal').classList.remove('flex');
+                const img = document.getElementById('crop-target');
+                if (img.src && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+                this.RUNTIME.file = null;
+            },
+
+            confirm() {
+                if (!this.RUNTIME.file) return;
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                const width = this.RUNTIME.cropWidth;
+                const height = this.RUNTIME.cropHeight;
+                canvas.width = width;
+                canvas.height = height;
+
+                const img = document.getElementById('crop-target');
+
+                // Fill black background
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, width, height);
+
+                // Draw image centered with transforms
+                ctx.translate(width / 2 + this.RUNTIME.posX, height / 2 + this.RUNTIME.posY);
+                ctx.scale(this.RUNTIME.scale, this.RUNTIME.scale);
+                ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+
+                canvas.toBlob((blob) => {
+                    if (this.RUNTIME.callback) this.RUNTIME.callback(blob);
+                    this.cancel();
+                }, 'image/png');
+            },
+
+            init() {
+                const container = document.getElementById('crop-container');
+                const slider = document.getElementById('crop-scale');
+
+                slider.addEventListener('input', (e) => {
+                    this.RUNTIME.scale = parseFloat(e.target.value);
+                    this.updateTransform();
+                });
+
+                container.addEventListener('mousedown', (e) => {
+                    this.RUNTIME.isDragging = true;
+                    this.RUNTIME.startX = e.clientX - this.RUNTIME.posX;
+                    this.RUNTIME.startY = e.clientY - this.RUNTIME.posY;
+                });
+
+                window.addEventListener('mousemove', (e) => {
+                    if (!this.RUNTIME.isDragging) return;
+                    e.preventDefault();
+                    this.RUNTIME.posX = e.clientX - this.RUNTIME.startX;
+                    this.RUNTIME.posY = e.clientY - this.RUNTIME.startY;
+                    this.updateTransform();
+                });
+
+                window.addEventListener('mouseup', () => { this.RUNTIME.isDragging = false; });
+                window.addEventListener('mouseleave', () => { this.RUNTIME.isDragging = false; });
+
+                // Wheel zoom
+                container.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                    let newScale = this.RUNTIME.scale - delta;
+                    newScale = Math.max(0.1, Math.min(3, newScale));
+                    this.RUNTIME.scale = newScale;
+                    slider.value = newScale;
+                    this.updateTransform();
+                });
+            },
+
+            updateTransform() {
+                const img = document.getElementById('crop-target');
+                if (img) img.style.transform = `translate(${this.RUNTIME.posX}px, ${this.RUNTIME.posY}px) scale(${this.RUNTIME.scale})`;
+            }
         };
 
         /**
@@ -15110,6 +15663,7 @@ Rules:
                 UIManager.setButtonToSendMode(); // Sets initial button state
                 ActionHandler.init();            // Starts listening for clicks
                 ActionDispatcher.init();         // Wires clicks to Controllers
+                if (typeof CropController !== 'undefined') CropController.init();
 
                 // 6. Initialize Reactive State
                 if (!state || Object.keys(state).length === 0) {
@@ -15306,6 +15860,78 @@ Rules:
                 const undoBtn = document.getElementById('undo-btn');
                 if (regenBtn) regenBtn.addEventListener('click', () => NarrativeController.handleRegen());
                 if (undoBtn) undoBtn.addEventListener('click', () => NarrativeController.undoLastTurn());
+
+                // Auto-Knowledge Toggle Logic
+                const autoKnowToggle = document.getElementById('enable-auto-knowledge-toggle');
+                if (autoKnowToggle) {
+                    autoKnowToggle.addEventListener('change', (e) => {
+                        if (typeof ReactiveStore !== 'undefined' && ReactiveStore.state) {
+                            ReactiveStore.state.enableAutoStaticKnowledge = e.target.checked;
+                        }
+                    });
+                    // Hydrate (Default to true)
+                    // We try to grab value from StateManager since ReactiveStore might not be ready
+                    const libState = StateManager.getState();
+                    if (libState) {
+                        const currentVal = libState.enableAutoStaticKnowledge;
+                        autoKnowToggle.checked = (currentVal !== undefined) ? currentVal : true;
+                    } else {
+                        autoKnowToggle.checked = true;
+                    }
+                }
+
+                // Chat Resizer Logic
+                const resizer = document.getElementById('chat-resizer');
+                const chatInputContainer = document.getElementById('chat-input-container');
+
+                if (resizer && chatInputContainer) {
+                    let startY, startHeight;
+
+                    const onMouseMove = (e) => {
+                        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                        const delta = startY - clientY; // Dragging up increases height
+                        const newHeight = startHeight + delta;
+
+                        // Constraints: Min 60px, Max (Window Height - 100px) (Leave space for header)
+                        // This allows "as much as I want" significantly more than before.
+                        if (newHeight >= 60 && newHeight < (window.innerHeight - 100)) {
+                            chatInputContainer.style.height = `${newHeight}px`;
+                        }
+                    };
+
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        document.removeEventListener('touchmove', onMouseMove);
+                        document.removeEventListener('touchend', onMouseUp);
+                        document.body.style.cursor = '';
+                        document.body.style.userSelect = '';
+                        document.body.style.webkitUserSelect = '';
+                    };
+
+                    const onMouseDown = (e) => {
+                        startY = e.touches ? e.touches[0].clientY : e.clientY;
+                        startHeight = chatInputContainer.getBoundingClientRect().height;
+
+                        document.addEventListener('mousemove', onMouseMove);
+                        document.addEventListener('mouseup', onMouseUp);
+                        document.addEventListener('touchmove', onMouseMove, { passive: false });
+                        document.addEventListener('touchend', onMouseUp);
+
+                        document.body.style.cursor = 'ns-resize';
+                        document.body.style.userSelect = 'none';
+                        document.body.style.webkitUserSelect = 'none'; // Mobile Safari
+                        if (e.cancelable) e.preventDefault(); // Prevent text selection/scrolling start
+                    };
+
+                    const onDoubleClick = () => {
+                        chatInputContainer.style.height = ''; // Reset to auto
+                    };
+
+                    resizer.addEventListener('mousedown', onMouseDown);
+                    resizer.addEventListener('touchstart', onMouseDown, { passive: false });
+                    resizer.addEventListener('dblclick', onDoubleClick);
+                }
             },
 
 
