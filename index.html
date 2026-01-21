@@ -5129,7 +5129,7 @@
                     // Only include Narrator description if THAT Narrator is the one acting.
                     // Standard characters are always included if active.
                     characters: (state.characters || [])
-                        .filter(c => c.is_active)
+                        .filter(c => c.is_active || c.id === charToActId)
                         .filter(c => {
                             if (c.is_narrator) {
                                 return c.id === charToActId;
@@ -13643,7 +13643,7 @@ Rules:
                             name: selection, // Original casing
                             description: "A character in the scene.",
                             short_description: "Unlisted character",
-                            model_instructions: "", // Default prompt applies
+                            model_instructions: `Act as ${selection}.`, // Avoid fallback to system prompt
                             image_url: "",
                             extra_portraits: [],
                             tags: ["unlisted"],
