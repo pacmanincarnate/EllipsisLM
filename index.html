@@ -2655,7 +2655,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.01.23 - 8:13 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.01.25 - 10:30 CST";
 
 
         /**
@@ -3845,7 +3845,7 @@
                     ...UTILITY.getDefaultApiSettings(), ...UTILITY.getDefaultUiSettings(), ...UTILITY.getDefaultSystemPrompts(), ...UTILITY.getDefaultStorySettings(),
                     characters: [
                         { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags: [], is_narrator: false },
-                        { id: UTILITY.uuid(), name: "Narrator", description: "Describes the world.", short_description: "The storyteller.", model_instructions: "Act as a world-class storyteller.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags: [], color: { base: '#334155', bold: '#94a3b8' }, is_narrator: true }
+                        { id: UTILITY.uuid(), name: "Narrator", description: "Describes the world.", short_description: "The storyteller.", model_instructions: "You are a world-class storyteller.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags: [], color: { base: '#334155', bold: '#94a3b8' }, is_narrator: true }
                     ],
                     dynamic_entries: [{ id: UTILITY.uuid(), title: "Example Lorebook Entry", triggers: "example, .01%", content_fields: ["This is a sample dynamic lore entry."], current_index: 0, triggered_at_turn: null }],
                     scenarios: [{ id: UTILITY.uuid(), name: "Default Start", message: "The story begins..." }],
@@ -3857,7 +3857,7 @@
                     id: UTILITY.uuid(), name: `${defaultScenario.name} - Chat`, last_modified: new Date().toISOString(),
                     state: {
                         chat_history: [], messageCounter: 0,
-                        static_entries: [{ id: UTILITY.uuid(), title: "World Overview", content: "A high-fantasy world." }],
+                        static_entries: [{ id: UTILITY.uuid(), title: "World Overview", content: "The location for this roleplay as described in the character descriptions." }],
                         worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
                     }
                 };
@@ -3887,7 +3887,7 @@
                     search_index: "new story",
                     characters: [
                         { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags: [], is_narrator: false },
-                        { id: UTILITY.uuid(), name: "Narrator", description: "Describes the world.", short_description: "The storyteller.", model_instructions: "Act as a world-class storyteller.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags: [], color: { base: '#334155', bold: '#94a3b8' }, is_narrator: true }
+                        { id: UTILITY.uuid(), name: "Narrator", description: "Describes the world.", short_description: "The storyteller.", model_instructions: "You are a world-class storyteller.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags: [], color: { base: '#334155', bold: '#94a3b8' }, is_narrator: true }
                     ],
                     dynamic_entries: [{ id: UTILITY.uuid(), title: "Example Lorebook Entry", triggers: "example, 100%", content_fields: ["This is a sample dynamic lore entry."], current_index: 0, triggered_at_turn: null }],
                     scenarios: [{ id: UTILITY.uuid(), name: "Default Start", message: "The story begins..." }],
@@ -3966,7 +3966,7 @@
                     state: {
                         chat_history: [],
                         messageCounter: 0,
-                        static_entries: scenario.static_entries ? JSON.parse(JSON.stringify(scenario.static_entries)) : [{ id: UTILITY.uuid(), title: "World Overview", content: "A high-fantasy world." }],
+                        static_entries: scenario.static_entries ? JSON.parse(JSON.stringify(scenario.static_entries)) : [{ id: UTILITY.uuid(), title: "World Overview", content: "The world." }],
                         worldMap: scenario.worldMap ? JSON.parse(JSON.stringify(scenario.worldMap)) : { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
                     }
                 };
@@ -4864,8 +4864,8 @@
                     event_master_base_prompt: 'You are a secret Event Master. Read the chat. Generate a brief, secret instruction for AI characters to introduce a logical but unexpected event.',
                     event_master_prompt: 'You are a secret Event Master. Read the chat. Generate a brief, secret instruction for AI characters to introduce a logical but unexpected event.',
                     prompt_persona_gen: "Embellish this character concept into a rich, detailed, and compelling persona description, focusing on detailed appearance, personality, goals, relationships, and backstory.\n\nNAME: \"{name}\"\nCONCEPT: \"{concept}\"",
-                    prompt_world_map_gen: "Based on the following story context, generate a genre-appropriate 8x8 grid of interconnected fantasy locations. The central location (4,4) should be a neutral starting point. Attempt to include locations mentioned in the context.\nCONTEXT:\nCHARACTERS:\n{characters}\n\nSTATIC LORE:\n{static}\n\nRECENT EVENTS:\n{recent}\n\nRespond with a valid JSON object: { \"grid\": [ { \"coords\": {\"x\":int, \"y\":int}, \"name\": \"string\", \"description\": \"string (one-line summary)\", \"prompt\": \"string (a rich, detailed paragraph for the AI)\", \"imageUrl\": \"\" } ] }. The grid must contain exactly 64 locations.",
-                    prompt_location_gen: "Generate a rich, detailed, and evocative paragraph-long prompt for a fantasy location named '{name}' which is briefly described as '{description}'. This prompt will be given to an AI storyteller to describe the scene.",
+                    prompt_world_map_gen: "Based on the following story context, generate a genre-appropriate 8x8 grid of interconnected locations. The central location (4,4) should be a neutral starting point. Attempt to include locations mentioned in the context.\nCONTEXT:\nCHARACTERS:\n{characters}\n\nSTATIC LORE:\n{static}\n\nRECENT EVENTS:\n{recent}\n\nRespond with a valid JSON object: { \"grid\": [ { \"coords\": {\"x\":int, \"y\":int}, \"name\": \"string\", \"description\": \"string (one-line summary)\", \"prompt\": \"string (a rich, detailed paragraph description of the location and its appearance)\", \"imageUrl\": \"\" } ] }. The grid must contain exactly 64 locations.",
+                    prompt_location_gen: "Generate a rich, detailed, and evocative paragraph-long prompt for a location named '{name}' which is briefly described as '{description}'.",
                     prompt_entry_gen: "Generate a detailed and informative encyclopedia-style entry for a lore topic titled '{title}'. If relevant, use the following triggers as context: '{triggers}'.",
                     prompt_location_memory_gen: "You are an archivist. Read the following chat transcript that occurred at a specific location. Summarize the key events, character developments, and important facts into a concise, single paragraph. This will serve as a memory for what happened at that location.\n\nTRANSCRIPT:\n{transcript}",
                     prompt_story_notes_gen: "Based on the following story context (characters, lore), generate a brief, 1-2 sentence creator's note or 'blurb' for this story to show in a library.\n\nCONTEXT:\n{context}",
@@ -5204,13 +5204,13 @@
                 // Response Length Instruction
                 const responseLength = state.responseLength || 'normal';
                 if (!components.charToAct.is_narrator) {
-                    if (responseLength === 'short') p += " Keep the response concise and under two sentences.";
-                    else if (responseLength === 'medium') p += " Keep the response between two to four sentences.";
-                    else if (responseLength === 'long') p += " Be descriptive, verbose, and detailed in your response.";
-                    else if (responseLength === 'novel') p += " Continue writing a long-form addition to the text that builds on the current actions, describes the scene, and contributes to world-building.";
+                    if (responseLength === 'short') p += " Keep the response concise and under two sentences, focusing only on the character's next words and actions.";
+                    else if (responseLength === 'medium') p += " Keep the response between two to four sentences, including the character's next words and actions written with descriptive language.";
+                    else if (responseLength === 'long') p += " Be descriptive, verbose, and detailed in your response, providing this character's dialogue and actions, as well as full sensory descriptions of the surroundings, characters, and event.";
+                    else if (responseLength === 'novel') p += " Continue writing a long-form addition to the text that builds on the current actions, describes the scene, and contributes to world-building. Include full sensory descriptions of the surroundings, characters, and events.";
                 }
 
-                p += " Do not repeat the character's name in the response itself.\n[CHARACTER_TO_ACT]: " + components.charToAct.name;
+                p += " Do not repeat the character's name in the response itself.\n[" + components.charToAct.name + " ]:";
                 return p;
             },
 
@@ -5226,26 +5226,60 @@
 
                 // 1. Construct System/Context Block
                 let system = [components.system_prompt];
-                if (components.event_master_prompt) system.push("SECRET EVENT INSTRUCTION:\n" + components.event_master_prompt);
-                if (components.location_context) system.push("LOCATION CONTEXT:\n" + components.location_context);
-                system.push("STATIC KNOWLEDGE:\n" + components.static_entries);
-                system.push("CHARACTERS:\n" + components.characters);
+
+                // Event Master
+                if (components.event_master_prompt) system.push("--- SECRET EVENT MASTER INSTRUCTION ---\n" + components.event_master_prompt);
+
+                // Location
+                if (components.location_context) system.push("## LOCATION CONTEXT\n" + components.location_context);
+
+                // Static/World Knowledge
+                system.push("## WORLD KNOWLEDGE\n" + components.static_entries);
+
+                // Characters
+                system.push("## CHARACTERS\n" + components.characters);
+
+                // Example Dialogue
+                const exampleDialogue = (state.chat_history || []).filter(m => m && m.isHidden);
+                if (exampleDialogue.length > 0) {
+                    let examples = "## EXAMPLE DIALOGUE\n";
+                    exampleDialogue.forEach(msg => {
+                        // Safety Check
+                        if (!msg) return;
+                        const char = state.characters.find(c => c.id === msg.character_id);
+                        if (char) examples += `${char.name}: ${replacer(msg.content)}\n`;
+                    });
+                    system.push(examples);
+                }
+
                 const system_prompt_str = system.join('\n\n');
 
                 let instruction = components.isForUser
-                    ? `Write the next chat message for the user's character, ${components.charToAct.name}.`
-                    : `Write the next chat message for ${components.charToAct.name}. Stay in character.`;
-                instruction += " Do not write any prefix like 'Character Name:'.";
+                    ? `Generate the next creative response for the user's character, ${components.charToAct.name}.`
+                    : `Generate the next response for ${components.charToAct.name}. Stay in character.`;
 
                 // Response Length Instruction
                 const responseLength = state.responseLength || 'normal';
                 if (!components.charToAct.is_narrator) {
-                    if (responseLength === 'short') instruction += " Your response should be concise and under two sentences.";
-                    else if (responseLength === 'medium') instruction += " Keep the response between two to four sentences.";
-                    else if (responseLength === 'long') instruction += " Be descriptive, verbose, and detailed in your response.";
-                    else if (responseLength === 'novel') instruction += " Continue writing a long-form addition to the text that builds on the current actions, describes the scene, and contributes to world-building.";
+                    if (responseLength === 'short') instruction += " Keep the response concise and under two sentences, focusing only on the character's next words and actions.";
+                    else if (responseLength === 'medium') instruction += " Keep the response between two to four sentences, including the character's next words and actions written with descriptive language.";
+                    else if (responseLength === 'long') instruction += " Be descriptive, verbose, and detailed in your response, providing this character's dialogue and actions, as well as full sensory descriptions of the surroundings, characters, and event.";
+                    else if (responseLength === 'novel') instruction += " Continue writing a long-form addition to the text that builds on the current actions, describes the scene, and contributes to world-building. Include full sensory descriptions of the surroundings, characters, and events.";
                 }
+
+                instruction += " Do not repeat the character's name in the response itself.";
+
                 if (template === 'none') return this.buildDefaultPrompt(components, replacer);
+
+                // Helper for uniform system message formatting across templates
+                const formatSystemMsg = (msg) => {
+                    if (msg.type === 'lore_reveal') {
+                        return `[System Note:\n${replacer(msg.content)}]`;
+                    } else if (msg.type === 'system_event') {
+                        return `[System Event: ${replacer(msg.content)}]`;
+                    }
+                    return '';
+                };
 
                 // --- LLAMA 3 ---
                 if (template === 'llama3') {
@@ -5258,13 +5292,10 @@
                             if (!char) return null;
                             role = char.is_user ? 'user' : 'assistant';
                             content = `${char.name}:\n${replacer(msg.content)}`;
-                        } else if (msg.type === 'lore_reveal') {
+                        } else {
                             role = 'system';
-                            content = `[Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}`;
-                        } else if (msg.type === 'system_event') {
-                            role = 'system';
-                            content = `[System Event: ${replacer(msg.content)}]`;
-                        } else { return null; }
+                            content = formatSystemMsg(msg);
+                        }
                         return `<|start_header_id|>${role}<|end_header_id|>\n\n${content}<|eot_id|>`;
                     }).filter(Boolean).join('\n');
 
@@ -5273,23 +5304,20 @@
 
                 // --- GEMMA (Google) ---
                 if (template === 'gemma') {
-                    // Gemma often prefers system prompts to be part of the first user turn or a distinct user turn
-                    // We will format the system prompt as a user turn for maximum compatibility
                     const history_gemma = components.history.map(msg => {
                         if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
-
                         let role = 'user';
                         let content = '';
 
                         if (msg.type === 'chat') {
                             const char = state.characters.find(c => c.id === msg.character_id);
                             if (!char) return null;
-                            role = char.is_user ? 'user' : 'model'; // Gemma uses 'model', not 'assistant'
+                            role = char.is_user ? 'user' : 'model';
                             content = `${char.name}:\n${replacer(msg.content)}`;
-                        } else if (msg.type === 'lore_reveal' || msg.type === 'system_event') {
-                            // System events injected as user context
-                            return `<start_of_turn>user\n[System Note: ${replacer(msg.content)}]<end_of_turn>`;
-                        } else { return null; }
+                        } else {
+                            // System events injected as user context for Gemma
+                            return `<start_of_turn>user\n${formatSystemMsg(msg)}<end_of_turn>`;
+                        }
 
                         return `<start_of_turn>${role}\n${content}<end_of_turn>`;
                     }).filter(Boolean).join('\n');
@@ -5301,7 +5329,6 @@
                 if (template === 'phi3') {
                     const history_phi = components.history.map(msg => {
                         if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
-
                         let role = 'user';
                         let content = '';
                         if (msg.type === 'chat') {
@@ -5309,11 +5336,9 @@
                             if (!char) return null;
                             role = char.is_user ? 'user' : 'assistant';
                             content = `${char.name}:\n${replacer(msg.content)}`;
-                        } else if (msg.type === 'lore_reveal') {
-                            return `<|system|>\n[Dynamic Entry: ${replacer(msg.content)}]<|end|>`;
-                        } else if (msg.type === 'system_event') {
-                            return `<|system|>\n${replacer(msg.content)}<|end|>`;
-                        } else { return null; }
+                        } else {
+                            return `<|system|>\n${formatSystemMsg(msg)}<|end|>`;
+                        }
 
                         return `<|${role}|>\n${content}<|end|>`;
                     }).filter(Boolean).join('\n');
@@ -5328,10 +5353,8 @@
                         if (msg.type === 'chat') {
                             const char = state.characters.find(c => c.id === msg.character_id);
                             if (char) return `${char.is_user ? 'user' : 'assistant'}:${char.name}:\n${replacer(msg.content)}`;
-                        } else if (msg.type === 'lore_reveal') {
-                            return `system:Dynamic Entry Revealed - ${msg.title}:\n${replacer(msg.content)}`;
-                        } else if (msg.type === 'system_event') {
-                            return `system:System Event:\n${replacer(msg.content)}`;
+                        } else {
+                            return `system:${formatSystemMsg(msg)}`;
                         }
                         return null;
                     }).filter(Boolean).join('\n');
@@ -5349,11 +5372,9 @@
                             if (!char) return null;
                             role = char.is_user ? 'user' : 'assistant';
                             content = `${char.name}:\n${replacer(msg.content)}`;
-                        } else if (msg.type === 'lore_reveal') {
-                            content = `[Dynamic Entry Revealed - ${msg.title}]\n${replacer(msg.content)}`;
-                        } else if (msg.type === 'system_event') {
-                            content = `[System Event: ${replacer(msg.content)}]`;
-                        } else { return null; }
+                        } else {
+                            content = formatSystemMsg(msg);
+                        }
                         return `<|im_start|>${role}\n${content}<|im_end|>`;
                     }).filter(Boolean).join('\n');
                     return `<|im_start|>system\n${system_prompt_str}<|im_end|>\n${history_chatml}\n<|im_start|>user\n${instruction}<|im_end|>\n<|im_start|>assistant\n${components.charToAct.name}:\n`;
@@ -5364,12 +5385,129 @@
                     const history_str = components.history.map(msg => {
                         if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
                         const char = state.characters.find(c => c.id === msg.character_id);
-                        return char ? `${char.name}: ${replacer(msg.content)}` : null;
+                        if (char) return `${char.name}: ${replacer(msg.content)}`;
+                        else return formatSystemMsg(msg);
                     }).filter(Boolean).join('\n');
                     return `### Instruction:\n${system_prompt_str}\n\n${history_str}\n\n${instruction}\n\n### Response:\n`;
                 }
 
                 return this.buildDefaultPrompt(components, replacer);
+            },
+
+            /**
+             * Builds the prompt for the Event Master agent.
+             * @returns {string} - The constructed prompt.
+             */
+            buildEventMasterPrompt() {
+                const state = StateManager.getState();
+                const basePrompt = state.event_master_base_prompt || "";
+
+                // Build Context (Last 10 messages)
+                const recentHistory = (state.chat_history || [])
+                    .slice(-10)
+                    .filter(m => m && m.type === 'chat' && !m.isHidden)
+                    .map(m => {
+                        const char = (state.characters || []).find(c => c.id === m.character_id);
+                        return `${char ? char.name : 'Unknown'}: ${m.content}`;
+                    })
+                    .join('\n');
+
+                return `${basePrompt}
+            
+            RECENT CHAT HISTORY:
+            ${recentHistory}
+            
+            Output ONLY the instruction. Do not write a chat message.
+            Example Output: "A sudden thunderstorm knocks out the power."`;
+            },
+
+            /**
+             * Builds the prompt for the Concept Agent (Step 1).
+             * @param {string} userInput - The user's initial idea.
+             * @returns {string} - The constructed prompt.
+             */
+            buildConceptAgentPrompt(userInput) {
+                return `You are a creative director for a high-quality interactive novel. Based on this prompt: "${userInput}", create a detailed story bible. Be imaginitive and unexpected yet logical to craft a world and scenario where participants will desire to explore and become immersed.
+
+            Notes on output elements:
+            - Story should be as authentic as possible to the initiating prompt.
+            - The brief_summary should further define the genre, style, and atmosphere of the story. Then, build out the environment and setting, describe any relevant relationships, and describe the inciting incident that will serve as the scenario.
+            - Create as many characters as makes sense for the narrative, with a *minimum* of 3 (more acceptable). The first shall be the 'user'.
+
+            Respond with VALID JSON ONLY:
+            {
+                "title": "A Compelling Story Title",
+                "creator_notes": "An atmospheric, engaging introduction to the story's environment and tone (approx 2 paragraphs). Sell the concept.",
+                "tags": ["tag1", "tag2", "genre", "vibe"],
+                "scenario_name": "A creative name for the starting scene.",
+                "brief_summary": "A rich summary of the world, the core conflict, and the stakes involved.",
+                "characters": [
+                    {"name": "Name", "role": "User", "archetype": "The Protagonist (Briefly describe their place in the roleplay and current situation)"},
+                    {"name": "Name", "role": "PrimaryAI", "archetype": "The Companion/Antagonist/Narrator (Briefly describe their place in the roleplay)"},
+                    {"name": "Name", "role": "Support", "archetype": "Supporting cast member (Briefly describe their place in the roleplay)"} 
+                ]
+            }`;
+            },
+
+            /**
+             * Builds the prompt for the World Builder Agent (Step 2).
+             * @param {string} conceptSummary - The approved concept summary.
+             * @returns {string} - The constructed prompt.
+             */
+            buildWorldAgentPrompt(conceptSummary) {
+                return `Here is the current description of a roleplay we are developing together: "${conceptSummary}"
+                
+            Analyze the current setting, tone, and genre of our roleplay. Based on this analysis, generate 3–8 worldbuilding entries that expand the 'connective tissue' of this world. Each entry should feel like a natural extension of the established narrative—focusing on details that have been implied but not yet defined (e.g., setting context, impactful past events, or unique social hierarchies). Ensure the depth and scale of these entries strictly mirror the roleplay’s current scope, whether it’s a localized interpersonal drama or an expansive epic.
+            
+            Return VALID JSON: { "entries": [{"title": "Entry Title", "content": "Rich, descriptive content..."}] }`;
+            },
+
+            /**
+             * Builds the prompt for the Casting Agent (Step 3).
+             * @param {string} contextSummary - The story context.
+             * @param {Array} roster - Array of character definitions from the concept.
+             * @returns {string} - The constructed prompt.
+             */
+            buildCastingAgentPrompt(contextSummary, roster) {
+                const charList = roster.map(c => c.name + ' (' + c.role + ')').join(', ');
+                return `Given the characters: ${charList}.
+            Story Context: ${contextSummary}.
+            
+            Define the specific relationship dynamics between the User and the Primary AI character, and then between other characters. 
+            
+            CRITICAL: Focus on *intentions*. What does each character want from the others? Do they want to help, deceive, use, protect, or something else?
+            Define emotional connections, hidden agendas, and past conflicts based on these intentions.
+
+            Return VALID JSON: { "relationship_description": "Analysis of their dynamic (Intentions, allies, enemies, strangers, lovers, etc)." }`;
+            },
+
+            /**
+             * Builds the prompt for the Scene Director Agent (Step 4).
+             * @param {string} contextSummary - The story context.
+             * @param {string} relationshipContext - The relationship matrix.
+             * @param {Object} speakerChar - The character speaking first.
+             * @param {Object} userChar - The user character.
+             * @returns {string} - The constructed prompt.
+             */
+            buildDirectorAgentPrompt(contextSummary, relationshipContext, speakerChar, userChar) {
+                return `Context: ${contextSummary}
+            Relationships: ${relationshipContext}
+            
+            Task:
+            1. Write an "opening_message" for the chat. This message is spoken or enacted by ${speakerChar.name}. 
+               It must be directed AT ${userChar.name}. 
+               Start *in media res* (in the middle of action or conversation). 
+               Do NOT describe ${userChar.name}'s thoughts or actions. 
+               Only describe what ${speakerChar.name} says or does.
+               Use first person 'prose-style' writing (e.g. "That's what I'm telling you!" I brush the hair from my eyes as I look out at the sunset. "Don't you understand *anything*?")
+            
+            2. Write "scenario_lore". This is a static description of the setting and the inciting incident. Write this in 3rd Person.
+            
+            Return VALID JSON:
+            {
+                "opening_message": "The opening lines of the scene...",
+                "scenario_lore": "Static lore describing the scene..."
+            }`;
             }
         };
 
@@ -6220,7 +6358,7 @@
 
                 const userChar = {
                     id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "User.",
-                    model_instructions: "Act as User.", is_user: true, is_active: true, image_url: '', tags: [], is_narrator: false
+                    model_instructions: "Respond with the next speech and actions for {user}.", is_user: true, is_active: true, image_url: '', tags: [], is_narrator: false
                 };
 
                 // Use first scenario for default model instructions match
@@ -6231,7 +6369,7 @@
                     name: character.displayName || character.name,
                     description: character.persona || "",
                     short_description: (character.persona || "").split('.')[0] + '.',
-                    model_instructions: firstScenarioRaw.formattingInstructions || "Act as {character}.",
+                    model_instructions: firstScenarioRaw.formattingInstructions || "Write the next response from {character}, giving their speech and actions.",
                     image_url: '',
                     extra_portraits: [],
                     tags: character.tags || [],
@@ -6256,7 +6394,7 @@
                     const newId = UTILITY.uuid();
                     const newChar = {
                         id: newId, name: name, description: "Imported character.", short_description: "Imported.",
-                        model_instructions: `Act as ${name}.`, image_url: '', tags: [], is_user: false, is_active: true, is_narrator: false
+                        model_instructions: `Write the next response for ${name} giving their next actions and speech.`, image_url: '', tags: [], is_user: false, is_active: true, is_narrator: false
                     };
                     story.characters.push(newChar);
                     nameToId[lower] = newId;
@@ -6448,7 +6586,7 @@
                     ...UTILITY.getDefaultStorySettings(),
                     description: (v2Data.description || "").replace(/{{char}}/g, v2Data.name || "Imported Character").replace(/{{user}}/g, "{user}"),
                     short_description: (v2Data.description || "").split('.')[0] + '.',
-                    model_instructions: (v2Data.system_prompt || "Act as {character}. Be descriptive and engaging.").replace(/{{char}}/g, "{character}").replace(/{{user}}/g, "{user}"),
+                    model_instructions: (v2Data.system_prompt || "Write the next response for {character}. Be descriptive and engaging.").replace(/{{char}}/g, "{character}").replace(/{{user}}/g, "{user}"),
                     image_url: '',
                     extra_portraits: [],
                     tags: v2Data.tags || [],
@@ -9708,7 +9846,7 @@
                     this.populateGeminiModels();
                 } else if (tabName === 'image-gen') {
                     // Dynamic show/hide based on backend
-                    const backendSelect = document.getElementById('image-gen-backend-selector');
+                    const backendSelect = document.getElementById('image-gen-backend');
                     const koboldSettings = document.getElementById('image-gen-kobold-settings');
                     const openRouterSettings = document.getElementById('image-gen-openrouter-settings');
 
@@ -10133,28 +10271,7 @@
                 AppController.updateImageGenSettingsVisibility();
             },
 
-            /**
-             * Updates visibility of Image Generation settings based on selected backend.
-             * Called by HTML onchange event.
-             */
-            updateImageGenSettingsVisibility() {
-                const backendSelect = document.getElementById('image-gen-backend-selector');
-                const koboldSettings = document.getElementById('image-gen-kobold-settings');
-                const openRouterSettings = document.getElementById('image-gen-openrouter-settings');
 
-                if (!backendSelect) return;
-
-                const val = backendSelect.value;
-
-                if (koboldSettings) {
-                    koboldSettings.style.display = val === 'koboldcpp' ? 'block' : 'none';
-                }
-                if (openRouterSettings) {
-                    openRouterSettings.style.display = val === 'openrouter' ? 'block' : 'none';
-                    // Ensure the hidden class is removed if present
-                    if (val === 'openrouter') openRouterSettings.classList.remove('hidden');
-                }
-            },
 
             /**
              * Helper: Updates font setting via Reactive Store.
@@ -10451,7 +10568,7 @@
                     name: persona.name,
                     short_description: persona.short_description || "User Persona",
                     description: persona.description || "",
-                    model_instructions: persona.model_instructions || `Act as ${persona.name}.`,
+                    model_instructions: persona.model_instructions || `Write the next response for ${persona.name}.`,
                     tags: [...(persona.tags || [])],
                     image_url: newImageUrl,
                     extra_portraits: [],
@@ -10900,6 +11017,155 @@
 
 
 
+
+        /**
+         * =================================================================================================
+         * StoryGenerationPipeline Module
+         * Orchestrates the agentic workflow for Story Architect V2.
+         * =================================================================================================
+         */
+        const StoryGenerationPipeline = {
+
+            async _callAgent(prompt, retries = 2) {
+                // Ensure LibraryController is available (it should be at runtime)
+                return await LibraryController._callAIWithRetry(prompt, retries);
+            },
+
+            /**
+             * Phase 1: Concept Agent.
+             * Generates the "Story Bible" from the user prompt.
+             */
+            async runConceptPhase(userPrompt, updateUI) {
+                updateUI(10, "Agent: Concept Director is refining the pitch...");
+
+                const prompt = PromptBuilder.buildConceptAgentPrompt(userPrompt);
+                const conceptData = await this._callAgent(prompt);
+
+                if (!conceptData) throw new Error("Concept Agent failed to generate a valid story bible.");
+                return conceptData;
+            },
+
+            /**
+             * Phase 2: World Builder Agent.
+             * Generates deep lore based on the concept.
+             */
+            async runWorldPhase(draft, conceptData, updateUI) {
+                updateUI(25, "Agent: World Builder is... building the world");
+
+                // Construct a rich summary for the agent
+                const summary = `Title: ${draft.name}\nSummary: ${draft.creator_notes}\nCore Conflict: ${conceptData.brief_summary}`;
+
+                const prompt = PromptBuilder.buildWorldAgentPrompt(summary);
+                const loreData = await this._callAgent(prompt);
+
+                if (loreData && loreData.entries) {
+                    draft.static_entries = loreData.entries.map(e => ({
+                        id: UTILITY.uuid(),
+                        title: e.title,
+                        content: e.content
+                    }));
+                }
+            },
+
+            /**
+             * Phase 3: Casting Director Agent.
+             * Generates relationships and character profiles.
+             */
+            async runCastingPhase(draft, conceptData, updateUI) {
+                const roster = conceptData.characters || [];
+                const summary = `Title: ${draft.name}\nSummary: ${draft.creator_notes}\nCore Conflict: ${conceptData.brief_summary}`;
+
+                // A. Relationship Matrix
+                updateUI(40, "Agent: Casting Director is mapping relationships...");
+                let relationshipContext = "";
+                try {
+                    const relPrompt = PromptBuilder.buildCastingAgentPrompt(summary, roster);
+                    const relData = await this._callAgent(relPrompt);
+                    if (relData && relData.relationship_description) {
+                        relationshipContext = relData.relationship_description;
+                    }
+                } catch (e) {
+                    console.warn("Relationship generation skipped:", e);
+                }
+
+                // B. Character Profiles (Sequential)
+                for (let i = 0; i < roster.length; i++) {
+                    const charDef = roster[i];
+                    updateUI(45 + (i * 8), `Agent: Casting Director is interviewing ${charDef.name}...`);
+
+                    const charContext = `${summary}\n\nRELATIONSHIPS:\n${relationshipContext}\n\nRole: ${charDef.role}\nArchetype: ${charDef.archetype}`;
+
+                    // Re-use existing single-profile generator but with enriched context
+                    const charData = await NarrativeController.generateCharacterProfile(charDef.name, charContext);
+
+                    if (charData) {
+                        const charId = UTILITY.uuid();
+                        let imageUrl = '';
+
+                        // Auto-Image Gen
+                        try {
+                            const imagePrompt = `portrait of ${charDef.name}, ${charData.short_description || charData.description}, ${charDef.archetype}, detailed face, fantasy art, masterpiece`;
+                            const blob = await ImageGenerationService.generateImage(imagePrompt);
+                            if (blob) {
+                                await DBService.saveImage(charId, blob);
+                                imageUrl = `local_idb_${charId}`;
+                                UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
+                            }
+                        } catch (err) { /* Ignore image failure */ }
+
+                        draft.characters.push({
+                            id: charId,
+                            name: charDef.name,
+                            description: charData.description || "No description.",
+                            short_description: charData.short_description || "A character.",
+                            model_instructions: charData.model_instructions || `Write the next response for ${charDef.name}.`,
+                            tags: charData.tags || [],
+                            is_user: charDef.role === 'User',
+                            is_active: true,
+                            is_narrator: charDef.role === 'PrimaryAI' && !roster.some(r => r.role === 'User'),
+                            color: NarrativeController.CONSTANTS.CHARACTER_COLORS[i % NarrativeController.CONSTANTS.CHARACTER_COLORS.length],
+                            image_url: imageUrl,
+                            extra_portraits: []
+                        });
+                    }
+                }
+
+                // Fallback User
+                if (!draft.characters.some(c => c.is_user)) {
+                    draft.characters.push({
+                        id: UTILITY.uuid(), name: "Traveler", description: "You.", short_description: "You.",
+                        is_user: true, is_active: true, color: { base: '#4b5563', bold: '#fff' },
+                        image_url: '', extra_portraits: [], tags: [], model_instructions: "Act as User."
+                    });
+                }
+
+                return relationshipContext;
+            },
+
+            /**
+             * Phase 4: Scene Director Agent.
+             * Generates the opening scenario and message.
+             */
+            async runDirectorPhase(draft, conceptData, relationshipContext, updateUI) {
+                updateUI(85, "Agent: Director is setting the scene...");
+
+                const speakerChar = draft.characters.find(c => !c.is_user) || draft.characters[0];
+                const userChar = draft.characters.find(c => c.is_user) || { name: "You" };
+                const summary = `Title: ${draft.name}\nSummary: ${draft.creator_notes}\nCore Conflict: ${conceptData.brief_summary}`;
+
+                const prompt = PromptBuilder.buildDirectorAgentPrompt(summary, relationshipContext, speakerChar, userChar);
+                const scenData = await this._callAgent(prompt);
+
+                const firstMsg = scenData ? scenData.opening_message : "The story begins.";
+                let scenarioLore = scenData ? scenData.scenario_lore : "A new adventure.";
+
+                if (scenData && scenData.scenario_lore) {
+                    draft.static_entries.push({ id: UTILITY.uuid(), title: "Current Scenario", content: scenData.scenario_lore });
+                }
+
+                return { firstMsg, scenarioLore, speakerChar };
+            }
+        };
 
         /**
          * =================================================================================================
@@ -11499,33 +11765,8 @@
                 };
 
                 try {
-                    // STEP 1: CONCEPT
-                    updateUI(10, "Architecting the universe...");
-
-                    // REFINED PROMPT: Demanding atmosphere and depth
-                    const conceptPrompt = `You are a creative director for a high-quality interactive novel. Based on this prompt: "${userPrompt}", create a detailed story bible. Be imaginitive and unexpected yet logical to craft a world and scenario where participants will desire to explore and become immersed.
-                    
-                    Notes on output elements:
-                    - Story should be as authentic as possible to the initiating prompt. Avoid adding magical elements to a realistic idea, or horror elements to a romantic comedy, for instance. Think about how each character may expand the narrative in compelling ways.
-                    - The brief_summary should further define the genre, style, and atmosphere of the story. Then, build out the environment and setting, describe any relevant 'factions' or political alliances, and describe the inciting incident that will serve as the scenario.
-                    - Create as many characters as makes sense for the narrative, with a minimum of 3. The first shall be the 'user'.
-
-                    Respond with VALID JSON ONLY:
-                    {
-                        "title": "A Compelling Story Title",
-                        "creator_notes": "An atmospheric, engaging introduction to the story's environment and tone (approx 2 paragraphs). Sell the concept.",
-                        "tags": ["tag1", "tag2", "genre", "vibe"],
-                        "scenario_name": "A creative name for the starting scene. This sets the tone for how the participants will interact in this world",
-                        "brief_summary": "A rich summary of the world, the core conflict, and the stakes involved. Focus on the drama.",
-                        "characters": [
-                            {"name": "Name", "role": "User", "archetype": "The Protagonist (Describe their situation, not just 'You')"},
-                            {"name": "Name", "role": "PrimaryAI", "archetype": "The Companion/Antagonist/Narrator (The main NPC interaction)"},
-                            {"name": "Name", "role": "Secondary", "archetype": "Support/World Builder"} 
-                        ]
-                    }`;
-
-                    const conceptData = await this._callAIWithRetry(conceptPrompt);
-                    if (!conceptData) throw new Error("Failed to generate concept.");
+                    // STEP 1: CONCEPT AGENT
+                    const conceptData = await StoryGenerationPipeline.runConceptPhase(userPrompt, updateUI);
 
                     this.RUNTIME_GEN.conceptData = conceptData;
 
@@ -11593,135 +11834,23 @@
                 const contextSummary = `Title: ${title}\nSummary: ${summary}\nCore Conflict: ${concept.brief_summary}`;
 
                 try {
-                    // STEP 2: LORE
-                    updateUI(20, "Forging history and lore...");
+                    // PIPELINE EXECUTION
 
-                    // REFINED PROMPT: Focus on worldbuilding flavor, not dry facts.
-                    const lorePrompt = `Based on this summary: "${summary}", generate 3-10 deep worldbuilding entries (Lore).
-                    Focus on history, culture, factions, secrets, or atmospheric details that make the world feel alive. Avoid generic definitions. Each entry should be an important piece of information within the environment of the story that adds to the narrative complexity. Ensure that each entry is authentic to the genre, style, and scenario of this narrative; a high fantasy narrative will have much differen lore than a slice-of-life tale set in Brooklyn, for example.
-                    
-                    Title: The entry title should be a clear, direct, and concise name for the entry.
+                    // PHASE 2: WORLD
+                    await StoryGenerationPipeline.runWorldPhase(draft, concept, updateUI);
 
-                    Return VALID JSON: { "entries": [{"title": "Entry Title", "content": "Rich, descriptive content..."}] }`;
+                    // PHASE 3: CASTING
+                    const relationshipContext = await StoryGenerationPipeline.runCastingPhase(draft, concept, updateUI);
 
-                    const loreData = await this._callAIWithRetry(lorePrompt);
-                    if (loreData && loreData.entries) {
-                        draft.static_entries = loreData.entries.map(e => ({ id: UTILITY.uuid(), title: e.title, content: e.content }));
-                    }
+                    // PHASE 4: DIRECTOR
+                    const { firstMsg, scenarioLore, speakerChar } = await StoryGenerationPipeline.runDirectorPhase(draft, concept, relationshipContext, updateUI);
 
-                    // STEP 3: RELATIONSHIP MATRIX
-                    updateUI(30, "Setting the board...");
-                    const roster = concept.characters || [];
-                    let relationshipContext = "";
-
-                    try {
-                        const relPrompt = `Given the characters: ${roster.map(c => c.name + ' (' + c.role + ')').join(', ')}.
-                        Story Context: ${contextSummary}.
-                        Define the specific relationship dynamics between the User and the Primary AI character, and then between other characters in this narrative. Focus on how they feel about each other and what their goals are when interacting with each other.
-                        Return VALID JSON: { "relationship_description": "Analysis of their dynamic (allies, enemies, strangers, etc)." }`;
-
-                        const relData = await this._callAIWithRetry(relPrompt);
-                        if (relData && relData.relationship_description) {
-                            relationshipContext = `\nRELATIONSHIPS:\n${relData.relationship_description}`;
-                        }
-                    } catch (e) { console.warn("Relationship gen failed, skipping."); }
-
-                    // STEP 4: CHARACTERS (Sequential with Relationship Injection & Image Generation)
-                    for (let i = 0; i < roster.length; i++) {
-                        const charDef = roster[i];
-                        updateUI(35 + (i * 10), `Breathing life into ${charDef.name}...`);
-
-                        // Inject relationship context
-                        const charContext = `${contextSummary}\nCharacter Role: ${charDef.role}\nArchetype: ${charDef.archetype}${relationshipContext}`;
-                        const charData = await NarrativeController.generateCharacterProfile(charDef.name, charContext);
-
-                        if (charData) {
-                            const charId = UTILITY.uuid();
-                            let imageUrl = '';
-
-                            // --- AUTOMATED IMAGE GENERATION ---
-                            // Only attempt if we have a backend configured (implicit check via service)
-                            try {
-                                updateUI(35 + (i * 10) + 5, `Painting ${charDef.name}...`);
-                                const imagePrompt = `portrait of ${charDef.name}, ${charData.short_description || charData.description}, ${charDef.archetype}, detailed face, fantasy art, masterpiece`;
-                                console.log(`Auto-Generating Image for ${charDef.name}:`, imagePrompt);
-
-                                const blob = await ImageGenerationService.generateImage(imagePrompt);
-                                if (blob) {
-                                    await DBService.saveImage(charId, blob);
-                                    imageUrl = `local_idb_${charId}`;
-                                    // Pre-cache for immediate display upon story load
-                                    UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
-                                }
-                            } catch (imgErr) {
-                                console.warn(`Failed to auto-generate image for ${charDef.name}:`, imgErr);
-                                // Proceed without image
-                            }
-                            // ----------------------------------
-
-                            draft.characters.push({
-                                id: charId,
-                                name: charDef.name,
-                                description: charData.description || "No description.",
-                                short_description: charData.short_description || "A character.",
-                                model_instructions: charData.model_instructions || `Act as ${charDef.name}.`,
-                                tags: charData.tags || [],
-                                is_user: charDef.role === 'User',
-                                is_active: true,
-                                is_narrator: charDef.role === 'PrimaryAI' && !roster.some(r => r.role === 'User'),
-                                color: NarrativeController.CONSTANTS.CHARACTER_COLORS[i % NarrativeController.CONSTANTS.CHARACTER_COLORS.length],
-                                image_url: imageUrl,
-                                extra_portraits: []
-                            });
-                        }
-                    }
-
-                    // Fallback: Ensure a user exists if AI didn't generate one
-                    if (!draft.characters.some(c => c.is_user)) {
-                        draft.characters.push({ id: UTILITY.uuid(), name: "Traveler", description: "You.", short_description: "You.", is_user: true, is_active: true, color: { base: '#4b5563', bold: '#fff' }, image_url: '', extra_portraits: [], tags: [], model_instructions: "Act as User." });
-                    }
-
-                    // STEP 5: SCENARIO (Logic Fix: Determine Speaker First)
-                    updateUI(80, "Setting the scene...");
-
-                    // Identify the NPC Speaker and the User Target
-                    const speakerChar = draft.characters.find(c => !c.is_user) || draft.characters[0];
-                    const userChar = draft.characters.find(c => c.is_user) || { name: "You" };
-
-                    // REFINED PROMPT: Enforce Perspective and Speaker Identity
-                    const scenarioPrompt = `Context: ${contextSummary}${relationshipContext}
-                    
-                    Task:
-                    1. Write an "opening_message" for the chat. This message is spoken or enacted by ${speakerChar.name}. 
-                       It must be directed AT ${userChar.name}. 
-                       Do NOT describe ${userChar.name}'s thoughts or actions. 
-                       Only describe what ${speakerChar.name} says or does.
-                       Use 'prose-style' writing with speech in quotations, rather than roleplay-style writing with actions in parentheses or asterisks.
-                       Organically set the setting, scene, and at least a hint of the inciting incident so that the participants know how to interact.
-                    
-                    2. Write "scenario_lore". This is a static description of the narrative genre, style, and atmosphere, the setting/scene, and the inciting incident. This should establish the initial goals or intent of ${speakerChar.name}. 
-                       Write this in 3rd Person (e.g., "The room is dark," not "You are in a dark room").
-                    
-                    Return VALID JSON:
-                    {
-                        "opening_message": "The opening lines of the scene...",
-                        "scenario_lore": "Static lore describing the scene..."
-                    }`;
-
-                    const scenData = await this._callAIWithRetry(scenarioPrompt);
-                    const firstMsg = scenData ? scenData.opening_message : "The story begins.";
-
-                    if (scenData && scenData.scenario_lore) {
-                        draft.static_entries.push({ id: UTILITY.uuid(), title: "Current Scenario", content: scenData.scenario_lore });
-                    }
-
-                    // STEP 6: SMART MAP SEEDING
+                    // STEP 5: MAP SEEDING (Legacy Controller Logic)
                     updateUI(90, "Singing the world into existence...");
                     let grid = UTILITY.createDefaultMapGrid();
 
                     if (shouldGenerateMap) {
                         try {
-                            // Extract Titles and Content for seeding
                             const loreDetails = draft.static_entries.map(e => `${e.title}: ${e.content}`).join('\n');
                             const mapContext = {
                                 characters: draft.characters.map(c => c.name).join(', '),
@@ -11758,7 +11887,7 @@
                         }
                     };
 
-                    // Assign the message strictly to the NPC speaker we identified earlier
+                    // Assign the message logic
                     newNarrative.state.chat_history.push({
                         character_id: speakerChar.id,
                         content: firstMsg,
@@ -11783,6 +11912,7 @@
 
                     AppController.closeModal('gen-story-modal');
                     window.location.reload();
+
 
                 } catch (e) {
                     console.error(e);
@@ -12649,43 +12779,27 @@
              * @returns {Promise<Object>} - The generated character profile.
              */
             async generateCharacterProfile(name, contextString) {
-                const state = (typeof ReactiveStore !== 'undefined' && ReactiveStore.state) ? ReactiveStore.state : {};
-                let userPrompt = state.prompt_persona_gen;
-
-                // Fallback to default if empty
-                if (!userPrompt && typeof UTILITY !== 'undefined') {
-                    userPrompt = UTILITY.getDefaultSystemPrompts().prompt_persona_gen;
-                }
-
-                // If still empty (safety fallback), use a minimal default
-                if (!userPrompt) {
-                    userPrompt = "You are a character designer.";
-                }
-
-                // Variable Substitution
-                let instruction = userPrompt.replace(/{name}/g, name);
-
-                // Handle Context Injection
-                // If the user's prompt doesn't explicitly include the {concept} variable, we append the context structure automatically.
-                if (instruction.includes('{concept}')) {
-                    instruction = instruction.replace(/{concept}/g, contextString);
-                } else {
-                    instruction += `\n\nBased on the context provided below, generate a detailed character profile for ${name}.\n\nCONTEXT:\n${contextString}`;
-                }
-
-                // Construct final prompt with Mandatory JSON Schema
-                const prompt = `${instruction}
+                // Construct a specialized prompt for "Interview Style" generation
+                const prompt = `You are a creative writer and roleplayer. You are interviewing a character named "${name}".
                 
-                INSTRUCTIONS:
-                Infer their personality, appearance, and role.
-                Respond with VALID JSON ONLY:
-                {
-                    "description": "Full personality and physical description.",
-                    "short_description": "A very brief, one-sentence summary.",
-                    "tags": ["tag1", "tag2", "tag3"],
-                    "model_instructions": "Specific instructions for the AI on how to roleplay this character (e.g., 'Act as ${name}, speak in a rough tone...')",
-                    "color_hex": "#71717a"
-                }`;
+CONTEXT FOR THIS CHARACTER:
+${contextString}
+
+TASK:
+Adopt the persona of ${name}. I will ask you to describe yourself. You must answer in the first person, using prose that reflects your voice, mannerisms, and internal thoughts. Use first person 'prose-style' writing (e.g. "That's what I'm telling you!" I brush the hair from my eyes as I look out at the sunset. "Don't you understand *anything*?")
+
+RESPONSE FORMAT:
+You must return a SINGLE valid JSON object. Do not include markdown code blocks or extra text outside the JSON.
+
+{
+    "description": "Your response to the interview question: Tell me about yourself - your appearance, your personality, and what drives you. Write this as a prose scene. Use dialogue tags and action beats. Example: \"I've never cared much for rules,\" I say, leaning back in my chair...",
+    "model_instructions": "Write instructions for an AI model to roleplay as you. Write this in your own voice. Example: \"I speak quietly and rarely make eye contact. I am suspicious of strangers...\"",
+    "short_description": "A standard, objective 3rd-person summary of who you are (one sentence).",
+    "tags": ["tag1", "tag2", "tag3"],
+    "color_hex": "#71717a (generate a hex code for a color that you feel matches this character's personality)"
+}
+
+CRITICAL INSTRUCTION: The 'description' MUST be written as an out of scenario context roleplay response (First Person Prose). Do NOT write a third-person bio. The goal of this is to set the standard for how responses will be formatted during the roleplay.`;
 
                 const response = await APIService.callAI(prompt, true);
                 return UTILITY.extractAndParseJSON(response);
@@ -12724,26 +12838,8 @@
                     console.log("Event Master: 🎲 Roll successful. Analyzing narrative...");
 
                     // 5. Build Context (Last 10 messages)
-                    const recentHistory = state.chat_history
-                        .slice(-10)
-                        .filter(m => m && m.type === 'chat' && !m.isHidden)
-                        .map(m => {
-                            const char = state.characters.find(c => c.id === m.character_id);
-                            return `${char ? char.name : 'Unknown'}: ${m.content}`;
-                        })
-                        .join('\n');
-
-                    // 6. Construct Prompt
-                    const prompt = `${state.event_master_base_prompt}
-            
-            RECENT CHAT HISTORY:
-            ${recentHistory}
-            
-            INSTRUCTION:
-            Analyze the chat history. Generate a single, concise "System Instruction" that introduces a plot twist, a sudden event, or a change in tone to push the story in a new direction.
-            
-            Output ONLY the instruction. Do not write a chat message.
-            Example Output: "A sudden thunderstorm knocks out the power."`;
+                    // 6. Construct Prompt via PromptBuilder
+                    const prompt = PromptBuilder.buildEventMasterPrompt();
 
                     // 7. Blocking API Call
                     // We use a new AbortController so this specific request has its own lifecycle
@@ -13746,7 +13842,7 @@ Rules:
 
                 const newChar = {
                     id: UTILITY.uuid(), name: "New Character", description: "", short_description: "Summary",
-                    model_instructions: "Act as {character}.", image_url: "", extra_portraits: [],
+                    model_instructions: "Write the next response for {character}.", image_url: "", extra_portraits: [],
                     tags: [], is_user: false, is_active: true, color: color, is_narrator: false
                 };
 
@@ -13814,7 +13910,7 @@ Rules:
                         name: name.trim(),
                         description: data.description || "A mysterious character.",
                         short_description: data.short_description || "A new character.",
-                        model_instructions: data.model_instructions || `Act as ${name}.`,
+                        model_instructions: data.model_instructions || `Write the next response for ${name}.`,
                         image_url: "",
                         extra_portraits: [],
                         tags: data.tags || [],
@@ -13980,19 +14076,23 @@ Rules:
                 const char = ReactiveStore.state.characters.find(c => c.id === charId);
                 if (!char || !char.extra_portraits[index]) return;
 
-                CropController.open(file, async (blob) => {
-                    try {
-                        const emotion = char.extra_portraits[index].emotion || 'neutral';
-                        const key = `${charId}::emotion::${emotion}`;
+                UIManager.showLoadingSpinner('Processing image...');
+                try {
+                    const blob = await ImageProcessor.processImageAsBlob(file);
+                    const emotion = char.extra_portraits[index].emotion || 'neutral';
+                    const key = `${charId}::emotion::${emotion}`;
 
-                        await DBService.saveImage(key, blob);
-                        UIManager.RUNTIME.characterImageCache[key] = URL.createObjectURL(blob);
-                        // Clear manual URL
-                        char.extra_portraits[index].url = '';
-                        UIManager.openCharacterDetailModal(charId);
-                    } catch (e) { alert("Image upload failed."); }
-                });
-                event.target.value = '';
+                    await DBService.saveImage(key, blob);
+                    UIManager.RUNTIME.characterImageCache[key] = URL.createObjectURL(blob);
+                    // Clear manual URL
+                    char.extra_portraits[index].url = '';
+                    UIManager.openCharacterDetailModal(charId);
+                } catch (e) {
+                    alert("Image upload failed: " + e.message);
+                } finally {
+                    UIManager.hideLoadingSpinner();
+                    event.target.value = '';
+                }
             },
 
             // --- Example Dialogue Logic ---
@@ -14148,15 +14248,19 @@ Rules:
                 const file = event.target.files[0];
                 if (!file) return;
 
-                CropController.open(file, async (blob) => {
-                    try {
-                        await DBService.saveImage(charId, blob);
-                        UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
-                        this.updateCharacterField(charId, 'image_url', ''); // Clear legacy
-                        UIManager.renderCharacters();
-                    } catch (e) { alert("Image upload failed."); }
-                });
-                event.target.value = '';
+                UIManager.showLoadingSpinner('Processing image...');
+                try {
+                    const blob = await ImageProcessor.processImageAsBlob(file);
+                    await DBService.saveImage(charId, blob);
+                    UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
+                    this.updateCharacterField(charId, 'image_url', ''); // Clear legacy
+                    UIManager.renderCharacters();
+                } catch (e) {
+                    alert("Image upload failed: " + e.message);
+                } finally {
+                    UIManager.hideLoadingSpinner();
+                    event.target.value = '';
+                }
             },
 
             /**
@@ -15302,7 +15406,7 @@ Rules:
 
                     const existingTitles = (state.static_entries || []).map(e => e.title);
 
-                    const prompt = `As an AI Archivist, read the chat transcript. Identify NEW facts not present in the existing knowledge.
+                    const prompt = `As an AI Archivist, read the chat transcript. Identify NEW facts not present in the existing knowledge and EXISTING facts that are no longer up-to-date and require modification. Names of modified facts *MUST* match the existing name *exactly*. Read the list of facts carefully to ensure that you are not accidentially duplicating information.
             Existing Entries: ${JSON.stringify(existingTitles)}
             
             Output valid JSON: { "add": [{"title": "Title", "content": "Fact"}], "modify": [{"title": "Existing Title", "new_content": "Updated Fact"}] }
