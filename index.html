@@ -929,7 +929,7 @@
                     <textarea id="chat-input"
                         class="w-full h-full bg-black/30 border border-gray-800 rounded-lg p-2 resize-none"
                         placeholder="Enter your message..." rows="4"
-                        style="color: var(--chat-text-color); font-family: var(--chat-font-family); padding-right: 2.5rem;"></textarea>
+                        style="color: var(--chat-text-color); font-family: var(--chat-font-family);"></textarea>
 
                     <!-- Bolt "Continue" Button -->
                     <button id="bolt-btn" onclick="NarrativeController.handleBoltAction()"
@@ -2655,7 +2655,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.01.25 - 10:30 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.01.26 - 17:30 CST";
 
 
         /**
@@ -2731,6 +2731,7 @@
                     if (!target) return;
 
                     const actionName = target.dataset.action;
+                    const val = target.dataset.actionVal; // Capture value
                     const handler = this.actions[actionName];
 
                     if (handler) {
@@ -2739,8 +2740,9 @@
                             e.preventDefault();
                         }
 
-                        // 3. Pass the element's dataset (data-id, data-type, etc.) and the event
-                        handler(target.dataset, e);
+                        // 3. Pass the element's dataset, value key, and the event
+                        // Signature Match: (dataset, value, event)
+                        handler(target.dataset, val, e);
                     } else {
                         console.warn(`No handler registered for action: ${actionName}`);
                     }
@@ -2748,11 +2750,26 @@
 
                 // Handle 'change' events for inputs using data-action-change
                 document.body.addEventListener('change', (e) => {
-                    const target = e.target.closest('[data-action-change]');
+                    // Try data-action first (Unified)
+                    let target = e.target.closest('[data-action]');
+                    let actionName, handler;
+
+                    if (target) {
+                        actionName = target.dataset.action;
+                        handler = this.actions[actionName];
+                        if (handler) {
+                            const val = target.dataset.actionVal || target.value;
+                            handler(target.dataset, val, e);
+                            return;
+                        }
+                    }
+
+                    // Fallback to data-action-change (Legacy)
+                    target = e.target.closest('[data-action-change]');
                     if (!target) return;
 
-                    const actionName = target.dataset.actionChange;
-                    const handler = this.actions[actionName];
+                    actionName = target.dataset.actionChange;
+                    handler = this.actions[actionName];
                     if (handler) handler(target.dataset, target.value, e);
                 });
             }
@@ -3797,12 +3814,15 @@
 
                             // Event Master
                             'event_master_base_prompt', 'event_master_prompt', 'event_master_probability',
-                            'visual_master_probability', // Visual Master Probability
+                            'visual_master_base_prompt', 'visual_master_probability', // Visual Master Probability
 
                             // Generation Prompts
                             'prompt_persona_gen', 'prompt_world_map_gen', 'prompt_location_gen',
                             'prompt_entry_gen', 'prompt_location_memory_gen', 'prompt_story_notes_gen', 'prompt_story_tags_gen',
-                            'prompt_auto_static_knowledge'
+                            'prompt_auto_static_knowledge',
+
+                            // AI Logic Toggles
+                            'enableAutoStaticKnowledge', 'enableAnalysis'
                         ];
 
                         settingsKeys.forEach(key => {
@@ -4587,7 +4607,7 @@
                     prompt: prompt,
                     use_story: false, use_memory: false, use_authors_note: false, use_world_info: false,
                     max_context_length: 16384,
-                    max_length: 512, // Updated to 512 as per your snippet
+                    max_length: 2048, // Updated to 512 as per your snippet
                     quiet: true,
 
                     // Sampling Settings
@@ -4598,7 +4618,7 @@
                     tfs: 1,
                     typical: 1,
 
-                    // Disable Legacy Repetition Penalty (Conflict avoidance)
+                    // Disable Legacy Repetition Penalty.
                     rep_pen: 1.0,
                     rep_pen_range: 2048,
                     rep_pen_slope: 0.7,
@@ -4850,7 +4870,9 @@
                     creator_notes: "",
                     tags: [],
                     event_master_probability: 0,
-                    enableAnalysis: false,
+                    visual_master_probability: 0,
+                    enableAnalysis: true,
+                    enableAutoStaticKnowledge: true,
                     responseLength: 'normal'
                 };
             },
@@ -4863,7 +4885,7 @@
                     system_prompt: 'You are a master storyteller. Follow instructions precisely.',
                     event_master_base_prompt: 'You are a secret Event Master. Read the chat. Generate a brief, secret instruction for AI characters to introduce a logical but unexpected event.',
                     event_master_prompt: 'You are a secret Event Master. Read the chat. Generate a brief, secret instruction for AI characters to introduce a logical but unexpected event.',
-                    prompt_persona_gen: "Embellish this character concept into a rich, detailed, and compelling persona description, focusing on detailed appearance, personality, goals, relationships, and backstory.\n\nNAME: \"{name}\"\nCONCEPT: \"{concept}\"",
+                    prompt_persona_gen: "Embellish this character concept into a rich, detailed, and compelling persona description, focusing on detailed appearance, personality, goals, relationships, and backstory.\n\nCRITICAL: Use double quotes for any dialogue or specific terms (e.g., \"Term\"). Do NOT use single quotes.\n\nNAME: \"{name}\"\nCONCEPT: \"{concept}\"",
                     prompt_world_map_gen: "Based on the following story context, generate a genre-appropriate 8x8 grid of interconnected locations. The central location (4,4) should be a neutral starting point. Attempt to include locations mentioned in the context.\nCONTEXT:\nCHARACTERS:\n{characters}\n\nSTATIC LORE:\n{static}\n\nRECENT EVENTS:\n{recent}\n\nRespond with a valid JSON object: { \"grid\": [ { \"coords\": {\"x\":int, \"y\":int}, \"name\": \"string\", \"description\": \"string (one-line summary)\", \"prompt\": \"string (a rich, detailed paragraph description of the location and its appearance)\", \"imageUrl\": \"\" } ] }. The grid must contain exactly 64 locations.",
                     prompt_location_gen: "Generate a rich, detailed, and evocative paragraph-long prompt for a location named '{name}' which is briefly described as '{description}'.",
                     prompt_entry_gen: "Generate a detailed and informative encyclopedia-style entry for a lore topic titled '{title}'. If relevant, use the following triggers as context: '{triggers}'.",
@@ -5433,6 +5455,7 @@
             - Story should be as authentic as possible to the initiating prompt.
             - The brief_summary should further define the genre, style, and atmosphere of the story. Then, build out the environment and setting, describe any relevant relationships, and describe the inciting incident that will serve as the scenario.
             - Create as many characters as makes sense for the narrative, with a *minimum* of 3 (more acceptable). The first shall be the 'user'.
+            - CRITICAL: Use double quotes for any inner dialogue or specific terms. Escape them properly within the JSON (e.g., \\"Term\\").
 
             Respond with VALID JSON ONLY:
             {
@@ -5477,6 +5500,7 @@
             
             CRITICAL: Focus on *intentions*. What does each character want from the others? Do they want to help, deceive, use, protect, or something else?
             Define emotional connections, hidden agendas, and past conflicts based on these intentions.
+            CRITICAL: Use double quotes for any specific terms. Escape them properly within the JSON (e.g., \"Term\").
 
             Return VALID JSON: { "relationship_description": "Analysis of their dynamic (Intentions, allies, enemies, strangers, lovers, etc)." }`;
             },
@@ -5500,6 +5524,7 @@
                Do NOT describe ${userChar.name}'s thoughts or actions. 
                Only describe what ${speakerChar.name} says or does.
                Use first person 'prose-style' writing (e.g. "That's what I'm telling you!" I brush the hair from my eyes as I look out at the sunset. "Don't you understand *anything*?")
+               CRITICAL: Use double quotes for ALL dialogue. Escape them properly within the JSON string (e.g., \\"Hello\\"). Do NOT use single quotes for dialogue.
             
             2. Write "scenario_lore". This is a static description of the setting and the inciting incident. Write this in 3rd Person.
             
@@ -7260,16 +7285,23 @@
                                      <button onclick="NarrativeController.handleVisualAction('background', '${msg.image_key}')" class="bg-black/50 hover:bg-emerald-600 p-2 rounded-full text-white backdrop-blur-md transition-colors" title="Set as Background">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                      </button>
+                                     <button onclick="NarrativeController.regenerateVisual(${index}, this)" class="bg-black/50 hover:bg-purple-500 p-2 rounded-full text-white backdrop-blur-md transition-colors" title="Regenerate Image">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                     </button>
+                                     <button onclick="UIManager.showPromptModal(this.closest('.visual-event-card').querySelector('img').dataset.prompt)" class="bg-black/50 hover:bg-sky-500 p-2 rounded-full text-white backdrop-blur-md transition-colors" title="View Info">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                     </button>
                                      <button data-action="confirm-delete-message" data-index="${index}" class="bg-black/50 hover:bg-red-500/80 p-2 rounded-full text-white backdrop-blur-md transition-colors" title="Delete">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                      </button>
                                 </div>
-                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-visual-key="${msg.image_key}" class="w-full h-auto object-cover min-h-[256px] bg-gray-800" alt="Generated Scene" onload="UIManager.hydrateVisualImage(this)">
-                                <div class="p-4 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent absolute bottom-0 w-full pt-12">
-                                    <div class="flex items-end justify-between">
-                                        <p class="text-white/90 text-sm font-serif italic drop-shadow-md line-clamp-3 hover:line-clamp-none transition-all cursor-help" title="${UTILITY.escapeHTML(msg.content)}">${msg.content}</p>
-                                    </div>
-                                </div>
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" 
+                                     data-visual-key="${msg.image_key}" 
+                                     data-prompt="${UTILITY.escapeHTML(msg.content)}"
+                                     onclick="UIManager.viewChatImage(this.src, null)"
+                                     class="w-full h-auto object-cover min-h-[256px] bg-gray-800 cursor-pointer" 
+                                     alt="Generated Scene" 
+                                     onload="UIManager.hydrateVisualImage(this)">
                             </div>
                         </div>`;
                 }
@@ -7539,10 +7571,23 @@
             },
 
             /**
+             * Shows the prompt modal with the given text.
+             * @param {string} promptText - The prompt to display.
+             */
+            showPromptModal(promptText) {
+                const modal = document.getElementById('prompt-modal');
+                const contentEl = document.getElementById('prompt-modal-content');
+                if (modal && contentEl) {
+                    contentEl.textContent = promptText || "No prompt available.";
+                    AppController.openModal('prompt-modal');
+                }
+            },
+
+            /**
              * Opens the lightbox modal to view a chat image in full size.
              * @param {string} src - The source URL of the image.
              */
-            viewChatImage(src) {
+            viewChatImage(src, caption = null) {
                 // Reuse the lightbox modal structure but override the navigation
                 const imgEl = document.getElementById('lightbox-image');
                 const modal = document.getElementById('lightbox-modal');
@@ -7551,7 +7596,10 @@
                 const capEl = document.getElementById('lightbox-caption');
 
                 if (imgEl) imgEl.src = src;
-                if (capEl) capEl.textContent = ""; // No caption for raw chat images
+                if (capEl) {
+                    capEl.textContent = caption || "";
+                    capEl.style.display = caption ? 'block' : 'none';
+                }
 
                 // Hide nav buttons since this is a single image view
                 if (prevBtn) prevBtn.style.display = 'none';
@@ -10123,9 +10171,12 @@
                 if (document.getElementById('system-prompt-input')) setListener('system-prompt-input', 'system_prompt');
                 if (document.getElementById('event-master-prob-input')) {
                     setListener('event-master-prob-input', 'event_master_probability');
-                    // Ensure default display if missing
+                    // Robust Initialization: Fix for "Reset to 50%" issue
                     const input = document.getElementById('event-master-prob-input');
-                    if (input.value === '' || input.value === undefined) input.value = 10;
+                    if (state.event_master_probability === undefined || state.event_master_probability === null) {
+                        input.value = 0;
+                        state.event_master_probability = 0;
+                    }
                 }
 
                 // Event Master Prompt (Base)
@@ -10143,6 +10194,16 @@
                 // Visual Master Probability
                 if (document.getElementById('visual-master-prob-input')) {
                     setListener('visual-master-prob-input', 'visual_master_probability');
+
+                    // Robust Initialization: Fix for "Reset to 50%" issue
+                    const input = document.getElementById('visual-master-prob-input');
+                    // If the state used the fallback default (empty string -> 0) it is fine.
+                    // But if it was undefined initially, setListener might have set it to '', causing the browser to render 50%.
+                    // We force it to 0 if the state is missing.
+                    if (state.visual_master_probability === undefined || state.visual_master_probability === null) {
+                        input.value = 0;
+                        state.visual_master_probability = 0;
+                    }
                 }
 
                 // Visual Master Prompt (Base) - NEW BINDING
@@ -12470,9 +12531,15 @@
                 if (typeof UIManager !== 'undefined' && !UIManager.isImageGenEnabled()) return;
 
                 const state = ReactiveStore.state;
-                // Guard: Probability Check
-                const probability = parseFloat(state.visual_master_probability || 0);
-                if (probability <= 0) return;
+                // Guard: Probability Check - Fix: Treat undefined/NaN as 0
+                const rawProb = state.visual_master_probability;
+                let probability = 0;
+
+                if (rawProb !== undefined && rawProb !== null && rawProb !== "") {
+                    probability = parseFloat(rawProb);
+                }
+
+                if (isNaN(probability) || probability <= 0) return;
 
                 // Dice Roll
                 if (Math.random() * 100 > probability) return;
@@ -13456,6 +13523,75 @@ CRITICAL INSTRUCTION: The 'description' MUST be written as an out of scenario co
                 }
             },
 
+            /**
+             * Regenerates a visual event image.
+             * @param {number} index - The index of the message in chat_history.
+             * @param {HTMLElement} btnElement - The button that triggered the action.
+             */
+            async regenerateVisual(index, btnElement) {
+                const state = ReactiveStore.state;
+                const msg = state.chat_history[index];
+                if (!msg || msg.type !== 'visual_event') return;
+
+                const prompt = msg.content;
+                if (!prompt) return;
+
+                // UI Feedback
+                const originalContent = btnElement.innerHTML;
+                btnElement.disabled = true;
+                btnElement.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
+                try {
+                    // Call Image Generation directly (bypassing VisualMaster cues)
+                    const blob = await ImageGenerationService.generateImage(
+                        prompt,
+                        "nsfw, nude, naked, bad anatomy, text, watermark, blurry, low quality",
+                        {
+                            width: StateManager.data.globalSettings.imageGenWidth || 512,
+                            height: StateManager.data.globalSettings.imageGenHeight || 512,
+                            steps: StateManager.data.globalSettings.koboldImageGenSteps || 20
+                        }
+                    );
+
+                    if (!blob) throw new Error("Image generation failed.");
+
+                    // Overwrite the existing image in DB with the SAME key (so we don't leak orphans)
+                    // Actually, safer to create new key to avoid cache collisions, then delete old?
+                    // Let's create NEW key.
+                    const newImageId = `visual_event_${Date.now()}`;
+                    await DBService.saveImage(newImageId, blob);
+
+                    // Optional: Clean up old image if desired, but history undo might need it? 
+                    // Ellipsis V1 strategy: Keep it safe.
+
+                    // Update Message
+                    msg.image_key = newImageId;
+                    msg.timestamp = new Date().toISOString(); // Update timestamp to show freshness? Or keep original? Keep original context, maybe just update isNew for animation.
+
+                    // Force Save
+                    await ReactiveStore.forceSave();
+
+                    // Force Update of this specific bubble image in DOM
+                    const bubble = document.querySelector(`.chat-bubble-container[data-message-index="${index}"]`);
+                    if (bubble) {
+                        const img = bubble.querySelector('img[data-visual-key]');
+                        if (img) {
+                            img.dataset.visualKey = newImageId;
+                            img.src = URL.createObjectURL(blob); // Direct hot swap
+                        }
+                    } else {
+                        UIManager.renderChat();
+                    }
+
+                } catch (err) {
+                    console.error("Regen Failed:", err);
+                    alert("Failed to regenerate image: " + err.message);
+                } finally {
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = originalContent;
+                }
+            },
+
             // --- AI Generation Logic ---
 
             /**
@@ -14167,14 +14303,34 @@ Rules:
             async enhancePersonaWithAI(event, charId) {
                 const char = ReactiveStore.state.characters.find(c => c.id === charId);
                 if (!char) return;
+
+                // Capture the button immediately, as 'event' may be lost/stale in the async callback
+                let targetBtn = null;
+                if (event && event.target && typeof event.target.closest === 'function') {
+                    targetBtn = event.target.closest('button');
+                }
+                // Fallback: Try to find the button via data attributes if event is missing
+                if (!targetBtn) {
+                    targetBtn = document.querySelector(`button[data-action="enhance-persona"][data-id="${charId}"]`);
+                }
+
                 UIManager.showConfirmationModal('Overwrite persona?', async () => {
-                    const prompt = ReactiveStore.state.prompt_persona_gen.replace('{concept}', char.description);
-                    const res = await this._gen(event, prompt);
+                    const promptTemplate = ReactiveStore.state.prompt_persona_gen || UTILITY.getDefaultSystemPrompts().prompt_persona_gen;
+                    // Robust replacement handling empty fields
+                    const prompt = promptTemplate.replace(/{name}/g, char.name || 'Character').replace(/{concept}/g, char.description || '');
+
+                    // Pass the captured button wrapped in a structure that _gen expects
+                    const res = await this._gen({ target: targetBtn }, prompt);
+
                     if (res) {
                         char.description = res;
                         // Update UI manually for immediate feedback if open
                         const el = document.getElementById(`persona-description-${char.id}`);
-                        if (el) el.value = res;
+                        if (el) {
+                            el.value = res;
+                            // Trigger input event or manually update token count if needed
+                            if (UIManager.updateTokenCount) UIManager.updateTokenCount(char.id, res);
+                        }
                     }
                 });
             },
@@ -14469,12 +14625,38 @@ Rules:
              * @private
              */
             async _gen(event, prompt) {
-                // Helper for button state handling
-                const btn = event.target.closest('button');
-                if (btn) { btn.disabled = true; btn.innerHTML = '...'; }
-                try { return await APIService.callAI(prompt); }
-                catch (e) { alert(e.message); return null; }
-                finally { if (btn) { btn.disabled = false; btn.innerHTML = 'Gen'; } }
+                // Return null immediately if no prompt
+                if (!prompt) return null;
+
+                // Helper for button state handling - Robust Check
+                let btn = null;
+                if (event && event.target) {
+                    if (event.target instanceof Element && typeof event.target.closest === 'function') {
+                        btn = event.target.closest('button');
+                    } else if (event.target.tagName === 'BUTTON') {
+                        btn = event.target;
+                    }
+                }
+
+                // Preserve original text for restoration
+                let originalText = '';
+                if (btn) {
+                    btn.disabled = true;
+                    originalText = btn.innerHTML;
+                    btn.innerHTML = '...';
+                }
+
+                try {
+                    return await APIService.callAI(prompt);
+                } catch (e) {
+                    alert(e.message);
+                    return null;
+                } finally {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalText || 'Gen'; // Restore or Default
+                    }
+                }
             },
 
             /**
@@ -15587,8 +15769,8 @@ Rules:
                 ActionHandler.register('open-story', (ds) => UIManager.openStoryDetails(ds.id));
                 ActionHandler.register('duplicate-story', (ds) => LibraryController.duplicateStory(ds.id));
                 ActionHandler.register('delete-story', (ds) => LibraryController.deleteStory(ds.id));
-                ActionHandler.register('gen-story-notes', (ds, e) => LibraryController.generateStoryNotesAI(e, ds.id));
-                ActionHandler.register('gen-story-tags', (ds, e) => LibraryController.generateStoryTagsAI(e, ds.id));
+                ActionHandler.register('gen-story-notes', (ds, val, e) => LibraryController.generateStoryNotesAI(e, ds.id));
+                ActionHandler.register('gen-story-tags', (ds, val, e) => LibraryController.generateStoryTagsAI(e, ds.id));
 
                 // Lightbox Actions
                 ActionHandler.register('open-lightbox', (ds) => UIManager.openLightbox(ds.index));
@@ -15626,9 +15808,9 @@ Rules:
                 ActionHandler.register('open-character-detail', (ds) => AppController.openModal('character-detail-modal', ds.id));
                 ActionHandler.register('delete-character', (ds) => NarrativeController.deleteCharacter(ds.id));
                 ActionHandler.register('set-char-role', (ds) => NarrativeController.setCharacterRole(ds.id, ds.role));
-                ActionHandler.register('gen-char-tags', (ds, e) => NarrativeController.generateTagsForCharacter(e, ds.id));
-                ActionHandler.register('enhance-persona', (ds, e) => NarrativeController.enhancePersonaWithAI(e, ds.id));
-                ActionHandler.register('gen-model-instructions', (ds, e) => NarrativeController.generateModelInstructions(e, ds.id));
+                ActionHandler.register('gen-char-tags', (ds, val, e) => NarrativeController.generateTagsForCharacter(e, ds.id));
+                ActionHandler.register('enhance-persona', (ds, val, e) => NarrativeController.enhancePersonaWithAI(e, ds.id));
+                ActionHandler.register('gen-model-instructions', (ds, val, e) => NarrativeController.generateModelInstructions(e, ds.id));
                 ActionHandler.register('add-extra-portrait', (ds) => NarrativeController.addExtraPortrait(ds.id));
                 ActionHandler.register('remove-extra-portrait', (ds) => NarrativeController.removeExtraPortrait(ds.id, ds.index));
                 ActionHandler.register('upload-local-image', (ds, val, e) => NarrativeController.handleLocalImageUpload(e, ds.id));
@@ -15636,13 +15818,13 @@ Rules:
 
                 // --- WorldController (Map, Lore) ---
                 ActionHandler.register('switch-world-map-tab', (ds) => WorldController.switchWorldMapTab(ds.tab));
-                ActionHandler.register('gen-world-map', (ds, e) => WorldController.generateWorldMap(e));
+                ActionHandler.register('gen-world-map', (ds, val, e) => WorldController.generateWorldMap(e));
                 ActionHandler.register('clear-world-map', () => WorldController.clearWorldMap());
                 ActionHandler.register('select-pending-move', (ds) => WorldController.selectPendingMove(parseInt(ds.x), parseInt(ds.y)));
                 ActionHandler.register('confirm-move', () => WorldController.confirmMove());
                 ActionHandler.register('select-map-tile', (ds) => WorldController.selectMapTile(parseInt(ds.x), parseInt(ds.y)));
                 ActionHandler.register('upload-loc-image', (ds, val, e) => WorldController.handleWorldMapLocationImageUpload(e, ds.x, ds.y));
-                ActionHandler.register('gen-loc-prompt', (ds, e) => WorldController.generateLocationPromptAI(e));
+                ActionHandler.register('gen-loc-prompt', (ds, val, e) => WorldController.generateLocationPromptAI(e));
                 ActionHandler.register('set-destination', () => WorldController.setDestination());
                 ActionHandler.register('jump-to-location', (ds) => {
                     WorldController.moveToLocation(parseInt(ds.x), parseInt(ds.y));
@@ -15651,14 +15833,14 @@ Rules:
 
                 ActionHandler.register('add-static-entry', () => WorldController.addStaticEntry());
                 ActionHandler.register('select-static-entry', (ds) => WorldController.selectStaticEntry(ds.id));
-                ActionHandler.register('gen-static-ai', (ds, e) => WorldController.generateStaticEntryContentAI(e, ds.id));
+                ActionHandler.register('gen-static-ai', (ds, val, e) => WorldController.generateStaticEntryContentAI(e, ds.id));
                 ActionHandler.register('delete-static-entry', (ds) => WorldController.deleteStaticEntry(ds.id));
                 ActionHandler.register('check-world-info', () => WorldController.checkWorldInfoAgent());
                 ActionHandler.register('gen-location-image', (ds) => WorldController.openLocationImageGenerator());
 
                 ActionHandler.register('add-dynamic-entry', () => WorldController.addDynamicEntry());
                 ActionHandler.register('select-dynamic-entry', (ds) => WorldController.selectDynamicEntry(ds.id));
-                ActionHandler.register('gen-dynamic-ai', (ds, e) => WorldController.generateDynamicEntryContentAI(e, ds.id, ds.index));
+                ActionHandler.register('gen-dynamic-ai', (ds, val, e) => WorldController.generateDynamicEntryContentAI(e, ds.id, ds.index));
                 ActionHandler.register('add-dynamic-field', (ds) => WorldController.addDynamicContentField(ds.id));
                 ActionHandler.register('delete-dynamic-entry', (ds) => WorldController.deleteDynamicEntry(ds.id));
 
@@ -16111,6 +16293,68 @@ Rules:
         document.addEventListener('DOMContentLoaded', () => app.init());
 
     </script>
+    <!-- Lightbox Modal -->
+    <div id="lightbox-modal"
+        class="hidden fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center modal-overlay"
+        onclick="if(event.target === this) AppController.closeModal('lightbox-modal')">
+        <div class="relative w-full h-full flex flex-col items-center justify-center p-4">
+            <button onclick="AppController.closeModal('lightbox-modal')"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white p-2 z-50 rounded-full bg-black/20 hover:bg-black/50 transition-colors">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+            <img id="lightbox-image"
+                class="max-w-full max-h-[85vh] object-contain shadow-2xl rounded-lg transition-transform duration-300"
+                src="" onclick="event.stopPropagation()">
+            <button data-action="lightbox-prev"
+                class="absolute left-4 text-white/50 hover:text-white p-2 hidden z-50"><svg class="w-10 h-10"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg></button>
+            <button data-action="lightbox-next"
+                class="absolute right-4 text-white/50 hover:text-white p-2 hidden z-50"><svg class="w-10 h-10"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg></button>
+            <div id="lightbox-caption"
+                class="mt-4 text-gray-300 text-center max-w-4xl bg-black/50 p-4 rounded-xl backdrop-blur-sm text-lg font-serif italic border border-gray-700/50 select-text"
+                onclick="event.stopPropagation()"></div>
+        </div>
+    </div>
+
+    <!-- Prompt Modal -->
+    <div id="prompt-modal"
+        class="hidden fixed inset-0 z-[110] bg-black/80 flex flex-col items-center justify-center modal-overlay"
+        onclick="if(event.target === this) AppController.closeModal('prompt-modal')">
+        <div
+            class="relative w-full max-w-2xl bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-6 transform transition-all mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Image Prompt
+                </h3>
+                <button onclick="AppController.closeModal('prompt-modal')"
+                    class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <div id="prompt-modal-content"
+                class="text-gray-300 font-mono text-sm whitespace-pre-wrap max-h-[60vh] overflow-y-auto select-text p-4 bg-black/30 rounded-lg border border-gray-800">
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="AppController.closeModal('prompt-modal')"
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
