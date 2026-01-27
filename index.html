@@ -2357,6 +2357,26 @@
                 </select>
             </div>
 
+            <!-- Art Style Selector -->
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-400 mb-2">Art Style (Story Specific)</label>
+                <select id="image-gen-art-style"
+                    onchange="ReactiveStore.state.imageGenArtStyle = this.value; ReactiveStore.forceSave();"
+                    class="w-full rounded-lg p-3 bg-gray-700 border border-gray-600 text-white focus:border-indigo-500 transition-colors">
+                    <option value="none" selected>None (Use Prompt As-Is)</option>
+                    <option value="anime">Anime</option>
+                    <option value="cinematic">Cinematic Film Still</option>
+                    <option value="watercolor">Watercolor Painting</option>
+                    <option value="digital_illustration">Digital Illustration</option>
+                    <option value="oil_painting">Oil Painting</option>
+                    <option value="bw_photography">B&W Photography</option>
+                    <option value="80s_cartoon">80's Cartoon</option>
+                    <option value="50s_pulp">50s Pulp Book Cover</option>
+                    <option value="pixel_art">Pixel Art</option>
+                    <option value="concept_art">Concept Art</option>
+                </select>
+            </div>
+
             <!-- KoboldCPP / Local SD Settings -->
             <div id="image-gen-kobold-settings" class="space-y-4">
                 <h4 class="font-bold text-gray-300">KoboldCPP / SDAPI Settings</h4>
@@ -2655,7 +2675,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.01.26 - 17:30 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.01.27 - 12:30 CST";
 
 
         /**
@@ -3240,6 +3260,32 @@
          */
         const ImageGenerationService = {
 
+            ART_STYLE_PROMPTS: {
+                "anime": "High-quality anime key visual, vibrant colors, clean lineart, cel shading, intricate details, cinematic lighting, 4k resolution",
+                "cinematic": "Cinematic film still, photorealistic, shallow depth of field with bokeh, dramatic lighting, highly detailed textures, color graded, 8k resolution",
+                "watercolor": "Soft watercolor painting on textured paper, wet-on-wet technique, translucent pastel colors, artistic paint splatters, dreamy atmosphere",
+                "digital_illustration": "Modern digital 2D illustration, vector-style clean lines, smooth gradient shading, vibrant color palette, polished character art, high definition",
+                "oil_painting": "Classic oil painting on canvas, thick impasto brushstrokes, textured surface, chiaroscuro lighting, rich pigments, traditional fine art style",
+                "bw_photography": "Fine art black and white photography, high contrast monochrome, 35mm film grain, dramatic shadows, shallow depth of field, emotive composition",
+                "80s_cartoon": "Vintage 1980s Saturday morning cartoon style, traditional hand-drawn cel animation, flat bold colors, retro aesthetic, slightly noisy film grain",
+                "50s_pulp": "Vintage 1950s pulp fiction magazine cover, painted illustration style, dynamic action composition, saturated colors, distressed paper texture, retro noir aesthetic",
+                "pixel_art": "16-bit pixel art, retro SNES game sprite style, clean distinct pixels, limited color palette, isometric view, sharp resolution",
+                "concept_art": "Epic fantasy concept art, speedpaint style, atmospheric lighting, loose painterly brushstrokes, massive scale, detailed environment design, matte painting"
+            },
+
+            ART_STYLE_NEGATIVE_PROMPTS: {
+                "anime": "photorealistic, 3d, realism, western cartoon, sketch, messy lines, nose, lips, live action",
+                "cinematic": "drawing, painting, illustration, anime, cartoon, sketch, text, watermark, low quality, cel shaded, vector",
+                "watercolor": "photograph, photorealistic, vector, bold lines, sharp edges, oil painting, acrylic, digital art, smooth",
+                "digital_illustration": "photograph, photorealistic, traditional media, watercolor, sketch, messy, grain, paper texture, blurry",
+                "oil_painting": "photograph, digital art, vector, smooth, flat color, cartoon, anime, 3d render, glossy",
+                "bw_photography": "color, vibrant, saturation, sepia, painting, illustration, drawing, anime, 3d render, sketch",
+                "80s_cartoon": "photorealistic, 3d render, modern style, volumetric lighting, gradient shading, highly detailed, vector, 4k",
+                "50s_pulp": "photograph, 3d render, modern design, minimalist, clean, vector, digital art, text, title, typography",
+                "pixel_art": "blur, anti-aliasing, vector, drawing, photograph, smooth, filters, interpolation, fuzzy, noise",
+                "concept_art": "photograph, anime, lineart, cartoon, flat color, low quality, blurry, simple, minimalist"
+            },
+
             /**
              * Generates an image based on the provided prompt and settings.
              * @param {string} prompt - The positive prompt.
@@ -3250,6 +3296,20 @@
             async generateImage(prompt, negativePrompt = "", options = {}) {
                 const globalSettings = StateManager.data.globalSettings;
                 const backend = globalSettings.imageGenBackend || 'koboldcpp'; // 'koboldcpp' or 'openrouter'
+
+                // Apply Art Style Logic
+                // Prioritize Story Setting, fallback to Global (if we kept it there, but here we want Story)
+                // Note: ReactiveStore.state maps to the active story settings.
+                const styleKey = (ReactiveStore.state && ReactiveStore.state.imageGenArtStyle) ? ReactiveStore.state.imageGenArtStyle : 'none';
+
+                if (styleKey !== 'none') {
+                    if (this.ART_STYLE_PROMPTS[styleKey]) {
+                        prompt = `${this.ART_STYLE_PROMPTS[styleKey]}, ${prompt}`;
+                    }
+                    if (this.ART_STYLE_NEGATIVE_PROMPTS[styleKey]) {
+                        negativePrompt = negativePrompt ? `${negativePrompt}, ${this.ART_STYLE_NEGATIVE_PROMPTS[styleKey]}` : this.ART_STYLE_NEGATIVE_PROMPTS[styleKey];
+                    }
+                }
 
                 if (backend === 'disabled') {
                     console.log("Image generation is disabled.");
@@ -3822,7 +3882,10 @@
                             'prompt_auto_static_knowledge',
 
                             // AI Logic Toggles
-                            'enableAutoStaticKnowledge', 'enableAnalysis'
+                            'enableAutoStaticKnowledge', 'enableAnalysis',
+
+                            // Visual
+                            'imageGenArtStyle'
                         ];
 
                         settingsKeys.forEach(key => {
@@ -4217,8 +4280,13 @@
                     if (savedSettingsJSON) parsedSettings = JSON.parse(savedSettingsJSON);
                 } catch (error) { parsedSettings = {}; }
                 this.data.globalSettings = { ...defaults, ...parsedSettings };
-                // Cleanup legacy keys that are now story-specific
+
+                // Cleanup legacy keys that are now story-specific to prevent pollution
                 delete this.data.globalSettings.responseLength;
+                delete this.data.globalSettings.imageGenArtStyle;
+                delete this.data.globalSettings.visual_master_probability;
+                delete this.data.globalSettings.visual_master_base_prompt;
+                delete this.data.globalSettings.event_master_probability;
             },
 
             /**
@@ -4262,9 +4330,34 @@
                             is_active: char.is_user || activeIDs.has(char.id)
                         }));
                         this.data.activeNarrativeState = {
-                            ...activeStory,
-                            ...this.data.globalSettings,
-                            ...activeNarrative.state,
+                            // ...defaults, // Removed to fix RefError (Global Settings already has defaults)
+                            ...this.data.globalSettings, // User Global Prefs
+                            ...activeStory, // Story Specifics (Overrides Global)
+                            ...activeNarrative.state, // Narrative Specifics (Overrides Story)
+
+                            // FORCE GLOBALS: Critical API settings must come from Global Settings
+                            // This ensures that stale provider/key data in Stories doesn't override user preference.
+                            apiProvider: this.data.globalSettings.apiProvider,
+                            geminiApiKey: this.data.globalSettings.geminiApiKey,
+                            openRouterKey: this.data.globalSettings.openRouterKey,
+                            koboldcpp_url: this.data.globalSettings.koboldcpp_url,
+                            lmstudio_url: this.data.globalSettings.lmstudio_url,
+
+                            characters: hydratedCharacters,
+
+                            // FORCE GLOBALS: Critical API settings must come from Global Settings
+                            // This ensures that stale provider/key data in Stories doesn't override user preference.
+                            apiProvider: this.data.globalSettings.apiProvider,
+                            geminiApiKey: this.data.globalSettings.geminiApiKey,
+                            openRouterKey: this.data.globalSettings.openRouterKey,
+                            koboldcpp_url: this.data.globalSettings.koboldcpp_url,
+                            lmstudio_url: this.data.globalSettings.lmstudio_url,
+
+                            // Also enforce Model Selections from Global
+                            openRouterModel: this.data.globalSettings.openRouterModel,
+                            geminiModel: this.data.globalSettings.geminiModel,
+                            lmStudioModel: this.data.globalSettings.lmStudioModel, // If applicable
+
                             characters: hydratedCharacters,
                             narrativeId: activeNarrative.id,
                             narrativeName: activeNarrative.name
@@ -5091,7 +5184,7 @@
              * @param {Array|null} [historyOverride=null] - Optional override for chat history (e.g. for regeneration).
              * @returns {string} - The constructed prompt.
              */
-            buildPrompt(charToActId, isForUser = false, historyOverride = null) {
+            buildPrompt(charToActId, isForUser = false, historyOverride = null, customInstruction = null) {
                 const state = StateManager.getState();
                 const charToAct = state.characters.find(c => c.id === charToActId);
                 if (!charToAct) return "";
@@ -5163,7 +5256,8 @@
                     charToAct: charToAct,
                     isForUser: isForUser,
                     location_context: locationContext,
-                    dynamic_entries: '' // If needed, pull from state logic or remove if handled elsewhere
+                    dynamic_entries: '', // If needed, pull from state logic or remove if handled elsewhere
+                    customInstruction: customInstruction
                 };
 
                 // Simple auto-consume logic for event master
@@ -5221,7 +5315,12 @@
                     }
                 });
                 p += "\n### INSTRUCTION\n";
-                p += components.isForUser ? `Generate the next creative response for the user's character, ${components.charToAct.name}.` : `Generate the next response for ${components.charToAct.name}. Stay in character.`;
+
+                if (components.customInstruction) {
+                    p += components.customInstruction;
+                } else {
+                    p += components.isForUser ? `Generate the next creative response for the user's character, ${components.charToAct.name}.` : `Generate the next response for ${components.charToAct.name}. Stay in character.`;
+                }
 
                 // Response Length Instruction
                 const responseLength = state.responseLength || 'normal';
@@ -5276,9 +5375,14 @@
 
                 const system_prompt_str = system.join('\n\n');
 
-                let instruction = components.isForUser
-                    ? `Generate the next creative response for the user's character, ${components.charToAct.name}.`
-                    : `Generate the next response for ${components.charToAct.name}. Stay in character.`;
+                let instruction = "";
+                if (components.customInstruction) {
+                    instruction = components.customInstruction;
+                } else {
+                    instruction = components.isForUser
+                        ? `Generate the next creative response for the user's character, ${components.charToAct.name}.`
+                        : `Generate the next response for ${components.charToAct.name}. Stay in character.`;
+                }
 
                 // Response Length Instruction
                 const responseLength = state.responseLength || 'normal';
@@ -10112,6 +10216,17 @@
                     // Trigger visibility update if valid
                     AppController.updateImageGenSettingsVisibility();
                 });
+
+                // Art Style Binding (Explicit)
+                const artStyleSelect = document.getElementById('image-gen-art-style');
+                if (artStyleSelect) {
+                    artStyleSelect.value = state.imageGenArtStyle || 'none';
+                    artStyleSelect.addEventListener('change', (e) => {
+                        state.imageGenArtStyle = e.target.value;
+                        if (typeof ReactiveStore.forceSave === 'function') ReactiveStore.forceSave();
+                    });
+                }
+
                 if (document.getElementById('image-gen-kobold-url')) setListener('image-gen-kobold-url', 'koboldImageGenUrl');
                 if (document.getElementById('image-gen-width')) setListener('image-gen-width', 'imageGenWidth');
                 if (document.getElementById('image-gen-height')) setListener('image-gen-height', 'imageGenHeight');
@@ -12763,55 +12878,19 @@
                         return;
                     }
 
-                    // 1. Replacer for placeholders (Mirroring PromptBuilder)
-                    const replacer = (text) => {
-                        if (typeof text !== 'string') return '';
-                        return text.replace(/{character}/g, userChar.name).replace(/{user}/g, userChar.name);
-                    };
-
-                    // 2. Build Knowledge Context (World + Location)
-                    let knowledge = (state.static_entries || [])
-                        .map(e => `### ${e.title}\n${replacer(e.content)}`)
-                        .join('\n\n');
-
-                    let locationContext = '';
-                    if (state.worldMap && state.worldMap.grid.length > 0) {
-                        const { grid, currentLocation } = state.worldMap;
-                        const currentLoc = grid.find(l => l.coords.x === currentLocation.x && l.coords.y === currentLocation.y);
-                        if (currentLoc && currentLoc.name) {
-                            locationContext = `CURRENT LOCATION: ${currentLoc.name}\n${currentLoc.prompt || '(No detailed description available.)'}\n\n`;
-                            if (currentLoc.local_static_entries && currentLoc.local_static_entries.length > 0) {
-                                locationContext += "--- LOCATION-SPECIFIC KNOWLEDGE ---\n" +
-                                    currentLoc.local_static_entries.map(l => `Title: ${l.title}\nContent: ${replacer(l.content)}`).join('\n\n') + "\n\n";
-                            }
-                        }
-                    }
-
-                    // 3. History (Last 20 messages for context)
-                    const history = state.chat_history.slice(-20)
-                        .filter(m => m.type === 'chat' && !m.isHidden)
-                        .map(m => {
-                            const char = state.characters.find(c => c.id === m.character_id);
-                            return `[${char ? char.name : 'Unknown'}:]\n${m.content}`;
-                        })
-                        .join('\n\n');
-
-                    // 4. Construct Prompt
-                    let prompt = `${replacer(userChar.model_instructions || state.system_prompt)}\n\n`;
-                    if (locationContext) prompt += `## LOCATION CONTEXT\n${locationContext}\n`;
-                    if (knowledge) prompt += `## WORLD KNOWLEDGE\n${knowledge}\n\n`;
-                    prompt += `## RECENT CONVERSATION\n${history}\n\n`;
-
+                    // Calculate Custom Instruction
+                    let customInstruction = null;
                     if (userText.trim().length > 0) {
-                        prompt += `Begin your response with the following and continue writing for ${userChar.name}:\n${userText}\n\n[${userChar.name}: ] `;
-                    } else {
-                        prompt += `Generate the next creative response for ${userChar.name}. Stay in character.\n\n[${userChar.name}: ] `;
+                        customInstruction = `Begin your response with the following and continue writing for ${userChar.name}:\n${userText}`;
                     }
 
-                    // 5. Call AI
+                    // Use PromptBuilder to generate the prompt with full context and rules
+                    const prompt = PromptBuilder.buildPrompt(userChar.id, true, null, customInstruction);
+
+                    // Call AI
                     const continuation = await APIService.callAI(prompt, false);
 
-                    // 6. Append logic
+                    // Append logic
                     if (continuation) {
                         let finalResult = continuation.trim();
                         // Strip echoed prefix if the model repeats it (common for some chat models)
@@ -13051,14 +13130,32 @@ CRITICAL INSTRUCTION: The 'description' MUST be written as an out of scenario co
                 // This "cuts in line" before the character replies.
                 await this.checkEventMaster();
 
-                // 3.5. Run Visual Master
+                // 3.5. Run Visual Master & Speaker Selection (Concurrent & "Speaker First")
+                // We launch Speaker Selection (if needed) AND Visual Master concurrently.
+                // This ensures the "Character is typing..." UI appears as fast as possible (Speaker First),
+                // even if the Visual Master request queues up on the backend.
+
+                // A. Determine Speaker Promise
+                let speakerPromise = null;
+                const selectorVal = document.getElementById('ai-character-selector').value;
+                if (selectorVal === 'any') {
+                    // Auto-select: Launch the AI selector task
+                    speakerPromise = this.determineNextSpeaker(false);
+                } else {
+                    // Manual select: Resolve immediately
+                    speakerPromise = Promise.resolve(selectorVal);
+                }
+
+                // B. Run Visual Master (Concurrent)
+                let visualBlocker = null;
                 if (typeof VisualMaster !== 'undefined') {
-                    await VisualMaster.checkTrigger();
+                    visualBlocker = VisualMaster.checkTrigger();
                 }
 
                 // 4. Trigger Character Response
+                // We pass the PROMISE for the speaker, not the ID.
                 // The character will now see the Event Master's instruction in the prompt context.
-                await this.triggerAIResponse(null, messageContent);
+                await this.triggerAIResponse(speakerPromise, messageContent, false, null, visualBlocker);
 
                 // 5. Cleanup / Auto-Save logic is handled by ReactiveStore
             },
@@ -13619,7 +13716,16 @@ CRITICAL INSTRUCTION: The 'description' MUST be written as an out of scenario co
              * @param {boolean} isAfterMove - Whether this follows a location move.
              * @param {number|null} targetMessageIndex - Index of message to overwrite (regen/versioning).
              */
-            async triggerAIResponse(charId = null, userMessage = '', isAfterMove = false, targetMessageIndex = null) {
+            /**
+             * Triggers the AI to generate a response.
+             * Handles character selection, prompt building, API calls, and streaming.
+             * @param {string|Promise<string>|null} charIdOrPromise - The ID (or Promise resolving to ID) of the character to speak.
+             * @param {string} userMessage - The user's last message (for analysis).
+             * @param {boolean} isAfterMove - Whether this follows a location move.
+             * @param {number|null} targetMessageIndex - Index of message to overwrite (regen/versioning).
+             * @param {Promise|null} visualBlockerPromise - Optional promise from Visual Master to await before displaying.
+             */
+            async triggerAIResponse(charIdOrPromise = null, userMessage = '', isAfterMove = false, targetMessageIndex = null, visualBlockerPromise = null) {
                 const state = ReactiveStore.state;
 
                 // Clear previous error messages before starting new generation
@@ -13636,12 +13742,28 @@ CRITICAL INSTRUCTION: The 'description' MUST be written as an out of scenario co
                     return;
                 }
 
-                // 2. Determine Speaker
-                const selectorVal = document.getElementById('ai-character-selector').value;
-                let targetId = charId;
+                // 2. Determine Speaker (Await Promise if provided)
+                let targetId = null;
 
+                // UX: If we are waiting for a speaker, show a generic loading indicator?
+                // Actually, determineNextSpeaker handles its own "..." indicator.
+                // checking strictly for Promise instance or duck-typing
+                if (charIdOrPromise && typeof charIdOrPromise.then === 'function') {
+                    try {
+                        targetId = await charIdOrPromise;
+                    } catch (e) {
+                        console.error("Speaker selection promise failed:", e);
+                    }
+                } else {
+                    targetId = charIdOrPromise;
+                }
+
+                // Fallback Logic (if null passed or promise failed, though sendMessage usually handles this)
+                // This handles cases like manual calls where 'any' logic might be local
                 if (!targetId) {
+                    const selectorVal = document.getElementById('ai-character-selector').value;
                     if (selectorVal === 'any') {
+                        // If we didn't receive a promise, we must run it now (Serial fallback)
                         targetId = await this.determineNextSpeaker(isAfterMove);
                     } else {
                         targetId = selectorVal;
@@ -13669,13 +13791,17 @@ CRITICAL INSTRUCTION: The 'description' MUST be written as an out of scenario co
                 this.RUNTIME.activeRequestAbortController = new AbortController();
 
                 try {
-                    // 4. Generate Response
+                    // 4. Generate Response (Parallel Execution Start)
                     // Fix: Provide clean history context if regenerating (exclude the old message)
                     const historyOverride = targetMessageIndex !== null ? state.chat_history.slice(0, targetMessageIndex) : null;
                     const prompt = PromptBuilder.buildPrompt(targetId, false, historyOverride);
-                    const responseText = await APIService.callAI(prompt, false, this.RUNTIME.activeRequestAbortController.signal);
 
-                    // 5. Analyze for Emotion/Location (Parallel)
+                    // START REQUEST (Do not await yet if there might be other parallel work, but here we await basic text first)
+                    // Actually, to fully parallelize, we could start this promise and the emotion analysis promise.
+                    const textGenPromise = APIService.callAI(prompt, false, this.RUNTIME.activeRequestAbortController.signal);
+
+                    // 5. Analyze for Emotion/Location (Parallel-ish)
+                    // We run this while the text is generating.
                     let emotion = 'neutral';
                     if (userMessage) {
                         this.analyzeTurn(userMessage).then(analysis => {
@@ -13690,6 +13816,10 @@ CRITICAL INSTRUCTION: The 'description' MUST be written as an out of scenario co
                             }
                         });
                     }
+
+                    // Await Text Generation First
+                    const responseText = await textGenPromise;
+
                     // Analyze AI Response for Sentiment (Emotion)
                     // We await this so the portrait is correct when the bubble appears
                     try {
@@ -13697,6 +13827,18 @@ CRITICAL INSTRUCTION: The 'description' MUST be written as an out of scenario co
                         emotion = aiAnalysis.emotion;
                     } catch (err) {
                         console.warn("Sentiment analysis failed, defaulting to neutral.");
+                    }
+
+                    // 5.5 Synchronization Point
+                    // If Visual Master is running in the background, we MUST wait for it to finish
+                    // before we display the text. This ensures the Image appears BEFORE the text in the history.
+                    if (visualBlockerPromise) {
+                        // Optional: Update spinner text to show we are just waiting for the image now
+                        const spinner = document.getElementById('typing-indicator-text');
+                        if (spinner && VisualMaster.RUNTIME.isProcessing) {
+                            spinner.innerText = "Painting scene...";
+                        }
+                        await visualBlockerPromise;
                     }
 
                     // 6. Stream Result
@@ -16016,6 +16158,16 @@ Rules:
                             ReactiveStore.subscribe(key, () => UIManager.applyStyling());
                         });
 
+                    // Update Art Style Dropdown on Load/Change
+                    ReactiveStore.subscribe('imageGenArtStyle', () => {
+                        const el = document.getElementById('image-gen-art-style');
+                        if (el && ReactiveStore.state.imageGenArtStyle) {
+                            el.value = ReactiveStore.state.imageGenArtStyle;
+                        } else if (el) {
+                            el.value = 'none';
+                        }
+                    });
+
                     // Smart Subscriptions (prevent focus loss)
                     ReactiveStore.subscribe('characters', () => {
                         const active = document.activeElement;
@@ -16049,6 +16201,16 @@ Rules:
                     ReactiveStore.subscribe('selectedDynamicEntryId', () => { UIManager.renderDynamicEntries(); UIManager.renderDynamicEntryDetails(); });
 
                     // Initial Render
+                    // Hydrate Global Settings UI
+                    const globalSettings = StateManager.data.globalSettings;
+                    document.querySelectorAll('[data-setting-key]').forEach(el => {
+                        const key = el.getAttribute('data-setting-key');
+                        if (globalSettings[key] !== undefined) {
+                            if (el.type === 'checkbox') el.checked = globalSettings[key];
+                            else el.value = globalSettings[key];
+                        }
+                    });
+
                     AppController.updateImageGenSettingsVisibility();
                     UIManager.applyStyling();
                     UIManager.renderAll();
@@ -16062,6 +16224,13 @@ Rules:
                 if ('scrollRestoration' in history) {
                     history.scrollRestoration = 'manual';
                 }
+
+                // Force scroll to bottom on initial load
+                setTimeout(() => {
+                    const chatWindow = document.getElementById('chat-window');
+                    if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
+                    window.scrollTo(0, document.body.scrollHeight);
+                }, 100);
             },
 
             /**
