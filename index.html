@@ -2350,8 +2350,49 @@
                         placeholder="http://localhost:1234">
                 </div>
             </div>
-        </div>
+            <div id="tts-settings" class="mt-6 border-t border-gray-700 pt-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z">
+                            </path>
+                        </svg>
+                        Text-to-Speech (TTS)
+                    </h3>
+                    <span class="text-xs text-indigo-400 bg-indigo-900/30 px-2 py-1 rounded">Gemini / Cloud TTS</span>
+                </div>
+                <div class="bg-black/20 p-4 rounded-lg border border-gray-700 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-gray-200 font-medium block">Enable TTS</span>
+                            <span class="text-xs text-gray-500">Read AI responses aloud.</span>
+                            <!-- TTS Mode -->
+                            <div>
+                                <label class="text-sm font-semibold text-gray-400 block mb-1">TTS Mode</label>
+                                <select id="tts-mode-select"
+                                    class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-gray-200 focus:border-indigo-500 focus:outline-none">
+                                    <option value="off">Off</option>
+                                    <option value="all">Read Everything</option>
+                                    <option value="dialogue">Dialogue Only</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Controls when the AI speaks. "Dialogue Only" reads
+                                    spoken text in quotes.</p>
+                            </div>
 
+                            <div>
+                                <label class="text-gray-400 text-sm block mb-1">Voice Selection</label>
+                                <select id="tts-voice-selector"
+                                    class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white focus:border-indigo-500">
+                                    <!-- Populated by AppController -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
         <div id="settings-image-gen-content">
             <div class="mb-4">
                 <label class="block text-sm font-bold text-gray-400 mb-2">Image Generation Backend</label>
@@ -2407,7 +2448,8 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs uppercase text-gray-500 font-bold mb-1">CFG Scale (Guidance)</label>
+                    <label class="block text-xs uppercase text-gray-500 font-bold mb-1">CFG Scale
+                        (Guidance)</label>
                     <input type="number" id="kobold-cfg-scale" data-setting-key="koboldImageGenCfg" placeholder="7"
                         step="0.5"
                         class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
@@ -2495,7 +2537,8 @@
                             class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white focus:border-indigo-500">
                             <option value="">Auto-detect (First AI)</option>
                         </select>
-                        <p class="text-xs text-gray-500 mt-1">For PNG/BYAF exports. Defaults to first AI character if
+                        <p class="text-xs text-gray-500 mt-1">For PNG/BYAF exports. Defaults to first AI
+                            character if
                             not selected.</p>
                     </div>
 
@@ -2553,7 +2596,8 @@
                 <!-- Full Library Export -->
                 <div class="bg-black/20 p-4 rounded-lg border border-gray-700">
                     <h3 class="text-lg font-medium text-white mb-2">Create Library Backup</h3>
-                    <p class="text-gray-400 text-sm mb-4">Export your entire library including all stories, characters,
+                    <p class="text-gray-400 text-sm mb-4">Export your entire library including all stories,
+                        characters,
                         and
                         settings.</p>
                     <button onclick="LibraryController.exportLibrary()"
@@ -2584,7 +2628,8 @@
         <button data-action="lightbox-prev" aria-label="Previous Image"
             class="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white p-4 z-50 bg-black/20 hover:bg-black/50 rounded-full transition-all">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                </path>
             </svg>
         </button>
 
@@ -2682,7 +2727,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.01.27 - 1:30 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.01.27 - 16:30 CST";
 
 
         /**
@@ -3537,6 +3582,8 @@
                 }
             },
         };
+
+
 
 
         /**
@@ -4806,8 +4853,298 @@
         };
 
         /**
-         * ModalManager Module
+         * TTSService Module
          */
+        /**
+         * TTSService Module
+         * Handles Text-to-Speech generation using Gemini's API.
+         * Support for multiple voices and audio playback.
+         */
+        const TTSService = {
+            CONSTANTS: {
+                VOICES: [
+                    { id: 'Zephyr', name: 'Zephyr (M, Bright)' },
+                    { id: 'Puck', name: 'Puck (M, Upbeat)' },
+                    { id: 'Charon', name: 'Charon (M, Informative)' },
+                    { id: 'Kore', name: 'Kore (F, Firm)' },
+                    { id: 'Fenrir', name: 'Fenrir (M, Excitable)' },
+                    { id: 'Leda', name: 'Leda (F, Youthful)' },
+                    { id: 'Orus', name: 'Orus (M, Firm)' },
+                    { id: 'Aoede', name: 'Aoede (F, Breezy)' },
+                    { id: 'Callirrhoe', name: 'Callirrhoe (F, Easy-going)' },
+                    { id: 'Autonoe', name: 'Autonoe (F, Bright)' },
+                    { id: 'Enceladus', name: 'Enceladus (M, Breathy)' },
+                    { id: 'Iapetus', name: 'Iapetus (M, Clear)' },
+                    { id: 'Umbriel', name: 'Umbriel (M, Easy-going)' },
+                    { id: 'Algieba', name: 'Algieba (M, Smooth)' },
+                    { id: 'Despina', name: 'Despina (F, Smooth)' },
+                    { id: 'Erinome', name: 'Erinome (F, Clear)' },
+                    { id: 'Algenib', name: 'Algenib (M, Gravelly)' },
+                    { id: 'Rasalgethi', name: 'Rasalgethi (M, Informative)' },
+                    { id: 'Laomedeia', name: 'Laomedeia (F, Upbeat)' },
+                    { id: 'Achernar', name: 'Achernar (F, Soft)' },
+                    { id: 'Alnilam', name: 'Alnilam (M, Firm)' },
+                    { id: 'Schedar', name: 'Schedar (M, Even)' },
+                    { id: 'Gacrux', name: 'Gacrux (F, Mature)' },
+                    { id: 'Pulcherrima', name: 'Pulcherrima (M, Forward)' },
+                    { id: 'Achird', name: 'Achird (M, Friendly)' },
+                    { id: 'Zubenelgenubi', name: 'Zubenelgenubi (M, Casual)' },
+                    { id: 'Vindemiatrix', name: 'Vindemiatrix (F, Gentle)' },
+                    { id: 'Sadachbia', name: 'Sadachbia (M, Lively)' },
+                    { id: 'Sadaltager', name: 'Sadaltager (M, Knowledgeable)' },
+                    { id: 'Sulafat', name: 'Sulafat (F, Warm)' }
+                ]
+            },
+
+            RUNTIME: {
+                audioContext: null,
+                currentSource: null,
+                isPlaying: false
+            },
+
+            /**
+             * Generates and plays speech for the given text using the specified voice.
+             * @param {string} text - The text to speak.
+             * @param {string} voiceName - The voice to use (e.g., 'Puck', 'Kore').
+             * @returns {Promise<void>}
+             */
+            async speak(text, voiceName = 'Puck') {
+                const state = StateManager.getState();
+                const global = StateManager.data.globalSettings;
+
+                // Allow global override for key, but rely on user preference for enabling
+                const apiKey = global.geminiApiKey || state.geminiApiKey;
+
+                if (!apiKey) {
+                    console.warn("TTSService: No Gemini API Key found.");
+                    return;
+                }
+
+                if (!text || text.trim() === '') return;
+
+                try {
+                    // Stop any current audio
+                    this.stop();
+
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+                    // Construct the specific TTS Prompt
+                    // Gemini TTS is currently accessed via the standard generateContent endpoint 
+                    // but with specific tools/config, OR typically via a separate endpoint if using the closed beta.
+                    // HOWEVER, standard Gemini API does NOT yet have a direct /v1/speech endpoint publicly documented in the same way as OpenAI.
+                    // Double check: The "Google Cloud Text-to-Speech" is different from "Gemini Multimodal".
+                    // BUT, based on the prompt, it says "Gemini's Text-to-Speech capabilities". 
+                    // If the user implies the new experimental capability or just standard Google Cloud TTS...
+                    // Wait, actually, the user instruction implies "Gemini TTS" which usually refers to the multimodal capabilities 
+                    // OR specifically the new voices. 
+                    // Let's assume we use the REST endpoint structure for speech generation if available, 
+                    // OR we might need to use the `comparison` methodology if it's not standard.
+
+                    // CORRECTION: As of late 2024/2025 (in this timeline), Gemini DOES have a dedicated speech generation capability 
+                    // accessible often via `generativelanguage.googleapis.com`.
+                    // It often looks like: POST base_url/v1beta/models/{model}:generateContent (with audio modalities? No, that's input).
+
+                    // ACTUALLY: The user instructions likely refer to the "Google Cloud TTS" but using the key from Gemini settings?
+                    // OR the specific simple endpoint. 
+                    // Let's implement a direct fetch to the synthesis endpoint often associated with this stack.
+                    // If "Gemini TTS" refers to the specific "Generate Speech" functionality found in recent updates:
+
+                    // We will use the standard endpoint pattern:
+                    // https://texttospeech.googleapis.com/v1/text:synthesize?key=API_KEY
+                    // Wait, that's standard Google Cloud TTS. Does Gemini Key work there? Usually yes if the project has it enabled.
+                    // BUT, to be safe and stick to "Gemini" branding, maybe there is a specific one.
+
+                    // Let's assume standard REST for now, but if the user meant "Gemini Multimodal Live" that is websockets.
+                    // We are doing REST.
+
+                    // Implementation:
+                    // We'll use the Google Cloud TTS endpoint which is the most robust way to get speech 
+                    // and typically accepts the same API keys if the project is set up for "Generative Language" + "Cloud TTS".
+                    // IF the user specifically meant the "Gemini 1.5 Flash" model to generate speech (audio output), 
+                    // that requires asking for "response_modalities": ["AUDIO"] in the generateContent call.
+
+                    // Let's try the "generateContent" with audio modality first as it's the "Gemini" way.
+
+                    const payload = {
+                        contents: [{ parts: [{ text: text }] }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: {
+                                voiceConfig: {
+                                    prebuiltVoiceConfig: {
+                                        voiceName: voiceName
+                                    }
+                                }
+                            }
+                        }
+                    };
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        console.error("TTS API Error:", errText);
+                        // Fallback or notification?
+                        UIManager.showNotification("TTS Generation Failed. Check Console.", "error");
+                        return;
+                    }
+
+                    const data = await response.json();
+
+                    // Extract Audio Base64
+                    // Structure: candidates[0].content.parts[0].inlineData.data (Base64)
+                    const audioBase64 = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+                    if (!audioBase64) {
+                        console.warn("TTS: No audio data in response.", data);
+                        return;
+                    }
+
+                    console.log("TTS Audio size:", audioBase64.length);
+                    // Play it
+
+                    // Play it
+                    this.playAudioFromBase64(audioBase64);
+
+                } catch (e) {
+                    console.error("TTS Failure:", e);
+                    UIManager.showNotification("TTS Error: " + e.message, "error");
+                }
+            },
+
+            /**
+             * Decodes and plays base64 audio.
+             * @param {string} base64String 
+             */
+            async playAudioFromBase64(base64String) {
+                try {
+                    // Convert Base64 to ArrayBuffer
+                    const binaryString = window.atob(base64String);
+                    const len = binaryString.length;
+                    const bytes = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const arrayBuffer = bytes.buffer;
+
+                    // Header Logging (Optional, kept for verification)
+                    // const header = Array.from(bytes.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                    // console.log("TTS Audio Header:", header);
+
+                    // Convert PCM to WAV
+                    // Gemini TTS returns raw PCM (24kHz, 1 channel, 16-bit usually for these voices)
+                    // decodeAudioData requires a container (WAV)
+                    const wavBuffer = this.pcmToWav(arrayBuffer, 24000, 1, 16);
+
+                    // Log Header for Debugging
+                    const header = Array.from(bytes.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                    console.log("TTS Audio Header:", header);
+
+                    // Initialize AudioContext if needed
+                    if (!this.RUNTIME.audioContext) {
+                        this.RUNTIME.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+
+                    // Decode
+                    // Decode the WAV buffer
+                    const audioBuffer = await this.RUNTIME.audioContext.decodeAudioData(wavBuffer);
+
+                    // Create Source
+                    const source = this.RUNTIME.audioContext.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(this.RUNTIME.audioContext.destination);
+
+                    source.onended = () => {
+                        this.RUNTIME.isPlaying = false;
+                        this.RUNTIME.currentSource = null;
+                        this.updateIndicator(false);
+                    };
+
+                    this.RUNTIME.currentSource = source;
+                    source.start(0);
+                    this.RUNTIME.isPlaying = true;
+                    this.updateIndicator(true);
+
+                } catch (e) {
+                    console.error("Audio Playback Error:", e);
+                }
+            },
+
+            /**
+             * Stops current playback.
+             */
+            stop() {
+                if (this.RUNTIME.currentSource) {
+                    try {
+                        this.RUNTIME.currentSource.stop();
+                    } catch (e) { /* ignore if already stopped */ }
+                    this.RUNTIME.currentSource = null;
+                }
+                this.RUNTIME.isPlaying = false;
+                this.updateIndicator(false);
+            },
+
+            /**
+             * Updates the UI indicator for audio playback.
+             */
+
+
+            /**
+             * Converts raw PCM data to a WAV buffer.
+             */
+            pcmToWav(pcmData, sampleRate = 24000, numChannels = 1, bitDepth = 16) {
+                const bytesPerSample = bitDepth / 8;
+                const blockAlign = numChannels * bytesPerSample;
+                const byteRate = sampleRate * blockAlign;
+                const dataSize = pcmData.byteLength;
+                const buffer = new ArrayBuffer(44 + dataSize);
+                const view = new DataView(buffer);
+
+                // RIFF chunk
+                this._writeString(view, 0, 'RIFF');
+                view.setUint32(4, 36 + dataSize, true);
+                this._writeString(view, 8, 'WAVE');
+
+                // fmt chunk
+                this._writeString(view, 12, 'fmt ');
+                view.setUint32(16, 16, true); // Subchunk1Size
+                view.setUint16(20, 1, true); // AudioFormat (PCM)
+                view.setUint16(22, numChannels, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, byteRate, true);
+                view.setUint16(32, blockAlign, true);
+                view.setUint16(34, bitDepth, true);
+
+                // data chunk
+                this._writeString(view, 36, 'data');
+                view.setUint32(40, dataSize, true);
+
+                // Write PCM data
+                const pcmBytes = new Uint8Array(pcmData);
+                const wavBytes = new Uint8Array(buffer, 44);
+                wavBytes.set(pcmBytes);
+
+                return buffer;
+            },
+
+            _writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            },
+
+            updateIndicator(isActive) {
+                const indicator = document.getElementById('tts-indicator');
+                if (indicator) {
+                    indicator.style.display = isActive ? 'flex' : 'none';
+                }
+            }
+        };
+
         /**
          * ModalManager Module
          * Controls the visibility and lifecycle of UI modals.
@@ -9276,6 +9613,16 @@
                             <div><label class="text-sm text-gray-400" style="padding-right: 1rem;">Bubble Base Color</label><input type="color" value="${color.base}" oninput="NarrativeController.updateCharacterColor('${char.id}', 'base', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded" style="width: 4rem;"></div>
                             <div><label class="text-sm text-gray-400" style="padding-right: 1rem;">Name Color</label><input type="color" value="${color.bold}" oninput="NarrativeController.updateCharacterColor('${char.id}', 'bold', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded" style="width: 4rem;"></div>
                         </div>
+                        
+                        <!-- TTS Voice Selector -->
+                        <div>
+                            <label class="text-sm text-gray-400 block mb-1">TTS Voice Override</label>
+                            <select onchange="NarrativeController.updateCharacterField('${char.id}', 'ttsVoice', this.value)" class="w-full bg-black/30 border-gray-600 rounded p-2 text-sm text-gray-200 focus:border-indigo-500 focus:outline-none">
+                                <option value="" ${!char.ttsVoice ? 'selected' : ''}>Default (Global Setting)</option>
+                                ${TTSService && TTSService.CONSTANTS && TTSService.CONSTANTS.VOICES ? DOM.unsafe(TTSService.CONSTANTS.VOICES.map(v => `<option value="${v.id}" ${char.ttsVoice === v.id ? 'selected' : ''}>${v.name}</option>`).join('')) : DOM.unsafe('<option disabled>No voices available</option>')}
+                            </select>
+                        </div>
+
                         <div><label class="text-sm text-gray-400">Tags (comma-separated)</label><input type="text" value="${tagsValue}" oninput="NarrativeController.updateCharacterTags('${char.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"><button data-action="gen-char-tags" data-id="${char.id}" class="text-xs text-sky-400 hover:text-sky-300 mt-1 p-1 bg-sky-600/80 rounded">${this.getAIGenIcon()}</button></div>
                         
                         <div class="mt-4 pt-4 border-t border-gray-800">
@@ -9839,7 +10186,9 @@
                     // Image Gen Keys
                     'imageGenBackend', 'koboldImageGenUrl', 'imageGenOpenRouterKey', 'imageGenOpenRouterModel',
                     'imageGenWidth', 'imageGenHeight',
-                    'koboldImageGenCfg', 'koboldImageGenSampler', 'koboldImageGenScheduler', 'koboldImageGenSteps'
+                    'koboldImageGenCfg', 'koboldImageGenSampler', 'koboldImageGenScheduler', 'koboldImageGenSteps',
+                    // TTS Keys
+                    'ttsEnabled', 'ttsVoice', 'ttsAutoPlayback'
                 ]
             },
 
@@ -10003,6 +10352,8 @@
                     this.renderSavedOpenRouterModels();
                     // NEW: Populate Gemini Models dynamically
                     this.populateGeminiModels();
+                    // Render TTS Settings
+                    this.renderTTSSettings();
                 } else if (tabName === 'image-gen') {
                     // Dynamic show/hide based on backend
                     const backendSelect = document.getElementById('image-gen-backend');
@@ -10108,6 +10459,48 @@
                 } catch (e) {
                     console.error("Error populating models", e);
                     selector.innerHTML = '<option value="gemini-1.5-flash">Error loading list (Using Flash)</option>';
+                }
+            },
+
+            /**
+             * Renders the TTS settings interface.
+             */
+            renderTTSSettings() {
+                const selector = document.getElementById('tts-voice-selector');
+                if (!selector) return;
+
+                const globalSettings = StateManager.data.globalSettings;
+                const currentVoice = globalSettings.ttsVoice || 'Puck';
+
+                // Clear and populate
+                selector.innerHTML = '';
+
+                if (TTSService && TTSService.CONSTANTS && TTSService.CONSTANTS.VOICES) {
+                    TTSService.CONSTANTS.VOICES.forEach(voice => {
+                        const opt = document.createElement('option');
+                        opt.value = voice.id;
+                        opt.textContent = voice.name;
+                        if (voice.id === currentVoice) opt.selected = true;
+                        selector.appendChild(opt);
+                    });
+                } else {
+                    const opt = document.createElement('option');
+                    opt.textContent = "Error loading voices";
+                    selector.appendChild(opt);
+                }
+
+                // TTS Mode (Replaces toggles)
+                const ttsModeSelect = document.getElementById('tts-mode-select');
+                if (ttsModeSelect) {
+                    // Migration / Default
+                    if (!globalSettings.ttsMode) {
+                        if (globalSettings.ttsEnabled === true || globalSettings.ttsEnabled === 'true') {
+                            globalSettings.ttsMode = 'all'; // Default to 'all' if previously enabled
+                        } else {
+                            globalSettings.ttsMode = 'off';
+                        }
+                    }
+                    ttsModeSelect.value = globalSettings.ttsMode;
                 }
             },
 
@@ -10255,9 +10648,24 @@
                 if (document.getElementById('koboldcpp-url-input')) setListener('koboldcpp-url-input', 'koboldcpp_url');
                 if (document.getElementById('lmstudio-url-input')) setListener('lmstudio-url-input', 'lmstudio_url');
                 // Gemini Model Selector (Just bind listener, population handled in switchSettingsTab)
-                if (document.getElementById('gemini-model-selector')) {
-                    setListener('gemini-model-selector', 'geminiModel');
+                setListener('gemini-model-selector', 'geminiModel');
+
+
+                // --- Bindings: TTS ---
+                if (document.getElementById('tts-mode-select')) {
+                    const modeSelect = document.getElementById('tts-mode-select');
+                    modeSelect.addEventListener('change', (e) => {
+                        const val = e.target.value;
+                        globalSettings.ttsMode = val;
+                        // Legacy persistence (optional)
+                        if (val === 'off') globalSettings.ttsEnabled = false;
+                        else globalSettings.ttsEnabled = true;
+
+                        state.ttsMode = val;
+                        StateManager.saveGlobalSettings();
+                    });
                 }
+                if (document.getElementById('tts-voice-selector')) setListener('tts-voice-selector', 'ttsVoice');
 
                 // --- Bindings: Appearance Tab ---
                 // Background Image Handlers (Delegating to LibraryController if available)
@@ -13853,6 +14261,48 @@ CRITICAL INSTRUCTION: The 'description' MUST be written as an out of scenario co
                     // Pass the targetMessageIndex to enable versioning update
                     this.startStreamingResponse(targetId, responseText, emotion, targetMessageIndex);
 
+                    // 7. TTS Trigger
+                    // Check Mode
+                    const globalSettings = StateManager.data.globalSettings;
+                    const ttsMode = globalSettings.ttsMode || 'off'; // Default off
+
+                    if (ttsMode !== 'off' && typeof TTSService !== 'undefined') {
+                        // Resolve Voice
+                        // We resolved targetId earlier
+                        let voice = 'Puck'; // Default
+                        const char = state.characters.find(c => c.id === targetId);
+                        if (char && char.ttsVoice) {
+                            voice = char.ttsVoice;
+                        } else if (globalSettings.ttsVoice) {
+                            voice = globalSettings.ttsVoice;
+                        }
+
+                        // Resolve Text based on Mode
+                        let textToSpeak = responseText;
+                        if (ttsMode === 'dialogue') {
+                            // Extract text between quotes (standard and smart)
+                            // Regex: /"([^"]+)"|“([^”]+)”/g
+                            const matches = [];
+                            const regex = /"([^"]+)"|“([^”]+)”/g;
+                            let match;
+                            while ((match = regex.exec(responseText)) !== null) {
+                                // match[1] is straight quotes, match[2] is smart quotes
+                                if (match[1]) matches.push(match[1]);
+                                if (match[2]) matches.push(match[2]);
+                            }
+
+                            if (matches.length > 0) {
+                                // Join with pauses
+                                textToSpeak = matches.join('. ... ');
+                            } else {
+                                textToSpeak = ""; // No dialogue found
+                            }
+                        }
+
+                        if (textToSpeak && textToSpeak.trim().length > 0) {
+                            TTSService.speak(textToSpeak, voice);
+                        }
+                    }
                 } catch (error) {
                     if (error.name === 'AbortError') console.log("Stopped.");
                     else this.addSystemMessageToHistory(`AI Error: ${error.message}`);
@@ -16487,7 +16937,8 @@ Rules:
             <button data-action="lightbox-prev"
                 class="absolute left-4 text-white/50 hover:text-white p-2 hidden z-50"><svg class="w-10 h-10"
                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                    </path>
                 </svg></button>
             <button data-action="lightbox-next"
                 class="absolute right-4 text-white/50 hover:text-white p-2 hidden z-50"><svg class="w-10 h-10"
