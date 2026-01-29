@@ -1864,6 +1864,21 @@
                 </label>
                 <p class="text-xs text-gray-500 mt-1">If disabled, the chat window will be centered.</p>
             </div>
+
+            <div class="flex items-center space-x-3 bg-black/20 p-3 rounded-lg border border-gray-700">
+                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                    <input type="checkbox" name="toggle" id="auto-close-brackets-toggle"
+                        data-setting-key="autoCloseBrackets"
+                        class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer text-indigo-600 focus:ring-0 checked:right-0 checked:border-indigo-600 right-4" />
+                    <label for="auto-close-brackets-toggle"
+                        class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                </div>
+                <label for="auto-close-brackets-toggle" class="text-sm text-gray-300 font-bold cursor-pointer">
+                    Auto-close Names, Quotes & Brackets
+                </label>
+            </div>
+
+
             <div class="pt-6 mt-4 border-t border-gray-700/50 text-center">
                 <p id="build-info-display"
                     class="text-xs text-gray-600 font-mono uppercase tracking-widest opacity-75 select-all"></p>
@@ -2727,7 +2742,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.01.27 - 16:30 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.01.29 - 10:30 CST";
 
 
         /**
@@ -4333,7 +4348,9 @@
                     const savedSettingsJSON = localStorage.getItem(this.CONSTANTS.GLOBAL_SETTINGS_KEY);
                     if (savedSettingsJSON) parsedSettings = JSON.parse(savedSettingsJSON);
                 } catch (error) { parsedSettings = {}; }
-                this.data.globalSettings = { ...defaults, ...parsedSettings };
+
+                // Default autoCloseBrackets to false if not present
+                this.data.globalSettings = { ...defaults, autoCloseBrackets: false, ...parsedSettings };
 
                 // Cleanup legacy keys that are now story-specific to prevent pollution
                 delete this.data.globalSettings.responseLength;
@@ -10858,6 +10875,15 @@
                     });
                 }
 
+                // Toggle for Auto-Close Brackets
+                const autoCloseToggle = document.getElementById('auto-close-brackets-toggle');
+                if (autoCloseToggle) {
+                    // Default false
+                    autoCloseToggle.checked = !!globalSettings.autoCloseBrackets;
+                    // Note: Event delegation handles the 'change' event globally to support dynamic rendering,
+                    // but we still need to set the initial checked state here when the tab loads.
+                }
+
                 // Force visibility update on init
                 AppController.updateImageGenSettingsVisibility();
             },
@@ -16713,7 +16739,45 @@ Rules:
                 // Enter-to-Send Logic
                 const chatInput = document.getElementById('chat-input');
                 if (chatInput) {
+                    let lastInputHandled = false;
+
+                    const handleAutoClose = (char, event) => {
+                        const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '*': '*' };
+                        if (pairs[char]) {
+                            event.preventDefault();
+                            const start = chatInput.selectionStart;
+                            const end = chatInput.selectionEnd;
+                            const text = chatInput.value;
+                            const close = pairs[char];
+
+                            chatInput.value = text.substring(0, start) + char + close + text.substring(end);
+                            chatInput.selectionStart = chatInput.selectionEnd = start + 1;
+                            lastInputHandled = true;
+                            // Reset flag shortly after to allow new inputs
+                            setTimeout(() => { lastInputHandled = false; }, 20);
+                        }
+                    };
+
+                    // Mobile-Compatible Auto-Close (beforeinput handles visual characters reliably on mobile)
+                    chatInput.addEventListener('beforeinput', (e) => {
+                        if (!StateManager.data.globalSettings.autoCloseBrackets) return;
+                        if (lastInputHandled) { return; } // Handled by keydown
+
+                        if (e.inputType !== 'insertText' || !e.data) return;
+                        handleAutoClose(e.data, e);
+                    });
+
+                    // Enter-to-Send & Desktop Auto-Close
                     chatInput.addEventListener('keydown', (e) => {
+                        // Desktop Auto-Close (Reliable, triggers before beforeinput, preventing duplicates)
+                        if (StateManager.data.globalSettings.autoCloseBrackets) {
+                            const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '*': '*' };
+                            if (pairs[e.key]) {
+                                handleAutoClose(e.key, e);
+                                return;
+                            }
+                        }
+
                         // Check if Enter was pressed WITHOUT Shift
                         if (e.key === 'Enter' && !e.shiftKey) {
                             // Prevent the default new line insertion
@@ -16803,6 +16867,14 @@ Rules:
                         autoKnowToggle.checked = true;
                     }
                 }
+
+                // Auto-Close Brackets Toggle Logic (Delegated for Dynamic Settings)
+                document.addEventListener('change', (e) => {
+                    if (e.target && e.target.id === 'auto-close-brackets-toggle') {
+                        StateManager.data.globalSettings.autoCloseBrackets = e.target.checked;
+                        StateManager.saveGlobalSettings();
+                    }
+                });
 
                 // Chat Resizer Logic
                 const resizer = document.getElementById('chat-resizer');
