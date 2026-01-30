@@ -2763,7 +2763,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.01.25 - 10:30 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.01.30 - 16:50 CST";
 
 
         /**
@@ -16284,49 +16284,103 @@ Rules:
 
             // --- Touch Support for Mobile DnD ---
             touchDragId: null,
+            dragTimer: null,
+            isDragging: false,
+            startTouchX: 0,
+            startTouchY: 0,
 
             handleStaticTouchStart(event, id) {
-                // event.preventDefault(); // Don't prevent default here, let them maybe click?
-                // Actually, if we want to drag, we usually prevent default on move.
+                // Initialize drag state but DO NOT block default yet (allows scroll)
                 this.touchDragId = id;
+                this.isDragging = false;
+
+                // Track start position to detect if user scrolls away
+                if (event.touches && event.touches[0]) {
+                    this.startTouchX = event.touches[0].clientX;
+                    this.startTouchY = event.touches[0].clientY;
+                }
+
+                // Identify visual target for feedback
+                const target = event.target.closest('[data-drag-target="true"]');
+
+                // Start Long-Press Timer (300ms)
+                this.dragTimer = setTimeout(() => {
+                    this.isDragging = true;
+                    if (navigator.vibrate) navigator.vibrate(50); // Haptic feedback
+
+                    // Visual Feedback: Item 'pops' up
+                    if (target) {
+                        target.classList.add('ring-2', 'ring-indigo-500', 'opacity-75', 'scale-95', 'transform', 'transition-all');
+                    }
+                    console.log("Drag Mode Activated for", id);
+                }, 300);
             },
 
             handleStaticTouchMove(event) {
-                // Prevent scrolling while dragging an item
-                if (this.touchDragId) {
-                    event.preventDefault();
+                if (!this.touchDragId) return;
+
+                const touch = event.touches[0];
+                const deltaX = Math.abs(touch.clientX - this.startTouchX);
+                const deltaY = Math.abs(touch.clientY - this.startTouchY);
+
+                // Scenario A: User is trying to scroll (moved finger before timer fired)
+                if (!this.isDragging) {
+                    // Tolerance: 10px buffer for shaky fingers
+                    if (deltaY > 10 || deltaX > 10) {
+                        clearTimeout(this.dragTimer);
+                        this.touchDragId = null; // Cancel drag attempt
+                    }
+                    return; // Allow native scroll to happen
+                }
+
+                // Scenario B: Long-press succeeded, now we are dragging
+                if (this.isDragging) {
+                    event.preventDefault(); // Block scroll so we can drag item
                 }
             },
 
             handleStaticTouchEnd(event) {
-                if (!this.touchDragId) return;
-                event.preventDefault(); // Prevent click simulation
+                clearTimeout(this.dragTimer);
 
-                const touch = event.changedTouches[0];
-                const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-                if (!targetEl) {
+                // Cleanup Visuals
+                // We use a general query to ensure we catch the highlighted item even if target reference lost
+                const activeEls = document.querySelectorAll('.ring-indigo-500.scale-95');
+                activeEls.forEach(el => el.classList.remove('ring-2', 'ring-indigo-500', 'opacity-75', 'scale-95'));
+
+                if (!this.isDragging) {
+                    // Timer didn't fire? Then it was a tap/click. 
+                    // Allow the onclick handler (Select) to fire naturally.
                     this.touchDragId = null;
                     return;
                 }
+
+                // If we WERE dragging, prevent the click and execute Drop
+                event.preventDefault();
+                const touch = event.changedTouches[0];
+                this.finalizeTouchDrop(touch);
+
+                // Reset State
+                this.touchDragId = null;
+                this.isDragging = false;
+            },
+
+            finalizeTouchDrop(touch) {
+                if (!this.touchDragId) return;
+
+                const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (!targetEl) return;
 
                 const dropTarget = targetEl.closest('[data-drag-target="true"]');
-                if (!dropTarget) {
-                    this.touchDragId = null;
-                    return;
-                }
+                if (!dropTarget) return;
 
                 const targetId = dropTarget.getAttribute('data-drag-id');
                 const targetGroup = dropTarget.getAttribute('data-drag-group');
                 const targetIndex = parseInt(dropTarget.getAttribute('data-drag-index'));
 
-                // Reuse logic from handleStaticDrop (simplified manual calculation)
                 if (!targetId || !targetGroup || isNaN(targetIndex)) return;
+                if (this.touchDragId === targetId) return;
 
-                if (this.touchDragId === targetId) {
-                    this.touchDragId = null;
-                    return;
-                }
-
+                // Determine precise insertion point (Above/Below)
                 let finalIndex = targetIndex;
                 if (!targetId.startsWith('header-')) {
                     const rect = dropTarget.getBoundingClientRect();
@@ -16336,27 +16390,22 @@ Rules:
                     }
                 }
 
-                // Call the move logic
-                // We need to resolve the 'moveStaticEntry' logic again to ensure correct indexing
-                // (Copied logic from handleStaticDrop for index adjustment)
                 const state = ReactiveStore.state;
                 const dragEntry = state.static_entries.find(e => e.id === this.touchDragId);
-                if (!dragEntry) {
-                    this.touchDragId = null;
-                    return;
-                }
+                if (!dragEntry) return;
 
+                // Normalize Indexing Logic
                 const isDragImmutable = dragEntry.is_immutable;
                 const dragGroup = isDragImmutable ? 'immutable' : 'mutable';
                 const groupList = state.static_entries.filter(e => e && e.is_immutable === isDragImmutable);
                 const dragIndex = groupList.findIndex(e => e.id === this.touchDragId);
 
+                // Adjustment for self-removal shifting indices
                 if (dragGroup === targetGroup && dragIndex < finalIndex) {
                     finalIndex--;
                 }
 
                 this.moveStaticEntry(this.touchDragId, finalIndex, targetGroup);
-                this.touchDragId = null;
             },
 
             /**
@@ -17110,7 +17159,7 @@ Rules:
                     let lastInputHandled = false;
 
                     const handleAutoClose = (char, event) => {
-                        const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '*': '*' };
+                        const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', '*': '*' };
                         if (pairs[char]) {
                             event.preventDefault();
                             const start = chatInput.selectionStart;
@@ -17139,7 +17188,7 @@ Rules:
                     chatInput.addEventListener('keydown', (e) => {
                         // Desktop Auto-Close (Reliable, triggers before beforeinput, preventing duplicates)
                         if (StateManager.data.globalSettings.autoCloseBrackets) {
-                            const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '*': '*' };
+                            const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', '*': '*' };
                             if (pairs[e.key]) {
                                 handleAutoClose(e.key, e);
                                 return;
@@ -17425,4 +17474,3 @@ Rules:
 </body>
 
 </html>
-
