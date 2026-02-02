@@ -1915,10 +1915,10 @@
                     <div class="relative">
                         <select id="response-length-selector"
                             class="w-full appearance-none rounded-lg p-3 bg-gray-800 border border-gray-600 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
-                            <option value="short">Short (1-2 Sentences)</option>
-                            <option value="medium">Medium (2-4 Sentences)</option>
                             <option value="normal">Default (Unconstrained)</option>
-                            <option value="long">Long (Detailed)</option>
+                            <option value="short">Short (1-2 Sentences)</option>
+                            <option value="medium">Medium (3-6 Sentences)</option>
+                            <option value="long">Long (2-4 Paragraphs)</option>
                             <option value="novel">Novel (Creative Writing)</option>
                         </select>
                         <div
@@ -2763,7 +2763,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.01.30 - 16:50 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.02.02 - 16:15 CST";
 
 
         /**
@@ -5708,7 +5708,7 @@
                 const responseLength = state.responseLength || 'normal';
                 if (!components.charToAct.is_narrator) {
                     if (responseLength === 'short') p += " Keep the response concise and under two sentences, focusing only on the character's next words and actions.";
-                    else if (responseLength === 'medium') p += " Keep the response between two to four sentences, including the character's next words and actions written with descriptive language.";
+                    else if (responseLength === 'medium') p += " Keep the response between three to six sentences, including the character's next words and actions written with descriptive language.";
                     else if (responseLength === 'long') p += " Be descriptive, verbose, and detailed in your response, providing this character's dialogue and actions, as well as full sensory descriptions of the surroundings, characters, and event.";
                     else if (responseLength === 'novel') p += " Continue writing a long-form addition to the text that builds on the current actions, describes the scene, and contributes to world-building. Include full sensory descriptions of the surroundings, characters, and events.";
                 }
@@ -5770,8 +5770,8 @@
                 const responseLength = state.responseLength || 'normal';
                 if (!components.charToAct.is_narrator) {
                     if (responseLength === 'short') instruction += " Keep the response concise and under two sentences, focusing only on the character's next words and actions.";
-                    else if (responseLength === 'medium') instruction += " Keep the response between two to four sentences, including the character's next words and actions written with descriptive language.";
-                    else if (responseLength === 'long') instruction += " Be descriptive, verbose, and detailed in your response, providing this character's dialogue and actions, as well as full sensory descriptions of the surroundings, characters, and event.";
+                    else if (responseLength === 'medium') instruction += " Keep the response between three to six sentences, including the character's next words and actions written with descriptive language.";
+                    else if (responseLength === 'long') instruction += " Keep the response between two and four paragraphs. Be descriptive, verbose, and detailed in your response, providing this character's dialogue and actions, as well as full sensory descriptions of the surroundings, characters, and event.";
                     else if (responseLength === 'novel') instruction += " Continue writing a long-form addition to the text that builds on the current actions, describes the scene, and contributes to world-building. Include full sensory descriptions of the surroundings, characters, and events.";
                 }
 
