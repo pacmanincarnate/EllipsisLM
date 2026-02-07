@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <!-- Updated Viewport  for Notch Support -->
+    <!-- Updated Viewport for Notch Support -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
     <!-- PWA and iOS Home Screen Support -->
@@ -1865,16 +1865,18 @@
                 <p class="text-xs text-gray-500 mt-1">If disabled, the chat window will be centered.</p>
             </div>
 
-            <div class="flex items-center space-x-3 bg-black/20 p-3 rounded-lg border border-gray-700">
-                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                    <input type="checkbox" name="toggle" id="auto-close-brackets-toggle"
-                        data-setting-key="autoCloseBrackets"
-                        class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer text-indigo-600 focus:ring-0 checked:right-0 checked:border-indigo-600 right-4" />
+            <div class="flex items-center justify-between bg-black/20 p-3 rounded-lg border border-gray-700">
+                <div>
                     <label for="auto-close-brackets-toggle"
-                        class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                        class="text-gray-300 font-medium block cursor-pointer">Auto-close Actions</label>
+                    <span class="text-xs text-gray-500">Auto-complete names, quotes & brackets.</span>
                 </div>
-                <label for="auto-close-brackets-toggle" class="text-sm text-gray-300 font-bold cursor-pointer">
-                    Auto-close Names, Quotes & Brackets
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="auto-close-brackets-toggle" data-setting-key="autoCloseBrackets"
+                        class="sr-only peer">
+                    <div
+                        class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                    </div>
                 </label>
             </div>
 
@@ -2763,7 +2765,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.02.02 - 16:15 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.02.07 - 12:27 CST";
 
 
         /**
@@ -4965,43 +4967,6 @@
                     this.stop();
 
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-
-                    // Construct the specific TTS Prompt
-                    // Gemini TTS is currently accessed via the standard generateContent endpoint 
-                    // but with specific tools/config, OR typically via a separate endpoint if using the closed beta.
-                    // HOWEVER, standard Gemini API does NOT yet have a direct /v1/speech endpoint publicly documented in the same way as OpenAI.
-                    // Double check: The "Google Cloud Text-to-Speech" is different from "Gemini Multimodal".
-                    // BUT, based on the prompt, it says "Gemini's Text-to-Speech capabilities". 
-                    // If the user implies the new experimental capability or just standard Google Cloud TTS...
-                    // Wait, actually, the user instruction implies "Gemini TTS" which usually refers to the multimodal capabilities 
-                    // OR specifically the new voices. 
-                    // Let's assume we use the REST endpoint structure for speech generation if available, 
-                    // OR we might need to use the `comparison` methodology if it's not standard.
-
-                    // CORRECTION: As of late 2024/2025 (in this timeline), Gemini DOES have a dedicated speech generation capability 
-                    // accessible often via `generativelanguage.googleapis.com`.
-                    // It often looks like: POST base_url/v1beta/models/{model}:generateContent (with audio modalities? No, that's input).
-
-                    // ACTUALLY: The user instructions likely refer to the "Google Cloud TTS" but using the key from Gemini settings?
-                    // OR the specific simple endpoint. 
-                    // Let's implement a direct fetch to the synthesis endpoint often associated with this stack.
-                    // If "Gemini TTS" refers to the specific "Generate Speech" functionality found in recent updates:
-
-                    // We will use the standard endpoint pattern:
-                    // https://texttospeech.googleapis.com/v1/text:synthesize?key=API_KEY
-                    // Wait, that's standard Google Cloud TTS. Does Gemini Key work there? Usually yes if the project has it enabled.
-                    // BUT, to be safe and stick to "Gemini" branding, maybe there is a specific one.
-
-                    // Let's assume standard REST for now, but if the user meant "Gemini Multimodal Live" that is websockets.
-                    // We are doing REST.
-
-                    // Implementation:
-                    // We'll use the Google Cloud TTS endpoint which is the most robust way to get speech 
-                    // and typically accepts the same API keys if the project is set up for "Generative Language" + "Cloud TTS".
-                    // IF the user specifically meant the "Gemini 1.5 Flash" model to generate speech (audio output), 
-                    // that requires asking for "response_modalities": ["AUDIO"] in the generateContent call.
-
-                    // Let's try the "generateContent" with audio modality first as it's the "Gemini" way.
 
                     const payload = {
                         contents: [{ parts: [{ text: text }] }],
@@ -7984,13 +7949,21 @@
             ScenarioItem(scenario, storyId) {
                 const messageHTML = DOM.unsafe(marked.parse(scenario.message || '*(No message)*'));
                 return DOM.html`
-            <details open class="bg-gray-700/30 rounded-lg overflow-hidden group">
-                <summary class="p-3 cursor-pointer hover:bg-gray-700/50 flex justify-between items-center font-semibold select-none">
+            <details open class="bg-gray-700/30 rounded-lg overflow-hidden group relative">
+                <summary class="p-3 cursor-pointer hover:bg-gray-700/50 flex justify-between items-center font-semibold select-none pl-12 focus:outline-none">
                     <span>${scenario.name}</span>
                     <span class="text-xs text-gray-400 group-open:hidden">▼</span>
                     <span class="text-xs text-gray-400 hidden group-open:block">▲</span>
                 </summary>
-                <div class="p-3 bg-black/20 border-t border-gray-600 space-y-3">
+                
+                <div class="absolute top-3 left-3 z-10 flex items-center justify-center h-6 w-6" onclick="event.stopPropagation()"> <!-- Stop propagation to prevent collapsing -->
+                    <input type="checkbox" 
+                           class="scenario-select-check w-4 h-4 rounded border-gray-500 bg-black/40 text-indigo-600 focus:ring-0 cursor-pointer" 
+                           value="${scenario.id}" 
+                           onchange="UIManager.updateBulkActionUI()">
+                </div>
+
+                <div class="p-3 bg-black/20 border-t border-gray-600 space-y-3 cursor-default" onclick="event.stopPropagation()">
                     <div>
                         <p class="text-xs text-gray-400 font-bold mb-1">First Message:</p>
                         <div class="text-sm text-gray-300 prose prose-invert prose-sm max-w-none">
@@ -8411,11 +8384,23 @@
                     <hr class="border-gray-700">
 
                     <div>
-                        <h4 class="font-bold text-lg mb-4 text-indigo-300 flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                            Scenarios (Templates)
-                        </h4>
-                        <div class="space-y-3">${scenariosHTML.length ? scenariosHTML : DOM.unsafe('<p class="text-sm text-gray-500 italic">No scenarios available.</p>')}</div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-bold text-lg text-indigo-300 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                Scenarios (Templates)
+                            </h4>
+                            <div class="flex gap-2">
+                                <div id="scenario-bulk-actions" class="hidden flex items-center gap-2 mr-2">
+                                    <span id="scenario-bulk-count" class="text-xs text-gray-400 font-mono">0 selected</span>
+                                    <button onclick="LibraryController.deleteMultipleScenarios('${story.id}')" class="text-xs bg-red-900/80 hover:bg-red-700 text-white font-bold py-1 px-3 rounded border border-red-500 transition-colors">Delete Selected</button>
+                                </div>
+                                <button onclick="LibraryController.startInStoryGeneration('${story.id}')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-3 rounded flex items-center gap-1 transition-colors">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    New Scenario
+                                </button>
+                            </div>
+                        </div>
+                        <div class="space-y-3" id="scenarios-list-container">${scenariosHTML.length ? scenariosHTML : DOM.unsafe('<p class="text-sm text-gray-500 italic">No scenarios available.</p>')}</div>
                     </div>
 
                     <hr class="border-gray-700">
@@ -8445,6 +8430,24 @@
 
                 if (hasImages) {
                     this.startCarousel(story.characters, 'details-carousel', story.id);
+                }
+            },
+
+            /**
+             * Updates the visibility of the Bulk Action UI based on selection.
+             */
+            updateBulkActionUI() {
+                const checked = document.querySelectorAll('.scenario-select-check:checked');
+                const actions = document.getElementById('scenario-bulk-actions');
+                const count = document.getElementById('scenario-bulk-count');
+
+                if (actions && count) {
+                    if (checked.length > 0) {
+                        actions.classList.remove('hidden');
+                        count.textContent = `${checked.length} selected`;
+                    } else {
+                        actions.classList.add('hidden');
+                    }
                 }
             },
 
@@ -11956,6 +11959,192 @@
 
         /**
          * =================================================================================================
+         * InStoryGenerationPipeline Module
+         * Orchestrates the agentic workflow for adding scenarios to EXISTING stories.
+         * Generates differential content (new characters, new lore) to avoid overwriting the foundation.
+         * =================================================================================================
+         */
+        const InStoryGenerationPipeline = {
+
+            async _callAgent(prompt, retries = 2) {
+                return await LibraryController._callAIWithRetry(prompt, retries);
+            },
+
+            /**
+             * Phase 1: Not used directly. Concept comes from UI inputs.
+             */
+
+            /**
+             * Phase 2: World Builder Agent (Differential).
+             * Generates NEW lore specific to the scenario, respecting the existing world.
+             */
+            async runWorldPhase(draftDiff, conceptData, existingStory, updateUI) {
+                updateUI(25, "Agent: World Builder is expanding the lore...");
+
+                const existingLoreSummary = existingStory.static_entries
+                    .slice(0, 50) // Limit context to avoid overflow
+                    .map(e => `${e.title}: ${e.content.substring(0, 100)}...`)
+                    .join('\n');
+
+                const summary = `Existing Story: ${existingStory.name}\nExisting Lore:\n${existingLoreSummary}\n\nNew Scenario Conflict: ${conceptData.brief_summary}`;
+
+                // Custom Prompt for Differential Generation
+                const prompt = `You are an expert World Builder expanding an existing universe.
+                
+CONTEXT:
+${summary}
+
+TASK:
+Generate 2-3 NEW lore entries (Key Locations, Factions, or History) that are specifically required for this new scenario.
+Do NOT regenerate existing lore. Focus ONLY on what is new.
+
+RESPONSE FORMAT:
+JSON array of objects: { "title": "...", "content": "..." }`;
+
+                const loreData = await this._callAgent(prompt);
+                const entries = (loreData && Array.isArray(loreData)) ? loreData : (loreData?.entries || []);
+
+                if (entries.length > 0) {
+                    draftDiff.static_entries = entries.map(e => ({
+                        id: UTILITY.uuid(),
+                        title: e.title,
+                        content: e.content,
+                        is_immutable: true
+                    }));
+                }
+            },
+
+            /**
+             * Phase 3: Casting Director Agent (Differential).
+             * Identifies which characters are needed (Existing vs New).
+             */
+            async runCastingPhase(draftDiff, conceptData, existingStory, updateUI) {
+                const roster = conceptData.characters || []; // The AI suggested list for the scenario
+                const existingChars = existingStory.characters || [];
+
+                updateUI(40, "Agent: Casting Director is auditing the roster...");
+
+                const existingCharList = existingChars.map(c => c.name).join(', ');
+
+                // 1. Identify which AI-suggested characters match Existing ones, and which are New.
+                // We'll trust the AI's conceptData roster for now. 
+                // Any character in `roster` that matches an `existingChars` name (fuzzy match?) is "Existing".
+                // Any character in `roster` that does NOT match is "New".
+
+                const newCharactersToGenerate = [];
+                const activeIds = []; // IDs of characters active in this scenario
+
+                for (const suggestedChar of roster) {
+                    // Simple case-insensitive name match
+                    const match = existingChars.find(ec => ec.name.toLowerCase() === suggestedChar.name.toLowerCase());
+
+                    if (match) {
+                        // Character exists. We don't regen them. match.id is active.
+                        activeIds.push(match.id);
+                        console.log(`[Casting] Reusing existing character: ${match.name}`);
+                    } else {
+                        // Character is NEW. We must generate them.
+                        newCharactersToGenerate.push(suggestedChar);
+                        console.log(`[Casting] Marked for generation: ${suggestedChar.name}`);
+                    }
+                }
+
+                // A. Relationship Matrix for NEW characters
+                let relationshipContext = "";
+                if (newCharactersToGenerate.length > 0) {
+                    updateUI(45, "Agent: Casting Director is mapping new relationships...");
+                    const summary = `Scenario: ${conceptData.brief_summary}\nExisting Cast: ${existingCharList}`;
+                    try {
+                        const relPrompt = PromptBuilder.buildCastingAgentPrompt(summary, newCharactersToGenerate);
+                        const relData = await this._callAgent(relPrompt);
+                        relationshipContext = relData?.relationship_description || "";
+                    } catch (e) { console.warn("Rel skipped", e); }
+                }
+
+                // B. Generate Profiles for NEW characters
+                for (let i = 0; i < newCharactersToGenerate.length; i++) {
+                    const charDef = newCharactersToGenerate[i];
+                    updateUI(50 + (i * 10), `Agent: Casting Director is interviewing ${charDef.name} (New)...`);
+
+                    const charContext = `Scenario: ${conceptData.brief_summary}\nExisting Cast: ${existingCharList}\nRELATIONSHIPS:\n${relationshipContext}\n\nRole: ${charDef.role}\nArchetype: ${charDef.archetype}`;
+
+                    const charData = await NarrativeController.generateCharacterProfile(charDef.name, charContext);
+
+                    if (charData) {
+                        const charId = UTILITY.uuid();
+                        let imageUrl = '';
+
+                        // Auto-Image Gen
+                        try {
+                            const imagePrompt = `portrait of ${charDef.name}, ${charData.short_description || charData.description}, ${charDef.archetype}, detailed face, fantasy art, masterpiece`;
+                            const blob = await ImageGenerationService.generateImage(imagePrompt);
+                            if (blob) {
+                                await DBService.saveImage(charId, blob);
+                                imageUrl = `local_idb_${charId}`;
+                                UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
+                            }
+                        } catch (err) { /* Ignore image failure */ }
+
+                        const newCharObj = {
+                            id: charId,
+                            name: charDef.name,
+                            description: charData.description || "No description.",
+                            short_description: charData.short_description || "A character.",
+                            model_instructions: charData.model_instructions || `Write the next response for ${charDef.name}.`,
+                            tags: charData.tags || [],
+                            is_user: charDef.role === 'User',
+                            is_active: true,
+                            is_narrator: charDef.role === 'PrimaryAI' && !activeIds.some(id => {
+                                const c = existingChars.find(ec => ec.id === id);
+                                return c && c.is_user; // Logic check: is_narrator logic is complex if mixing.
+                            }),
+                            color: NarrativeController.CONSTANTS.CHARACTER_COLORS[(existingChars.length + i) % NarrativeController.CONSTANTS.CHARACTER_COLORS.length],
+                            image_url: imageUrl,
+                            extra_portraits: []
+                        };
+
+                        draftDiff.characters.push(newCharObj);
+                        activeIds.push(charId);
+                    }
+                }
+
+                return { relationshipContext, activeIds };
+            },
+
+            /**
+             * Phase 4: Scene Director Agent (Differential).
+             * Generates the opening scenario using the mixed cast.
+             */
+            async runDirectorPhase(draftDiff, conceptData, relationshipContext, existingStory, activeIds, updateUI) {
+                updateUI(85, "Agent: Director is setting the scene...");
+
+                // Resolve Characters for the prompt
+                // We need actual objects, not just IDs
+                const allChars = [...existingStory.characters, ...draftDiff.characters];
+
+                // Find Speaker: First non-user active character
+                const speakerChar = allChars.find(c => activeIds.includes(c.id) && !c.is_user) || allChars[0];
+                const userChar = allChars.find(c => c.is_user) || { name: "You" };
+
+                // Build Summary Context
+                const summary = `Story: ${existingStory.name}\nScenario Idea: ${conceptData.brief_summary}`;
+
+                const prompt = PromptBuilder.buildDirectorAgentPrompt(summary, relationshipContext, speakerChar, userChar);
+                const scenData = await this._callAgent(prompt);
+
+                const firstMsg = scenData ? scenData.opening_message : "The story continues...";
+                let scenarioLore = scenData ? scenData.scenario_lore : "A new chapter.";
+
+                if (scenData && scenData.scenario_lore) {
+                    draftDiff.static_entries.push({ id: UTILITY.uuid(), title: "Current Scenario", content: scenData.scenario_lore, is_immutable: true });
+                }
+
+                return { firstMsg, scenarioLore, speakerChar };
+            }
+        };
+
+        /**
+         * =================================================================================================
          * LibraryController Module
          * Handles Story Creation, Deletion, Import/Export, and Library Management.
          * =================================================================================================
@@ -12451,6 +12640,73 @@
             },
 
             /**
+             * Deletes multiple scenarios at once.
+             * @param {string} storyId 
+             */
+            async deleteMultipleScenarios(storyId) {
+                const checked = document.querySelectorAll('.scenario-select-check:checked');
+                if (checked.length === 0) return;
+
+                const ids = Array.from(checked).map(c => c.value);
+                const confirmMsg = `Are you sure you want to delete ${ids.length} scenarios? This cannot be undone.`;
+                const proceed = await UIManager.showConfirmationPromise(confirmMsg);
+
+                if (!proceed) return;
+
+                UIManager.showLoadingSpinner('Deleting scenarios...');
+                try {
+                    const story = await DBService.getStory(storyId);
+                    if (!story) throw new Error("Story not found.");
+
+                    // Filter out deleted scenarios
+                    const initialCount = story.scenarios.length;
+                    story.scenarios = story.scenarios.filter(sc => !ids.includes(sc.id));
+
+                    if (story.scenarios.length === initialCount) return; // No changes
+
+                    story.last_modified = new Date().toISOString();
+                    await DBService.saveStory(story);
+
+                    // Update memory
+                    const library = StateManager.getLibrary();
+                    const storyInLibrary = library.stories.find(s => s.id === storyId);
+                    if (storyInLibrary) {
+                        storyInLibrary.scenarios = story.scenarios;
+                        storyInLibrary.last_modified = story.last_modified;
+                    }
+
+                    UIManager.openStoryDetails(storyId);
+                } catch (e) {
+                    console.error("Bulk delete failed:", e);
+                    alert("Error: " + e.message);
+                } finally {
+                    UIManager.hideLoadingSpinner();
+                }
+            },
+
+            /**
+             * Starts the In-Story Scenario Generation process.
+             * @param {string} storyId - The ID of the story.
+             */
+            startInStoryGeneration(storyId) {
+                this.RUNTIME_GEN.mode = 'in-story';
+                this.RUNTIME_GEN.targetStoryId = storyId;
+
+                document.getElementById('gen-story-prompt').value = "";
+                document.getElementById('gen-story-input-view').classList.remove('hidden');
+                document.getElementById('gen-story-progress-view').classList.remove('flex');
+                document.getElementById('gen-story-progress-view').classList.add('hidden');
+                document.getElementById('gen-story-approval-view').classList.remove('flex');
+                document.getElementById('gen-story-approval-view').classList.add('hidden');
+
+                // Update Header or Placeholder to indicate mode context if desired
+                const promptInput = document.getElementById('gen-story-prompt');
+                if (promptInput) promptInput.placeholder = "Describe the new scenario you want to add to this story...";
+
+                AppController.openModal('gen-story-modal');
+            },
+
+            /**
              * Promotes a narrative to a scenario, saving its current state as a template.
              * @param {string} storyId - The ID of the story.
              * @param {string} narrativeId - The ID of the narrative.
@@ -12517,7 +12773,9 @@
             RUNTIME_GEN: {
                 draftStory: null,
                 userPrompt: "",
-                conceptData: null
+                conceptData: null,
+                mode: 'new', // 'new' or 'in-story'
+                targetStoryId: null
             },
 
             /**
@@ -12529,7 +12787,24 @@
                 const userPrompt = input.value.trim();
                 if (!userPrompt) { alert("Please enter a prompt."); return; }
 
-                this.RUNTIME_GEN.userPrompt = userPrompt;
+                let promptToUse = userPrompt;
+
+                // INJECT CONTEXT (In-Story Mode)
+                if (this.RUNTIME_GEN.mode === 'in-story' && this.RUNTIME_GEN.targetStoryId) {
+                    try {
+                        const story = await DBService.getStory(this.RUNTIME_GEN.targetStoryId);
+                        if (story) {
+                            const charNames = (story.characters || []).map(c => c.name).join(', ');
+                            const loreTitles = (story.static_entries || []).map(e => e.title).join(', ');
+
+                            const context = `[CONTEXT: Generating a new scenario for existing story "${story.name}". \nSummary: ${story.creator_notes || "N/A"}\nExisting Characters: ${charNames}\nExisting Lore: ${loreTitles}]\n\nREQUEST: `;
+
+                            promptToUse = context + userPrompt;
+                        }
+                    } catch (e) {
+                        console.warn("Could not load context for in-story generation", e);
+                    }
+                }
 
                 // 1. VISUAL FEEDBACK: Disable Button
                 let btn = null;
@@ -12553,7 +12828,7 @@
 
                 try {
                     // STEP 1: CONCEPT AGENT
-                    const conceptData = await StoryGenerationPipeline.runConceptPhase(userPrompt, updateUI);
+                    const conceptData = await StoryGenerationPipeline.runConceptPhase(promptToUse, updateUI);
 
                     this.RUNTIME_GEN.conceptData = conceptData;
 
@@ -12607,7 +12882,112 @@
                     document.getElementById('gen-story-status').textContent = msg;
                 };
 
-                // Init Draft
+                // BRANCH: In-Story Generation
+                if (this.RUNTIME_GEN.mode === 'in-story' && this.RUNTIME_GEN.targetStoryId) {
+                    try {
+                        const story = await DBService.getStory(this.RUNTIME_GEN.targetStoryId);
+                        if (!story) throw new Error("Target story not found.");
+
+                        const concept = this.RUNTIME_GEN.conceptData;
+                        const contextSummary = `Title: ${title}\nSummary: ${summary}\nCore Conflict: ${concept.brief_summary}`;
+
+                        // We create a temp draft object just to hold the new generated assets
+                        // We initialize it with existing story data to help the AI maintain consistency?
+                        // Actually, the pipeline doesn't read the draft, it writes to it. 
+                        // But Casting Phase MIGHT benefit from knowing existing characters.
+                        // For now, we'll let it generate fresh, and we merge. 
+
+                        const draftDiff = {
+                            characters: [], static_entries: [], narratives: [], scenarios: [], dynamic_entries: []
+                        };
+
+                        // PHASE 2: WORLD (Differential)
+                        await InStoryGenerationPipeline.runWorldPhase(draftDiff, concept, story, updateUI);
+
+                        // PHASE 3: CASTING (Differential)
+                        // Returns active IDs (New + Existing) and relationship context
+                        const { relationshipContext, activeIds } = await InStoryGenerationPipeline.runCastingPhase(draftDiff, concept, story, updateUI);
+
+                        // PHASE 4: DIRECTOR
+                        const { firstMsg, scenarioLore, speakerChar } = await InStoryGenerationPipeline.runDirectorPhase(draftDiff, concept, relationshipContext, story, activeIds, updateUI);
+
+                        // MERGE
+                        updateUI(90, "Merging timelines...");
+
+                        // 1. Add NEW Characters only
+                        story.characters.push(...draftDiff.characters);
+
+                        // 2. Add NEW Lore only
+                        story.static_entries.push(...draftDiff.static_entries);
+
+                        // 3. Create Scenario
+                        // Scenario should capture the state of the story *at this moment*, including the new lore and active characters.
+                        const newScenario = {
+                            id: UTILITY.uuid(),
+                            name: title || concept.scenario_name,
+                            message: firstMsg,
+                            active_character_ids: activeIds, // Valid mixed list
+                            static_entries: [...story.static_entries], // Snapshot ALL lore (Old + New)
+                            dynamic_entries: [...story.dynamic_entries],
+                            worldMap: JSON.parse(JSON.stringify(story.scenarios[0] ? story.scenarios[0].worldMap : (story.narratives[0]?.state?.worldMap || UTILITY.createDefaultMapGrid()))) // Reuse map or default
+                        };
+
+                        story.scenarios.push(newScenario);
+                        story.last_modified = new Date().toISOString();
+
+                        // 4. Create Narrative (Jumpstart)
+                        const newNarrative = {
+                            id: UTILITY.uuid(), name: `${newScenario.name}`,
+                            last_modified: new Date().toISOString(),
+                            active_character_ids: newScenario.active_character_ids,
+                            state: {
+                                chat_history: [], messageCounter: 1,
+                                static_entries: [...newScenario.static_entries],
+                                worldMap: newScenario.worldMap || {}
+                            }
+                        };
+
+                        // Ensure speakerChar is in the roster.
+                        newNarrative.state.chat_history.push({
+                            character_id: speakerChar.id,
+                            content: firstMsg,
+                            type: 'chat',
+                            emotion: 'neutral',
+                            timestamp: new Date().toISOString()
+                        });
+
+                        story.narratives.push({ id: newNarrative.id, name: newNarrative.name, last_modified: newNarrative.last_modified });
+
+                        await DBService.saveStory(story);
+                        await DBService.saveNarrative(newNarrative);
+
+                        // Handle Image Imports (The Pipeline generates Blob URLs, but we need to persist them)
+                        // The Pipeline `runCastingPhase` assigns `image_url` as Blob URL or internal ID.
+                        // We need to save these blobs to DB.
+                        // Currently Pipeline does `DBService.saveImage`. Let's assume it does. 
+                        // (Checking Pipeline code would confirm, but usually it does).
+
+                        updateUI(100, "Done!");
+
+                        // Reload Strategy
+                        StateManager.getLibrary().active_story_id = story.id;
+                        StateManager.getLibrary().active_narrative_id = newNarrative.id;
+                        StateManager.saveLibrary();
+
+                        AppController.closeModal('gen-story-modal');
+                        window.location.reload();
+
+                        return;
+
+                    } catch (e) {
+                        console.error(e);
+                        alert("In-Story Generation Failed: " + e.message);
+                        this.retryGenStory();
+                        return;
+                    }
+                }
+
+                // EXISTING LOGIC (New Story)
                 const draft = {
                     id: UTILITY.uuid(), created_date: new Date().toISOString(), last_modified: new Date().toISOString(),
                     ...UTILITY.getDefaultApiSettings(), ...UTILITY.getDefaultUiSettings(),
@@ -13536,30 +13916,66 @@
              * @returns {Promise<Object>} - The generated character profile.
              */
             async generateCharacterProfile(name, contextString) {
-                // Construct a specialized prompt for "Interview Style" generation
-                const prompt = `You are a creative writer and roleplayer. You are interviewing a character named "${name}".
+                // STEP 1: Generate Skeleton (JSON)
+                // We exclude the heavy description from the JSON constraint to allow the model to be more concise here
+                // and avoid truncation issues.
+                const skeletonPrompt = `You are a creative writer and roleplayer. You are outlining a character named "${name}".
                 
 CONTEXT FOR THIS CHARACTER:
 ${contextString}
 
 TASK:
-Adopt the persona of ${name}. I will ask you to describe yourself. You must answer in the first person, using prose that reflects your voice, mannerisms, and internal thoughts. Use first person 'prose-style' writing (e.g. "That's what I'm telling you!" I brush the hair from my eyes as I look out at the sunset. "Don't you understand *anything*?")
+Generate the technical metadata and skeleton for this character.
 
 RESPONSE FORMAT:
-You must return a SINGLE valid JSON object. Do not include markdown code blocks or extra text outside the JSON.
+You must return a SINGLE valid JSON object. Do not include markdown code blocks.
 
 {
-    "description": "Your response to the interview question: Tell me about yourself - your appearance, your personality, and what drives you. Write this as a prose scene. Use dialogue tags and action beats. Example: \"I've never cared much for rules,\" I say, leaning back in my chair...",
     "model_instructions": "Write instructions for an AI model to roleplay as you. Write this in your own voice. Example: \"I speak quietly and rarely make eye contact. I am suspicious of strangers...\"",
     "short_description": "A standard, objective 3rd-person summary of who you are (one sentence).",
     "tags": ["tag1", "tag2", "tag3"],
     "color_hex": "#71717a (generate a hex code for a color that you feel matches this character's personality)"
-}
+}`;
 
-CRITICAL INSTRUCTION: The 'description' MUST be written as an out of scenario context roleplay response (First Person Prose). Do NOT write a third-person bio. The goal of this is to set the standard for how responses will be formatted during the roleplay.`;
+                let skeleton = {};
+                try {
+                    const response = await APIService.callAI(skeletonPrompt, true);
+                    skeleton = UTILITY.extractAndParseJSON(response);
+                    if (!skeleton) throw new Error("Failed to generate character skeleton.");
+                } catch (e) {
+                    console.error("Skeleton Gen Failed:", e);
+                    // Fallback empty skeleton to at least try description
+                    skeleton = { tags: [], color_hex: "#ffffff", short_description: "New Character", model_instructions: "" };
+                }
 
-                const response = await APIService.callAI(prompt, true);
-                return UTILITY.extractAndParseJSON(response);
+                // STEP 2: Generate Description (Text/Prose)
+                // We use the EXACT original prompt language for the description task, but strictly for text output.
+                const descriptionPrompt = `You are a creative writer and roleplayer. You are interviewing a character named "${name}".
+                
+CONTEXT FOR THIS CHARACTER:
+${contextString}
+
+EXISTING METADATA:
+Short Bio: ${skeleton.short_description}
+Instructions: ${skeleton.model_instructions}
+
+TASK:
+Adopt the persona of ${name}. I will ask you to describe yourself. You must answer in the first person, using prose that reflects your voice, mannerisms, and internal thoughts. Use first person 'prose-style' writing (e.g. "That's what I'm telling you!" I brush the hair from my eyes as I look out at the sunset. "Don't you understand *anything*?")
+
+OUTPUT FORMAT:
+Write ONLY the character's response text. Do NOT wrap in JSON. Do NOT include introductory text.
+
+Your response to the interview question: Tell me about yourself - your appearance, your personality, and what drives you. Write this as a prose scene. Use dialogue tags and action beats. Example: "I've never cared much for rules," I say, leaning back in my chair...
+
+CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context roleplay response (First Person Prose). Do NOT write a third-person bio. The goal of this is to set the standard for how responses will be formatted during the roleplay.`;
+
+                const description = await APIService.callAI(descriptionPrompt, false);
+
+                // STEP 3: Merge
+                return {
+                    ...skeleton,
+                    description: description ? description.trim() : "No description generated."
+                };
             },
             /**
              * Checks if the "Event Master" should trigger a random event.
@@ -17474,4 +17890,3 @@ Rules:
 </body>
 
 </html>
-
