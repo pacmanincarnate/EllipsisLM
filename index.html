@@ -2765,7 +2765,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.02.07 - 12:27 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.02.08 - 10:47 CST";
 
 
         /**
@@ -7950,13 +7950,13 @@
                 const messageHTML = DOM.unsafe(marked.parse(scenario.message || '*(No message)*'));
                 return DOM.html`
             <details open class="bg-gray-700/30 rounded-lg overflow-hidden group relative">
-                <summary class="p-3 cursor-pointer hover:bg-gray-700/50 flex justify-between items-center font-semibold select-none pl-12 focus:outline-none">
+                <summary class="p-3 cursor-pointer hover:bg-gray-700/50 flex justify-between items-center font-semibold select-none pl-4 transition-[padding] scenario-content focus:outline-none">
                     <span>${scenario.name}</span>
                     <span class="text-xs text-gray-400 group-open:hidden">▼</span>
                     <span class="text-xs text-gray-400 hidden group-open:block">▲</span>
                 </summary>
                 
-                <div class="absolute top-3 left-3 z-10 flex items-center justify-center h-6 w-6" onclick="event.stopPropagation()"> <!-- Stop propagation to prevent collapsing -->
+                <div class="absolute top-3 left-3 z-10 flex items-center justify-center h-6 w-6 hidden scenario-checkbox-container" onclick="event.stopPropagation()"> <!-- Stop propagation to prevent collapsing -->
                     <input type="checkbox" 
                            class="scenario-select-check w-4 h-4 rounded border-gray-500 bg-black/40 text-indigo-600 focus:ring-0 cursor-pointer" 
                            value="${scenario.id}" 
@@ -7997,8 +7997,14 @@
                 }
 
                 return DOM.html`
-            <div class="bg-gray-700/60 p-3 rounded-lg flex justify-between items-center gap-2">
-                <div class="flex-grow min-w-0">
+            <div class="bg-gray-700/60 p-3 rounded-lg flex justify-between items-center gap-2 relative group">
+                <div class="absolute left-3 z-10 flex items-center justify-center h-6 w-6 hidden narrative-checkbox-container" onclick="event.stopPropagation()">
+                    <input type="checkbox" 
+                           class="narrative-select-check w-4 h-4 rounded border-gray-500 bg-black/40 text-sky-500 focus:ring-0 cursor-pointer" 
+                           value="${narrative.id}" 
+                           onchange="UIManager.updateBulkActionUI()">
+                </div>
+                <div class="flex-grow min-w-0 transition-[padding] narrative-content">
                     <p class="font-semibold truncate">${narrative.name}</p>
                     <p class="text-xs text-gray-400">Modified: ${dateDisplay}</p>
                 </div>
@@ -8389,7 +8395,8 @@
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                                 Scenarios (Templates)
                             </h4>
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 items-center">
+                                <button id="scenario-select-btn" onclick="UIManager.toggleSelectionMode('scenario')" class="text-xs font-bold text-gray-400 hover:text-indigo-400 mr-2 transition-colors">Select</button>
                                 <div id="scenario-bulk-actions" class="hidden flex items-center gap-2 mr-2">
                                     <span id="scenario-bulk-count" class="text-xs text-gray-400 font-mono">0 selected</span>
                                     <button onclick="LibraryController.deleteMultipleScenarios('${story.id}')" class="text-xs bg-red-900/80 hover:bg-red-700 text-white font-bold py-1 px-3 rounded border border-red-500 transition-colors">Delete Selected</button>
@@ -8406,11 +8413,21 @@
                     <hr class="border-gray-700">
 
                     <div>
-                        <h4 class="font-bold text-lg mb-4 text-sky-300 flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-                            Narratives (Chats)
-                        </h4>
-                        <div class="space-y-2">${narrativesHTML.length ? narrativesHTML : DOM.unsafe('<p class="text-sm text-gray-500 italic">No narratives started. Load a scenario to begin.</p>')}</div>
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-bold text-lg text-sky-300 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                                Narratives (Chats)
+                            </h4>
+                            <div class="flex gap-2 items-center">
+                                <div id="narrative-bulk-actions" class="hidden flex items-center gap-2 mr-2">
+                                    <span id="narrative-bulk-count" class="text-xs text-gray-400 font-mono">0 selected</span>
+                                    <button onclick="LibraryController.deleteMultipleNarratives('${story.id}')" class="text-xs bg-red-900/80 hover:bg-red-700 text-white font-bold py-1 px-3 rounded border border-red-500 transition-colors">Delete Selected</button>
+                                </div>
+                                <button id="narrative-select-btn" onclick="UIManager.toggleSelectionMode('narrative')" class="text-xs font-bold text-gray-400 hover:text-sky-400 transition-colors">Select</button>
+                            </div>
+                        </div>
+                        <div id="narratives-list-container" class="space-y-2">${narrativesHTML.length ? narrativesHTML : DOM.unsafe('<p class="text-sm text-gray-500 italic">No narratives started. Load a scenario to begin.</p>')}</div>
                     </div>
                 </div>
             </div>
@@ -8434,19 +8451,89 @@
             },
 
             /**
+             * Toggles the selection mode for a list container.
+             * @param {string} type - 'scenario' or 'narrative'
+             */
+            toggleSelectionMode(type) {
+                const container = document.getElementById(`${type}s-list-container`);
+                const btn = document.getElementById(`${type}-select-btn`);
+
+                if (!container) return;
+
+                // Toggle State
+                const isActive = container.dataset.selectionMode === 'true';
+                const newState = !isActive;
+                container.dataset.selectionMode = newState;
+
+                // Update Button Visuals
+                if (btn) {
+                    if (type === 'scenario') {
+                        btn.classList.toggle('text-indigo-400', newState);
+                        btn.classList.toggle('text-gray-400', !newState);
+                    } else {
+                        btn.classList.toggle('text-sky-400', newState);
+                        btn.classList.toggle('text-gray-400', !newState);
+                    }
+                    btn.innerText = newState ? 'Cancel' : 'Select';
+                }
+
+                if (!newState) {
+                    // Deselect all
+                    container.querySelectorAll(`.${type}-select-check`).forEach(cb => cb.checked = false);
+                    this.updateBulkActionUI();
+                }
+
+                // Toggle CSS Classes for UI
+                if (type === 'scenario') {
+                    // Toggle visibility of checkbox containers
+                    container.querySelectorAll('.scenario-checkbox-container').forEach(el => el.classList.toggle('hidden', !newState));
+
+                    // Toggle padding on the summary element (which has class .scenario-content)
+                    container.querySelectorAll('.scenario-content').forEach(el => {
+                        el.classList.toggle('pl-12', newState);
+                        el.classList.toggle('pl-4', !newState);
+                    });
+                } else if (type === 'narrative') {
+                    // Toggle visibility of checkbox containers
+                    container.querySelectorAll('.narrative-checkbox-container').forEach(el => el.classList.toggle('hidden', !newState));
+
+                    // Toggle padding on the content div (which has class .narrative-content)
+                    container.querySelectorAll('.narrative-content').forEach(el => {
+                        el.classList.toggle('pl-10', newState); // pl-10 roughly 2.5rem, enough for left-3 (0.75rem) + width
+                        el.classList.toggle('pl-0', !newState);
+                    });
+                }
+            },
+
+            /**
              * Updates the visibility of the Bulk Action UI based on selection.
              */
             updateBulkActionUI() {
-                const checked = document.querySelectorAll('.scenario-select-check:checked');
-                const actions = document.getElementById('scenario-bulk-actions');
-                const count = document.getElementById('scenario-bulk-count');
+                // Scenarios
+                const checkedScenarios = document.querySelectorAll('.scenario-select-check:checked');
+                const actionsS = document.getElementById('scenario-bulk-actions');
+                const countS = document.getElementById('scenario-bulk-count');
 
-                if (actions && count) {
-                    if (checked.length > 0) {
-                        actions.classList.remove('hidden');
-                        count.textContent = `${checked.length} selected`;
+                if (actionsS && countS) {
+                    if (checkedScenarios.length > 0) {
+                        actionsS.classList.remove('hidden');
+                        countS.textContent = `${checkedScenarios.length} selected`;
                     } else {
-                        actions.classList.add('hidden');
+                        actionsS.classList.add('hidden');
+                    }
+                }
+
+                // Narratives
+                const checkedNarratives = document.querySelectorAll('.narrative-select-check:checked');
+                const actionsN = document.getElementById('narrative-bulk-actions');
+                const countN = document.getElementById('narrative-bulk-count');
+
+                if (actionsN && countN) {
+                    if (checkedNarratives.length > 0) {
+                        actionsN.classList.remove('hidden');
+                        countN.textContent = `${checkedNarratives.length} selected`;
+                    } else {
+                        actionsN.classList.add('hidden');
                     }
                 }
             },
@@ -12678,6 +12765,65 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                     UIManager.openStoryDetails(storyId);
                 } catch (e) {
                     console.error("Bulk delete failed:", e);
+                    alert("Error: " + e.message);
+                } finally {
+                    UIManager.hideLoadingSpinner();
+                }
+            },
+
+            /**
+             * Deletes multiple narratives at once.
+             * @param {string} storyId
+             */
+            async deleteMultipleNarratives(storyId) {
+                const checked = document.querySelectorAll('.narrative-select-check:checked');
+                if (checked.length === 0) return;
+
+                const ids = Array.from(checked).map(c => c.value);
+                const confirmMsg = `Are you sure you want to delete ${ids.length} narratives? This cannot be undone.`;
+                const proceed = await UIManager.showConfirmationPromise(confirmMsg);
+
+                if (!proceed) return;
+
+                UIManager.showLoadingSpinner('Deleting narratives...');
+                try {
+                    const story = await DBService.getStory(storyId);
+                    if (!story) throw new Error("Story not found.");
+
+                    // Filter out deleted narrative stubs
+                    const initialCount = story.narratives.length;
+                    story.narratives = story.narratives.filter(n => !ids.includes(n.id));
+
+                    if (story.narratives.length === initialCount) return; // No changes to story wrapper
+
+                    story.last_modified = new Date().toISOString();
+                    await DBService.saveStory(story);
+
+                    // Delete actual narrative objects from DB
+                    // Try/Catch individually or all at once? All at once is fine.
+                    await Promise.all(ids.map(id => DBService.deleteNarrative(id)));
+
+                    // Update memory
+                    const library = StateManager.getLibrary();
+                    const storyInLibrary = library.stories.find(s => s.id === storyId);
+                    if (storyInLibrary) {
+                        storyInLibrary.narratives = story.narratives;
+                        storyInLibrary.last_modified = story.last_modified;
+                    }
+
+                    // Handle Active Narrative Deletion
+                    if (ids.includes(library.active_narrative_id)) {
+                        library.active_narrative_id = null;
+                        StateManager.saveLibrary();
+                        if (library.active_story_id === storyId) {
+                            window.location.reload();
+                            return;
+                        }
+                    }
+
+                    UIManager.openStoryDetails(storyId);
+                } catch (e) {
+                    console.error("Bulk delete narratives failed:", e);
                     alert("Error: " + e.message);
                 } finally {
                     UIManager.hideLoadingSpinner();
