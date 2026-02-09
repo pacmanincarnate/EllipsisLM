@@ -992,8 +992,7 @@
     <!-- Story Library Modal -->
     <div id="story-library-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="story-library-modal"></div>
-        <div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl relative flex flex-col"
-            style="width: 100%; max-height: 100%">
+        <div class="bg-gray-800/90 backdrop-blur-md relative flex flex-col w-full h-full">
             <div class="p-6 border-b border-gray-700 flex justify-between items-center">
                 <h2 class="text-2xl font-semibold">Story Library</h2>
                 <div class="flex space-x-2">
@@ -2903,11 +2902,11 @@
 
             /**
              * Opens the IndexedDB connection.
-             * @param {number} [version=1] - The schema version.
+             * @param {number} [version=3] - The schema version.
              * @returns {Promise<boolean>} - True if successful, false otherwise.
              * @private
              */
-            _open(version = 1) {
+            _open(version = 3) {
                 return new Promise((resolve) => {
                     try {
                         if (this.db) return resolve(true);
@@ -2946,6 +2945,9 @@
                                 }
                                 if (!db.objectStoreNames.contains("narratives")) {
                                     db.createObjectStore("narratives", { keyPath: "id" });
+                                }
+                                if (!db.objectStoreNames.contains("folders")) {
+                                    db.createObjectStore("folders", { keyPath: "id" });
                                 }
                             } catch (e) {
                                 console.warn("onupgradeneeded failed (fail-soft):", e);
@@ -3022,7 +3024,7 @@
              */
             async init() {
                 if (this.db) return;
-                await this._open(2);
+                await this._open(3);
             },
 
             /**
@@ -3030,8 +3032,7 @@
              * @returns {Promise<boolean>} - True if the database is ready.
              */
             async ensure() {
-                if (this.db) return true;
-                await this.init();
+                if (!this.db) await this.init();
                 return !!this.db;
             },
 
@@ -3072,6 +3073,61 @@
                     } catch (e) { resolve({ success: false, processedCount: 0, errors: [], globalError: e }); }
                 });
             },
+
+            // --- Generic Getters/Setters/Deleters ---
+            async _getAll(storeName) {
+                if (!(await this.ensure())) return [];
+                return new Promise((resolve) => {
+                    try {
+                        const tx = this.db.transaction([storeName], "readonly");
+                        const store = tx.objectStore(storeName);
+                        const req = store.getAll();
+                        req.onsuccess = () => resolve(req.result ?? []);
+                        req.onerror = () => resolve([]);
+                    } catch (e) { resolve([]); }
+                });
+            },
+
+            async _get(storeName, key) {
+                if (!(await this.ensure())) return null;
+                return new Promise((resolve) => {
+                    try {
+                        const tx = this.db.transaction([storeName], "readonly");
+                        const store = tx.objectStore(storeName);
+                        const req = store.get(key);
+                        req.onsuccess = () => resolve(req.result ?? null);
+                        req.onerror = () => resolve(null);
+                    } catch (e) { resolve(null); }
+                });
+            },
+
+            async _delete(storeName, key) {
+                if (!(await this.ensure())) return false;
+                return new Promise((resolve) => {
+                    try {
+                        const tx = this.db.transaction([storeName], "readwrite");
+                        const store = tx.objectStore(storeName);
+                        const req = store.delete(key);
+                        req.onsuccess = () => resolve(true);
+                        req.onerror = () => resolve(false);
+                    } catch (e) { resolve(false); }
+                });
+            },
+
+            // --- Specific Accessors ---
+
+            async getAllStories() { return this._getAll('stories'); },
+            async getStory(id) { return this._get('stories', id); },
+            async saveStory(story) { return this._performWrite('stories', story); },
+            async deleteStory(id) { return this._delete('stories', id); },
+
+            async getNarrative(id) { return this._get('narratives', id); },
+            async saveNarrative(narrative) { return this._performWrite('narratives', narrative); },
+            async deleteNarrative(id) { return this._delete('narratives', id); },
+
+            async getAllFolders() { return this._getAll('folders'); },
+            async saveFolder(folder) { return this._performWrite('folders', folder); },
+            async deleteFolder(id) { return this._delete('folders', id); },
 
             /**
              * Saves an image blob to the database.
@@ -3639,6 +3695,7 @@
              */
             async loadApplicationData() {
                 const storyStubs = await DBService.getAllStories();
+                const folders = await DBService.getAllFolders();
 
                 // Robust local storage retrieval
                 let activeStoryId = localStorage.getItem('active_story_id');
@@ -3673,7 +3730,7 @@
                         localStorage.removeItem('active_narrative_id');
                     }
                 }
-                return { storyStubs, activeStory, activeNarrative };
+                return { storyStubs, folders, activeStory, activeNarrative };
             },
 
             /**
@@ -4060,6 +4117,7 @@
                     id: UTILITY.uuid(), name: "New Story", last_modified: new Date().toISOString(), created_date: new Date().toISOString(),
                     ...UTILITY.getDefaultApiSettings(), ...UTILITY.getDefaultUiSettings(), ...UTILITY.getDefaultSystemPrompts(), ...UTILITY.getDefaultStorySettings(),
                     search_index: "new story",
+                    folder_ids: [],
                     characters: [
                         { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {character} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', extra_portraits: [], tags: [], is_narrator: false },
                         { id: UTILITY.uuid(), name: "Narrator", description: "Describes the world.", short_description: "The storyteller.", model_instructions: "You are a world-class storyteller.", is_user: false, is_active: true, image_url: '', extra_portraits: [], tags: [], color: { base: '#334155', bold: '#94a3b8' }, is_narrator: true }
@@ -4350,7 +4408,7 @@
          */
         const StateManager = {
             data: {
-                library: { active_story_id: null, active_narrative_id: null, stories: [], tag_cache: [] },
+                library: { active_story_id: null, active_narrative_id: null, stories: [], folders: [], tag_cache: [] },
                 globalSettings: {},
                 activeNarrativeState: {},
             },
@@ -4408,8 +4466,9 @@
             async loadLibrary() {
                 this.loadGlobalSettings();
                 try {
-                    const { storyStubs, activeStory, activeNarrative } = await StoryService.loadApplicationData();
+                    const { storyStubs, folders, activeStory, activeNarrative } = await StoryService.loadApplicationData();
                     this.data.library.stories = storyStubs || [];
+                    this.data.library.folders = folders || [];
                     this.data.library.active_story_id = activeStory ? activeStory.id : null;
                     this.data.library.active_narrative_id = activeNarrative ? activeNarrative.id : null;
 
@@ -7926,18 +7985,108 @@
             },
 
             /**
-             * Renders a story item in the library list.
+             * Renders a story item in the library list as a visual card.
              */
-            StoryListItem(story, isActive, separator) {
-                const activeBadge = isActive ? DOM.html`<span class="text-xs text-indigo-300 font-bold">ACTIVE</span>` : '';
+
+            StoryListItem(story, isActive, viewMode = 'grid') {
+                const duplicateIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
+                const deleteIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
+                const folderIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>`;
+                const playIcon = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>`;
+
+                if (viewMode === 'list') {
+                    const dateStr = new Date(story.last_modified).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                    const charCount = (story.characters || []).length;
+                    return DOM.html`
+                        <div class="group flex items-center justify-between p-3 rounded-lg bg-gray-800/40 border border-transparent hover:border-gray-600 hover:bg-gray-800 transition-all cursor-pointer ${isActive ? 'bg-indigo-900/20 border-indigo-500/30' : ''}" 
+                             draggable="true"
+                             ondragstart="LibraryController.handleStoryDragStart(event, '${story.id}')"
+                             ontouchstart="LibraryController.handleStoryTouchStart(event, '${story.id}')"
+                             ontouchmove="LibraryController.handleStoryTouchMove(event)"
+                             ontouchend="LibraryController.handleStoryTouchEnd(event)"
+                             onclick="UIManager.openStoryDetails('${story.id}')">
+                            <div class="flex items-center space-x-4 min-w-0">
+                                <div class="w-10 h-10 rounded-md bg-gray-700 flex-shrink-0 overflow-hidden relative shadow-sm">
+                                     <div id="story-bg-${story.id}" class="absolute inset-0 bg-cover bg-center opacity-80" style="background-image: url('${story.backgroundImageURL || ''}')"></div>
+                                </div>
+                                <div class="min-w-0">
+                                    <h4 class="font-bold text-gray-200 text-sm truncate pr-4">${story.name || 'Untitled'}</h4>
+                                    <p class="text-xs text-gray-500">${dateStr} &bull; ${charCount} Chars</p>
+                                </div>
+                            </div>
+                             <!-- Hover Actions -->
+                              <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                                 <button onclick="UIManager.showAddStoryToFolderModal('${story.id}')" class="p-1.5 text-gray-400 hover:text-white transition-colors" title="Add to Folder">${DOM.unsafe(folderIcon)}</button>
+                                 <button onclick="LibraryController.duplicateStory('${story.id}')" class="p-1.5 text-gray-400 hover:text-white transition-colors" title="Duplicate">${DOM.unsafe(duplicateIcon)}</button>
+                                 <button onclick="LibraryController.deleteStory('${story.id}')" class="p-1.5 text-gray-400 hover:text-red-400 transition-colors" title="Delete">${DOM.unsafe(deleteIcon)}</button>
+                             </div>
+                        </div>
+                     `;
+                }
+
+                // Card Style with Active State
+                // We use 'border-0' here because we will apply a custom border via inline styles for the lighting effect
+                const activeWrapperClass = isActive ? 'shadow-[0_0_15px_rgba(99,102,241,0.5)]' : '';
+                const activeBadge = isActive ? DOM.html`<div class="absolute top-2 right-2 z-20 bg-indigo-600/90 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg backdrop-blur-sm tracking-wider">ACTIVE</div>` : '';
+
+                // Fallback Deterministic Gradient based on Story ID
+                const hue = parseInt(story.id.substring(0, 8), 16) % 360;
+                const gradientStyle = `background: linear-gradient(135deg, hsl(${hue}, 30%, 15%) 0%, hsl(${(hue + 40) % 360}, 20%, 10%) 100%);`;
+
+                // Lighting Effect Borders (Top/Right Lighter/Thinner, Bottom/Left Darker/Thicker)
+                const borderStyle = `
+                    border-style: solid; 
+                    border-width: 1px 1px 2px 2px; 
+                    border-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.3) hsl(${hue}, 10%, 10%) hsl(${hue}, 10%, 10%);
+                `;
+
+                // Metadata Formatting
+                const dateStr = new Date(story.last_modified).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                const charCount = (story.characters || []).length;
+                const charText = charCount === 1 ? '1 Character' : `${charCount} Characters`;
+
+                // Appearance Settings (Sync with Story)
+                const defaults = UTILITY.getDefaultUiSettings();
+                const titleFont = story.font || defaults.font;
+                const titleColor = story.chatTextColor || defaults.chatTextColor;
+
                 return DOM.html`
-            ${separator}
-            <div class="p-4 rounded-lg flex justify-between items-center cursor-pointer ${isActive ? 'bg-indigo-600/30' : 'bg-gray-700/50 hover:bg-gray-600/50'}" data-action="open-story" data-id="${story.id}">
-                <div>
-                    <h3 class="font-semibold text-lg">${story.name || 'Untitled Story'}</h3>
-                    <p class="text-sm text-gray-400">Modified: ${new Date(story.last_modified).toLocaleString()}</p>
-                </div>
+            <div class="relative group h-48 w-full rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-[1.02] cursor-pointer bg-gray-900 flex flex-col justify-end ${activeWrapperClass}" 
+                 draggable="true"
+                 ondragstart="LibraryController.handleStoryDragStart(event, '${story.id}')"
+                 ontouchstart="LibraryController.handleStoryTouchStart(event, '${story.id}')"
+                 ontouchmove="LibraryController.handleStoryTouchMove(event)"
+                 ontouchend="LibraryController.handleStoryTouchEnd(event)"
+                 onclick="UIManager.openStoryDetails('${story.id}')" style="${gradientStyle} ${borderStyle}">
+                
+                <!-- Background Image Layer (Async Hydrated) -->
+                <!-- Removed mix-blend-overlay and increased opacity to make images more visible -->
+                <div id="story-bg-${story.id}" class="absolute inset-0 bg-cover transition-transform duration-700 group-hover:scale-105 opacity-90" style="background-position: center 20%;"></div>
+                
+                <!-- Bottom Gradient for Text Readability -->
+                <div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10 pointer-events-none"></div>
+
                 ${activeBadge}
+
+                <!-- Action Overlay (Top Right) -->
+                <div class="absolute top-2 right-2 z-30 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                     <button onclick="UIManager.showAddStoryToFolderModal('${story.id}')" class="p-1.5 bg-black/50 hover:bg-black/80 rounded text-gray-300 hover:text-white backdrop-blur-sm transition-colors" title="Add to Folder">${DOM.unsafe(folderIcon)}</button>
+                     <button onclick="LibraryController.duplicateStory('${story.id}')" class="p-1.5 bg-black/50 hover:bg-black/80 rounded text-gray-300 hover:text-white backdrop-blur-sm transition-colors" title="Duplicate">${DOM.unsafe(duplicateIcon)}</button>
+                     <button onclick="LibraryController.deleteStory('${story.id}')" class="p-1.5 bg-black/50 hover:bg-red-900/80 rounded text-gray-300 hover:text-red-300 backdrop-blur-sm transition-colors" title="Delete">${DOM.unsafe(deleteIcon)}</button>
+                </div>
+
+                <!-- Card Content -->
+                <div class="relative z-20 p-4 w-full">
+                    <h3 class="font-bold text-lg drop-shadow-md leading-tight mb-1 line-clamp-2 group-hover:opacity-80 transition-opacity text-shadow-sm" 
+                        style="font-family: ${titleFont}; color: ${titleColor}; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
+                        ${story.name || 'Untitled Story'}
+                    </h3>
+                    <div class="flex items-center text-xs text-gray-400 font-medium space-x-2 mt-1">
+                        <span class="bg-black/40 px-1.5 py-0.5 rounded text-gray-300 border border-white/5 shadow-sm">${dateStr}</span>
+                        <span class="text-gray-500 text-[9px]">&bull;</span>
+                        <span class="text-gray-300 shadow-black drop-shadow-sm">${charText}</span>
+                    </div>
+                </div>
             </div>
         `;
             },
@@ -8047,6 +8196,64 @@
                 </div>
             </div>
         `;
+            },
+
+            /**
+             * Renders a Folder item for the library.
+             */
+            FolderItem(folder, viewMode = 'grid') {
+                // Calculate story count (passed in or calculated)
+                const count = folder.story_count !== undefined ? folder.story_count : '?';
+
+                if (viewMode === 'list') {
+                    return DOM.html`
+                        <div class="group flex items-center justify-between p-3 rounded-lg bg-gray-800/60 border border-gray-700 hover:border-indigo-500/50 hover:bg-gray-700 transition-all cursor-pointer mb-2"
+                             ondragover="LibraryController.handleStoryDragOver(event)"
+                             ondragleave="LibraryController.handleStoryDragLeave(event)"
+                             ondrop="LibraryController.handleStoryDrop(event, '${folder.id}')"
+                             data-folder-id="${folder.id}"
+                             onclick="UIManager.renderLibraryInterface({ folderId: '${folder.id}' })">
+                            <div class="flex items-center space-x-4">
+                                <svg class="w-8 h-8 text-indigo-400 group-hover:text-indigo-300" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                                <div>
+                                    <h4 class="font-bold text-gray-200 text-sm">${folder.name}</h4>
+                                    <p class="text-xs text-gray-500">${count} Stories</p>
+                                </div>
+                            </div>
+                             <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="event.stopPropagation(); UIManager.showMoveFolderModal('${folder.id}')" class="p-1.5 text-gray-400 hover:text-white" title="Move Folder"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg></button>
+                                <button onclick="event.stopPropagation(); LibraryController.renameFolder('${folder.id}', '${folder.name}')" class="p-1.5 text-gray-400 hover:text-white" title="Rename"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                                <button onclick="event.stopPropagation(); LibraryController.deleteFolder('${folder.id}')" class="p-1.5 text-gray-400 hover:text-red-400" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            </div>
+                        </div>
+                     `;
+                }
+
+                return DOM.html`
+            <div class="relative group h-48 w-full rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-[1.02] cursor-pointer bg-gray-800/80 border border-gray-700 hover:border-indigo-500/50 flex flex-col items-center justify-center space-y-3"
+                 ondragover="LibraryController.handleStoryDragOver(event)"
+                 ondragleave="LibraryController.handleStoryDragLeave(event)"
+                 ondrop="LibraryController.handleStoryDrop(event, '${folder.id}')"
+                 data-folder-id="${folder.id}"
+                 onclick="UIManager.renderLibraryInterface({ folderId: '${folder.id}' })">
+                
+                <div class="bg-gray-700/50 p-4 rounded-full group-hover:bg-indigo-500/20 transition-colors">
+                    <svg class="w-10 h-10 text-indigo-400 group-hover:text-indigo-300 transition-colors" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                </div>
+                
+                <div class="text-center px-4 w-full">
+                    <h3 class="font-bold text-lg text-gray-200 group-hover:text-white transition-colors truncate">${folder.name}</h3>
+                    <p class="text-xs text-gray-500 font-mono mt-1">${count} Stories</p>
+                </div>
+
+                <!-- Folder Actions (Hover) -->
+                <div class="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-200">
+                    <button onclick="event.stopPropagation(); UIManager.showMoveFolderModal('${folder.id}')" class="p-1.5 bg-gray-900/90 border border-gray-600 rounded-md text-gray-400 hover:text-white hover:border-gray-400 shadow-sm" title="Move Folder"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg></button>
+                    <button onclick="event.stopPropagation(); LibraryController.renameFolder('${folder.id}', '${folder.name}')" class="p-1.5 bg-gray-900/90 border border-gray-600 rounded-md text-gray-400 hover:text-white hover:border-gray-400 shadow-sm" title="Rename"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                    <button onclick="event.stopPropagation(); LibraryController.deleteFolder('${folder.id}')" class="p-1.5 bg-red-900/90 border border-red-800 rounded-md text-red-300 hover:text-white hover:border-red-500 shadow-sm" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                </div>
+            </div>
+            `;
             }
         };
 
@@ -8200,7 +8407,7 @@
             },
 
             /**
-             * Renders the Story Library interface with filtering and sorting.
+             * Renders the Story Library interface with filtering, sorting, and folders.
              * @param {Object} [filterState={}] - Optional filter state overrides.
              */
             renderLibraryInterface(filterState = {}) {
@@ -8213,10 +8420,28 @@
                 const listContainer = document.getElementById('lib-list');
 
                 // 1. Determine Layout & Filter Values
-                let { searchTerm, sortBy, filterTag, layout } = filterState;
+                let { searchTerm, sortBy, filterTag, layout, folderId, viewMode } = filterState;
 
-                // Logic: Use passed layout if available, otherwise detect
-                const isTallScreen = layout ? (layout === 'mobile') : (window.innerHeight > window.innerWidth);
+                // Persistence for Filter State
+                if (folderId === undefined) {
+                    folderId = UIManager.RUNTIME.currentLibraryFolder || null;
+                } else {
+                    UIManager.RUNTIME.currentLibraryFolder = folderId;
+                }
+
+                if (viewMode === undefined) {
+                    // FIX: Check persisted library state first, then runtime, then default
+                    viewMode = (library && library.viewMode) ? library.viewMode : (UIManager.RUNTIME.libraryViewMode || 'grid');
+                    // Sync Runtime
+                    UIManager.RUNTIME.libraryViewMode = viewMode;
+                } else {
+                    UIManager.RUNTIME.libraryViewMode = viewMode;
+                    // Persist to StateManager and LocalStorage
+                    if (library) {
+                        library.viewMode = viewMode;
+                        StateManager.saveLibrary();
+                    }
+                }
 
                 if (searchTerm === undefined && searchInput) searchTerm = searchInput.value;
                 if (sortBy === undefined && sortInput) sortBy = sortInput.value;
@@ -8226,54 +8451,198 @@
                 sortBy = sortBy || 'last_modified';
                 filterTag = filterTag || '';
 
+                const isTallScreen = layout ? (layout === 'mobile') : (window.innerHeight > window.innerWidth);
+                const isListView = viewMode === 'list';
+
                 // 2. Filter & Sort Logic
                 let stories = [...library.stories];
-                if (searchTerm) {
-                    const lowerCaseSearch = searchTerm.toLowerCase();
-                    stories = stories.filter(s => s.search_index && s.search_index.includes(lowerCaseSearch));
+                let folders = [...(library.folders || [])];
+
+                // A. Apply Search/Tags (Global Search, ignores folders if searching)
+                // Behavior: If searching/tagging, flatten the hierarchy. If browsing, use folders.
+                const isSearching = (searchTerm && searchTerm.trim().length > 0) || (filterTag && filterTag.length > 0);
+
+                if (isSearching) {
+                    if (searchTerm) {
+                        const lowerCaseSearch = searchTerm.toLowerCase();
+                        stories = stories.filter(s => s.search_index && s.search_index.includes(lowerCaseSearch));
+                        // Filter folders too by name?
+                        folders = folders.filter(f => f.name.toLowerCase().includes(lowerCaseSearch));
+                    }
+                    if (filterTag) {
+                        const lowerFilter = filterTag.toLowerCase();
+                        stories = stories.filter(s => {
+                            const storyTags = new Set();
+                            (s.tags || []).forEach(t => storyTags.add(t.toLowerCase()));
+                            (s.characters || []).forEach(c => (c.tags || []).forEach(t => storyTags.add(t.toLowerCase())));
+                            return storyTags.has(lowerFilter);
+                        });
+                        // Folders don't have tags typically, so hide them or show all? Hide scenarios with no matching tag logic.
+                        folders = [];
+                    }
+                } else {
+                    // B. Folder Navigation (Hierarchy)
+                    if (folderId) {
+                        // Inside a folder
+                        stories = stories.filter(s => s.folder_ids && s.folder_ids.includes(folderId));
+                        folders = folders.filter(f => f.parent_id === folderId);
+                    } else {
+                        // Root Level
+                        // Show ALL stories (Stories are 'added' to folders, not moved, so they remain in root)
+                        // stories = stories.filter(s => !s.folder_ids || s.folder_ids.length === 0);
+                        folders = folders.filter(f => !f.parent_id);
+                    }
                 }
-                if (filterTag) {
-                    const lowerFilter = filterTag.toLowerCase();
-                    stories = stories.filter(s => {
-                        const storyTags = new Set();
-                        (s.tags || []).forEach(t => storyTags.add(t.toLowerCase()));
-                        (s.characters || []).forEach(c => (c.tags || []).forEach(t => storyTags.add(t.toLowerCase())));
-                        return storyTags.has(lowerFilter);
-                    });
-                }
+
+                // Calculate Story Counts for Folders (Visual only)
+                folders.forEach(f => {
+                    // Count total stories in this folder (recursive? or just direct?)
+                    // For now, direct children match.
+                    f.story_count = library.stories.filter(s => s.folder_ids && s.folder_ids.includes(f.id)).length;
+                });
+
+
+                // Sort Stories
                 stories.sort((a, b) => {
                     if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
                     if (sortBy === 'created_date') return new Date(b.created_date) - new Date(a.created_date);
                     return new Date(b.last_modified) - new Date(a.last_modified);
                 });
 
-                // 3. Generate List HTML
-                // This creates a standard string of HTML
-                const storyListHTML = stories.map((story, index) => {
+                // Sort Folders (Always alphabetical or by creation?)
+                folders.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+
+                // 3. Generate HTML
+                // Breadcrumbs
+                let breadcrumbsHTML = '';
+                if (!isSearching && folderId) {
+                    const currentFolder = (library.folders || []).find(f => f.id === folderId);
+
+                    if (currentFolder) {
+                        // Build Path
+                        let path = [];
+                        let ptr = currentFolder;
+                        let depth = 0;
+                        while (ptr && ptr.parent_id && depth < 20) {
+                            const parent = (library.folders || []).find(f => f.id === ptr.parent_id);
+                            if (parent) {
+                                path.unshift(parent);
+                                ptr = parent;
+                            } else {
+                                ptr = null;
+                            }
+                            depth++;
+                        }
+
+                        // Generate HTML for Path
+                        let pathHTML = path.map(f => `
+                            <button onclick="UIManager.renderLibraryInterface({ folderId: '${f.id}' })" class="hover:text-white transition-colors text-gray-400 flex items-center">
+                                <svg class="w-4 h-4 mr-1 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                                ${f.name}
+                            </button>
+                            <span class="text-gray-600">/</span>
+                        `).join('');
+
+                        breadcrumbsHTML = DOM.html`
+                            <div class="col-span-full flex items-center mb-4 space-x-2 text-sm text-gray-400 flex-wrap">
+                                 <button onclick="UIManager.renderLibraryInterface({ folderId: null })" class="hover:text-white transition-colors flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                    Home
+                                 </button>
+                                 <span class="text-gray-600">/</span>
+                                 ${DOM.unsafe(pathHTML)}
+                                 <span class="text-white font-bold flex items-center">
+                                    <svg class="w-4 h-4 mr-1 text-indigo-400" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                                    ${currentFolder.name}
+                                 </span>
+                            </div>
+                        `;
+                    }
+                }
+
+                const folderListHTML = folders.map(folder => UIComponents.FolderItem(folder, viewMode)).join('');
+
+                const storyListHTML = stories.map((story) => {
                     const isActive = story.id === library.active_story_id;
-                    const separator = index > 0 ? DOM.unsafe('<hr class="border-gray-700 my-2">') : '';
-                    return UIComponents.StoryListItem(story, isActive, separator);
+                    return UIComponents.StoryListItem(story, isActive, viewMode);
                 }).join('');
 
-                // Update Existing Frame (No wrapping needed, direct innerHTML assignment is safe here)
-                // FIX: Check if layout structure matches before reusing existing frame
+                let combinedListHTML = breadcrumbsHTML + folderListHTML + storyListHTML;
+
+                if (stories.length === 0 && folders.length === 0) {
+                    combinedListHTML = breadcrumbsHTML + DOM.html`
+                        <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-50 space-y-4">
+                            <svg class="w-16 h-16 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                            <span class="text-lg">No stories or folders found.</span>
+                        </div>
+                     `;
+                }
+
+
+                // Update Existing Frame (if applicable and layout matches)
                 const desktopDetailsPanel = document.getElementById('story-details-content-desktop');
-                const isCurrentLayoutMobile = !desktopDetailsPanel; // If desktop panel is missing, we are in mobile structure
+                const isCurrentLayoutMobile = !desktopDetailsPanel;
                 const layoutMatches = (isTallScreen === isCurrentLayoutMobile);
 
+                // Define Grid Classes based on context
+                let gridClasses = '';
+                if (isListView) {
+                    gridClasses = 'flex flex-col space-y-2 pb-20';
+                } else {
+                    gridClasses = isTallScreen
+                        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20'
+                        : 'grid grid-cols-1 gap-4 pb-20';
+                }
+
                 if (listContainer && searchInput && layoutMatches) {
-                    listContainer.innerHTML = storyListHTML;
+                    listContainer.className = `p-6 overflow-y-auto flex-grow ${gridClasses}`;
+                    listContainer.innerHTML = combinedListHTML;
+
+                    // FIX: Update Toggle Button State explicitly since controls aren't re-rendered
+                    const toggleBtn = document.getElementById('lib-view-toggle');
+                    if (toggleBtn) {
+                        // Re-calculate icons
+                        const gridIcon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>`;
+                        const listIcon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>`;
+                        const viewIcon = isListView ? gridIcon : listIcon;
+
+                        toggleBtn.innerHTML = viewIcon; // DOM.unsafe not needed for innerHTML assignment of known safe strings
+                        toggleBtn.title = isListView ? 'Switch to Card View' : 'Switch to List View';
+                        toggleBtn.setAttribute('onclick', `UIManager.renderLibraryInterface({ viewMode: '${isListView ? 'grid' : 'list'}' })`);
+                    }
+
+                    // Trigger hydration for updates (only needed for grid or small icons)
+                    setTimeout(() => UIManager.hydrateStoryCards(stories), 50);
                     return;
                 }
 
                 // 4. Generate Full Frame (First Render or Layout Switch)
                 const tagOptions = library.tag_cache.map(tag => DOM.html`<option value="${tag}" ${filterTag === tag ? 'selected' : ''}>${tag}</option>`);
 
+                // View Toggle Icon: If in List Mode, show GRID icon (to switch to grid). If in Grid Mode, show LIST icon (to switch to list).
+                const gridIcon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>`;
+                const listIcon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>`;
+                const viewIcon = isListView ? gridIcon : listIcon;
+
+                // Create Folder Button
+                const createFolderBtn = DOM.html`
+                    <button onclick="UIManager.showCreateFolderModal()" class="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg text-white" title="New Folder">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+                    </button>
+                    <button id="lib-view-toggle" onclick="UIManager.renderLibraryInterface({ viewMode: '${isListView ? 'grid' : 'list'}' })" class="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg text-white" title="${isListView ? 'Switch to Card View' : 'Switch to List View'}">
+                        ${DOM.unsafe(viewIcon)}
+                    </button>
+                `;
+
                 const controlsHTML = DOM.html`
             <div class="p-6 border-b border-gray-700 space-y-4">
-                <input id="lib-search" type="search" placeholder="Search stories..." value="${searchTerm}" 
-                    oninput="UIManager.renderLibraryInterface()" 
-                    class="w-full bg-black/30 p-2 rounded-lg border-gray-600">
+                <div class="flex space-x-2">
+                    <input id="lib-search" type="search" placeholder="Search stories..." value="${searchTerm}" 
+                        oninput="UIManager.renderLibraryInterface()" 
+                        class="w-full bg-black/30 p-2 rounded-lg border-gray-600">
+                    ${createFolderBtn}
+                </div>
                 <div class="flex space-x-4">
                     <select id="lib-sort" onchange="UIManager.renderLibraryInterface()" class="w-1/2 bg-black/30 p-2 rounded-lg border-gray-600">
                         <option value="last_modified" ${sortBy === 'last_modified' ? 'selected' : ''}>Modified</option>
@@ -8287,15 +8656,289 @@
                 </div>
             </div>`;
 
-                // Sanitization: Wrap storyListHTML in DOM.unsafe() so the sanitizer treats it as HTML, not text
                 if (isTallScreen) {
-                    container.innerHTML = DOM.html`<div class="flex flex-col flex-grow min-h-0">${controlsHTML}<div id="lib-list" class="p-6 overflow-y-auto">${DOM.unsafe(storyListHTML)}</div></div>`.toString();
+                    container.innerHTML = DOM.html`<div class="flex flex-col flex-grow min-h-0">${controlsHTML}<div id="lib-list" class="p-6 overflow-y-auto flex-grow ${gridClasses}">${DOM.unsafe(combinedListHTML)}</div></div>`.toString();
                 } else {
                     container.innerHTML = DOM.html`
-                <div class="w-[450px] flex-shrink-0 border-r border-gray-700 flex flex-col">${controlsHTML}<div id="lib-list" class="p-6 overflow-y-auto flex-grow">${DOM.unsafe(storyListHTML)}</div></div>
+                <div class="w-[450px] flex-shrink-0 border-r border-gray-700 flex flex-col">${controlsHTML}<div id="lib-list" class="p-6 overflow-y-auto flex-grow ${gridClasses}">${DOM.unsafe(combinedListHTML)}</div></div>
                 <div id="story-details-content-desktop" class="flex-grow p-6 flex text-gray-500"><div class="w-full h-full flex items-center justify-center">Select a story to see details...</div></div>
             `.toString();
                 }
+
+                // Trigger Background Hydration
+                setTimeout(() => UIManager.hydrateStoryCards(stories), 50);
+            },
+
+            /**
+             * Shows a simple prompt to create a new folder.
+             */
+            showCreateFolderModal() {
+                const name = prompt("Enter folder name:");
+                if (name && name.trim()) {
+                    const parentId = UIManager.RUNTIME.currentLibraryFolder || null;
+                    LibraryController.createFolder(name, parentId);
+                }
+            },
+
+            /**
+             * Shows a modal to ADD a story to a folder (keeping it in others).
+             */
+            async showAddStoryToFolderModal(storyId) {
+                const library = StateManager.getLibrary();
+                const folders = library.folders || [];
+                const story = library.stories.find(s => s.id === storyId);
+                if (!story) return;
+
+                // Sort and flatten folders with indentation
+                const getFolderLevel = (id, list, level = 0) => {
+                    let children = list.filter(f => f.parent_id === id);
+                    children.sort((a, b) => a.name.localeCompare(b.name));
+                    let result = [];
+                    children.forEach(c => {
+                        result.push({ ...c, level });
+                        result = result.concat(getFolderLevel(c.id, list, level + 1));
+                    });
+                    return result;
+                };
+
+                // Get root folders first
+                const rootFolders = folders.filter(f => !f.parent_id).sort((a, b) => a.name.localeCompare(b.name));
+                let flatFolders = [];
+                rootFolders.forEach(f => {
+                    flatFolders.push({ ...f, level: 0 });
+                    flatFolders = flatFolders.concat(getFolderLevel(f.id, folders, 1));
+                });
+
+                // Create Options
+                const options = flatFolders.map(f => {
+                    const indent = "&nbsp;&nbsp;&nbsp;".repeat(f.level);
+                    const prefix = f.level > 0 ? "└─ " : ""; // Visual indicators
+                    const isAlreadyIn = story.folder_ids && story.folder_ids.includes(f.id);
+                    const mark = isAlreadyIn ? " (Already Added)" : "";
+                    return `<option value="${f.id}" ${isAlreadyIn ? 'disabled' : ''}>${indent}${prefix}${f.name}${mark}</option>`;
+                }).join('');
+
+                const modalHTML = DOM.html`
+                    <div id="add-story-folder-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" onclick="if(event.target.id === 'add-story-folder-modal') this.remove()">
+                        <div class="bg-gray-800 rounded-lg shadow-xl w-96 p-6 border border-gray-700" onclick="event.stopPropagation()">
+                             <h3 class="text-lg font-bold text-white mb-4">Add '${story.name}' to Folder</h3>
+                             <label class="block text-sm text-gray-400 mb-2">Select Folder</label>
+                             <select id="add-story-folder-select" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white mb-6 focus:border-indigo-500 focus:outline-none">
+                                <option value="">(Select Folder)</option>
+                                ${DOM.unsafe(options)}
+                             </select>
+                             <div class="flex justify-end space-x-3">
+                                <button onclick="document.getElementById('add-story-folder-modal').remove()" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancel</button>
+                                <button onclick="const fid = document.getElementById('add-story-folder-select').value; if(fid) { LibraryController.addStoryToFolder('${storyId}', fid); document.getElementById('add-story-folder-modal').remove(); }" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold transition-colors">Add</button>
+                             </div>
+                        </div>
+                    </div>
+                `;
+
+                // Append to body
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = modalHTML;
+                document.body.appendChild(tempDiv.firstElementChild);
+            },
+
+            /**
+             * Shows a modal to move a folder into another folder.
+             * Prevents circular dependencies by filtering out the folder itself and its children.
+             */
+            async showMoveFolderModal(folderId) {
+                const library = StateManager.getLibrary();
+                const folders = library.folders || [];
+                const currentFolder = folders.find(f => f.id === folderId);
+                if (!currentFolder) return;
+
+                // Recursive function to get all descendant IDs
+                const getDescendants = (parentId) => {
+                    let descendants = [];
+                    const children = folders.filter(f => f.parent_id === parentId);
+                    children.forEach(child => {
+                        descendants.push(child.id);
+                        descendants = descendants.concat(getDescendants(child.id));
+                    });
+                    return descendants;
+                };
+
+                const invalidIds = [folderId, ...getDescendants(folderId)];
+
+                // Filter valid parents
+                const validFolders = folders.filter(f => !invalidIds.includes(f.id));
+
+                // Sort and flatten valid folders for display
+                const getFolderLevel = (id, list, level = 0) => {
+                    let children = list.filter(f => f.parent_id === id);
+                    children.sort((a, b) => a.name.localeCompare(b.name));
+                    let result = [];
+                    children.forEach(c => {
+                        result.push({ ...c, level });
+                        result = result.concat(getFolderLevel(c.id, list, level + 1));
+                    });
+                    return result;
+                };
+
+                // Get root folders first (from Valid List)
+                const rootFolders = validFolders.filter(f => !f.parent_id).sort((a, b) => a.name.localeCompare(b.name));
+                let flatFolders = [];
+                rootFolders.forEach(f => {
+                    flatFolders.push({ ...f, level: 0 });
+                    flatFolders = flatFolders.concat(getFolderLevel(f.id, validFolders, 1));
+                });
+
+
+                const options = flatFolders.map(f => {
+                    const indent = "&nbsp;&nbsp;&nbsp;".repeat(f.level);
+                    const prefix = f.level > 0 ? "└─ " : "";
+                    return `<option value="${f.id}">${indent}${prefix}${f.name}</option>`;
+                }).join('');
+
+
+                const modalHTML = DOM.html`
+                    <div id="move-folder-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" onclick="if(event.target.id === 'move-folder-modal') this.remove()">
+                        <div class="bg-gray-800 rounded-lg shadow-xl w-96 p-6 border border-gray-700" onclick="event.stopPropagation()">
+                             <h3 class="text-lg font-bold text-white mb-4">Move Folder '${currentFolder.name}'</h3>
+                             <label class="block text-sm text-gray-400 mb-2">Select Parent Folder</label>
+                             <select id="move-folder-select" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white mb-6 focus:border-indigo-500 focus:outline-none">
+                                <option value="">(Root / No Parent)</option>
+                                ${DOM.unsafe(options)}
+                             </select>
+                             <div class="flex justify-end space-x-3">
+                                <button onclick="document.getElementById('move-folder-modal').remove()" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancel</button>
+                                <button onclick="const pid = document.getElementById('move-folder-select').value; LibraryController.setFolderParent('${folderId}', pid || null); document.getElementById('move-folder-modal').remove();" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold transition-colors">Move Folder</button>
+                             </div>
+                        </div>
+                    </div>
+                `;
+
+                // Append
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = modalHTML;
+                document.body.appendChild(tempDiv.firstElementChild);
+
+                // Set initial
+                document.getElementById('move-folder-select').value = currentFolder.parent_id || '';
+            },
+
+            /**
+             * Asynchronously hydrates the background images for story cards.
+             */
+            async hydrateStoryCards(stories) {
+                console.log("UIManager: Starting hydration for", stories.length, "stories.");
+
+                // Process in chunks of 5 to avoid overwhelming the DB/UI thread
+                const chunkSize = 5;
+                for (let i = 0; i < stories.length; i += chunkSize) {
+                    const chunk = stories.slice(i, i + chunkSize);
+                    await Promise.all(chunk.map(async (story) => {
+                        try {
+                            const bgEl = document.getElementById(`story-bg-${story.id}`);
+                            if (!bgEl) return;
+
+                            // 1. Try Story Background
+                            let bgResolved = false;
+                            if (story.backgroundImageURL) {
+                                const src = await this.resolveImageSource(story.backgroundImageURL);
+                                if (src) {
+                                    bgEl.style.backgroundImage = `url('${src}')`;
+                                    bgResolved = true;
+                                    return;
+                                } else {
+                                    // Soft failure, try fallback
+                                    // console.debug(`Background image failed for ${story.name}, attempting fallback.`);
+                                }
+                            }
+
+                            // 2. Fallback to First Non-User Character with Image
+                            let fallbackUserImage = null;
+
+                            if (story.characters && story.characters.length > 0) {
+                                for (const char of story.characters) {
+                                    // Determine potential image key (URL or ID)
+                                    // If image_url is missing, try using ID (resolveImageSource handles local_idb_ prefixing)
+                                    const imgKey = char.image_url || char.id;
+
+                                    // Capture potential user image for later
+                                    if (char.is_user) {
+                                        if (imgKey && !fallbackUserImage) fallbackUserImage = imgKey;
+                                        continue;
+                                    }
+
+                                    if (imgKey) {
+                                        const src = await this.resolveImageSource(imgKey);
+                                        if (src) {
+                                            bgEl.style.backgroundImage = `url('${src}')`;
+                                            bgResolved = true;
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 3. Last Resort: User Image
+                            if (!bgResolved && fallbackUserImage) {
+                                const src = await this.resolveImageSource(fallbackUserImage);
+                                if (src) {
+                                    bgEl.style.backgroundImage = `url('${src}')`;
+                                    bgResolved = true;
+                                }
+                            }
+
+                            // 3. Final Fallback (If no Non-User found with image, maybe Gradient is enough?)
+                            // Only warn if we really expected an image but found nothing good
+                            if (!bgResolved && story.backgroundImageURL) {
+                                console.warn(`Card image missing for ${story.name}: Story BG failed & No valid NPC image found.`);
+                            }
+                        } catch (err) {
+                            console.error(`Error hydrating card for story ${story.name}:`, err);
+                        }
+                    }));
+                }
+                console.log("UIManager: Hydration complete.");
+            },
+
+
+            /**
+             * Resolves an image key or URL to a usable source (URL or Blob URL).
+             * Utilizes runtime cache to prevent repeated DB fetches/Object creations.
+             */
+            async resolveImageSource(keyOrUrl) {
+                if (!keyOrUrl) return null;
+                // Exclude current session blob URLs if they are not in cache (likely stale), but allow valid http/data
+                if (keyOrUrl.startsWith('data:')) return keyOrUrl;
+                if (keyOrUrl.startsWith('http') && !keyOrUrl.startsWith('blob:')) return keyOrUrl;
+
+                // Check Cache
+                if (this.RUNTIME.worldImageCache[keyOrUrl]) return this.RUNTIME.worldImageCache[keyOrUrl];
+                if (this.RUNTIME.characterImageCache[keyOrUrl]) return this.RUNTIME.characterImageCache[keyOrUrl];
+
+                // Attempt DB Fetch
+                try {
+                    // 1. Try Exact Key
+                    let blob = await DBService.getImage(keyOrUrl);
+
+                    // 2. Try Fallback: Remove 'local_idb_' prefix (Fix for Key Mismatch)
+                    if (!blob && keyOrUrl.startsWith('local_idb_')) {
+                        const cleanKey = keyOrUrl.replace('local_idb_', '');
+                        blob = await DBService.getImage(cleanKey);
+                    }
+
+                    // 3. Try Fallback: Add 'local_idb_' prefix
+                    if (!blob && !keyOrUrl.startsWith('local_idb_')) {
+                        blob = await DBService.getImage('local_idb_' + keyOrUrl);
+                    }
+
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        this.RUNTIME.worldImageCache[keyOrUrl] = url; // Cache it
+                        return url;
+                    }
+                } catch (e) {
+                    console.warn(`Image resolution failed for ${keyOrUrl}:`, e);
+                }
+
+                return null;
             },
 
             /**
@@ -8371,12 +9014,12 @@
                 <div class="p-6 space-y-8 ${contentPaddingClass}">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="text-sm text-gray-400 font-bold mb-1 block">Creator's Note</label>
-                            <div class="relative">
-                                <textarea oninput="LibraryController.updateStoryField('${story.id}', 'creator_notes', this.value)" class="w-full bg-black/30 border-gray-600 p-3 rounded-lg resize-none h-24 text-sm focus:ring-1 focus:ring-indigo-500 transition-all">${story.creator_notes || ''}</textarea>
-                                <button data-action="gen-story-notes" data-id="${story.id}" class="absolute top-2 right-2 text-gray-500 hover:text-indigo-400 transition-colors" title="Generate with AI">${this.getAIGenIcon()}</button>
-                            </div>
+                        <div class="md:col-span-2">
+                             <label class="text-sm text-gray-400 font-bold mb-1 block">Creator's Note</label>
+                             <div class="relative">
+                                 <textarea oninput="LibraryController.updateStoryField('${story.id}', 'creator_notes', this.value)" class="w-full bg-black/30 border-gray-600 p-3 rounded-lg resize-none h-24 text-sm focus:ring-1 focus:ring-indigo-500 transition-all">${story.creator_notes || ''}</textarea>
+                                 <button data-action="gen-story-notes" data-id="${story.id}" class="absolute top-2 right-2 text-gray-500 hover:text-indigo-400 transition-colors" title="Generate with AI">${this.getAIGenIcon()}</button>
+                             </div>
                         </div>
                         <div>
                             <label class="text-sm text-gray-400 font-bold mb-1 block">Tags</label>
@@ -8384,6 +9027,13 @@
                                 <input type="text" value="${(story.tags || []).join(', ')}" oninput="LibraryController.updateStoryTags('${story.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-3 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 transition-all">
                                 <button data-action="gen-story-tags" data-id="${story.id}" class="absolute top-1/2 right-2 -translate-y-1/2 text-gray-500 hover:text-indigo-400 transition-colors" title="Generate with AI">${this.getAIGenIcon()}</button>
                             </div>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-400 font-bold mb-1 block">Folder</label>
+                            <select onchange="LibraryController.setStoryFolder('${story.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-3 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 transition-all appearance-none">
+                                <option value="">(No Folder)</option>
+                                ${(library.folders || []).map(f => DOM.html`<option value="${f.id}" ${(story.folder_ids && story.folder_ids.includes(f.id)) ? 'selected' : ''}>${f.name}</option>`).join('')}
+                            </select>
                         </div>
                     </div>
 
@@ -8553,7 +9203,7 @@
                 // Map characters to a clean object for the lightbox
                 const imageData = (characters || []).map(c => {
                     const src = UIManager.getPortraitSrc(c);
-                    return src ? { src, name: c.name } : null;
+                    return src ? { src, name: c.name, is_user: c.is_user } : null;
                 }).filter(Boolean);
 
                 if (imageData.length === 0) {
@@ -8563,6 +9213,10 @@
 
                 // Cache this list for the lightbox
                 UIManager.RUNTIME.currentLightboxImages = imageData;
+
+                // Determine Start Index: First Non-User Character
+                let startIndex = imageData.findIndex(img => !img.is_user);
+                if (startIndex === -1) startIndex = 0; // Fallback to first image (User) if only User has image
 
                 // If only 1 image, render static and do NOT start interval
                 if (imageData.length === 1) {
@@ -8578,11 +9232,11 @@
 
                 // Multiple images: Render two for crossfading
                 container.innerHTML = `
-            <img id="${containerId}-img1" data-action="open-lightbox" data-index="0" class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" style="opacity: 1;">
-            <img id="${containerId}-img2" data-action="open-lightbox" data-index="0" class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" style="opacity: 0;">
+            <img id="${containerId}-img1" data-action="open-lightbox" data-index="${startIndex}" class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" style="opacity: 1;">
+            <img id="${containerId}-img2" data-action="open-lightbox" data-index="${startIndex}" class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" style="opacity: 0;">
         `;
 
-                let currentIndex = 0;
+                let currentIndex = startIndex;
                 let activeImg = 1;
                 const img1 = document.getElementById(`${containerId}-img1`);
                 const img2 = document.getElementById(`${containerId}-img2`);
@@ -12853,6 +13507,164 @@ JSON array of objects: { "title": "...", "content": "..." }`;
             },
 
             /**
+             * Adds a story to a folder (appending to existing folders).
+             * @param {string} storyId
+             * @param {string} folderId
+             */
+            async addStoryToFolder(storyId, folderId) {
+                try {
+                    const library = StateManager.getLibrary();
+                    const story = await DBService.getStory(storyId); // Fetch fresh to be safe
+                    if (!story) return;
+
+                    // Update DB
+                    if (!story.folder_ids) story.folder_ids = [];
+                    if (!story.folder_ids.includes(folderId)) {
+                        story.folder_ids.push(folderId);
+                        await DBService.saveStory(story);
+
+                        // Update Memory
+                        const storyInLib = library.stories.find(s => s.id === storyId);
+                        if (storyInLib) {
+                            storyInLib.folder_ids = story.folder_ids;
+                        }
+
+                        // Refresh Library (background)
+                        UIManager.renderLibraryInterface();
+                    }
+                } catch (e) {
+                    console.error("Failed to add story to folder:", e);
+                }
+            },
+
+            /**
+             * Sets the folder for a story. (Deprecated / Legacy Move logic)
+             * @param {string} storyId
+             * @param {string} folderId
+             */
+            async setStoryFolder(storyId, folderId) {
+                try {
+                    const library = StateManager.getLibrary();
+                    const story = await DBService.getStory(storyId); // Fetch fresh to be safe
+                    if (!story) return;
+
+                    // Update DB
+                    if (!folderId) {
+                        story.folder_ids = [];
+                    } else {
+                        story.folder_ids = [folderId];
+                    }
+                    await DBService.saveStory(story);
+
+                    // Update Memory
+                    const storyInLib = library.stories.find(s => s.id === storyId);
+                    if (storyInLib) {
+                        storyInLib.folder_ids = story.folder_ids;
+                    }
+
+                    // Refresh Library (background)
+                    UIManager.renderLibraryInterface();
+
+                } catch (e) {
+                    console.error("Failed to set story folder:", e);
+                }
+            },
+
+            /**
+             * Creates a new folder.
+             */
+            async createFolder(name, parentId = null) {
+                const folder = {
+                    id: UTILITY.uuid(),
+                    name: name,
+                    parent_id: parentId,
+                    created_at: new Date().toISOString()
+                };
+
+                try {
+                    await DBService.saveFolder(folder);
+                    const library = StateManager.getLibrary();
+                    library.folders.push(folder);
+                    UIManager.renderLibraryInterface();
+                } catch (e) {
+                    console.error("Failed to create folder:", e);
+                    alert("Error creating folder.");
+                }
+            },
+
+            /**
+             * Renames a folder.
+             */
+            async renameFolder(folderId, currentName) {
+                const newName = prompt("Enter new folder name:", currentName);
+                if (!newName || !newName.trim() || newName === currentName) return;
+
+                try {
+                    const library = StateManager.getLibrary();
+                    const folder = library.folders.find(f => f.id === folderId);
+                    if (!folder) return;
+
+                    folder.name = newName.trim();
+
+                    // Save to DB
+                    await DBService.saveFolder(folder);
+                    UIManager.renderLibraryInterface();
+                } catch (e) {
+                    console.error("Failed to rename folder:", e);
+                    alert("Error renaming folder.");
+                }
+            },
+
+            /**
+             * Deletes a folder and unfiles its stories.
+             */
+            async deleteFolder(folderId) {
+                const proceed = await UIManager.showConfirmationPromise("Delete this folder? Stories inside will be moved to the root library.");
+                if (!proceed) return;
+
+                try {
+                    const library = StateManager.getLibrary();
+
+                    // 1. Identify affected stories
+                    const storiesInFolder = library.stories.filter(s => s.folder_ids && s.folder_ids.includes(folderId));
+
+                    // 2. Update stories in DB (remove folderId)
+                    await Promise.all(storiesInFolder.map(async (storyStub) => {
+                        try {
+                            const fullStory = await DBService.getStory(storyStub.id);
+                            if (fullStory) {
+                                fullStory.folder_ids = (fullStory.folder_ids || []).filter(id => id !== folderId);
+                                fullStory.last_modified = new Date().toISOString();
+                                await DBService.saveStory(fullStory);
+
+                                // Update Memory Stub
+                                storyStub.folder_ids = fullStory.folder_ids;
+                                storyStub.last_modified = fullStory.last_modified;
+                            }
+                        } catch (err) {
+                            console.error(`Failed to unfile story ${storyStub.id}`, err);
+                        }
+                    }));
+
+                    // 3. Delete folder
+                    await DBService.deleteFolder(folderId);
+
+                    // 4. Update Memory
+                    library.folders = library.folders.filter(f => f.id !== folderId);
+
+                    // 5. Refresh UI
+                    if (UIManager.RUNTIME.currentLibraryFolder === folderId) {
+                        UIManager.RUNTIME.currentLibraryFolder = null;
+                    }
+                    UIManager.renderLibraryInterface();
+
+                } catch (e) {
+                    console.error("Failed to delete folder:", e);
+                    alert("Error deleting folder.");
+                }
+            },
+
+            /**
              * Promotes a narrative to a scenario, saving its current state as a template.
              * @param {string} storyId - The ID of the story.
              * @param {string} narrativeId - The ID of the narrative.
@@ -12914,7 +13726,385 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                 }
             },
 
+            // --- Folder Management ---
+
+            /**
+             * Creates a new folder.
+             * @param {string} name - The name of the folder.
+             * @param {string} [parentId=null] - The ID of the parent folder (optional).
+             */
+            async createFolder(name, parentId = null) {
+                const folder = {
+                    id: UTILITY.uuid(),
+                    name: name,
+                    parent_id: parentId,
+                    created_at: new Date().toISOString()
+                };
+
+                try {
+                    await DBService.saveFolder(folder);
+                    const library = StateManager.getLibrary();
+                    library.folders.push(folder);
+                    UIManager.renderLibraryInterface();
+                } catch (e) {
+                    console.error("Failed to create folder:", e);
+                    alert("Error creating folder.");
+                }
+            },
+
+            /**
+             * Renames a folder.
+             * @param {string} folderId 
+             * @param {string} newName 
+             */
+            async renameFolder(folderId, newName) {
+                if (!newName || !newName.trim()) return;
+                try {
+                    const library = StateManager.getLibrary();
+                    const folder = library.folders.find(f => f.id === folderId);
+                    if (!folder) return;
+
+                    folder.name = newName.trim();
+                    await DBService.saveFolder(folder);
+                    UIManager.renderLibraryInterface();
+                } catch (e) {
+                    console.error("Failed to rename folder:", e);
+                }
+            },
+
+            /**
+             * Deletes a folder and unlinks it from stories.
+             * @param {string} folderId 
+             */
+            async deleteFolder(folderId) {
+                const proceed = await UIManager.showConfirmationPromise("Delete this folder? Stories inside will not be deleted, just removed from the folder.");
+                if (!proceed) return;
+
+                try {
+                    // 1. Delete from DB
+                    await DBService.deleteFolder(folderId);
+
+                    // 2. Remove from State
+                    const library = StateManager.getLibrary();
+                    library.folders = library.folders.filter(f => f.id !== folderId);
+
+                    // 3. Unlink from Stories (in memory and DB)
+                    const updates = [];
+                    library.stories.forEach(story => {
+                        if (story.folder_ids && story.folder_ids.includes(folderId)) {
+                            story.folder_ids = story.folder_ids.filter(id => id !== folderId);
+                            updates.push(DBService.saveStory(story)); // Async save
+                        }
+                    });
+
+                    await Promise.all(updates);
+                    UIManager.renderLibraryInterface();
+
+                } catch (e) {
+                    console.error("Failed to delete folder:", e);
+                }
+            },
+
+            /**
+             * Sets the parent folder for a given folder.
+             * @param {string} folderId 
+             * @param {string} newParentId 
+             */
+            async setFolderParent(folderId, newParentId) {
+                try {
+                    const library = StateManager.getLibrary();
+                    const folder = library.folders.find(f => f.id === folderId);
+                    if (!folder) return;
+
+                    // Prevent Circular Dependency (Logic duplicated here for safety)
+                    if (folderId === newParentId) return;
+
+                    // Update parent
+                    folder.parent_id = newParentId;
+
+                    // Persist to DB
+                    await DBService.saveFolder(folder);
+
+                    // Update UI
+                    UIManager.renderLibraryInterface();
+
+                } catch (e) {
+                    console.error("Failed to move folder:", e);
+                }
+            },
+
+            /**
+             * Toggles a story's presence in a folder.
+             * @param {string} storyId 
+             * @param {string} folderId 
+             */
+            async toggleStoryInFolder(storyId, folderId) {
+                try {
+                    const story = await DBService.getStory(storyId);
+                    if (!story) return;
+
+                    if (!story.folder_ids) story.folder_ids = [];
+
+                    if (story.folder_ids.includes(folderId)) {
+                        story.folder_ids = story.folder_ids.filter(id => id !== folderId);
+                    } else {
+                        story.folder_ids.push(folderId);
+                    }
+
+                    story.last_modified = new Date().toISOString();
+                    await DBService.saveStory(story);
+
+                    // Update State
+                    const library = StateManager.getLibrary();
+                    const storyInLib = library.stories.find(s => s.id === storyId);
+                    if (storyInLib) {
+                        storyInLib.folder_ids = story.folder_ids;
+                        storyInLib.last_modified = story.last_modified;
+                    }
+
+                    UIManager.renderLibraryInterface();
+                } catch (e) {
+                    console.error("Failed to toggle story in folder:", e);
+                }
+            },
+
+            /**
+             * Opens a modal to add stories to a specific folder.
+             * @param {string} folderId 
+             */
+            async addStoriesToFolder(folderId) {
+                const library = StateManager.getLibrary();
+                const folder = library.folders.find(f => f.id === folderId);
+                if (!folder) return;
+
+                // Get all stories NOT in this folder
+                const stories = library.stories.filter(s => !s.folder_ids || !s.folder_ids.includes(folderId));
+
+                // Helper to render checkable list
+                const storyListHTML = stories.map(s => {
+                    const charCount = (s.characters || []).length;
+                    return DOM.html`
+                        <div class="flex items-center space-x-3 p-2 hover:bg-gray-700/50 rounded cursor-pointer" onclick="this.querySelector('input').click()">
+                            <input type="checkbox" value="${s.id}" class="story-select-check w-4 h-4 rounded bg-gray-700 border-gray-500 text-indigo-500 focus:ring-0">
+                            <div class="flex-grow">
+                                <h4 class="text-sm font-bold text-gray-200">${s.name}</h4>
+                                <p class="text-xs text-gray-500">${new Date(s.last_modified).toLocaleDateString()} • ${charCount} Chars</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                const modalHTML = DOM.html`
+                    <div id="add-to-folder-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" onclick="if(event.target.id === 'add-to-folder-modal') this.remove()">
+                        <div class="bg-gray-800 rounded-lg shadow-xl w-[500px] max-h-[80vh] flex flex-col border border-gray-700" onclick="event.stopPropagation()">
+                             <div class="p-6 border-b border-gray-700">
+                                 <h3 class="text-lg font-bold text-white">Add Stories to '${folder.name}'</h3>
+                                 <p class="text-xs text-gray-400 mt-1">Select stories to move into this folder.</p>
+                             </div>
+                             
+                             <div class="flex-grow overflow-y-auto p-6 space-y-2">
+                                ${stories.length ? storyListHTML : '<p class="text-gray-500 italic">No available stories to add.</p>'}
+                             </div>
+
+                             <div class="p-6 border-t border-gray-700 flex justify-end space-x-3 bg-gray-800 rounded-b-lg">
+                                <button onclick="document.getElementById('add-to-folder-modal').remove()" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancel</button>
+                                <button onclick="LibraryController.executeAddStories('${folderId}');" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold transition-colors">Add Selected</button>
+                             </div>
+                        </div>
+                    </div>
+                `;
+
+                // Append
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = modalHTML;
+                document.body.appendChild(tempDiv.firstElementChild);
+            },
+
+            /**
+             * Executes the addition of selected stories to a folder.
+             * @param {string} folderId 
+             */
+            async executeAddStories(folderId) {
+                const modal = document.getElementById('add-to-folder-modal');
+                if (!modal) return;
+
+                const checked = modal.querySelectorAll('.story-select-check:checked');
+                const storyIds = Array.from(checked).map(cb => cb.value);
+
+                if (storyIds.length === 0) {
+                    modal.remove();
+                    return;
+                }
+
+                try {
+                    // Update all stories
+                    await Promise.all(storyIds.map(async (id) => {
+                        await this.toggleStoryInFolder(id, folderId); // This logic handles "remove if present, add if not". We know they are NOT present.
+                    }));
+
+                    modal.remove();
+                    UIManager.renderLibraryInterface();
+
+                } catch (e) {
+                    console.error("Failed to batch add stories:", e);
+                    alert("Failed to add stories.");
+                }
+            },
+
             // === STORY ARCHITECT ===
+
+            // --- Drag and Drop Logic ---
+
+            /**
+             * Handles the start of a drag operation for a story.
+             * @param {Event} e 
+             * @param {string} storyId 
+             */
+            handleStoryDragStart(e, storyId) {
+                e.dataTransfer.setData("text/plain", storyId);
+                e.dataTransfer.effectAllowed = "move";
+                // Add a visual class to the dragged element if needed
+            },
+
+            /**
+             * Handles dragging over a folder (allows dropping).
+             * @param {Event} e 
+             */
+            handleStoryDragOver(e) {
+                e.preventDefault(); // Necessary to allow dropping
+                e.dataTransfer.dropEffect = "move";
+                e.currentTarget.classList.add('bg-indigo-900/50', 'border-indigo-500'); // Visual feedback
+            },
+
+            /**
+            * Handles dragging leaving a folder.
+            * @param {Event} e 
+            */
+            handleStoryDragLeave(e) {
+                e.currentTarget.classList.remove('bg-indigo-900/50', 'border-indigo-500');
+            },
+
+            /**
+             * Handles dropping a story into a folder.
+             * @param {Event} e 
+             * @param {string} targetFolderId 
+             */
+            async handleStoryDrop(e, targetFolderId) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('bg-indigo-900/50', 'border-indigo-500');
+                const storyId = e.dataTransfer.getData("text/plain");
+
+                if (storyId) {
+                    await this.addStoryToFolder(storyId, targetFolderId);
+                }
+            },
+
+            // --- Mobile Touch Drag Logic (Long Press) ---
+
+            RUNTIME_DRAG: {
+                timer: null,
+                activeStoryId: null,
+                touchStartX: 0,
+                touchStartY: 0,
+                isDragging: false,
+                ghostEl: null
+            },
+
+            handleStoryTouchStart(e, storyId) {
+                const touch = e.touches[0];
+                this.RUNTIME_DRAG.touchStartX = touch.clientX;
+                this.RUNTIME_DRAG.touchStartY = touch.clientY;
+                this.RUNTIME_DRAG.activeStoryId = storyId;
+
+                // Long press to start drag
+                this.RUNTIME_DRAG.timer = setTimeout(() => {
+                    this.RUNTIME_DRAG.isDragging = true;
+                    // Haptic feedback
+                    if (navigator.vibrate) navigator.vibrate(50);
+
+                    // Visual feedback on the element
+                    e.currentTarget.classList.add('opacity-50', 'scale-95');
+
+                    // Create Ghost Element
+                    const ghost = e.currentTarget.cloneNode(true);
+                    ghost.style.position = 'fixed';
+                    ghost.style.width = `${e.currentTarget.offsetWidth}px`;
+                    ghost.style.left = `${touch.clientX}px`;
+                    ghost.style.top = `${touch.clientY}px`;
+                    ghost.style.opacity = '0.8';
+                    ghost.style.pointerEvents = 'none'; // Click through
+                    ghost.style.zIndex = '1000';
+                    document.body.appendChild(ghost);
+                    this.RUNTIME_DRAG.ghostEl = ghost;
+
+                }, 500); // 500ms long press
+            },
+
+            handleStoryTouchMove(e) {
+                if (!this.RUNTIME_DRAG.isDragging) {
+                    // Cancel if moved too much before longpress triggers
+                    const touch = e.touches[0];
+                    const moveX = Math.abs(touch.clientX - this.RUNTIME_DRAG.touchStartX);
+                    const moveY = Math.abs(touch.clientY - this.RUNTIME_DRAG.touchStartY);
+                    if (moveX > 10 || moveY > 10) {
+                        clearTimeout(this.RUNTIME_DRAG.timer);
+                    }
+                    return;
+                }
+
+                e.preventDefault(); // Prevent scrolling
+                const touch = e.touches[0];
+                if (this.RUNTIME_DRAG.ghostEl) {
+                    this.RUNTIME_DRAG.ghostEl.style.left = `${touch.clientX}px`;
+                    this.RUNTIME_DRAG.ghostEl.style.top = `${touch.clientY}px`;
+                }
+
+                // Highlight drop targets
+                const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+                const folderEl = elements.find(el => el.getAttribute('data-folder-id'));
+
+                // Clear previous highlights
+                document.querySelectorAll('.folder-drag-active').forEach(el => {
+                    el.classList.remove('bg-indigo-900/50', 'border-indigo-500', 'folder-drag-active');
+                });
+
+                if (folderEl) {
+                    folderEl.classList.add('bg-indigo-900/50', 'border-indigo-500', 'folder-drag-active');
+                }
+            },
+
+            async handleStoryTouchEnd(e) {
+                clearTimeout(this.RUNTIME_DRAG.timer);
+
+                // Cleanup Visuals
+                if (this.RUNTIME_DRAG.ghostEl) {
+                    this.RUNTIME_DRAG.ghostEl.remove();
+                    this.RUNTIME_DRAG.ghostEl = null;
+                }
+                const draggedEl = document.querySelector('.opacity-50.scale-95');
+                if (draggedEl) draggedEl.classList.remove('opacity-50', 'scale-95');
+
+                if (this.RUNTIME_DRAG.isDragging) {
+                    // Check drop target
+                    const touch = e.changedTouches[0];
+                    const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+                    const folderEl = elements.find(el => el.getAttribute('data-folder-id'));
+
+                    if (folderEl) {
+                        const targetFolderId = folderEl.getAttribute('data-folder-id');
+                        await this.addStoryToFolder(this.RUNTIME_DRAG.activeStoryId, targetFolderId);
+                        // Visual success feedback could go here
+                        if (navigator.vibrate) navigator.vibrate(100);
+                    }
+                }
+
+                // Reset
+                this.RUNTIME_DRAG.isDragging = false;
+                this.RUNTIME_DRAG.activeStoryId = null;
+                document.querySelectorAll('.folder-drag-active').forEach(el => {
+                    el.classList.remove('bg-indigo-900/50', 'border-indigo-500', 'folder-drag-active');
+                });
+            },
 
             RUNTIME_GEN: {
                 draftStory: null,
