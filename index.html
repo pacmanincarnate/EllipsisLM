@@ -993,9 +993,9 @@
     <div id="story-library-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="story-library-modal"></div>
         <div class="bg-gray-800/90 backdrop-blur-md relative flex flex-col w-full h-full">
-            <div class="p-6 border-b border-gray-700 flex justify-between items-center">
-                <h2 class="text-2xl font-semibold">Story Library</h2>
-                <div class="flex space-x-2">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-900/50">
+                <h2 class="text-2xl font-semibold truncate pr-2">Story Library</h2>
+                <div class="flex space-x-2 flex-shrink-0">
                     <button data-action="open-modal" data-target="io-hub-modal"
                         class="bg-teal-600/80 hover:bg-teal-700/80 text-white font-bold py-2 px-4 rounded-lg"
                         title="Manage / Import / Export">
@@ -1059,7 +1059,6 @@
                 </div>
             </div>
             <div id="library-content-container" class="flex-grow flex min-h-0"></div>
-            <!-- Footer Removed -->
         </div>
     </div>
 
@@ -2764,7 +2763,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.02.08 - 10:47 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.02.09 - 22:50 CST";
 
 
         /**
@@ -7998,24 +7997,24 @@
                     const dateStr = new Date(story.last_modified).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
                     const charCount = (story.characters || []).length;
                     return DOM.html`
-                        <div class="group flex items-center justify-between p-3 rounded-lg bg-gray-800/40 border border-transparent hover:border-gray-600 hover:bg-gray-800 transition-all cursor-pointer ${isActive ? 'bg-indigo-900/20 border-indigo-500/30' : ''}" 
+                        <div class="group w-full max-w-full flex items-center justify-between p-6 rounded-lg bg-gray-800/40 border border-transparent hover:border-gray-600 hover:bg-gray-800 transition-all cursor-pointer overflow-hidden relative ${isActive ? 'bg-indigo-900/20 border-indigo-500/30' : ''}"  
                              draggable="true"
                              ondragstart="LibraryController.handleStoryDragStart(event, '${story.id}')"
                              ontouchstart="LibraryController.handleStoryTouchStart(event, '${story.id}')"
                              ontouchmove="LibraryController.handleStoryTouchMove(event)"
                              ontouchend="LibraryController.handleStoryTouchEnd(event)"
                              onclick="UIManager.openStoryDetails('${story.id}')">
-                            <div class="flex items-center space-x-4 min-w-0">
+                            <div class="flex items-center space-x-3 min-w-0 pr-2 flex-grow">
                                 <div class="w-10 h-10 rounded-md bg-gray-700 flex-shrink-0 overflow-hidden relative shadow-sm">
                                      <div id="story-bg-${story.id}" class="absolute inset-0 bg-cover bg-center opacity-80" style="background-image: url('${story.backgroundImageURL || ''}')"></div>
                                 </div>
-                                <div class="min-w-0">
-                                    <h4 class="font-bold text-gray-200 text-sm truncate pr-4">${story.name || 'Untitled'}</h4>
-                                    <p class="text-xs text-gray-500">${dateStr} &bull; ${charCount} Chars</p>
+                                <div class="min-w-0 flex-1">
+                                    <h4 class="font-bold text-gray-200 text-sm truncate leading-tight">${story.name || 'Untitled'}</h4>
+                                    <p class="text-xs text-gray-500 truncate">${dateStr} &bull; ${charCount} Chars</p>
                                 </div>
                             </div>
-                             <!-- Hover Actions -->
-                              <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                             <!-- Hover Actions (Always visible on mobile?) -->
+                              <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onclick="event.stopPropagation()">
                                  <button onclick="UIManager.showAddStoryToFolderModal('${story.id}')" class="p-1.5 text-gray-400 hover:text-white transition-colors" title="Add to Folder">${DOM.unsafe(folderIcon)}</button>
                                  <button onclick="LibraryController.duplicateStory('${story.id}')" class="p-1.5 text-gray-400 hover:text-white transition-colors" title="Duplicate">${DOM.unsafe(duplicateIcon)}</button>
                                  <button onclick="LibraryController.deleteStory('${story.id}')" class="p-1.5 text-gray-400 hover:text-red-400 transition-colors" title="Delete">${DOM.unsafe(deleteIcon)}</button>
@@ -8207,17 +8206,17 @@
 
                 if (viewMode === 'list') {
                     return DOM.html`
-                        <div class="group flex items-center justify-between p-3 rounded-lg bg-gray-800/60 border border-gray-700 hover:border-indigo-500/50 hover:bg-gray-700 transition-all cursor-pointer mb-2"
+                        <div class="group w-full max-w-full flex items-center justify-between p-6 rounded-lg bg-gray-800/60 border border-gray-700 hover:border-indigo-500/50 hover:bg-gray-700 transition-all cursor-pointer mb-2 overflow-hidden relative"
                              ondragover="LibraryController.handleStoryDragOver(event)"
                              ondragleave="LibraryController.handleStoryDragLeave(event)"
                              ondrop="LibraryController.handleStoryDrop(event, '${folder.id}')"
                              data-folder-id="${folder.id}"
                              onclick="UIManager.renderLibraryInterface({ folderId: '${folder.id}' })">
-                            <div class="flex items-center space-x-4">
-                                <svg class="w-8 h-8 text-indigo-400 group-hover:text-indigo-300" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
-                                <div>
-                                    <h4 class="font-bold text-gray-200 text-sm">${folder.name}</h4>
-                                    <p class="text-xs text-gray-500">${count} Stories</p>
+                            <div class="flex items-center space-x-3 min-w-0 flex-grow pr-2">
+                                <svg class="w-8 h-8 text-indigo-400 group-hover:text-indigo-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                                <div class="min-w-0 flex-1">
+                                    <h4 class="font-bold text-gray-200 text-sm truncate leading-tight">${folder.name}</h4>
+                                    <p class="text-xs text-gray-500 truncate">${count} Stories</p>
                                 </div>
                             </div>
                              <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -8596,7 +8595,7 @@
                 }
 
                 if (listContainer && searchInput && layoutMatches) {
-                    listContainer.className = `p-6 overflow-y-auto flex-grow ${gridClasses}`;
+                    listContainer.className = `p-2 overflow-y-auto flex-grow ${gridClasses}`;
                     listContainer.innerHTML = combinedListHTML;
 
                     // FIX: Update Toggle Button State explicitly since controls aren't re-rendered
@@ -8636,20 +8635,20 @@
                 `;
 
                 const controlsHTML = DOM.html`
-            <div class="p-6 border-b border-gray-700 space-y-4">
+            <div class="space-y-4"> <!-- Removed p-6 border-b wrapper here, moved to container logic for responsive padding -->
                 <div class="flex space-x-2">
                     <input id="lib-search" type="search" placeholder="Search stories..." value="${searchTerm}" 
                         oninput="UIManager.renderLibraryInterface()" 
-                        class="w-full bg-black/30 p-2 rounded-lg border-gray-600">
+                        class="flex-1 min-w-0 bg-black/30 p-2 rounded-lg border-gray-600">
                     ${createFolderBtn}
                 </div>
                 <div class="flex space-x-4">
-                    <select id="lib-sort" onchange="UIManager.renderLibraryInterface()" class="w-1/2 bg-black/30 p-2 rounded-lg border-gray-600">
+                    <select id="lib-sort" onchange="UIManager.renderLibraryInterface()" class="flex-1 min-w-0 bg-black/30 p-2 rounded-lg border-gray-600">
                         <option value="last_modified" ${sortBy === 'last_modified' ? 'selected' : ''}>Modified</option>
                         <option value="name" ${sortBy === 'name' ? 'selected' : ''}>Name</option>
                         <option value="created_date" ${sortBy === 'created_date' ? 'selected' : ''}>Created</option>
                     </select>
-                    <select id="lib-tag" onchange="UIManager.renderLibraryInterface()" class="w-1/2 bg-black/30 p-2 rounded-lg border-gray-600">
+                    <select id="lib-tag" onchange="UIManager.renderLibraryInterface()" class="flex-1 min-w-0 bg-black/30 p-2 rounded-lg border-gray-600">
                         <option value="">All Tags</option>
                         ${tagOptions}
                     </select>
@@ -8657,10 +8656,11 @@
             </div>`;
 
                 if (isTallScreen) {
-                    container.innerHTML = DOM.html`<div class="flex flex-col flex-grow min-h-0">${controlsHTML}<div id="lib-list" class="p-6 overflow-y-auto flex-grow ${gridClasses}">${DOM.unsafe(combinedListHTML)}</div></div>`.toString();
+                    // Mobile: Reduced padding (p-2) and added strict width constraints (w-full min-w-0 overflow-x-hidden)
+                    container.innerHTML = DOM.html`<div class="flex flex-col flex-grow min-h-0 w-full min-w-0 overflow-x-hidden"><div class="p-6 border-b border-gray-700 space-y-3 w-full">${controlsHTML}</div><div id="lib-list" class="p-2 overflow-y-auto flex-grow w-full ${gridClasses}">${DOM.unsafe(combinedListHTML)}</div></div>`.toString();
                 } else {
                     container.innerHTML = DOM.html`
-                <div class="w-[450px] flex-shrink-0 border-r border-gray-700 flex flex-col">${controlsHTML}<div id="lib-list" class="p-6 overflow-y-auto flex-grow ${gridClasses}">${DOM.unsafe(combinedListHTML)}</div></div>
+                <div class="w-[450px] flex-shrink-0 border-r border-gray-700 flex flex-col"><div class="p-6 border-b border-gray-700 space-y-4">${controlsHTML}</div><div id="lib-list" class="p-2 overflow-y-auto flex-grow ${gridClasses}">${DOM.unsafe(combinedListHTML)}</div></div>
                 <div id="story-details-content-desktop" class="flex-grow p-6 flex text-gray-500"><div class="w-full h-full flex items-center justify-center">Select a story to see details...</div></div>
             `.toString();
                 }
