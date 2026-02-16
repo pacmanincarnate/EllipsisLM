@@ -1367,6 +1367,13 @@
             <div class="p-4 border-b border-gray-700 flex-shrink-0 flex justify-between items-center">
                 <h3 class="text-xl font-bold">Edit Response</h3>
                 <div class="flex items-center space-x-2">
+                    <button id="edit-modal-bolt-button" title="Continue Writing (AI)"
+                        class="bg-indigo-600 hover:bg-indigo-500 text-white p-1.5 rounded-lg transition-colors mr-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </button>
                     <button id="edit-modal-save-button"
                         class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg text-sm">Save</button>
                     <button data-action="close-modal" data-id="edit-response-modal" aria-label="Close"
@@ -2763,7 +2770,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.02.09 - 22:50 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.02.16 - 9:45 CST";
 
 
         /**
@@ -3436,15 +3443,14 @@
              * @param {string} prompt - The positive prompt.
              * @param {string} negativePrompt - The negative prompt.
              * @param {Object} options - Override options (width, height, etc.).
+             * @param {Blob|null} initImage - Optional base image for Image-to-Image.
              * @returns {Promise<Blob>} - The generated image as a Blob.
              */
-            async generateImage(prompt, negativePrompt = "", options = {}) {
+            async generateImage(prompt, negativePrompt = "", options = {}, initImage = null) {
                 const globalSettings = StateManager.data.globalSettings;
                 const backend = globalSettings.imageGenBackend || 'koboldcpp'; // 'koboldcpp' or 'openrouter'
 
                 // Apply Art Style Logic
-                // Prioritize Story Setting, fallback to Global (if we kept it there, but here we want Story)
-                // Note: ReactiveStore.state maps to the active story settings.
                 const styleKey = (ReactiveStore.state && ReactiveStore.state.imageGenArtStyle) ? ReactiveStore.state.imageGenArtStyle : 'none';
 
                 if (styleKey !== 'none') {
@@ -3462,9 +3468,9 @@
                 }
 
                 if (backend === 'koboldcpp') {
-                    return this._generateKoboldCPP(prompt, negativePrompt, options);
+                    return this._generateKoboldCPP(prompt, negativePrompt, options, initImage);
                 } else if (backend === 'openrouter') {
-                    return this._generateOpenRouter(prompt, options);
+                    return this._generateOpenRouter(prompt, options, initImage);
                 } else {
                     throw new Error(`Unknown image generation backend: ${backend}`);
                 }
@@ -3504,7 +3510,7 @@
             /**
              * KoboldCPP (SDAPI Compatible) Adapter
              */
-            async _generateKoboldCPP(prompt, negativePrompt, options) {
+            async _generateKoboldCPP(prompt, negativePrompt, options, initImage = null) {
                 const globalSettings = StateManager.data.globalSettings;
                 const url = (globalSettings.koboldImageGenUrl || "http://localhost:5001").replace(/\/$/, "");
 
@@ -3525,8 +3531,17 @@
                     save_images: false,
                 };
 
+                // Image-to-Image (I2I) Extension
+                let endpoint = `${url}/sdapi/v1/txt2img`;
+                if (initImage) {
+                    endpoint = `${url}/sdapi/v1/img2img`;
+                    const base64 = await UTILITY.blobToBase64(initImage);
+                    payload.init_images = [base64];
+                    payload.denoising_strength = options.denoising_strength || 0.55; // Default for expression shifts
+                }
+
                 try {
-                    const response = await fetch(`${url}/sdapi/v1/txt2img`, {
+                    const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -3553,7 +3568,7 @@
             /**
              * OpenRouter (OpenAI Compatible) Adapter
              */
-            async _generateOpenRouter(prompt, options) {
+            async _generateOpenRouter(prompt, options, initImage = null) {
                 const globalSettings = StateManager.data.globalSettings;
                 const key = globalSettings.imageGenOpenRouterKey;
 
@@ -3571,14 +3586,27 @@
                         {
                             role: "system",
                             content: "You are an image generation tool. Generate the image requested by the user and output ONLY the image URL. Do not add any conversational text, pleasantries, or explanations. Just the URL."
-                        },
-                        { role: "user", content: prompt }
+                        }
                     ],
                     // NEW: Required by OpenRouter for image models
                     extra_body: {
                         modalities: ["image", "text"]
                     }
                 };
+
+                // Image-to-Image (I2I) Extension for OpenRouter (Multimodal)
+                if (initImage) {
+                    const dataUrl = await UTILITY.blobToDataURL(initImage);
+                    payload.messages.push({
+                        role: "user",
+                        content: [
+                            { type: "text", text: `REVISE this image based on the following prompt. Maintain character consistency, just change the facial expression/emotion: ${prompt}` },
+                            { type: "image_url", image_url: { url: dataUrl } }
+                        ]
+                    });
+                } else {
+                    payload.messages.push({ role: "user", content: prompt });
+                }
 
                 console.log("OpenRouter Image Req:", payload);
 
@@ -3624,17 +3652,13 @@
                         }
 
                         // 2. Check for raw URL
-                        // Improvement: Robust Regex to capture http/https URLs, excluding trailing punctuation/brackets
                         const urlRegex = /https?:\/\/[^\s<>)\]}]+/;
                         const urlMatch = content.match(urlRegex);
 
                         if (urlMatch) {
                             let url = urlMatch[0];
-                            // Clean trailing punctuation if regex was too greedy (e.g. terminating dot or comma)
                             url = url.replace(/[.,;!?]$/, '');
-
                             console.log("OpenRouter: Extracting URL:", url);
-
                             try {
                                 const imgRes = await fetch(url);
                                 const blob = await imgRes.blob();
@@ -3650,21 +3674,19 @@
                             return await (await fetch(trimmedContent)).blob();
                         }
 
-                        // 4. Check for Raw Base64 (common in some Flux/SD integrations via OR)
-                        // A simple heuristic: long string, no spaces, likely base64 chars
+                        // 4. Check for Raw Base64
                         if (trimmedContent.length > 100 && !trimmedContent.includes(' ') && /^[A-Za-z0-9+/=]+$/.test(trimmedContent)) {
                             console.log("OpenRouter: Detected Raw Base64");
                             return await (await fetch(`data:image/png;base64,${trimmedContent}`)).blob();
                         }
 
-                        // 5. Special Case: Some APIs return `b64_json` in the message content (incorrectly) or as a separate field we missed
+                        // 5. Special Case: b64_json
                         if (data.choices[0].message.b64_json) {
                             return await (await fetch(`data:image/png;base64,${data.choices[0].message.b64_json}`)).blob();
                         }
 
-                        // Debug: Log the full content to help the user identify why it failed
                         console.warn("OpenRouter Content (No Image Found):", content);
-                        throw new Error(`OpenRouter response content did not contain a recognizable image. Content start: "${content.substring(0, 100)}..." (See Console for full output)`);
+                        throw new Error(`OpenRouter response content did not contain a recognizable image. Content start: "${content.substring(0, 100)}..."`);
                     }
 
                     throw new Error("OpenRouter response was empty (no choices).");
@@ -5257,6 +5279,37 @@
                 const byteArray = new Uint8Array(byteNumbers);
                 return new Blob([byteArray], { type: mimeType });
             },
+
+            /**
+             * Converts a Blob to a base64 string.
+             * @param {Blob} blob - The blob to convert.
+             * @returns {Promise<string>}
+             */
+            blobToBase64(blob) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64String = reader.result.split(',')[1];
+                        resolve(base64String);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            },
+
+            /**
+             * Converts a Blob to a Data URL.
+             * @param {Blob} blob - The blob to convert.
+             * @returns {Promise<string>}
+             */
+            blobToDataURL(blob) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            },
             /**
              * Generates a UUID v4.
              * @returns {string}
@@ -5686,7 +5739,6 @@
             buildDefaultPrompt(components, replacer) {
                 const state = StateManager.getState();
                 let p = components.system_prompt + "\n\n";
-                if (components.event_master_prompt) p += "--- SECRET EVENT MASTER INSTRUCTION ---\n" + components.event_master_prompt + "\n\n";
                 if (components.location_context) p += "## LOCATION CONTEXT\n" + components.location_context + "\n\n";
                 p += "## WORLD KNOWLEDGE\n" + components.static_entries + "\n\n";
                 // Note: Dynamic entries usually injected into chat history as 'lore_reveal', but can be added here if architectural preference changes.
@@ -5732,11 +5784,13 @@
                 if (!components.charToAct.is_narrator) {
                     if (responseLength === 'short') p += " Keep the response concise and under two sentences, focusing only on the character's next words and actions.";
                     else if (responseLength === 'medium') p += " Keep the response between three to six sentences, including the character's next words and actions written with descriptive language.";
-                    else if (responseLength === 'long') p += " Be descriptive, verbose, and detailed in your response, providing this character's dialogue and actions, as well as full sensory descriptions of the surroundings, characters, and event.";
+                    else if (responseLength === 'long') p += " Keep the response between two and four paragraphs. Be descriptive, verbose, and detailed in your response, providing this character's dialogue and actions, as well as full sensory descriptions of the surroundings, characters, and event.";
                     else if (responseLength === 'novel') p += " Continue writing a long-form addition to the text that builds on the current actions, describes the scene, and contributes to world-building. Include full sensory descriptions of the surroundings, characters, and events.";
                 }
 
                 p += " Do not repeat the character's name in the response itself.\n[" + components.charToAct.name + " ]:";
+                if (components.event_master_prompt) p += "--- SECRET EVENT MASTER INSTRUCTION ---\n" + components.event_master_prompt + "\n\n";
+
                 return p;
             },
 
@@ -5752,9 +5806,6 @@
 
                 // 1. Construct System/Context Block
                 let system = [components.system_prompt];
-
-                // Event Master
-                if (components.event_master_prompt) system.push("--- SECRET EVENT MASTER INSTRUCTION ---\n" + components.event_master_prompt);
 
                 // Location
                 if (components.location_context) system.push("## LOCATION CONTEXT\n" + components.location_context);
@@ -5799,6 +5850,9 @@
                 }
 
                 instruction += " Do not repeat the character's name in the response itself.";
+
+                // Event Master
+                if (components.event_master_prompt) system.push("--- SECRET EVENT MASTER INSTRUCTION ---\n" + components.event_master_prompt);
 
                 if (template === 'none') return this.buildDefaultPrompt(components, replacer);
 
@@ -7857,6 +7911,19 @@
                 if (msg.type === 'lore_reveal' || msg.isHidden) return '';
 
                 if (msg.type === 'visual_event') {
+                    if (msg.isLoading) {
+                        return DOM.html`
+                            <div class="chat-bubble-container w-full my-6 flex flex-col items-center animate-fade-in" data-message-index="${index}">
+                                <div class="visual-event-card bg-gray-900/40 border border-gray-700/50 rounded-xl overflow-hidden max-w-lg w-full shadow-2xl relative animate-pulse flex flex-col items-center justify-center min-h-[320px] backdrop-blur-sm">
+                                    <div class="flex flex-col items-center text-gray-500">
+                                        <svg class="w-12 h-12 mb-3 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                        <p class="text-sm font-medium tracking-wide uppercase italic opacity-40">${msg.content || 'Painting scene...'}</p>
+                                    </div>
+                                </div>
+                            </div>`;
+                    }
                     const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
                     return DOM.html`
                         <div class="chat-bubble-container w-full my-6 flex flex-col items-center animate-fade-in" data-message-index="${index}">
@@ -7991,7 +8058,7 @@
                 const duplicateIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
                 const deleteIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
                 const folderIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>`;
-                const playIcon = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>`;
+                const playIcon = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>`;
 
                 if (viewMode === 'list') {
                     const dateStr = new Date(story.last_modified).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -8015,10 +8082,11 @@
                             </div>
                              <!-- Hover Actions (Always visible on mobile?) -->
                               <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onclick="event.stopPropagation()">
+                                 <button onclick="LibraryController.handleQuickPlay('${story.id}')" class="p-1.5 text-gray-400 hover:text-green-400 transition-colors" title="Quick Play">${DOM.unsafe(playIcon)}</button>
                                  <button onclick="UIManager.showAddStoryToFolderModal('${story.id}')" class="p-1.5 text-gray-400 hover:text-white transition-colors" title="Add to Folder">${DOM.unsafe(folderIcon)}</button>
                                  <button onclick="LibraryController.duplicateStory('${story.id}')" class="p-1.5 text-gray-400 hover:text-white transition-colors" title="Duplicate">${DOM.unsafe(duplicateIcon)}</button>
                                  <button onclick="LibraryController.deleteStory('${story.id}')" class="p-1.5 text-gray-400 hover:text-red-400 transition-colors" title="Delete">${DOM.unsafe(deleteIcon)}</button>
-                             </div>
+                              </div>
                         </div>
                      `;
                 }
@@ -8069,14 +8137,15 @@
 
                 <!-- Action Overlay (Top Right) -->
                 <div class="absolute top-2 right-2 z-30 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                     <button onclick="LibraryController.handleQuickPlay('${story.id}')" class="p-1.5 bg-black/50 hover:bg-black/80 rounded text-gray-300 hover:text-green-400 backdrop-blur-sm transition-colors" title="Quick Play">${DOM.unsafe(playIcon)}</button>
                      <button onclick="UIManager.showAddStoryToFolderModal('${story.id}')" class="p-1.5 bg-black/50 hover:bg-black/80 rounded text-gray-300 hover:text-white backdrop-blur-sm transition-colors" title="Add to Folder">${DOM.unsafe(folderIcon)}</button>
                      <button onclick="LibraryController.duplicateStory('${story.id}')" class="p-1.5 bg-black/50 hover:bg-black/80 rounded text-gray-300 hover:text-white backdrop-blur-sm transition-colors" title="Duplicate">${DOM.unsafe(duplicateIcon)}</button>
                      <button onclick="LibraryController.deleteStory('${story.id}')" class="p-1.5 bg-black/50 hover:bg-red-900/80 rounded text-gray-300 hover:text-red-300 backdrop-blur-sm transition-colors" title="Delete">${DOM.unsafe(deleteIcon)}</button>
                 </div>
 
                 <!-- Card Content -->
-                <div class="relative z-20 p-4 w-full">
-                    <h3 class="font-bold text-lg drop-shadow-md leading-tight mb-1 line-clamp-2 group-hover:opacity-80 transition-opacity text-shadow-sm" 
+                <div class="relative z-20 p-4 w-full pointer-events-none">
+                    <h3 class="font-bold text-lg drop-shadow-md leading-tight mb-1 line-clamp-2 group-hover:opacity-80 transition-opacity text-shadow-sm pr-12" 
                         style="font-family: ${titleFont}; color: ${titleColor}; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
                         ${story.name || 'Untitled Story'}
                     </h3>
@@ -9408,21 +9477,19 @@
                     const isSelected = state.selectedStaticEntryId === entry.id;
                     const isImmutable = entry.is_immutable;
 
-                    // Style Logic
-                    // Base: p-2 rounded flex items-center gap-2 mb-1 cursor-pointer border
-                    // Selection overrides everything
-                    // Immutable: Dark Orange tint, Amber border
-                    // Mutable: Default hover interaction
-
-                    let classes = "p-3 rounded-lg cursor-pointer flex items-center gap-2 mb-1 border transition-colors ";
+                    let classes = "p-3 rounded-lg cursor-pointer flex items-center gap-2 mb-1 border transition-all ";
 
                     if (isSelected) {
-                        classes += "bg-indigo-600 border-indigo-500 text-white";
+                        classes += "bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20";
                     } else if (isImmutable) {
                         classes += "bg-amber-900/20 border-amber-600/30 hover:bg-amber-900/40 text-amber-100";
                     } else {
-                        classes += "border-transparent hover:bg-indigo-600/50 text-gray-200";
+                        classes += "border-transparent hover:bg-gray-700/50 text-gray-200";
                     }
+
+                    const lockIcon = isImmutable
+                        ? DOM.unsafe(`<svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>`)
+                        : DOM.unsafe(`<svg class="w-4 h-4 text-gray-500 hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>`);
 
                     return DOM.html`
         <div 
@@ -9441,8 +9508,16 @@
             class="${classes}"
         >
             <h4 class="font-semibold truncate flex-grow text-sm select-none pointer-events-none">${entry.title}</h4>
+            <button 
+                onclick="event.stopPropagation(); WorldController.toggleStaticEntryProtection('${entry.id}')" 
+                class="p-1 hover:bg-white/10 rounded transition-colors"
+                title="${isImmutable ? 'Protected (Click to Unlock)' : 'Updating (Click to Protect)'}"
+            >
+                ${lockIcon}
+            </button>
         </div>`;
                 };
+
 
                 const immutableHtml = immutable.map((e, i) => renderItem(e, i, 'immutable')).join('');
                 const mutableHtml = mutable.map((e, i) => renderItem(e, i, 'mutable')).join('');
@@ -9699,10 +9774,17 @@
                     })
                     .join('');
 
-                // 6. Cleanup flags
+                // 6. Restore Typing Indicator (Persistence Fix for Visual Master Updates)
+                if (this.RUNTIME.typingIndicatorState) {
+                    const { charId, text, nameOverride } = this.RUNTIME.typingIndicatorState;
+                    // We call showTypingIndicator again, but strictly for re-appending.
+                    this.showTypingIndicator(charId, text, nameOverride);
+                }
+
+                // 7. Cleanup flags
                 (state.chat_history || []).forEach(m => { if (m) m.isNew = false; });
 
-                // 7. Scroll to bottom
+                // 8. Scroll to bottom
                 setTimeout(() => {
                     window.requestAnimationFrame(() => {
                         if (chatWindow) {
@@ -9854,7 +9936,11 @@
              * @param {string} [nameOverride=null] - Optional override for the character name (e.g. for Scriptwriter).
              */
             showTypingIndicator(charId, text = "is thinking...", nameOverride = null) {
-                this.hideTypingIndicator();
+                // PERSIST STATE: Save this so we can restore it after a render
+                this.RUNTIME.typingIndicatorState = { charId, text, nameOverride };
+
+                this.hideTypingIndicator(false); // Don't clear state, just remove element
+
                 const chatWindow = document.getElementById('chat-window');
                 const state = StateManager.getState();
                 const character = (state.characters || []).find(c => c.id === charId);
@@ -9893,8 +9979,12 @@
 
             /**
              * Hides the current typing indicator.
+             * @param {boolean} clearState - Whether to clear the persistent state (default: true).
              */
-            hideTypingIndicator() {
+            hideTypingIndicator(clearState = true) {
+                if (clearState) {
+                    this.RUNTIME.typingIndicatorState = null;
+                }
                 const el = document.getElementById('typing-indicator');
                 if (el) el.remove();
             },
@@ -10460,11 +10550,20 @@
              * Opens the Character Detail modal for editing a character.
              * @param {string} charId - The ID of the character to edit.
              */
+            /**
+             * Opens the Character Detail modal for editing a character.
+             * @param {string} charId - The ID of the character to edit.
+             */
             openCharacterDetailModal(charId) {
                 const state = StateManager.getState();
                 const char = state.characters.find(c => c.id === charId);
                 if (!char) return;
                 const container = document.getElementById('character-detail-modal-content');
+
+                // Preserve State of Details Section
+                const detailsId = `extra-portraits-details-${char.id}`;
+                const existingDetails = document.getElementById(detailsId);
+                const wasOpen = existingDetails ? existingDetails.hasAttribute('open') : false;
 
                 const canGenImage = UIManager.isImageGenEnabled();
 
@@ -10472,33 +10571,54 @@
                 if (char.is_user) currentRole = 'user';
                 else if (char.is_narrator) currentRole = 'narrator';
 
+                // New Grid Layout for Portraits
                 const extraPortraitsHTML = (char.extra_portraits || []).map((portrait, index) => {
-                    const emo = portrait.emotion || 'happy';
+                    const emo = portrait.emotion || 'neutral';
                     const fileInputId = `emo-file-${char.id}-${index}`;
-                    const labelId = `emo-label-${char.id}-${index}`;
-                    const cached = (UIManager.RUNTIME.characterImageCache || {})[`${char.id}::emotion::${emo}`];
-                    const hint = cached ? '[local image]' : '[none]';
+
+                    // Resolve Image Source
+                    const src = this.getPortraitSrc(char, emo);
+
                     return DOM.html`
-                <div class="flex flex-col space-y-2 mt-2 p-2 rounded border border-gray-700/50">
-                    <div class="flex items-center space-x-2">
-                        <select onchange="NarrativeController.updateExtraPortrait('${char.id}', ${index}, 'emotion', this.value)" class="w-1/3 bg-black/30 border-gray-600 rounded p-1 text-sm">
+                <div class="relative group bg-black/40 rounded-lg border border-gray-700 overflow-hidden flex flex-col transition-all hover:border-gray-500">
+                    <!-- Image / Placeholder Area -->
+                    <div class="aspect-square w-full relative bg-gray-900/50 flex items-center justify-center overflow-hidden">
+                        ${src ? DOM.html`<img src="${src}" class="w-full h-full object-cover">` : DOM.html`
+                        <div class="flex flex-col items-center justify-center text-gray-600 gap-1 opacity-50">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>`}
+                        
+                        <!-- Overlay Actions -->
+                        <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 backdrop-blur-sm">
+                             <label for="${fileInputId}" class="cursor-pointer bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-1.5 px-3 rounded-lg border border-white/20 transition-colors flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                Upload
+                             </label>
+                             <input id="${fileInputId}" type="file" accept="image/*" onchange="NarrativeController.handleLocalEmotionImageUpload(event, '${char.id}', ${index})" class="hidden">
+                             
+                             ${canGenImage ? DOM.html`<button onclick="NarrativeController.openCharacterImageGenerator('${char.id}', 'extra', ${index})" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 transition-colors shadow-lg shadow-indigo-500/20">
+                                 ${this.getAIGenIcon()} Generate
+                             </button>` : ''}
+                        </div>
+
+                        <!-- Delete Button -->
+                        <button onclick="NarrativeController.removeExtraPortrait('${char.id}', ${index})" class="absolute top-1 right-1 bg-red-600/80 hover:bg-red-500 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm" title="Remove">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- Emotion Selector Footer -->
+                    <div class="p-2 border-t border-gray-700 bg-gray-900/30">
+                        <select onchange="NarrativeController.updateExtraPortrait('${char.id}', ${index}, 'emotion', this.value)" class="w-full bg-transparent text-xs text-gray-300 font-bold focus:outline-none text-center appearance-none cursor-pointer hover:text-white transition-colors">
                             <option value="happy" ${emo === 'happy' ? 'selected' : ''}>Happy</option>
                             <option value="sad" ${emo === 'sad' ? 'selected' : ''}>Sad</option>
                             <option value="angry" ${emo === 'angry' ? 'selected' : ''}>Angry</option>
                             <option value="surprised" ${emo === 'surprised' ? 'selected' : ''}>Surprised</option>
                             <option value="neutral" ${emo === 'neutral' ? 'selected' : ''}>Neutral</option>
+                            <option value="fear" ${emo === 'fear' ? 'selected' : ''}>Fear</option>
+                            <option value="disgust" ${emo === 'disgust' ? 'selected' : ''}>Disgust</option>
+                            <option value="blush" ${emo === 'blush' ? 'selected' : ''}>Blush</option>
                         </select>
-                        <button data-action="remove-extra-portrait" data-id="${char.id}" data-index="${index}" class="text-red-400 hover:text-red-300 ml-auto">X</button>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <label class="text-sm text-gray-400" for="${fileInputId}">Upload ${canGenImage ? 'or Generate ' : ''}for <span class="font-semibold">${emo}</span>:</label>
-                        <span id="${labelId}" class="text-xs text-gray-400">${hint}</span>
-                    </div>
-                    <div class="flex space-x-2">
-                        <input id="${fileInputId}" type="file" accept="image/*" data-action-change="upload-emo-image" data-id="${char.id}" data-index="${index}" class="block w-full text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
-                        ${canGenImage ? DOM.html`<button onclick="NarrativeController.openCharacterImageGenerator('${char.id}', 'extra', ${index})" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 rounded flex items-center justify-center transition-colors" title="Generate">
-                             ${this.getAIGenIcon()}
-                        </button>` : ''}
                     </div>
                 </div>`;
                 });
@@ -10592,11 +10712,18 @@
                          <div class="text-right"><button data-action="gen-model-instructions" data-id="${char.id}" class="text-sm bg-sky-600/80 hover:bg-sky-700/80 font-semibold py-2 px-3 rounded-lg">${this.getAIGenIcon()}</button></div>
                     </div>
                 </details>
-                <details>
+                <details id="${detailsId}" ${wasOpen ? 'open' : ''}>
                     <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300">Emotional Portraits</summary>
-                    <div class="p-4 space-y-2 bg-black/20 rounded-b-lg">
-                        <div id="extra-portraits-${char.id}">${extraPortraitsHTML}</div>
-                        <button data-action="add-extra-portrait" data-id="${char.id}" class="text-sm text-sky-400 hover:text-sky-300 mt-2">+ Add Emotional Portrait</button>
+                    <div class="p-4 space-y-4 bg-black/20 rounded-b-lg">
+                        <div id="extra-portraits-${char.id}" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            ${extraPortraitsHTML}
+                            
+                            <!-- Add Button as a Card -->
+                            <button data-action="add-extra-portrait" data-id="${char.id}" class="aspect-square rounded-lg border-2 border-dashed border-gray-700 hover:border-indigo-500 hover:bg-indigo-900/20 text-gray-500 hover:text-indigo-300 transition-all flex flex-col items-center justify-center gap-2">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                <span class="text-xs font-bold">Add New</span>
+                            </button>
+                        </div>
                     </div>
                 </details>
             </div>
@@ -10938,7 +11065,7 @@
              * @param {Function} options.onSave - Async callback(blob) when user clicks Save.
              */
             openGenericImageGenerator(opts) {
-                const { title, initialPrompt, initialNegative = null, onSave } = opts;
+                const { title, initialPrompt, initialNegative = null, onSave, initImage = null } = opts;
                 // Remove existing if any
                 const existing = document.getElementById('image-gen-modal');
                 if (existing) existing.remove();
@@ -10946,7 +11073,21 @@
                 const modal = document.createElement('div');
                 modal.id = 'image-gen-modal';
                 modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] modal-overlay hidden';
-                modal.innerHTML = `
+
+                // Construct the source preview if in I2I mode
+                const i2iSourceHtml = initImage ? DOM.html`
+                    <div class="flex items-center gap-4 p-3 bg-indigo-900/20 border border-indigo-500/30 rounded-lg mb-4">
+                        <div class="w-16 h-16 rounded overflow-hidden border border-indigo-500 bg-gray-900">
+                            <img src="${URL.createObjectURL(initImage)}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-grow">
+                            <div class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Image-to-Image Mode</div>
+                            <div class="text-xs text-indigo-200/70 leading-tight">Using character portrait as starting point for facial expression shift.</div>
+                        </div>
+                    </div>
+                ` : '';
+
+                modal.innerHTML = DOM.unsafe(`
                              <div class="bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-gray-700">
                                 <div class="px-6 py-4 border-b border-gray-700 flex justify-between items-center bg-gray-900/50 rounded-t-lg">
                                     <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
@@ -10955,6 +11096,7 @@
                                     <button onclick="AppController.closeModal('image-gen-modal')" class="text-gray-400 hover:text-white">&times;</button>
                                 </div>
                                 <div id="image-gen-content" class="p-6 overflow-y-auto space-y-4">
+                                     ${i2iSourceHtml}
                                      <div>
                                         <label class="block text-sm font-bold text-gray-400 mb-1">Prompt</label>
                                         <textarea id="gen-img-prompt" class="w-full bg-black/30 border-gray-600 p-3 rounded h-24 resize-none focus:border-indigo-500 font-mono text-sm">${initialPrompt}</textarea>
@@ -10978,7 +11120,7 @@
                                     </div>
                                 </div>
                             </div>
-                         `;
+                         `);
                 document.body.appendChild(modal);
 
                 // Bind Generate Action
@@ -10992,7 +11134,7 @@
                     btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...`;
 
                     try {
-                        const blob = await ImageGenerationService.generateImage(prompt, neg);
+                        const blob = await ImageGenerationService.generateImage(prompt, neg, {}, initImage);
                         const url = URL.createObjectURL(blob);
 
                         // Render Result with Save Options
@@ -12632,17 +12774,38 @@
                     if (charData) {
                         const charId = UTILITY.uuid();
                         let imageUrl = '';
+                        let baseBlob = null;
 
-                        // Auto-Image Gen
+                        // Auto-Image Gen (Base Portrait)
                         try {
                             const imagePrompt = `portrait of ${charDef.name}, ${charData.short_description || charData.description}, ${charDef.archetype}, detailed face, fantasy art, masterpiece`;
-                            const blob = await ImageGenerationService.generateImage(imagePrompt);
-                            if (blob) {
-                                await DBService.saveImage(charId, blob);
+                            baseBlob = await ImageGenerationService.generateImage(imagePrompt);
+                            if (baseBlob) {
+                                await DBService.saveImage(charId, baseBlob);
                                 imageUrl = `local_idb_${charId}`;
-                                UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
+                                UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(baseBlob);
                             }
-                        } catch (err) { /* Ignore image failure */ }
+                        } catch (err) { console.warn("Primary image fail", err); }
+
+                        const extraPortraits = [];
+                        // [NEW] Auto-Generate Emotional Portraits using I2I
+                        if (baseBlob) {
+                            const emotions = ['happy', 'sad', 'angry'];
+                            for (const emotion of emotions) {
+                                try {
+                                    updateUI(45 + (i * 8), `Agent: Capturing ${charDef.name}'s ${emotion} side...`);
+                                    const emoPrompt = `portrait of ${charDef.name} expressing ${emotion} emotion, ${emotion} facial expression`;
+                                    // Use I2I with relatively low denoising to maintain character identity
+                                    const emoBlob = await ImageGenerationService.generateImage(emoPrompt, "", { denoising_strength: 0.5 }, baseBlob);
+                                    if (emoBlob) {
+                                        const emoKey = `${charId}::emotion::${emotion}`;
+                                        await DBService.saveImage(emoKey, emoBlob);
+                                        UIManager.RUNTIME.characterImageCache[emoKey] = URL.createObjectURL(emoBlob);
+                                        extraPortraits.push({ emotion: emotion, url: '' }); // url is empty since it's in IDB
+                                    }
+                                } catch (err) { console.warn(`Emotion ${emotion} fail`, err); }
+                            }
+                        }
 
                         draft.characters.push({
                             id: charId,
@@ -12656,7 +12819,7 @@
                             is_narrator: charDef.role === 'PrimaryAI' && !roster.some(r => r.role === 'User'),
                             color: NarrativeController.CONSTANTS.CHARACTER_COLORS[i % NarrativeController.CONSTANTS.CHARACTER_COLORS.length],
                             image_url: imageUrl,
-                            extra_portraits: []
+                            extra_portraits: extraPortraits
                         });
                     }
                 }
@@ -12814,17 +12977,38 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                     if (charData) {
                         const charId = UTILITY.uuid();
                         let imageUrl = '';
+                        let baseBlob = null;
 
-                        // Auto-Image Gen
+                        // Auto-Image Gen (Base Portrait)
                         try {
                             const imagePrompt = `portrait of ${charDef.name}, ${charData.short_description || charData.description}, ${charDef.archetype}, detailed face, fantasy art, masterpiece`;
-                            const blob = await ImageGenerationService.generateImage(imagePrompt);
-                            if (blob) {
-                                await DBService.saveImage(charId, blob);
+                            baseBlob = await ImageGenerationService.generateImage(imagePrompt);
+                            if (baseBlob) {
+                                await DBService.saveImage(charId, baseBlob);
                                 imageUrl = `local_idb_${charId}`;
-                                UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
+                                UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(baseBlob);
                             }
-                        } catch (err) { /* Ignore image failure */ }
+                        } catch (err) { console.warn("Primary image fail", err); }
+
+                        const extraPortraits = [];
+                        // [NEW] Auto-Generate Emotional Portraits using I2I
+                        if (baseBlob) {
+                            const emotions = ['happy', 'sad', 'angry'];
+                            for (const emotion of emotions) {
+                                try {
+                                    updateUI(50 + (i * 10), `Agent: Capturing ${charDef.name}'s ${emotion} side...`);
+                                    const emoPrompt = `Portrait of ${charDef.name} expressing ${emotion} emotion. Intense ${emotion} facial expression, displayed in the mouth, eyes, and and brow especially.`;
+                                    // Use I2I with relatively low denoising
+                                    const emoBlob = await ImageGenerationService.generateImage(emoPrompt, "", { denoising_strength: 0.5 }, baseBlob);
+                                    if (emoBlob) {
+                                        const emoKey = `${charId}::emotion::${emotion}`;
+                                        await DBService.saveImage(emoKey, emoBlob);
+                                        UIManager.RUNTIME.characterImageCache[emoKey] = URL.createObjectURL(emoBlob);
+                                        extraPortraits.push({ emotion: emotion, url: '' });
+                                    }
+                                } catch (err) { console.warn(`Emotion ${emotion} fail`, err); }
+                            }
+                        }
 
                         const newCharObj = {
                             id: charId,
@@ -12837,11 +13021,11 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                             is_active: true,
                             is_narrator: charDef.role === 'PrimaryAI' && !activeIds.some(id => {
                                 const c = existingChars.find(ec => ec.id === id);
-                                return c && c.is_user; // Logic check: is_narrator logic is complex if mixing.
+                                return c && c.is_user;
                             }),
                             color: NarrativeController.CONSTANTS.CHARACTER_COLORS[(existingChars.length + i) % NarrativeController.CONSTANTS.CHARACTER_COLORS.length],
                             image_url: imageUrl,
-                            extra_portraits: []
+                            extra_portraits: extraPortraits
                         };
 
                         draftDiff.characters.push(newCharObj);
@@ -13106,6 +13290,43 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                     alert(`Error: ${e.message}`);
                 } finally {
                     UIManager.hideLoadingSpinner();
+                }
+            },
+
+            /**
+             * Handles the "Quick Play" button on story cards.
+             * Resumes the most recently modified narrative, or starts a new one from the first scenario.
+             * @param {string} storyId - The ID of the story.
+             */
+            async handleQuickPlay(storyId) {
+                try {
+                    const story = await DBService.getStory(storyId);
+                    if (!story) return;
+
+                    const narratives = story.narratives || [];
+
+                    // 1. If narratives exist, load the most recent one
+                    if (narratives.length > 0) {
+                        // Sort by last_modified desc
+                        narratives.sort((a, b) => new Date(b.last_modified) - new Date(a.last_modified));
+                        this.loadNarrative(storyId, narratives[0].id);
+                        return;
+                    }
+
+                    // 2. If no narratives, check for scenarios
+                    const scenarios = story.scenarios || [];
+                    if (scenarios.length > 0) {
+                        // Create new narrative from the first scenario
+                        await this.createNarrativeFromScenario(storyId, scenarios[0].id);
+                        return;
+                    }
+
+                    // 3. Fallback
+                    alert("This story has no content to play. Please add a scenario or narrative.");
+
+                } catch (e) {
+                    console.error("Quick Play failed:", e);
+                    alert("Failed to start story.");
                 }
             },
 
@@ -14965,12 +15186,13 @@ JSON array of objects: { "title": "...", "content": "..." }`;
 
             /**
              * Checks if a visual event should be triggered.
+             * Returns a Promise that resolves when the visual event is complete (or null if not triggered).
              */
-            async checkTrigger() {
-                if (this.RUNTIME.isProcessing) return;
+            checkTrigger() {
+                if (this.RUNTIME.isProcessing) return null;
 
                 // Guard: Global Image Gen Disabled
-                if (typeof UIManager !== 'undefined' && !UIManager.isImageGenEnabled()) return;
+                if (typeof UIManager !== 'undefined' && !UIManager.isImageGenEnabled()) return null;
 
                 const state = ReactiveStore.state;
                 // Guard: Probability Check - Fix: Treat undefined/NaN as 0
@@ -14981,25 +15203,40 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                     probability = parseFloat(rawProb);
                 }
 
-                if (isNaN(probability) || probability <= 0) return;
+                if (isNaN(probability) || probability <= 0) return null;
 
                 // Dice Roll
-                if (Math.random() * 100 > probability) return;
+                if (Math.random() * 100 > probability) return null;
 
                 // Trigger Visual Event
                 this.RUNTIME.isProcessing = true;
-                // Visual cues shouldn't block the user from typing, but we show a spinner
-                UIManager.showLoadingSpinner("Visual Master: Painting the scene...");
 
-                try {
-                    console.log("Visual Master: 🎲 Roll successful. Generating scene...");
-                    await this.triggerVisualEvent();
-                } catch (e) {
-                    console.warn("Visual Master failed:", e);
-                } finally {
-                    this.RUNTIME.isProcessing = false;
-                    UIManager.hideLoadingSpinner();
-                }
+                // 1. ADD PLACEHOLDER IMMEDIATELY (Order Preservation)
+                const placeholder = {
+                    type: 'visual_event',
+                    content: 'Painting the scene...',
+                    isLoading: true,
+                    timestamp: new Date().toISOString()
+                };
+                const placeholderIndex = state.chat_history.length;
+                state.chat_history.push(placeholder);
+
+                // 2. Start Async Process
+                return (async () => {
+                    try {
+                        console.log("Visual Master: 🎲 Roll successful. Generating scene...");
+                        await this.triggerVisualEvent(placeholderIndex); // Update the placeholder at this index
+                    } catch (e) {
+                        console.warn("Visual Master failed:", e);
+                        // Clean up the placeholder on failure
+                        if (state.chat_history[placeholderIndex] && state.chat_history[placeholderIndex].isLoading) {
+                            state.chat_history.splice(placeholderIndex, 1);
+                        }
+                    } finally {
+                        this.RUNTIME.isProcessing = false;
+                        UIManager.hideLoadingSpinner();
+                    }
+                })();
             },
 
             /**
@@ -15020,7 +15257,7 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                 let historySlice;
                 let contextDescription = "";
 
-                if (typeof atIndex === 'number') {
+                if (typeof atIndex === 'number' && !state.chat_history[atIndex]?.isLoading) {
                     // Specific point in history: [atIndex-4 ... atIndex]
                     // Safe slice handling
                     const start = Math.max(0, atIndex - 4);
@@ -15028,8 +15265,9 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                     historySlice = state.chat_history.slice(start, end);
                     contextDescription = `(Context: History at message #${atIndex})`;
                 } else {
-                    // Default: Last 5 messages
-                    historySlice = state.chat_history.slice(-5);
+                    // Default: Last 5 messages (excluding current placeholder if at end)
+                    const sliceEnd = (typeof atIndex === 'number' && atIndex === state.chat_history.length - 1) ? -1 : undefined;
+                    historySlice = state.chat_history.slice(-5, sliceEnd);
                 }
 
                 // 1.5 Build Context (Last 5 messages)
@@ -15042,7 +15280,7 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                     .join('\n');
 
                 // 2. Gather Personas & Location
-                const activeChars = state.characters.filter(c => c.is_active || c.is_user); // Include user? Usually yes if they are in the scene
+                const activeChars = state.characters.filter(c => c.is_active || c.is_user); // Include user
                 const charPersonas = activeChars.map(c => `${c.name}: ${c.description.substring(0, 300)}`).join('\n\n');
 
                 let locationContext = "";
@@ -15069,8 +15307,6 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                     btnElement.classList.add('cursor-not-allowed');
                     // Notify the user globally as well
                     UIManager.showNotification("Visual Master: Generating scene...", "info");
-                } else {
-                    UIManager.showLoadingSpinner();
                 }
 
                 try {
@@ -15100,8 +15336,10 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                         isNew: true
                     };
 
-                    // CRITICAL FIX: Insert AFTER the triggering index, or push if at end
-                    if (typeof atIndex === 'number' && atIndex < state.chat_history.length - 1) {
+                    // CRITICAL FIX: If we have an isLoading placeholder at atIndex, replace it
+                    if (typeof atIndex === 'number' && state.chat_history[atIndex]?.type === 'visual_event') {
+                        state.chat_history[atIndex] = visualEntry;
+                    } else if (typeof atIndex === 'number' && atIndex < state.chat_history.length - 1) {
                         // Splice into array using splice (ReactiveStore should trap this)
                         state.chat_history.splice(atIndex + 1, 0, visualEntry);
                     } else {
@@ -15110,14 +15348,12 @@ JSON array of objects: { "title": "...", "content": "..." }`;
 
                     await ReactiveStore.forceSave();
 
-                    // Scroll to bottom only if we pushed to end, otherwise maybe scroll to index?
                     if (typeof atIndex !== 'number' || atIndex >= state.chat_history.length - 2) {
                         setTimeout(() => {
                             const chatWindow = document.getElementById('chat-window');
                             if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
                         }, 50);
                     }
-
                 } catch (err) {
                     console.error("Visual Event Error:", err);
                     UIManager.showNotification("Visual generation failed: " + err.message, "error");
@@ -15130,7 +15366,7 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                         UIManager.hideLoadingSpinner();
                     }
                 }
-            }
+            },
         };
 
 
@@ -15156,7 +15392,8 @@ JSON array of objects: { "title": "...", "content": "..." }`;
 
             RUNTIME: {
                 streamingInterval: null,
-                activeRequestAbortController: null
+                activeRequestAbortController: null,
+                lastPromptDetails: null // [NEW] Stores the last prompt sent to AI
             },
 
             // --- Chat Interaction ---
@@ -15165,7 +15402,7 @@ JSON array of objects: { "title": "...", "content": "..." }`;
              * Handles the primary action button (Send/Write).
              * Delegates to triggerAIResponse (if empty) or sendMessage (if text present).
              */
-            handlePrimaryAction() {
+            async handlePrimaryAction() {
                 if (!StateManager.getLibrary().active_story_id) {
                     UIManager.showConfirmationModal("Please load or create a story from the Story Library first.", () => AppController.openModal('story-library-modal'));
                     return;
@@ -15174,7 +15411,41 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                 // New logic: Empty = Trigger AI. Text = Send.
                 const input = document.getElementById('chat-input');
                 if (input.value.trim() === '') {
-                    this.triggerAIResponse(null); // Pass turn to AI
+                    // Empty Input = Pass Turn
+
+                    // 0. STOP existing generation if running
+                    if (this.RUNTIME.activeRequestAbortController) {
+                        this.stopGeneration();
+                    }
+                    if (UIManager.RUNTIME.streamingInterval) {
+                        clearInterval(UIManager.RUNTIME.streamingInterval);
+                        UIManager.RUNTIME.streamingInterval = null;
+                    }
+
+                    // 1. Run Event Master (BLOCKING)
+                    // Trigger Event Master for this turn as well
+                    await this.checkEventMaster();
+
+                    // 2. Run Visual Master & Speaker Selection (Concurrent)
+                    // We match the logic in sendMessage() for consistency
+                    let speakerPromise = null;
+                    const selectorVal = document.getElementById('ai-character-selector').value;
+                    if (selectorVal === 'any') {
+                        // Auto-select: Launch the AI selector task
+                        speakerPromise = this.determineNextSpeaker(false);
+                    } else {
+                        // Manual select: Resolve immediately
+                        speakerPromise = Promise.resolve(selectorVal);
+                    }
+
+                    // B. Run Visual Master (Concurrent)
+                    let visualBlocker = null;
+                    if (typeof VisualMaster !== 'undefined') {
+                        visualBlocker = VisualMaster.checkTrigger();
+                    }
+
+                    // 3. Trigger Character Response
+                    await this.triggerAIResponse(speakerPromise, '', false, null, visualBlocker);
                 } else {
                     this.sendMessage();
                 }
@@ -15236,6 +15507,81 @@ JSON array of objects: { "title": "...", "content": "..." }`;
 
                 } catch (e) {
                     console.error("Bolt Action Failed:", e);
+                    UIManager.showNotification("Failed to continue text.", "error");
+                } finally {
+                    if (boltBtn) {
+                        boltBtn.innerHTML = originalIcon;
+                        boltBtn.disabled = false;
+                    }
+                }
+            },
+
+            /**
+             * Handles the "Bolt" button action inside the Edit Modal.
+             * Continues writing based on the text currently in the modal.
+             */
+            async handleEditModalBoltAction() {
+                const input = document.getElementById('edit-modal-input');
+                const userText = input.value;
+                if (!userText) return; // Don't continue empty text in edit mode, usually not desired
+
+                // Show loading state
+                const boltBtn = document.getElementById('edit-modal-bolt-button');
+                const originalIcon = boltBtn ? boltBtn.innerHTML : '';
+                if (boltBtn) {
+                    boltBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                    boltBtn.disabled = true;
+                }
+
+                try {
+                    const state = ReactiveStore.state;
+                    // For Edit Mode, we assume the context is the relevant character or Story context.
+                    // However, we need a "POV" character for the prompt.
+                    // Ideally, we use the character who OWNS this message, OR the User if it's a user message.
+                    // But openEditModal doesn't easily pass that info to us here unless we store it.
+                    // WORKAROUND: We will use the USER character as the "Anchor" for the prompt perspective,
+                    // but the instruction is to continue the text.
+
+                    const userChar = state.characters.find(c => c.is_user);
+                    if (!userChar) throw new Error("No user character found.");
+
+                    // Calculate Custom Instruction
+                    // "Continue the following text:"
+                    const customInstruction = `Continue the following text exactly where it leaves off. Maintain the same style and voice:\n\n${userText}`;
+
+                    // Retrieve valid chat history? 
+                    // PROMPT TRICK: We don't want the AI to see the *original* version of the message we are editing in the history, 
+                    // causing duplication loops.
+                    // But determining which message is being edited is hard here without extra state.
+                    // SIMPLIFICATION: We build a generic prompt. The 'customInstruction' is strong enough usually.
+
+                    const prompt = PromptBuilder.buildPrompt(userChar.id, true, null, customInstruction);
+
+                    // Call AI
+                    const continuation = await APIService.callAI(prompt, false);
+
+                    if (continuation) {
+                        let finalResult = continuation.trim();
+
+                        // Heuristic: If model repeats the input (common), strip it.
+                        // We check the last 50 chars of input vs start of output
+                        const inputEnd = userText.slice(-50).trim();
+                        if (finalResult.startsWith(inputEnd)) {
+                            // This is risky if the repetition is valid, but usually it's an Artifact.
+                            // Let's rely on the "Continue..." instruction being robust first.
+                        }
+
+                        // Just Append
+                        const separator = (userText.length > 0 && !userText.endsWith(' ') && !userText.endsWith('\n')) ? ' ' : '';
+                        input.value = userText + separator + finalResult;
+
+                        // Updates
+                        input.focus();
+                        input.scrollTop = input.scrollHeight;
+                    }
+
+                } catch (e) {
+                    console.error("Edit Bolt Action Failed:", e);
                     UIManager.showNotification("Failed to continue text.", "error");
                 } finally {
                     if (boltBtn) {
@@ -15916,6 +16262,14 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                 const newBtn = saveBtn.cloneNode(true);
                 saveBtn.parentNode.replaceChild(newBtn, saveBtn);
 
+                // Bind Bolt (Continue) button dynamically
+                const boltBtn = document.getElementById('edit-modal-bolt-button');
+                if (boltBtn) {
+                    const newBoltBtn = boltBtn.cloneNode(true);
+                    boltBtn.parentNode.replaceChild(newBoltBtn, boltBtn);
+                    newBoltBtn.onclick = () => NarrativeController.handleEditModalBoltAction();
+                }
+
                 newBtn.onclick = () => {
                     ReactiveStore.state.chat_history[index].content = input.value;
                     AppController.closeModal('edit-response-modal');
@@ -16167,14 +16521,23 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                     const prompt = PromptBuilder.buildPrompt(targetId, false, historyOverride);
 
                     // START REQUEST (Do not await yet if there might be other parallel work, but here we await basic text first)
-                    // Actually, to fully parallelize, we could start this promise and the emotion analysis promise.
+                    // actually, to fully parallelize, we could start this promise and the emotion analysis promise.
+
+                    // [NEW] Capture Prompt Metadata BEFORE sending
+                    this.RUNTIME.lastPromptDetails = {
+                        prompt: prompt, // The actual string
+                        model: state.apiProvider,
+                        charId: targetId,
+                        timestamp: new Date().toISOString()
+                    };
+
                     const textGenPromise = APIService.callAI(prompt, false, this.RUNTIME.activeRequestAbortController.signal);
 
                     // 5. Analyze for Emotion/Location (Parallel-ish)
                     // We run this while the text is generating.
-                    let emotion = 'neutral';
                     if (userMessage) {
-                        this.analyzeTurn(userMessage).then(analysis => {
+                        const userChar = state.characters.find(c => c.is_user);
+                        this.analyzeTurn(userMessage, userChar ? userChar.id : null).then(analysis => {
                             if (analysis.locationName && typeof WorldController !== 'undefined') {
                                 const grid = state.worldMap.grid;
                                 const target = grid.find(l => l.name.toLowerCase() === analysis.locationName.toLowerCase());
@@ -16201,33 +16564,32 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                         console.error("Text Formatting failed:", e);
                     }
 
-                    // Analyze AI Response for Sentiment (Emotion)
-                    // We await this so the portrait is correct when the bubble appears
-                    try {
-                        const aiAnalysis = await this.analyzeTurn(responseText);
-                        emotion = aiAnalysis.emotion;
-                    } catch (err) {
-                        console.warn("Sentiment analysis failed, defaulting to neutral.");
-                    }
-
-                    // 5.5 Synchronization Point
-                    // If Visual Master is running in the background, we MUST wait for it to finish
-                    // before we display the text. This ensures the Image appears BEFORE the text in the history.
-                    if (visualBlockerPromise) {
-                        // Optional: Update spinner text to show we are just waiting for the image now
-                        const spinner = document.getElementById('typing-indicator-text');
-                        if (spinner && VisualMaster.RUNTIME.isProcessing) {
-                            spinner.innerText = "Painting scene...";
-                        }
-                        await visualBlockerPromise;
-                    }
-
-                    // 6. Stream Result
+                    // 6. Stream Result IMMEDIATELY (Non-blocking display)
                     UIManager.hideTypingIndicator();
-                    // Pass the targetMessageIndex to enable versioning update
-                    this.startStreamingResponse(targetId, responseText, emotion, targetMessageIndex);
+                    // Display with neutral emotion first to avoid blocking text display
+                    this.startStreamingResponse(targetId, responseText, 'neutral', targetMessageIndex);
 
-                    // 7. TTS Trigger
+                    // 7. Analyze AI Response (Post-Display Concurrency)
+                    // We don't await this so the text shows up instantly. 
+                    // Portrait will pop-in/update once analysis is done.
+                    this.analyzeTurn(responseText, targetId).then(aiAnalysis => {
+                        const targetIndex = (targetMessageIndex !== null) ? targetMessageIndex : (state.chat_history.length - 1);
+                        const msg = state.chat_history[targetIndex];
+                        if (msg) {
+                            msg.emotion = aiAnalysis.emotion;
+                            // Update the portrait visually if in bubble mode
+                            if (state.characterImageMode === 'bubble') {
+                                this.updateMessagePortrait(targetIndex, targetId, aiAnalysis.emotion);
+                            }
+                        }
+                    }).catch(err => console.warn("Background sentiment analysis failed:", err));
+
+                    // 8. Visual Master Synchronization (Non-blocking)
+                    // We don't await here because visual master now uses placeholders.
+                    // This allows the text to appear while the image is still being "painted".
+                    // The placeholder at placeholderIndex will be replaced when visualBlockerPromise resolves.
+
+                    // 9. TTS Trigger
                     // Check Mode
                     const globalSettings = StateManager.data.globalSettings;
                     const ttsMode = globalSettings.ttsMode || 'off'; // Default off
@@ -16277,6 +16639,29 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                     UIManager.setButtonToSendMode();
                     this.RUNTIME.activeRequestAbortController = null;
                     UIManager.hideTypingIndicator();
+                }
+            },
+
+            /**
+             * Updates the portrait of a message in the chat history after analysis.
+             * @param {number} index - The message index.
+             * @param {string} charId - The character ID.
+             * @param {string} emotion - The new emotion.
+             */
+            updateMessagePortrait(index, charId, emotion) {
+                const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                if (!char) return;
+
+                const imgSrc = UIManager.getPortraitSrc(char, emotion);
+                if (!imgSrc) return;
+
+                const bubbleContainer = document.querySelector(`.chat-bubble-container[data-message-index="${index}"]`);
+                if (bubbleContainer) {
+                    const img = bubbleContainer.querySelector('.bubble-char-image');
+                    if (img) {
+                        img.src = imgSrc;
+                        img.dataset.src = imgSrc; // Update modal source too
+                    }
                 }
             },
 
@@ -16484,9 +16869,10 @@ Rules:
             /**
              * Analyzes a text turn for emotion and location changes.
              * @param {string} text - The text to analyze.
+             * @param {string} [charId] - Optional character ID to constrain emotions.
              * @returns {Promise<Object>} - The analysis result { emotion, locationName }.
              */
-            async analyzeTurn(text) {
+            async analyzeTurn(text, charId = null) {
                 const state = ReactiveStore.state;
 
                 // 1. Check Toggle
@@ -16512,9 +16898,26 @@ Rules:
                 validLocations = [...new Set(validLocations)].filter(Boolean);
                 const locStr = validLocations.join(', ');
 
+                // 3. Constrain Emotions based on Character Images
+                let validEmotions = ['happy', 'sad', 'angry', 'surprised', 'neutral', 'fear', 'disgust', 'blush']; // Default
+
+                if (charId) {
+                    const char = state.characters.find(c => c.id === charId);
+                    if (char) {
+                        const hasImages = ['neutral']; // Base is always assumed neutral/available
+                        if (char.extra_portraits) {
+                            char.extra_portraits.forEach(p => {
+                                if (p.emotion) hasImages.push(p.emotion.toLowerCase());
+                            });
+                        }
+                        validEmotions = [...new Set(hasImages)];
+                    }
+                }
+                const emoStr = validEmotions.map(e => `'${e}'`).join(', ');
+
                 try {
                     const prompt = `Analyze the text.
-                    1. Identify the speaker's emotion. Options: 'happy', 'sad', 'angry', 'surprised', 'neutral'.
+                    1. Identify the speaker's emotion. Options: ${emoStr}.
                     2. Determine if the text explicitly indicates moving to a location.
                     IMPORTANT: You may ONLY select a location from this list: [${locStr}].
                     If the text does not strictly match a location in that list, set "locationName" to null.
@@ -16524,7 +16927,6 @@ Rules:
                     const res = await APIService.callAI(prompt, true);
                     const data = UTILITY.extractAndParseJSON(res); // Use safe parser
 
-                    const validEmotions = ['happy', 'sad', 'angry', 'surprised', 'neutral'];
                     const emotion = (data?.emotion && validEmotions.includes(data.emotion.toLowerCase())) ? data.emotion.toLowerCase() : 'neutral';
                     return { emotion, locationName: data?.locationName || null };
                 } catch (e) {
@@ -16906,17 +17308,34 @@ Rules:
              * @param {string} type - 'primary' or 'extra'.
              * @param {number} [index] - Index for extra emotions.
              */
-            openCharacterImageGenerator(charId, type = 'primary', index = null) {
+            async openCharacterImageGenerator(charId, type = 'primary', index = null) {
                 const state = StateManager.getState();
                 const char = state.characters.find(c => c.id === charId);
                 if (!char) return;
 
-                // Use the full persona description (up to 500 chars to avoid URL limit issues if passed around, but effectively full)
-                const initialPrompt = char.description.substring(0, 500);
+                // [NEW] Get base portrait blob for I2I if it exists
+                let initImage = null;
+                try {
+                    initImage = await DBService.getImage(charId);
+                } catch (e) {
+                    // It might be using a local_idb key but renamed, but usually charId is the key for primary portrait
+                    console.warn("No base image found for I2I", e);
+                }
+
+                let initialPrompt = char.description.substring(0, 500);
+                let titleSuffix = "";
+
+                if (type === 'extra' && index !== null) {
+                    const portrait = char.extra_portraits[index];
+                    const emotion = portrait ? portrait.emotion : 'neutral';
+                    initialPrompt = `portrait of ${char.name} expressing ${emotion} emotion, ${emotion} facial expression`;
+                    titleSuffix = ` (${emotion})`;
+                }
 
                 UIManager.openGenericImageGenerator({
-                    title: `Generate: ${char.name}`,
+                    title: `Generate: ${char.name}${titleSuffix}`,
                     initialPrompt: initialPrompt,
+                    initImage: initImage, // Pass base image for I2I
                     onSave: async (blob) => {
                         if (type === 'primary') {
                             await this.handleLocalImageUpload({ target: { files: [new File([blob], "generated_portrait.png", { type: "image/png" })] } }, charId);
@@ -17252,17 +17671,48 @@ Rules:
             async viewRawPrompt() {
                 const state = ReactiveStore.state;
 
+                // [NEW] Check for cached prompt first
+                if (this.RUNTIME.lastPromptDetails) {
+                    const cached = this.RUNTIME.lastPromptDetails;
+                    let metaInfo = `--- LAST GENERATED PROMPT ---\n`;
+                    metaInfo += `Timestamp: ${cached.timestamp}\n`;
+                    metaInfo += `Target Character ID: ${cached.charId}\n`;
+                    metaInfo += `Provider: ${cached.model}\n`;
+
+                    if (cached.model === 'koboldcpp') {
+                        const template = state.koboldcpp_template || 'none';
+                        metaInfo += `Template Used: ${template.toUpperCase()}\n`;
+                    }
+                    metaInfo += `---------------------------\n\n`;
+
+                    const contentEl = document.getElementById('raw-prompt-content');
+                    if (contentEl) {
+                        contentEl.textContent = metaInfo + cached.prompt;
+                    }
+                    AppController.openModal('view-raw-prompt-modal');
+                    return;
+                }
+
+                // --- FALLBACK / PREVIEW MODE (No previous prompt found) ---
+
                 // 1. Determine who the prompt is for
                 let charId = document.getElementById('ai-character-selector').value;
                 if (charId === 'any') {
-                    // Fix: Await the async determination
-                    charId = await this.determineNextSpeaker(false);
+                    // PREVIEW MODE OPTIMIZATION:
+                    // We do NOT want to trigger the expensive 'Scriptwriter' agent (determineNextSpeaker) just to view a prompt preview.
+                    // Instead, we select the first available active AI character as a placeholder interactively.
+                    const firstActive = state.characters.find(c => !c.is_user && c.is_active);
+                    if (firstActive) {
+                        charId = firstActive.id;
+                    } else {
+                        // Fallback: Try any non-user
+                        const anyChar = state.characters.find(c => !c.is_user);
+                        if (anyChar) charId = anyChar.id;
+                    }
                 }
 
                 if (!charId) {
-                    // If determineNextSpeaker failed or returned null, it handles its own notifications usually.
-                    // But just in case:
-                    console.warn("Could not determine character for Raw Prompt view.");
+                    alert("Please select a specific character or ensure AI characters are active to view a prompt preview.");
                     return;
                 }
 
@@ -17270,7 +17720,7 @@ Rules:
                 const promptText = PromptBuilder.buildPrompt(charId);
 
                 // 3. Generate Metadata Header for the view
-                let metaInfo = `--- DEBUG INFO ---\n`;
+                let metaInfo = `--- PREVIEW (NEXT PROMPT) ---\n`;
                 metaInfo += `Target Character ID: ${charId}\n`;
                 metaInfo += `Active Provider: ${state.apiProvider}\n`;
 
@@ -17288,7 +17738,7 @@ Rules:
                     metaInfo += `Template: Standard (Cloud/Default)\n`;
                 }
 
-                metaInfo += `------------------\n\n`;
+                metaInfo += `-----------------------------\n\n`;
 
                 // 4. Render
                 const contentEl = document.getElementById('raw-prompt-content');
@@ -17572,7 +18022,15 @@ Rules:
                     // 5. Trigger AI Response (Narrator prefers to speak on move)
                     const narrator = state.characters.find(c => c.is_narrator && c.is_active);
                     if (typeof NarrativeController !== 'undefined') {
-                        NarrativeController.triggerAIResponse(narrator ? narrator.id : null, '', true);
+                        // 5.1 Run Visual Master (Concurrent)
+                        let visualBlocker = null;
+                        if (typeof VisualMaster !== 'undefined') {
+                            visualBlocker = VisualMaster.checkTrigger();
+                        }
+
+                        // 5.2 Trigger Character Response
+                        // We pass the narrator as a resolved ID or null if missing
+                        NarrativeController.triggerAIResponse(narrator ? narrator.id : null, '', true, null, visualBlocker);
                     }
 
                     // 6. Update Background
@@ -18178,6 +18636,21 @@ Rules:
             selectStaticEntry(id) {
                 ReactiveStore.state.selectedStaticEntryId = id;
             },
+
+            /**
+             * Toggles the protection status (is_immutable) of a static entry.
+             * @param {string} id - The entry ID.
+             */
+            toggleStaticEntryProtection(id) {
+                const state = ReactiveStore.state;
+                const entry = state.static_entries.find(e => e.id === id);
+                if (entry) {
+                    entry.is_immutable = !entry.is_immutable;
+                    // Logic to move entry is inherent in renderStaticEntries grouping
+                    UIManager.renderStaticEntries();
+                }
+            },
+
 
             /**
              * Updates a field of a global static entry (debounced).
