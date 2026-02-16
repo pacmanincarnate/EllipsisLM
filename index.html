@@ -1,4 +1,28 @@
 <!DOCTYPE html>
+<!--
+    =================================================================================================
+    [FILE:EL_LM] - ELLIPSIS LM SINGLE-FILE ENGINE
+    =================================================================================================
+    TECHNICAL MAP: Use these unique IDs for instant navigation (Search for the bracketed ID).
+
+    [SEC:CSS:CORE]          - Main Application Styles (Root, Reset, Layout)
+    [SEC:HTML:BODY]         - UI Structure & Modals
+    [SEC:JS:CORE]           - Script Initialization & Global Constants
+    [SEC:JS:MOD:AH]         - ActionHandler (Event Delegation)
+    [SEC:JS:SRV:DB]         - DBService (IndexedDB Wrapper)
+    [SEC:JS:SRV:IMG_GEN]    - ImageGenerationService
+    [SEC:JS:UTIL:UTILS]     - UTILITY (Helper Functions)
+    [SEC:JS:UTIL:PB]        - PromptBuilder (Context Logic)
+    [SEC:JS:SRV:IE]         - ImportExportService
+    [SEC:JS:STATE:RS]       - ReactiveStore (Proxy State)
+    [SEC:JS:UI:TEMPLATE]    - UIComponents (HTML Renderers)
+    [SEC:JS:CORE:UM]        - UIManager (DOM Orchestration)
+    [SEC:JS:CTRL:LIB]       - LibraryController (File/Story Ops)
+    [SEC:JS:CTRL:VIS]       - VisualMaster (AI Painter)
+    [SEC:JS:CTRL:NAR]       - NarrativeController (Chat Ops)
+    [SEC:JS:CTRL:WLD]       - WorldController (Map Ops)
+    =================================================================================================
+-->
 <html lang="en">
 
 <head>
@@ -37,6 +61,7 @@
     <!-- Application Styles -->
     <style>
         /* ==========================================================================
+           [SEC:CSS:CORE]
            1. CSS VARIABLES & THEME
            ========================================================================== */
         :root {
@@ -73,6 +98,7 @@
         }
 
         /* ==========================================================================
+           [SEC:CSS:RESET]
            2. RESET & BASE STYLES
            ========================================================================== */
         html,
@@ -136,6 +162,7 @@
         }
 
         /* ==========================================================================
+           [SEC:CSS:LAYOUT]
            3. LAYOUT & RESPONSIVENESS
            ========================================================================== */
 
@@ -273,6 +300,7 @@
         }
 
         /* ==========================================================================
+           [SEC:CSS:COMPONENTS]
            4. COMPONENTS
            ========================================================================== */
 
@@ -359,6 +387,7 @@
         }
 
         /* ==========================================================================
+           [SEC:CSS:CHAT]
            5. CHAT WINDOW STYLING
            ========================================================================== */
         #chat-window {
@@ -567,6 +596,7 @@
         }
 
         /* ==========================================================================
+           [SEC:CSS:CINEMATIC]
            6. CINEMATIC MODE STYLES
            ========================================================================== */
         body[data-mode="cinematic_overlay"] #app-container {
@@ -735,14 +765,16 @@
 
 
 
+<!-- [SEC:HTML:BODY] -->
+
 <body data-mode="none" class="bg-gray-900 h-full flex flex-col">
 
-    <!-- Background Image Container -->
+    <!-- UI LAYER 0: Global Background (Static or Cinematic) -->
     <div id="global-background"
         class="fixed inset-0 -z-10 bg-gray-900 bg-[length:auto_100vh] bg-no-repeat bg-center transition-all duration-500">
     </div>
 
-    <!-- Main Application Container -->
+    <!-- UI LAYER 1: Core Application Container (Glassmorphism Overlay) -->
     <div class="w-full h-full flex flex-col glass-bg" id="app-container">
 
         <!-- Header: Contains navigation and global actions. Uses event delegation. -->
@@ -917,7 +949,9 @@
                 <div id="cinematic-bg-2"
                     class="absolute inset-0 bg-cover bg-no-repeat bg-center transition-opacity duration-1000 pointer-events-none opacity-0">
                 </div>
+                <!-- Chat Window: Scrollable area for message bubbles -->
                 <div id="chat-window" class="relative z-10 flex-grow overflow-y-auto"></div>
+                <!-- Active Character Portrait: Displayed alongside chat on desktop -->
                 <div id="character-portrait-container" class="flex-shrink-0 flex-col justify-center items-center"
                     style="padding-right: 0.5rem;"></div>
             </div>
@@ -931,7 +965,7 @@
                     class="absolute top-0 left-0 right-0 h-4 -mt-2 cursor-ns-resize z-50 hover:bg-white/10 transition-colors w-full"
                     title="Drag to resize / Double-click to reset"></div>
 
-                <!-- Input Wrapper with Bolt Button -->
+                <!-- Text Input Area: Auto-expanding textarea with "Continue" trigger -->
                 <div class="flex-grow relative">
                     <textarea id="chat-input"
                         class="w-full h-full bg-black/30 border border-gray-800 rounded-lg p-2 resize-none"
@@ -950,10 +984,12 @@
                     </button>
                 </div>
 
+                <!-- Controls: Character selection and primary action buttons -->
                 <div class="flex flex-col space-y-2" style="width: 6rem;">
                     <select id="ai-character-selector" aria-label="Select Character"
                         class="bg-black/30 border border-gray-600 rounded-lg p-2 w-full mb-2 text-xs truncate"></select>
                     <div class="flex items-center justify-center space-x-1">
+                        <!-- Primary Action: Send message or trigger AI response -->
                         <button id="primary-action-btn"
                             class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold p-2 rounded-lg transition-colors flex-grow"
                             title="Send (Empty = AI Reply)">
@@ -970,6 +1006,7 @@
                             </svg>
                         </button>
 
+                        <!-- Regenerate: Reputations the last AI message -->
                         <button id="regen-btn"
                             class="bg-gray-700/40 hover:bg-gray-600/80 text-white font-bold p-2 rounded-lg transition-colors flex-grow"
                             title="Regenerate">
@@ -989,7 +1026,8 @@
 
     <!-- MODALS -->
 
-    <!-- Story Library Modal -->
+    <!-- Story Library Modal: Browse and select stories/cartridges -->
+    <!-- [UI:MODAL:STORY_LIBRARY] -->
     <div id="story-library-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="story-library-modal"></div>
         <div class="bg-gray-800/90 backdrop-blur-md relative flex flex-col w-full h-full">
@@ -1062,7 +1100,7 @@
         </div>
     </div>
 
-    <!-- Story Generation Modal -->
+    <!-- AI Story Architect: Wizard for generating stories from a concept prompt -->
     <div id="gen-story-modal" class="fixed inset-0 z-[60] items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0 bg-black/60" data-action="close-modal" data-id="gen-story-modal">
         </div>
@@ -1152,7 +1190,7 @@
         </div>
     </div>
 
-    <!-- Import/Export Hub Modal -->
+    <!-- IO Hub: Centralized hub for Importing/Exporting JSON, PNG Cards, and BYAF zips -->
     <div id="io-hub-modal" class="fixed inset-0 z-[60] items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0 bg-black/50" data-action="close-modal" data-id="io-hub-modal">
         </div>
@@ -1161,7 +1199,7 @@
         </div>
     </div>
 
-    <!-- Bulk Import Report Modal -->
+    <!-- Import Report: Displays technical results and errors after bulk operations -->
     <div id="report-modal" class="fixed inset-0 z-[70] items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0 bg-black/60" data-action="close-modal" data-id="report-modal">
         </div>
@@ -1170,7 +1208,7 @@
         </div>
     </div>
 
-    <!-- Loading Spinner Overlay -->
+    <!-- Global Loading Overlay: Blocks interaction during long async operations -->
     <div id="loading-spinner"
         class="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex-col items-center justify-center hidden"
         style="display: none;">
@@ -1178,7 +1216,8 @@
         <p id="spinner-message" class="mt-4 text-white font-semibold">Loading...</p>
     </div>
 
-    <!-- Story Details Modal (Mobile) -->
+    <!-- Story Details Drawer: Metadata and settings management for the active story (Mobile-first) -->
+    <!-- [UI:MODAL:STORY_DETAILS] -->
     <div id="story-details-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="story-details-modal"></div>
         <div class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl relative flex flex-col"
@@ -1187,7 +1226,8 @@
         </div>
     </div>
 
-    <!-- Characters Modal -->
+    <!-- Character Roster: List management for all characters in the current story -->
+    <!-- [UI:MODAL:CHARACTERS] -->
     <div id="characters-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="characters-modal"></div>
         <div
@@ -1219,7 +1259,7 @@
         </div>
     </div>
 
-    <!-- Individual Character Detail Modal -->
+    <!-- Character Editor: Detailed view for name, description, and emotional portraits -->
     <div id="character-detail-modal" class="fixed inset-0 z-[60] items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0 bg-black/50" data-action="close-modal"
             data-id="character-detail-modal"></div>
@@ -1228,7 +1268,8 @@
             style="width: 95%; max-width: 1200px;"></div>
     </div>
 
-    <!-- Knowledge Modal -->
+    <!-- Knowledge Manager: Interface for Static (Lorebook) and Dynamic (Triggered) world info -->
+    <!-- [UI:MODAL:KNOWLEDGE] -->
     <div id="knowledge-modal" class="fixed inset-0 z-50 items-center justify-center hidden p-4">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="knowledge-modal"></div>
         <div
@@ -1282,7 +1323,8 @@
         </div>
     </div>
 
-    <!-- World Map Modal -->
+    <!-- World Map View: Visual representation of locations and navigation control -->
+    <!-- [UI:MODAL:WORLD_MAP] -->
     <div id="world-map-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="world-map-modal"></div>
         <div id="world-map-modal-content"
@@ -1290,6 +1332,7 @@
         </div>
     </div>
 
+    <!-- Location Details: View and edit lore specific to a world map tile -->
     <div id="location-details-modal" class="fixed inset-0 z-[60] items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0 bg-black/60" data-action="close-modal"
             data-id="location-details-modal"></div>
@@ -1320,7 +1363,8 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
+    <!-- Appearance & Global Settings: Theme, fonts, AI backends, and user personas -->
+    <!-- [UI:MODAL:SETTINGS] -->
     <div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center hidden p-4">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="settings-modal"></div>
         <div
@@ -1359,7 +1403,8 @@
         </div>
     </div>
 
-    <!-- Edit Response Modal -->
+    <!-- Message Editor: Edit last AI response or user message with optional "Continue" trigger -->
+    <!-- [UI:MODAL:EDIT_RESPONSE] -->
     <div id="edit-response-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="edit-response-modal"></div>
         <div
@@ -1392,7 +1437,7 @@
         </div>
     </div>
 
-    <!-- View Raw Prompt Modal -->
+    <!-- Debug View: Displays the raw string sent to the LLM (History + Context + Prompt) -->
     <div id="view-raw-prompt-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="view-raw-prompt-modal"></div>
         <div
@@ -1417,7 +1462,7 @@
         </div>
     </div>
 
-    <!-- Example Dialogue Modal -->
+    <!-- Persona Examples: Edit example dialogue turns to guide AI personality -->
     <div id="example-dialogue-modal" class="fixed inset-0 z-[60] items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0 bg-black/50" data-action="close-modal"
             data-id="example-dialogue-modal"></div>
@@ -1437,7 +1482,7 @@
         </div>
     </div>
 
-    <!-- Generic Confirmation Modal -->
+    <!-- Generic Confirmation: Double-check before deletions or destructive actions -->
     <div id="confirmation-modal" class="fixed inset-0 z-[70] items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0 bg-black/60" data-action="close-modal" data-id="confirmation-modal">
         </div>
@@ -1455,7 +1500,7 @@
         </div>
     </div>
 
-    <!-- OpenRouter Model Browser Modal -->
+    <!-- AI Backend Browser: Search and select models from OpenRouter -->
     <div id="openrouter-model-modal" class="fixed inset-0 z-[80] items-center justify-center hidden">
         <div class="modal-overlay absolute inset-0 bg-black/60" data-action="close-modal"
             data-id="openrouter-model-modal"></div>
@@ -2763,6 +2808,7 @@
 
 
 
+    <!-- [SEC:JS:CORE] -->
     <!-- Application Logic -->
     <script>
 
@@ -2770,7 +2816,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.02.16 - 9:45 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.02.09 - 22:50 CST";
 
 
         /**
@@ -2812,14 +2858,10 @@
 
         /**
          * =================================================================================================
-         * BLOCK 1: ActionHandler Module
+         * [SEC:JS:MOD:AH]
+         * ActionHandler Module
          * Centralized Event Delegation
          * =================================================================================================
-         */
-        /**
-         * ActionHandler Module
-         * Centralized Event Delegation for handling user interactions efficiently.
-         * Registers handlers for data-action attributes and manages global event listeners.
          */
         const ActionHandler = {
             actions: {},
@@ -2894,7 +2936,10 @@
         const debounce = (func, wait) => { let timeout; return function (...args) { const context = this; clearTimeout(timeout); timeout = setTimeout(() => func.apply(context, args), wait); }; };
 
         /**
+         * =================================================================================================
+         * [SEC:JS:SRV:DB]
          * DBService (resilient, fail-soft, self-initializing)
+         * =================================================================================================
          */
         /**
          * DBService
@@ -3406,8 +3451,9 @@
 
         /**
          * =================================================================================================
-         * ImageGenerationService Module
-         * Handles interactions with Text-to-Image APIs (KoboldCPP / OpenRouter).
+         * [SEC:JS:SRV:IMG_GEN]
+         * ImageGenerationService
+         * Handles connections and calls to local (KoboldCPP/SD) and cloud (OpenRouter) image backends.
          * =================================================================================================
          */
         const ImageGenerationService = {
@@ -5259,9 +5305,11 @@
 
 
         /**
+         * =================================================================================================
+         * [SEC:JS:UTIL:UTILS]
          * UTILITY Module
-         * Provides general-purpose helper functions for the application.
-         * Includes UUID generation, HTML escaping, color manipulation, and default settings.
+         * Generic helper functions for formatting, parsing, and math.
+         * =================================================================================================
          */
         const UTILITY = {
             /**
@@ -5569,13 +5617,11 @@
         };
 
         /**
-             * PromptBuilder Module
-             * Updated with Null-Safety Checks
-             */
-        /**
+         * =================================================================================================
+         * [SEC:JS:UTIL:PB]
          * PromptBuilder Module
-         * Constructs the context and prompts sent to the AI.
-         * Handles template formatting (Llama 3, Gemma, etc.) and context assembly (history, lore, world map).
+         * Responsible for constructing context-rich prompts for the LLM.
+         * =================================================================================================
          */
         const PromptBuilder = {
             /**
@@ -5789,7 +5835,7 @@
                 }
 
                 p += " Do not repeat the character's name in the response itself.\n[" + components.charToAct.name + " ]:";
-                if (components.event_master_prompt) p += "--- SECRET EVENT MASTER INSTRUCTION ---\n" + components.event_master_prompt + "\n\n";
+                if (components.event_master_prompt) p += "### SECRET EVENT MASTER INSTRUCTION\n\nDo not repeat these instructions, but organically respond to them in your next response.\n" + components.event_master_prompt + "\n\n";
 
                 return p;
             },
@@ -6257,12 +6303,11 @@
         };
 
         /**
-         * ImportExportService Module
-         */
-        /**
-         * ImportExportService Module
-         * Manages the import and export of stories, characters, and libraries.
-         * Supports multiple formats including Ellipsis JSON, V2 Cards, and BYAF.
+         * =================================================================================================
+         * [SEC:JS:SRV:IE]
+         * ImportExportService
+         * Handles the complexities of saving/loading stories in JSON, PNG, and BYAF formats.
+         * =================================================================================================
          */
         const ImportExportService = {
             /**
@@ -7646,9 +7691,11 @@
              */
 
         /**
-         * ReactiveStore Module
-         * Wraps the application state in a Proxy to enable reactive UI updates and auto-saving.
-         * Intercepts property changes to trigger listeners and persistence logic.
+         * =================================================================================================
+         * [SEC:JS:STATE:RS]
+         * ReactiveStore
+         * Proxy-based state management that auto-saves to IndexedDB on mutation.
+         * =================================================================================================
          */
         const ReactiveStore = {
             state: null,
@@ -7850,12 +7897,15 @@
      * =================================================================================================
      */
         /**
-         * UIComponents Module
-         * A collection of pure functions that generate sanitized HTML for various UI elements.
-         * Includes components for character tiles, message bubbles, story items, and more.
+         * =================================================================================================
+         * [SEC:JS:UI:TEMPLATE]
+         * UIComponents
+         * Pure functions that return sanitized HTML strings for various UI elements.
+         * =================================================================================================
          */
         const UIComponents = {
             /**
+             * [UI:TEMPLATE:CHARACTER_TILE]
              * Renders a single character card for the roster.
              */
             CharacterTile(char) {
@@ -7904,6 +7954,7 @@
             },
 
             /**
+             * [UI:TEMPLATE:MESSAGE_BUBBLE]
              * Renders a single chat message bubble.
              * Handles Markdown parsing, newline preservation, and image embedding.
              */
@@ -8051,9 +8102,9 @@
             },
 
             /**
+             * [UI:TEMPLATE:STORY_LIST_ITEM]
              * Renders a story item in the library list as a visual card.
              */
-
             StoryListItem(story, isActive, viewMode = 'grid') {
                 const duplicateIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
                 const deleteIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
@@ -8327,13 +8378,10 @@
 
         /**
          * =================================================================================================
-         * UIManager Module (Phase 1-5 Complete & Refactored)
+         * [SEC:JS:CORE:UM]
+         * UIManager
+         * Central orchestration for UI updates, modal management, and chat rendering.
          * =================================================================================================
-         */
-        /**
-         * UIManager Module
-         * Orchestrates the rendering and interaction logic for the entire application.
-         * Manages the chat window, character roster, library interface, and dynamic content.
          */
         const UIManager = {
             RUNTIME: {
@@ -10680,12 +10728,12 @@
                                 ${this.getPortraitSrc(char) ? DOM.html`<div class="w-64 h-64 flex-shrink-0 bg-gray-800 rounded overflow-hidden border border-gray-600 relative group">
                                     <img src="${this.getPortraitSrc(char)}" class="w-full h-full object-cover">
                                     <div class="absolute bottom-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onclick="NarrativeController.openImageCropper('${char.id}', 'primary')" class="bg-black/70 hover:bg-black text-white text-xs font-bold p-1 px-2 rounded backdrop-blur-sm" title="Crop Image">
+                                        <button onclick="NarrativeController.openImageCropper('${char.id}', 'primary')" class="bg-black/70 hover:bg-black text-white text-xs font-bold p-1 px-2 rounded backdrop-blur-sm shadow-sm" title="Crop Image">
                                             Crop
                                         </button>
-                                        ${canGenImage ? DOM.html`<button onclick="NarrativeController.openCharacterImageGenerator('${char.id}', 'primary')" class="bg-indigo-600/90 hover:bg-indigo-500 text-white text-xs font-bold p-1 rounded shadow-lg" title="Generate New">
-                                            ${this.getAIGenIcon()}
-                                        </button>` : ''}
+                                        <button onclick="NarrativeController.deleteCharacterImage('${char.id}')" class="bg-red-600/80 hover:bg-red-500 text-white text-xs font-bold p-1 px-2 rounded backdrop-blur-sm shadow-sm" title="Delete Image">
+                                            Delete
+                                        </button>
                                     </div>
                                 </div>` : ''}
                                 <div class="flex-grow flex flex-row items-center gap-2">
@@ -13070,8 +13118,9 @@ JSON array of objects: { "title": "...", "content": "..." }`;
 
         /**
          * =================================================================================================
-         * LibraryController Module
-         * Handles Story Creation, Deletion, Import/Export, and Library Management.
+         * [SEC:JS:CTRL:LIB]
+         * LibraryController
+         * Handles the logic for managing stories, narratives, and character data.
          * =================================================================================================
          */
         const LibraryController = {
@@ -15174,8 +15223,9 @@ JSON array of objects: { "title": "...", "content": "..." }`;
 
         /**
          * =================================================================================================
-         * VisualMaster Module
-         * Orchestrates scene visualization events separate from the Event Master.
+         * [SEC:JS:CTRL:VIS]
+         * VisualMaster
+         * Orchestrates the generation and rendering of AI-painted scenes.
          * =================================================================================================
          */
         const VisualMaster = {
@@ -15372,8 +15422,9 @@ JSON array of objects: { "title": "...", "content": "..." }`;
 
         /**
          * =================================================================================================
-         * NarrativeController Module
-         * Handles Chat, Characters, AI Generation, and Interaction Logic.
+         * [SEC:JS:CTRL:NAR]
+         * NarrativeController
+         * The primary engine for managing chat interactions, AI generation, and narrative flow.
          * =================================================================================================
          */
         const NarrativeController = {
@@ -16966,6 +17017,28 @@ Rules:
             },
 
             /**
+             * Deletes the primary image of a character.
+             * @param {string} charId - The character ID.
+             */
+            deleteCharacterImage(charId) {
+                UIManager.showConfirmationModal('Delete primary portrait?', async () => {
+                    const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                    if (char) {
+                        char.image_url = '';
+                        await DBService.deleteImage(charId);
+                        if (UIManager.RUNTIME.characterImageCache[charId]) {
+                            delete UIManager.RUNTIME.characterImageCache[charId];
+                            if (UIManager.RUNTIME.characterImageCache[charId].startsWith('blob:')) {
+                                URL.revokeObjectURL(UIManager.RUNTIME.characterImageCache[charId]);
+                            }
+                        }
+                        UIManager.openCharacterDetailModal(charId);
+                        UIManager.renderCharacters();
+                    }
+                });
+            },
+
+            /**
              * Quickly creates a new character using AI based on a name and context.
              */
             async quickCreateCharacter() {
@@ -17143,14 +17216,22 @@ Rules:
              * @param {number} index - The index of the portrait.
              */
             removeExtraPortrait(charId, index) {
-                const char = ReactiveStore.state.characters.find(c => c.id === charId);
-                if (!char || !char.extra_portraits) return;
-                char.extra_portraits.splice(index, 1);
+                UIManager.showConfirmationModal('Delete this emotional portrait?', async () => {
+                    const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                    if (!char || !char.extra_portraits) return;
 
-                // Clean up IDB image if exists
-                const emoKey = `${charId}::emotion::${index}`; // Note: Logic in hydration uses emotion name, but deletion might be tricky if emotion name changed. 
-                // Simplified: We just refresh the UI. Actual image cleanup usually happens on story delete or explicit cleanup.
-                UIManager.openCharacterDetailModal(charId);
+                    // Remove from array
+                    char.extra_portraits.splice(index, 1);
+
+                    // Attempt to clean up IDB image
+                    // Note: This matches the key format in handleLocalEmotionImageUpload
+                    // But we can't easily know the *previous* emotion name if we just have index.
+                    // However, if we assume keys abide by emotion name... validation is tricky.
+                    // Best effort cleanup not critical for IDB space immediately, but good practice.
+                    // For now, we rely on the state change.
+
+                    UIManager.openCharacterDetailModal(charId);
+                });
             },
 
             /**
@@ -17315,11 +17396,14 @@ Rules:
 
                 // [NEW] Get base portrait blob for I2I if it exists
                 let initImage = null;
-                try {
-                    initImage = await DBService.getImage(charId);
-                } catch (e) {
-                    // It might be using a local_idb key but renamed, but usually charId is the key for primary portrait
-                    console.warn("No base image found for I2I", e);
+                // Only load initImage if NOT primary type, to avoid self-ref loop/using existing primary to gen new primary
+                if (type !== 'primary') {
+                    try {
+                        initImage = await DBService.getImage(charId);
+                    } catch (e) {
+                        // It might be using a local_idb key but renamed, but usually charId is the key for primary portrait
+                        console.warn("No base image found for I2I", e);
+                    }
                 }
 
                 let initialPrompt = char.description.substring(0, 500);
@@ -17928,8 +18012,9 @@ Rules:
 
         /**
          * =================================================================================================
-         * WorldController Module
-         * Handles World Map, Navigation, Static Lore, and Dynamic Lore.
+         * [SEC:JS:CTRL:WLD]
+         * WorldController
+         * Manages game state related to the world map, movement, and location-based triggers.
          * =================================================================================================
          */
         const WorldController = {
@@ -19633,7 +19718,7 @@ Rules:
         document.addEventListener('DOMContentLoaded', () => app.init());
 
     </script>
-    <!-- Lightbox Modal -->
+    <!-- Lightbox Modal: Full-screen image viewer with navigation and captions -->
     <div id="lightbox-modal"
         class="hidden fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center modal-overlay"
         onclick="if(event.target === this) AppController.closeModal('lightbox-modal')">
@@ -19665,7 +19750,7 @@ Rules:
         </div>
     </div>
 
-    <!-- Prompt Modal -->
+    <!-- Image Prompt Modal: View-only overlay for the technical AI prompt used to match a specific message -->
     <div id="prompt-modal"
         class="hidden fixed inset-0 z-[110] bg-black/80 flex flex-col items-center justify-center modal-overlay"
         onclick="if(event.target === this) AppController.closeModal('prompt-modal')">
