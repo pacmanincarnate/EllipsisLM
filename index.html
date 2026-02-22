@@ -3386,7 +3386,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.02.09 - 22:50 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.02.21 - 21:30 CST";
 
 
         /**
@@ -4432,7 +4432,9 @@
                     const bubbleBg = hexToRgba(charColor.base, bubbleOpacity);
 
                     // Apply Smart Quotes
-                    const smartContent = (msg.content || '').replace(/(["“][^"”]*["”])/g, '<span class="dialogue-quote">$1</span>');
+                    const smartContent = (msg.content || '')
+                        .replace(/(["“][^"”]*["”])/g, '<span class="dialogue-quote">$1</span>')
+                        .replace(/(^|(?<=\s))'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, '$1<span class="dialogue-quote">\'$2\'</span>');
 
                     chatHTML += `
             <div class="message ${isUser ? 'user-message' : 'ai-message'}" style="background-color: ${bubbleBg};">
@@ -4614,7 +4616,9 @@
                         chat_history: safeChatHistory,
                         messageCounter: currentState.messageCounter,
                         static_entries: safeStaticEntries,
-                        worldMap: safeWorldMap
+                        worldMap: safeWorldMap,
+                        character_stats: currentState.character_stats || {},
+                        last_stat_deltas: currentState.last_stat_deltas || {}
                     }
                 };
 
@@ -6067,7 +6071,7 @@
                     visual_master_base_prompt: "You are a visual director. Based on the provided chat history, characters, and location, generate a high-quality, vivid, and detailed image generation prompt that captures the current scene. Focus on atmosphere, lighting, and key subjects. Output ONLY the visual description.",
                     prompt_auto_static_knowledge: "You are an automated archivist. Analyze the recent conversation transcript and the EXISTING static knowledge base. Your goal is to keep the knowledge base up-to-date and concise.\n\nTASKS:\n1. Identify SIGNIFICANT new facts, rules, or lore established in the transcript.\n2. Review EXISTING entries to avoid redundancy.\n3. If a new fact updates or contradicts an existing entry, propose an update to that entry using its exact current Title.\n4. If a fact is completely new, propose a new entry.\n\nEXISTING KNOWLEDGE:\n{existing_knowledge}\n\nTRANSCRIPT:\n{transcript}\n\nOUTPUT FORMAT:\nRespond with a valid JSON object or array of objects: { \"title\": \"Exact Title\", \"content\": \"Updated or New Content\" }.\nIf no changes are needed, return { \"title\": null }.",
                     prompt_response_options_gen: "You are a master roleplayer and choose-your-own-adventure guide.\nBased on the current story context, characters, and the last response, generate 4 possible follow-up actions or responses for the user character.\nEach option should have a short, catchy 'label' (for a button) and a full 'prompt' (the text that will be sent to the AI if selected).\nLabels should be distinct and represent different emotional or strategic paths (e.g., Bold, Diplomatic, Curious, Aggressive).\n\nCONTEXT:\n{context}\n\nLAST RESPONSE:\n{last_response}\n\nRespond ONLY with a valid JSON array of objects: [{ \"label\": \"Short Action\", \"prompt\": \"The full detailed response text.\" }]. Generate exactly 4 options.",
-                    prompt_stats_init: "You are analyzing a roleplay story to determine appropriate character stats for a game-like RPG system.\n\nSTORY CONTEXT:\n{context}\n\nCHARACTERS:\n{characters}\n\nTASK:\nGenerate 4 to 6 stats appropriate for this story's genre and setting, interpersonal relationships, and emotions. Each character should have unique values reflecting their strengths, weaknesses, and relationships. Values range 0-100.\n\nReturn valid JSON:\n{\n  \"stat_names\": [\"Stat1\", \"Stat2\", \"Stat3\", \"Stat4\"],\n  \"characters\": {\n    \"CharacterName1\": [val1, val2, val3, val4],\n    \"CharacterName2\": [val1, val2, val3, val4]\n  }\n}"
+                    prompt_stats_init: "You are analyzing a roleplay story to determine appropriate character stats for a game-like RPG system.\n\nSTORY CONTEXT:\n{context}\n\nCHARACTERS:\n{characters}\n\nTASK:\nGenerate 4 to 6 stats appropriate for this story's genre and setting, interpersonal relationships, and emotions. Each stat must have a brief one-sentence description explaining what it measures and how it can change. Each character should have unique values reflecting their strengths, weaknesses, and relationships. Values range 0-100.\n\nReturn valid JSON:\n{\n  \"stats\": [{\"name\": \"Stat1\", \"description\": \"Brief explanation of what this stat measures.\"}, {\"name\": \"Stat2\", \"description\": \"Brief explanation.\"}],\n  \"characters\": {\n    \"CharacterName1\": [val1, val2],\n    \"CharacterName2\": [val1, val2]\n  }\n}"
                 };
             },
             /**
@@ -7325,7 +7329,9 @@
                     }
 
                     // Smart Quotes
-                    const smartContent = (msg.content || '').replace(/(["“][^"”]*["”])/g, '<span class="dialogue-quote">$1</span>');
+                    const smartContent = (msg.content || '')
+                        .replace(/(["“][^"”]*["”])/g, '<span class="dialogue-quote">$1</span>')
+                        .replace(/(^|(?<=\s))'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, '$1<span class="dialogue-quote">\'$2\'</span>');
 
                     chatHTML += `
                     <div class="message ${isUser ? 'user-message' : 'ai-message'}" style="background-color: ${bubbleBg}; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; overflow: hidden; color: var(--chat-text-color);">
@@ -8568,7 +8574,7 @@
                             const deltaHTML = delta ? `<span class="stat-delta ${delta.delta > 0 ? 'positive' : 'negative'}">${delta.delta > 0 ? '+' : ''}${delta.delta}</span>` : '';
 
                             return `<div class="stat-row">
-                                <span class="stat-label">${stat.name}</span>
+                                <span class="stat-label" title="${stat.description || ''}">${stat.name}</span>
                                 <div class="stat-bar-track">
                                     <div class="stat-bar-fill ${colorClass}" style="width: ${pct}%"></div>
                                 </div>
@@ -8728,7 +8734,9 @@
                 // We replace 3+ newlines with explicit <br> tags so they render visually.
                 processedContent = processedContent.replace(/\n{3,}/g, (match) => '<br>'.repeat(match.length));
 
-                const styledContent = processedContent.replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`);
+                const styledContent = processedContent
+                    .replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`)
+                    .replace(/(^|(?<=\s))'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, `$1<span class="dialogue-quote">'$2'</span>`);
 
                 // 3. Trim output HTML to remove the trailing newline that 'marked' adds
                 let contentHTML = DOM.unsafe(marked.parse(styledContent || '').trim());
@@ -12706,6 +12714,10 @@
                         state.enableStats = e.target.checked;
                         if (typeof ReactiveStore.forceSave === 'function') ReactiveStore.forceSave();
                         NarrativeController.renderStatsPanel();
+                        // If toggled ON and no stats exist, generate them
+                        if (e.target.checked) {
+                            NarrativeController.initializeStats();
+                        }
                     });
                 }
 
@@ -15530,7 +15542,7 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     const newScenario = {
                         id: UTILITY.uuid(), name: concept.scenario_name || "The Beginning", message: firstMsg,
                         active_character_ids: draft.characters.map(c => c.id),
-                        static_entries: [], dynamic_entries: [], example_dialogue: [],
+                        static_entries: JSON.parse(JSON.stringify(draft.static_entries)), dynamic_entries: [], example_dialogue: [],
                         worldMap: { grid: grid, currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] },
                         prompts: UTILITY.getDefaultSystemPrompts()
                     };
@@ -15542,7 +15554,7 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                         active_character_ids: draft.characters.map(c => c.id),
                         state: {
                             chat_history: [], messageCounter: 1,
-                            static_entries: [...draft.static_entries],
+                            static_entries: JSON.parse(JSON.stringify(newScenario.static_entries)),
                             worldMap: JSON.parse(JSON.stringify(newScenario.worldMap))
                         }
                     };
@@ -17095,7 +17107,9 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                     if (contentEl) {
                         const rawContent = msg.versions[nextVer].content;
                         // Basic Markdown + Quote Styling
-                        const styledContent = rawContent.replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`);
+                        const styledContent = rawContent
+                            .replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`)
+                            .replace(/(^|(?<=\s))'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, `$1<span class="dialogue-quote">'$2'</span>`);
                         let finalHTML = DOM.unsafe(marked.parse(styledContent || ''));
 
                         // Re-apply character image if in bubble mode
@@ -17984,7 +17998,7 @@ Rules:
                     if (state.enableStats !== false && state.character_stats && charId) {
                         const charStats = state.character_stats[charId];
                         if (charStats && charStats.length > 0) {
-                            statsContext = charStats.map(s => `${s.name}: ${Math.round(s.value)}`).join(', ');
+                            statsContext = charStats.map(s => `${s.name}${s.description ? ' (' + s.description + ')' : ''}: ${Math.round(s.value)}`).join(', ');
                             statsInstruction = `\n3. Determine stat changes for the speaking character based on their actions.\n   Current stats: ${statsContext}\n   Only include stats that actually changed. Values are delta (-10 to +10). If no stats changed, return empty array.`;
                         }
                     }
@@ -18038,28 +18052,31 @@ Rules:
                     const response = await APIService.callAI(prompt, true);
                     const data = UTILITY.extractAndParseJSON(response);
 
-                    if (!data || !data.stat_names || !data.characters) {
+                    // Support both new format (stats: [{name, description}]) and legacy (stat_names: [])
+                    const statDefs = data.stats || (data.stat_names ? data.stat_names.map(n => ({ name: n, description: '' })) : null);
+                    if (!statDefs || !data.characters) {
                         console.warn('[Stats] AI returned invalid stats format:', data);
                         return;
                     }
 
                     // Build character_stats object keyed by character ID
                     const characterStats = {};
-                    const statNames = data.stat_names;
 
                     for (const char of chars) {
                         // Try to match character name from AI response
                         const aiValues = data.characters[char.name];
                         if (aiValues && Array.isArray(aiValues)) {
-                            characterStats[char.id] = statNames.map((name, i) => ({
-                                name: name,
+                            characterStats[char.id] = statDefs.map((stat, i) => ({
+                                name: stat.name,
+                                description: stat.description || '',
                                 value: Math.max(0, Math.min(100, aiValues[i] || 50)),
                                 max: 100
                             }));
                         } else {
                             // Fallback: Assign default values if AI didn't return for this char
-                            characterStats[char.id] = statNames.map(name => ({
-                                name: name,
+                            characterStats[char.id] = statDefs.map(stat => ({
+                                name: stat.name,
+                                description: stat.description || '',
                                 value: 50,
                                 max: 100
                             }));
