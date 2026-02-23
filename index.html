@@ -879,64 +879,111 @@
            ========================================================================== */
 
         .stats-panel {
-            background: linear-gradient(135deg, rgba(17, 24, 39, 0.85) 0%, rgba(30, 41, 59, 0.75) 100%);
-            border: 1px solid rgba(99, 102, 241, 0.2);
+            background: linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(30, 41, 59, 0.85) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.3);
             border-radius: 0.75rem;
             backdrop-filter: blur(12px);
             overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            animation: statsPopIn 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        @keyframes statsPopIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .stats-panel-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0.6rem 1rem;
-            cursor: pointer;
-            user-select: none;
-            border-bottom: 1px solid rgba(99, 102, 241, 0.1);
-            transition: background-color 0.2s ease;
-        }
-
-        .stats-panel-header:hover {
-            background-color: rgba(99, 102, 241, 0.08);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+            background-color: rgba(0, 0, 0, 0.2);
         }
 
         .stats-panel-title {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            font-size: 0.65rem;
+            font-size: 0.75rem;
             font-weight: 700;
             letter-spacing: 0.15em;
             text-transform: uppercase;
-            color: rgba(165, 180, 252, 0.7);
+            color: rgba(165, 180, 252, 0.9);
         }
 
-        .stats-panel-chevron {
-            width: 1rem;
-            height: 1rem;
+        .stats-panel-close {
             color: rgba(165, 180, 252, 0.5);
-            transition: transform 0.3s ease;
+            cursor: pointer;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
         }
 
-        .stats-panel.collapsed .stats-panel-chevron {
-            transform: rotate(-90deg);
+        .stats-panel-close:hover {
+            color: rgba(165, 180, 252, 1);
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
         .stats-panel-body {
             padding: 0.75rem 1rem;
-            max-height: 600px;
             overflow-y: auto;
-            transition: max-height 0.4s ease, padding 0.3s ease, opacity 0.3s ease;
+            flex-grow: 1;
         }
 
-        .stats-panel.collapsed .stats-panel-body {
-            max-height: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-            opacity: 0;
-            overflow: hidden;
+        /* Container positions */
+        #stats-panel-container {
+            z-index: 60;
+        }
+
+        body.layout-horizontal #stats-panel-container:not(.hidden) {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 35%;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 0.5rem;
+            pointer-events: none;
+            /* Let clicks pass when empty */
+        }
+
+        body.layout-horizontal #stats-panel-container>.stats-panel {
+            pointer-events: auto;
+            width: calc(100% - 1rem);
+            /* Slight margin from sides */
+            max-height: calc(100% - 1rem);
+        }
+
+        body.layout-vertical #stats-panel-container:not(.hidden) {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body.layout-vertical #stats-panel-container>.stats-panel {
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
         }
 
         .stats-char-group {
@@ -1410,10 +1457,17 @@
                 <!-- Active Character Portrait: Displayed alongside chat on desktop -->
                 <div id="character-portrait-container" class="flex-shrink-0 flex-col justify-center items-center"
                     style="padding-right: 0.5rem;"></div>
-            </div>
 
-            <!-- Character Stats Panel -->
-            <div id="stats-panel-container" class="relative z-20 hidden"></div>
+                <!-- Character Stats Panel (Now positioned inside content-wrapper to align with portrait) -->
+                <div id="stats-panel-container" class="hidden"></div>
+
+                <!-- Stats Toggle Button -->
+                <button id="stats-toggle-btn" onclick="NarrativeController.toggleStatsPanel()"
+                    class="absolute right-8 bottom-2 hidden z-50 stats-toggle-btn hover:opacity-100 transition-opacity"
+                    style="opacity: 0.35; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: var(--chat-text-color); cursor: pointer; pointer-events: auto;">
+                    STATS
+                </button>
+            </div>
 
             <!-- Response Options Container -->
             <div id="response-options-container" class="relative z-20 hidden"></div>
@@ -8596,12 +8650,14 @@
 
                 return DOM.unsafe(`
                     <div class="stats-panel" id="stats-panel">
-                        <div class="stats-panel-header" onclick="NarrativeController.toggleStatsPanel()">
+                        <div class="stats-panel-header">
                             <div class="stats-panel-title">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
                                 Stats
                             </div>
-                            <svg class="stats-panel-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <div class="stats-panel-close" onclick="NarrativeController.toggleStatsPanel()" title="Close Stats">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </div>
                         </div>
                         <div class="stats-panel-body">
                             ${charGroups}
@@ -8825,24 +8881,24 @@
                     const firstTag = (story.tags && story.tags.length > 0) ? story.tags[0] : null;
                     const listTagPill = firstTag ? DOM.html`<span class="ml-2 text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.5 rounded font-medium flex-shrink-0">${firstTag}</span>` : '';
                     return DOM.html`
-                        <div class="group w-full max-w-full flex items-center justify-between p-3 rounded-lg bg-gray-800/40 border border-transparent hover:border-gray-600/60 hover:bg-gray-800/60 transition-all cursor-pointer overflow-hidden relative ${isActive ? 'border-indigo-500/30 bg-indigo-900/10' : ''}"  
+                        <div class="group w-full max-w-full flex items-center justify-between p-4 min-h-[5.5rem] rounded-lg bg-gray-800/40 border border-transparent hover:border-gray-600/60 hover:bg-gray-800/60 transition-all cursor-pointer overflow-hidden relative ${isActive ? 'border-indigo-500/30 bg-indigo-900/10' : ''}"  
                              draggable="true"
                              ondragstart="LibraryController.handleStoryDragStart(event, '${story.id}')"
                              ontouchstart="LibraryController.handleStoryTouchStart(event, '${story.id}')"
                              ontouchmove="LibraryController.handleStoryTouchMove(event)"
                              ontouchend="LibraryController.handleStoryTouchEnd(event)"
                              onclick="UIManager.openStoryDetails('${story.id}')">
-                            <div class="flex items-center gap-3 min-w-0 pr-2 flex-grow">
-                                <div class="w-12 h-12 rounded-lg bg-gray-700 flex-shrink-0 overflow-hidden relative shadow-md">
+                            <div class="flex items-center gap-4 min-w-0 pr-2 flex-grow">
+                                <div class="w-14 h-14 rounded-lg bg-gray-700 flex-shrink-0 overflow-hidden relative shadow-md">
                                      <div id="story-bg-${story.id}" class="absolute inset-0 bg-cover bg-center opacity-90" style="background-image: url('${story.backgroundImageURL || ''}')"></div>
                                      ${isActive ? DOM.unsafe('<div class="absolute inset-0 ring-2 ring-inset ring-indigo-500/50 rounded-lg"></div>') : ''}
                                 </div>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center gap-1.5 min-w-0">
-                                        <h4 class="font-semibold text-gray-100 text-sm truncate leading-tight">${story.name || 'Untitled'}</h4>
+                                <div class="min-w-0 flex-1 flex flex-col justify-center">
+                                    <div class="flex items-center gap-2 min-w-0 mb-0.5">
+                                        <h4 class="font-bold text-gray-100 text-base truncate leading-tight">${story.name || 'Untitled'}</h4>
                                         ${listTagPill}
                                     </div>
-                                    <p class="text-xs text-gray-500 mt-0.5">${dateStr} &middot; ${charCount} chars</p>
+                                    <p class="text-sm text-gray-400 mt-1">${dateStr} &middot; ${charCount} chars</p>
                                 </div>
                             </div>
                               <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onclick="event.stopPropagation()">
@@ -11623,7 +11679,8 @@
                 // FIX: Item 7 - Logic check:
                 // If 1 AI char + 1 User = 2 total. activeAiChars.length is 1. 1 <= 1 is true. Hidden. Correct.
                 // If 2 AI chars + 1 User = 3 total. activeAiChars.length is 2. 2 <= 1 is false. Shown. Correct.
-                if (activeAiChars.length <= 1) {
+                // If Event Master is configured, always show the selector
+                if (activeAiChars.length <= 1 && !state.event_master_base_prompt) {
                     selector.style.display = 'none';
                 } else {
                     selector.style.display = 'block';
@@ -11632,6 +11689,9 @@
                 // ... (rest of function remains same)
                 const currentValue = selector.value;
                 let optionsHTML = DOM.html`<option value="any">Any</option>`.toString();
+                if (state.event_master_base_prompt) {
+                    optionsHTML += DOM.html`<option value="event_master">Event Master</option>`.toString();
+                }
                 optionsHTML += activeAiChars.map(c => DOM.html`<option value="${c.id}">${c.name}</option>`).join('');
                 selector.innerHTML = optionsHTML;
 
@@ -16372,14 +16432,22 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                         UIManager.RUNTIME.streamingInterval = null;
                     }
 
+                    const selectorElement = document.getElementById('ai-character-selector');
+                    let selectorVal = selectorElement.value;
+                    const forceEventMaster = selectorVal === 'event_master';
+
                     // 1. Run Event Master (BLOCKING)
                     // Trigger Event Master for this turn as well
-                    await this.checkEventMaster();
+                    await this.checkEventMaster(forceEventMaster);
+
+                    if (forceEventMaster) {
+                        selectorElement.value = 'any';
+                        selectorVal = 'any';
+                    }
 
                     // 2. Run Visual Master & Speaker Selection (Concurrent)
                     // We match the logic in sendMessage() for consistency
                     let speakerPromise = null;
-                    const selectorVal = document.getElementById('ai-character-selector').value;
                     if (selectorVal === 'any') {
                         // Auto-select: Launch the AI selector task
                         speakerPromise = this.determineNextSpeaker(false);
@@ -16625,25 +16693,28 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
             /**
              * Checks if the "Event Master" should trigger a random event.
              * Rolls a die and, if successful, generates a system instruction for the AI.
+             * @param {boolean} force - If true, bypasses the probability check.
              */
-            async checkEventMaster() {
+            async checkEventMaster(force = false) {
                 const state = ReactiveStore.state;
 
                 // 1. Configuration Guard
                 if (!state.event_master_base_prompt) return;
 
                 // 2. Dice Roll: Configurable Chance
-                // Strictly parse probability to prevent NaN causing 100% trigger rate
-                let probability = parseInt(state.event_master_probability);
-                // Fix: Default to 0 (Disabled) if invalid or undefined (Legacy mismatch fix)
-                if (isNaN(probability)) probability = 0;
+                if (!force) {
+                    // Strictly parse probability to prevent NaN causing 100% trigger rate
+                    let probability = parseInt(state.event_master_probability);
+                    // Fix: Default to 0 (Disabled) if invalid or undefined (Legacy mismatch fix)
+                    if (isNaN(probability)) probability = 0;
 
-                // Guard: Strict disable if probability is 0 (or less)
-                if (probability <= 0) return;
+                    // Guard: Strict disable if probability is 0 (or less)
+                    if (probability <= 0) return;
 
-                // Logic: If random roll (0-100) is GREATER than probability, we SKIP.
-                // Example: Prob 15. Roll 20. 20 > 15 is True. Return (Skip).
-                if (Math.random() * 100 > probability) return;
+                    // Logic: If random roll (0-100) is GREATER than probability, we SKIP.
+                    // Example: Prob 15. Roll 20. 20 > 15 is True. Return (Skip).
+                    if (Math.random() * 100 > probability) return;
+                }
 
                 // 3. Overlap Guard
                 if (state.event_master_prompt) return;
@@ -16812,9 +16883,18 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                 // 2. Check triggers (Lore)
                 this.checkDynamicEntryTriggers();
 
+                const selectorElement = document.getElementById('ai-character-selector');
+                let selectorVal = selectorElement.value;
+                const forceEventMaster = selectorVal === 'event_master';
+
                 // 3. Run Event Master (BLOCKING)
                 // This "cuts in line" before the character replies.
-                await this.checkEventMaster();
+                await this.checkEventMaster(forceEventMaster);
+
+                if (forceEventMaster) {
+                    selectorElement.value = 'any';
+                    selectorVal = 'any';
+                }
 
                 // 3.5. Run Visual Master & Speaker Selection (Concurrent & "Speaker First")
                 // We launch Speaker Selection (if needed) AND Visual Master concurrently.
@@ -16823,7 +16903,6 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
 
                 // A. Determine Speaker Promise
                 let speakerPromise = null;
-                const selectorVal = document.getElementById('ai-character-selector').value;
                 if (selectorVal === 'any') {
                     // Auto-select: Launch the AI selector task
                     speakerPromise = this.determineNextSpeaker(false);
@@ -18133,15 +18212,18 @@ Rules:
             renderStatsPanel(deltas = {}) {
                 const state = ReactiveStore.state;
                 const container = document.getElementById('stats-panel-container');
+                const btn = document.getElementById('stats-toggle-btn');
                 if (!container) return;
 
                 if (state.enableStats === false || !state.character_stats || Object.keys(state.character_stats).length === 0) {
                     container.classList.add('hidden');
                     container.innerHTML = '';
+                    if (btn) btn.classList.add('hidden');
                     return;
                 }
 
-                container.classList.remove('hidden');
+                if (btn) btn.classList.remove('hidden');
+
                 // Always show last deltas persistently
                 const persistedDeltas = state.last_stat_deltas || {};
                 container.innerHTML = UIComponents.StatsPanel(state.character_stats, state.characters, persistedDeltas);
@@ -18151,9 +18233,9 @@ Rules:
              * Toggles the stats panel collapsed/expanded state.
              */
             toggleStatsPanel() {
-                const panel = document.getElementById('stats-panel');
-                if (panel) {
-                    panel.classList.toggle('collapsed');
+                const container = document.getElementById('stats-panel-container');
+                if (container) {
+                    container.classList.toggle('hidden');
                 }
             },
 
