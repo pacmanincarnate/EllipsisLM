@@ -39,7 +39,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#111827">
     <link rel="manifest"
-        href='data:application/manifest+json,{"name":"EllipsisLM","short_name":"EllipsisLM","start_url":".","display":"standalone","background_color":"#111827","theme_color":"#111827","orientation":"any","icons":[{"src":"https://github.com/pacmanincarnate/EllipsisLM/blob/main/logo.jpg?raw=true","sizes":"512x512","type":"image/png"}]}'>
+        href='data:application/manifest+json,{"name":"EllipsisLM","short_name":"EllipsisLM","start_url":".","display":"standalone","background_color":"%23111827","theme_color":"%23111827","orientation":"any","icons":[{"src":"https://github.com/pacmanincarnate/EllipsisLM/blob/main/logo.jpg?raw=true","sizes":"512x512","type":"image/png"}]}'>
 
     <title>EllipsisLM</title>
     <link rel="apple-touch-icon" href="https://github.com/pacmanincarnate/EllipsisLM/blob/main/logo.jpg?raw=true">
@@ -3440,7 +3440,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.02.21 - 21:30 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.02.22 - 21:30 CST";
 
 
         /**
@@ -8574,10 +8574,10 @@
             ResponseOptions(options) {
                 if (!options || options.length === 0) return '';
                 const buttons = options.map((opt, i) => {
-                    // Escape for inline JS
-                    const safeOpt = JSON.stringify(opt).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                    // Use encodeURIComponent to safely pass arbitrary strings into an inline onclick handler
+                    const safeOpt = encodeURIComponent(JSON.stringify(opt)).replace(/'/g, "%27");
                     return DOM.html`
-                        <button onclick="NarrativeController.handleSelectOption('${DOM.unsafe(safeOpt)}')"
+                        <button onclick="NarrativeController.handleSelectOption('${safeOpt}')"
                             class="bg-gray-800/60 hover:bg-indigo-900/40 border border-gray-700 hover:border-indigo-500/50 text-gray-200 hover:text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 text-sm shadow-xl backdrop-blur-md transform hover:scale-[1.02] active:scale-95 text-left flex items-start gap-3 group animate-rise-in"
                             style="animation-delay: ${i * 75}ms">
                             <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-500/20 transition-colors">
@@ -17089,7 +17089,12 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                 let opt = option;
                 if (typeof option === 'string') {
                     try {
-                        const decoded = option.replace(/&quot;/g, '"').replace(/\\'/g, "'");
+                        let decoded = option;
+                        if (option.startsWith('%7B')) {
+                            decoded = decodeURIComponent(option);
+                        } else {
+                            decoded = option.replace(/&quot;/g, '"').replace(/\\'/g, "'");
+                        }
                         opt = JSON.parse(decoded);
                     } catch (e) {
                         console.error("Failed to parse selected option:", e);
