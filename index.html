@@ -1805,15 +1805,35 @@
             <div class="p-6 border-b border-gray-700 flex justify-between items-center">
                 <h2 class="text-2xl font-semibold">Character Roster</h2>
                 <div class="flex items-center gap-2">
-                    <button onclick="NarrativeController.addCharacter()"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-2 rounded-lg"
-                        title="Add Character">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 6v6m0 0v6m0-6h6m-6 0H6">
-                            </path>
-                        </svg>
-                    </button>
+                    <div class="relative">
+                        <button id="roster-new-btn"
+                            onclick="document.getElementById('roster-new-menu').classList.toggle('hidden')"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2"
+                            title="Add Character">
+                            <span>New</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <!-- Dropdown Menu -->
+                        <div id="roster-new-menu"
+                            class="hidden absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                            <button
+                                onclick="NarrativeController.addCharacterBlank(); document.getElementById('roster-new-menu').classList.add('hidden')"
+                                class="w-full text-left px-4 py-3 text-sm text-white hover:bg-gray-700 transition-colors">Blank</button>
+                            <button
+                                onclick="NarrativeController.openAIGenCharacterModal(); document.getElementById('roster-new-menu').classList.add('hidden')"
+                                class="w-full text-left px-4 py-3 text-sm text-white hover:bg-gray-700 transition-colors">AI
+                                Created</button>
+                            <button
+                                onclick="NarrativeController.openExistingCharacterModal(); document.getElementById('roster-new-menu').classList.add('hidden')"
+                                class="w-full text-left px-4 py-3 text-sm text-white hover:bg-gray-700 transition-colors">Existing</button>
+                            <button
+                                onclick="NarrativeController.openUserPersonaModal(); document.getElementById('roster-new-menu').classList.add('hidden')"
+                                class="w-full text-left px-4 py-3 text-sm text-white hover:bg-gray-700 transition-colors">User</button>
+                        </div>
+                    </div>
                     <button data-action="close-modal" data-id="characters-modal" aria-label="Close"
                         class="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1836,6 +1856,126 @@
         <div id="character-detail-modal-content"
             class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl relative flex flex-col max-h-[90vh]"
             style="width: 95%; max-width: 1200px;"></div>
+    </div>
+
+    <!-- AI Character Generation Modal -->
+    <div id="ai-character-gen-modal" class="fixed inset-0 z-[70] items-center justify-center hidden p-4">
+        <div class="modal-overlay absolute inset-0 bg-black/50" data-action="close-modal"
+            data-id="ai-character-gen-modal"></div>
+        <div
+            class="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl relative w-full max-w-md overflow-hidden transform transition-all">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    Generate Character
+                </h3>
+                <button data-action="close-modal" data-id="ai-character-gen-modal"
+                    class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Character Name <span
+                            class="text-red-400">*</span></label>
+                    <input type="text" id="ai-gen-char-name"
+                        class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        placeholder="e.g. Elara Dawnbringer">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Concept / Description <span
+                            class="text-gray-500">(Optional)</span></label>
+                    <textarea id="ai-gen-char-desc" rows="3"
+                        class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
+                        placeholder="A grumpy old wizard who loves cats..."></textarea>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-800/80 border-t border-gray-700 flex justify-end gap-3">
+                <button data-action="close-modal" data-id="ai-character-gen-modal"
+                    class="px-4 py-2 text-gray-300 hover:text-white transition-colors">Cancel</button>
+                <button onclick="NarrativeController.submitAIGenCharacter()"
+                    class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-lg shadow-indigo-900/20">Generate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing Character Selection Modal -->
+    <div id="roster-existing-character-modal" class="fixed inset-0 z-[70] items-center justify-center hidden p-4">
+        <div class="modal-overlay absolute inset-0 bg-black/50" data-action="close-modal"
+            data-id="roster-existing-character-modal"></div>
+        <div
+            class="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl relative w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div
+                class="p-6 border-b border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-800/50 flex-shrink-0 gap-4">
+                <h3 class="text-xl font-bold text-white">Import Existing Characters</h3>
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <input type="text" id="existing-character-search" placeholder="Search characters..."
+                        class="bg-gray-900 border border-gray-600 rounded-lg p-2 text-sm text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full sm:w-64">
+                    <button data-action="close-modal" data-id="roster-existing-character-modal"
+                        class="text-gray-400 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow">
+                <div id="existing-character-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pb-4">
+                    <!-- Characters populated via JS -->
+                </div>
+                <div id="existing-character-loading" class="text-center text-gray-400 py-8 hidden">Loading characters...
+                </div>
+                <div id="existing-character-empty" class="text-center text-gray-400 py-8 hidden">No other characters
+                    found in library.</div>
+            </div>
+            <div class="p-4 bg-gray-800/80 border-t border-gray-700 flex justify-between items-center flex-shrink-0">
+                <div class="text-sm text-gray-400"><span id="existing-character-selected-count">0</span> selected</div>
+                <div class="flex gap-3">
+                    <button data-action="close-modal" data-id="roster-existing-character-modal"
+                        class="px-4 py-2 text-gray-300 hover:text-white transition-colors">Cancel</button>
+                    <button onclick="NarrativeController.copySelectedExistingCharacters()"
+                        class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-lg shadow-indigo-900/20">Import</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Persona Selection Modal -->
+    <div id="roster-user-character-modal" class="fixed inset-0 z-[70] items-center justify-center hidden p-4">
+        <div class="modal-overlay absolute inset-0 bg-black/50" data-action="close-modal"
+            data-id="roster-user-character-modal"></div>
+        <div
+            class="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl relative w-full max-w-3xl max-h-[80vh] flex flex-col">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800/50 flex-shrink-0">
+                <h3 class="text-xl font-bold text-white">Select User Persona</h3>
+                <button data-action="close-modal" data-id="roster-user-character-modal"
+                    class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow">
+                <div id="roster-user-persona-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Personas populated via JS -->
+                </div>
+                <div id="roster-user-persona-empty" class="text-center text-gray-400 py-8 hidden">No user personas
+                    saved. Go to Settings > User Personas to create one.</div>
+            </div>
+            <div class="p-4 bg-gray-800/80 border-t border-gray-700 flex justify-end gap-3 flex-shrink-0">
+                <button data-action="close-modal" data-id="roster-user-character-modal"
+                    class="px-4 py-2 text-gray-300 hover:text-white transition-colors">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <!-- Knowledge Manager: Interface for Static (Lorebook) and Dynamic (Triggered) world info -->
@@ -2641,239 +2781,54 @@
             <div class="space-y-3 pt-4">
                 <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Masters & Logic</h3>
 
-                <!-- Event Master -->
-                <details
-                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
-                    <summary
-                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
-                        <span class="font-medium text-gray-200">Event Master</span>
-                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </summary>
-                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
-                        <p class="text-gray-400 text-sm mb-3">Define the base instruction for the Event Master, which
-                            injects plot twists.</p>
-                        <textarea id="event-master-prompt-input"
-                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y mb-4 font-mono"
-                            rows="4"></textarea>
-
-                        <div
-                            class="flex items-center justify-between bg-black/20 rounded-lg p-3 border border-gray-700/50">
-                            <label for="event-master-prob-input" class="text-gray-300 text-sm font-medium">Trigger
-                                Probability</label>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" id="event-master-prob-input" min="0" max="100"
-                                    class="w-16 bg-gray-800 border border-gray-600 rounded-md p-1.5 text-center text-white text-sm focus:border-indigo-500"
-                                    placeholder="0">
-                                <span class="text-gray-500 text-sm">%</span>
-                            </div>
+                <div class="space-y-4">
+                    <!-- Sliders -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-gray-900/30 p-4 rounded-lg border border-gray-700/50">
+                            <label for="event-master-prob-slider"
+                                class="text-gray-300 text-sm font-medium mb-2 flex justify-between items-center">
+                                <span>Event Master Chance</span>
+                                <span id="event-master-prob-value"
+                                    class="text-indigo-400 font-bold whitespace-nowrap">0%</span>
+                            </label>
+                            <input type="range" id="event-master-prob-slider" class="w-full" min="0" max="100" step="1">
+                            <p class="text-xs text-gray-500 mt-2">Probability of injecting plot twists.</p>
+                        </div>
+                        <div class="bg-gray-900/30 p-4 rounded-lg border border-gray-700/50">
+                            <label for="visual-master-prob-slider"
+                                class="text-gray-300 text-sm font-medium mb-2 flex justify-between items-center">
+                                <span>Visual Master Chance</span>
+                                <span id="visual-master-prob-value"
+                                    class="text-indigo-400 font-bold whitespace-nowrap">50%</span>
+                            </label>
+                            <input type="range" id="visual-master-prob-slider" class="w-full" min="0" max="100"
+                                step="1">
+                            <p class="text-xs text-gray-500 mt-2">Probability of generating scene visuals.</p>
                         </div>
                     </div>
-                </details>
 
-                <!-- Visual Master -->
-                <details
-                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
-                    <summary
-                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
-                        <span class="font-medium text-gray-200">Visual Master</span>
-                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </summary>
-                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
-                        <p class="text-gray-400 text-sm mb-3">Automatically generates visuals for the scene based on
-                            chat context.</p>
-
-                        <div
-                            class="flex items-center justify-between bg-black/20 rounded-lg p-3 border border-gray-700/50 mb-4">
-                            <label for="visual-master-prob-input" class="text-gray-300 text-sm font-medium">Trigger
-                                Probability</label>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" id="visual-master-prob-input" min="0" max="100"
-                                    class="w-16 bg-gray-800 border border-gray-600 rounded-md p-1.5 text-center text-white text-sm focus:border-indigo-500"
-                                    placeholder="0">
-                                <span class="text-gray-500 text-sm">%</span>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="text-xs text-gray-500 uppercase font-bold block mb-2">Visual Master Prompt
-                                (Base)</label>
-                            <textarea id="visual-master-prompt-input"
-                                class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
-                                rows="3" placeholder="Describe the artistic style..."></textarea>
-                        </div>
-                    </div>
-                </details>
-            </div>
-
-            <div class="space-y-3 pt-4">
-                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Generation Prompts</h3>
-
-                <!-- Persona Gen -->
-                <details
-                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
-                    <summary
-                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
-                        <span class="font-medium text-gray-200">Persona Generation</span>
-                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </summary>
-                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
-                        <p class="text-gray-400 text-sm mb-3">Used by the AI button on a character's persona. Variables:
-                            <code class="bg-black/40 px-1 rounded text-indigo-300">{concept}</code>, <code
-                                class="bg-black/40 px-1 rounded text-indigo-300">{name}</code>
-                        </p>
-                        <textarea id="prompt-persona-gen-input"
+                    <!-- Prompt Editor -->
+                    <div class="bg-gray-900/30 border border-gray-700/50 rounded-lg p-4">
+                        <label for="prompt-template-selector" class="block text-gray-300 text-sm font-medium mb-2">Edit
+                            Prompt Template</label>
+                        <select id="prompt-template-selector"
+                            class="w-full bg-black/40 border border-gray-600 rounded-lg p-2 text-sm text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 mb-3">
+                            <option value="event_master_base_prompt">Event Master</option>
+                            <option value="visual_master_base_prompt">Visual Master</option>
+                            <option value="prompt_persona_gen">Persona Generation</option>
+                            <option value="prompt_response_options_gen">Response Options Generation</option>
+                            <option value="prompt_world_map_gen">World Map Generation</option>
+                            <option value="prompt_location_gen">Location Prompt Generation</option>
+                            <option value="prompt_entry_gen">Memory Entry Generation</option>
+                            <option value="prompt_location_memory_gen">Location Memory Summary</option>
+                            <option value="prompt_auto_static_knowledge">Auto-Knowledge Generation</option>
+                        </select>
+                        <p id="prompt-template-hint" class="text-gray-400 text-sm mb-3">Select a template to edit.</p>
+                        <textarea id="prompt-template-editor"
                             class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
-                            rows="4"></textarea>
+                            rows="8"></textarea>
                     </div>
-                </details>
-
-                <!-- Response Options Gen -->
-                <details
-                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
-                    <summary
-                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
-                        <span class="font-medium text-gray-200">Response Options Generation</span>
-                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </summary>
-                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
-                        <p class="text-gray-400 text-sm mb-3">Guide the AI as it generates 4 follow-up options for the
-                            user. Variables: <code class="bg-black/40 px-1 rounded text-indigo-300">{context}</code>,
-                            <code class="bg-black/40 px-1 rounded text-indigo-300">{last_response}</code>
-                        </p>
-                        <textarea id="prompt-response-options-gen-input"
-                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
-                            rows="6" placeholder="You are a master roleplayer..."></textarea>
-                    </div>
-                </details>
-
-                <!-- World Map Gen -->
-                <details
-                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
-                    <summary
-                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
-                        <span class="font-medium text-gray-200">World Map Generation</span>
-                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </summary>
-                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
-                        <p class="text-gray-400 text-sm mb-3">Generates the entire world map. Variables: <code
-                                class="bg-black/40 px-1 rounded text-indigo-300">{characters}</code>, <code
-                                class="bg-black/40 px-1 rounded text-indigo-300">{static}</code>, <code
-                                class="bg-black/40 px-1 rounded text-indigo-300">{recent}</code></p>
-                        <textarea id="prompt-world-map-gen-input"
-                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
-                            rows="6"></textarea>
-                    </div>
-                </details>
-
-                <!-- Location Gen -->
-                <details
-                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
-                    <summary
-                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
-                        <span class="font-medium text-gray-200">Location Prompt Generation</span>
-                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </summary>
-                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
-                        <p class="text-gray-400 text-sm mb-3">Generates a location's detailed prompt. Variables: <code
-                                class="bg-black/40 px-1 rounded text-indigo-300">{name}</code>, <code
-                                class="bg-black/40 px-1 rounded text-indigo-300">{description}</code></p>
-                        <textarea id="prompt-location-gen-input"
-                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
-                            rows="4"></textarea>
-                    </div>
-                </details>
-
-                <!-- Memory Entry Gen -->
-                <details
-                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
-                    <summary
-                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
-                        <span class="font-medium text-gray-200">Memory Entry Generation</span>
-                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </summary>
-                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
-                        <p class="text-gray-400 text-sm mb-3">Used for Static/Dynamic memory entries. Variables: <code
-                                class="bg-black/40 px-1 rounded text-indigo-300">{title}</code>, <code
-                                class="bg-black/40 px-1 rounded text-indigo-300">{triggers}</code></p>
-                        <textarea id="prompt-entry-gen-input"
-                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
-                            rows="4"></textarea>
-                    </div>
-                </details>
-
-                <!-- Location Memory Summary -->
-                <details
-                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
-                    <summary
-                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
-                        <span class="font-medium text-gray-200">Location Memory Summary</span>
-                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </summary>
-                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
-                        <p class="text-gray-400 text-sm mb-3">Auto-summarizes events when leaving a location. Variable:
-                            <code class="bg-black/40 px-1 rounded text-indigo-300">{transcript}</code>
-                        </p>
-                        <textarea id="prompt-location-memory-gen-input"
-                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
-                            rows="4"></textarea>
-                    </div>
-                </details>
-
-                <!-- Auto Static Knowledge Gen -->
-                <details
-                    class="group bg-gray-900/30 border border-gray-700/50 rounded-lg overflow-hidden transition-all duration-200 open:border-indigo-500/30">
-                    <summary
-                        class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors list-none">
-                        <span class="font-medium text-gray-200">Auto-Knowledge Generation</span>
-                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </summary>
-                    <div class="p-4 pt-0 border-t border-gray-700/30 mt-2">
-                        <p class="text-gray-400 text-sm mb-3">Runs in background every 6 turns to generate static
-                            knowledge. Variables:
-                            <code class="bg-black/40 px-1 rounded text-indigo-300">{transcript}</code>,
-                            <code class="bg-black/40 px-1 rounded text-indigo-300">{existing_knowledge}</code>
-                        </p>
-                        <textarea id="prompt-auto-static-knowledge-input"
-                            class="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-sm text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono"
-                            rows="4"></textarea>
-                    </div>
-                </details>
+                </div>
             </div>
 
 
@@ -3440,7 +3395,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.02.22 - 21:30 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.02.21 - 21:30 CST";
 
 
         /**
@@ -6014,14 +5969,28 @@
             extractAndParseJSON(str) {
                 if (!str) return null;
                 // Remove markdown
-                let clean = str.replace(/```json\s*/g, '').replace(/```/g, '').trim();
+                let clean = str.replace(/```json\s*/ig, '').replace(/```/g, '').trim();
                 try {
                     return JSON.parse(clean);
                 } catch (e) {
-                    // Regex fallback
-                    const match = str.match(/\{[\s\S]*\}/);
-                    if (match) {
-                        try { return JSON.parse(match[0]); } catch (e2) { return null; }
+                    // Regex fallback for array or object
+                    const firstBrace = str.indexOf('{');
+                    const firstBracket = str.indexOf('[');
+                    let start = -1;
+                    if (firstBrace !== -1 && firstBracket !== -1) {
+                        start = Math.min(firstBrace, firstBracket);
+                    } else {
+                        start = Math.max(firstBrace, firstBracket);
+                    }
+
+                    if (start !== -1) {
+                        const isArray = str[start] === '[';
+                        const end = str.lastIndexOf(isArray ? ']' : '}');
+                        if (end > start) {
+                            try {
+                                return JSON.parse(str.substring(start, end + 1));
+                            } catch (e2) { }
+                        }
                     }
                     return null;
                 }
@@ -6124,7 +6093,7 @@
                     prompt_story_tags_gen: "Based on the following story context (characters, lore), generate 3-5 relevant, one-word, comma-separated tags for this story (e.g., fantasy, sci-fi, mystery, horror, romance).\n\nCONTEXT:\n{context}",
                     visual_master_base_prompt: "You are a visual director. Based on the provided chat history, characters, and location, generate a high-quality, vivid, and detailed image generation prompt that captures the current scene. Focus on atmosphere, lighting, and key subjects. Output ONLY the visual description.",
                     prompt_auto_static_knowledge: "You are an automated archivist. Analyze the recent conversation transcript and the EXISTING static knowledge base. Your goal is to keep the knowledge base up-to-date and concise.\n\nTASKS:\n1. Identify SIGNIFICANT new facts, rules, or lore established in the transcript.\n2. Review EXISTING entries to avoid redundancy.\n3. If a new fact updates or contradicts an existing entry, propose an update to that entry using its exact current Title.\n4. If a fact is completely new, propose a new entry.\n\nEXISTING KNOWLEDGE:\n{existing_knowledge}\n\nTRANSCRIPT:\n{transcript}\n\nOUTPUT FORMAT:\nRespond with a valid JSON object or array of objects: { \"title\": \"Exact Title\", \"content\": \"Updated or New Content\" }.\nIf no changes are needed, return { \"title\": null }.",
-                    prompt_response_options_gen: "You are a master roleplayer and choose-your-own-adventure guide.\nBased on the current story context, characters, and the last response, generate 4 possible follow-up actions or responses for the user character.\nEach option should have a short, catchy 'label' (for a button) and a full 'prompt' (the text that will be sent to the AI if selected).\nLabels should be distinct and represent different emotional or strategic paths (e.g., Bold, Diplomatic, Curious, Aggressive).\n\nCONTEXT:\n{context}\n\nLAST RESPONSE:\n{last_response}\n\nRespond ONLY with a valid JSON array of objects: [{ \"label\": \"Short Action\", \"prompt\": \"The full detailed response text.\" }]. Generate exactly 4 options.",
+                    prompt_response_options_gen: "You are a master roleplayer and choose-your-own-adventure guide.\nBased on the current story context, characters, and the last response, generate 4 possible follow-up actions or responses strictly from the first-person perspective of the user character, {user_character}.\nEach option should have a short, catchy 'label' (for a button) and a full 'prompt' (the text that will be sent to the AI if selected, written from the user character's perspective).\nLabels should be distinct and represent different emotional or strategic paths (e.g., Bold, Diplomatic, Curious, Aggressive).\n\nCONTEXT:\n{context}\n\nLAST RESPONSE:\n{last_response}\n\nRespond ONLY with a valid JSON array of objects: [{ \"label\": \"Short Action\", \"prompt\": \"The full detailed response text representing {user_character}'s action or dialogue.\" }]. Generate exactly 4 options.",
                     prompt_stats_init: "You are analyzing a roleplay story to determine appropriate character stats for a game-like RPG system.\n\nSTORY CONTEXT:\n{context}\n\nCHARACTERS:\n{characters}\n\nTASK:\nGenerate 4 to 6 stats appropriate for this story's genre and setting, interpersonal relationships, and emotions. Each stat must have a brief one-sentence description explaining what it measures and how it can change. Each character should have unique values reflecting their strengths, weaknesses, and relationships. Values range 0-100.\n\nReturn valid JSON:\n{\n  \"stats\": [{\"name\": \"Stat1\", \"description\": \"Brief explanation of what this stat measures.\"}, {\"name\": \"Stat2\", \"description\": \"Brief explanation.\"}],\n  \"characters\": {\n    \"CharacterName1\": [val1, val2],\n    \"CharacterName2\": [val1, val2]\n  }\n}"
                 };
             },
@@ -8727,7 +8696,12 @@
                     if (msg.isLoading) {
                         return DOM.html`
                             <div class="chat-bubble-container w-full my-6 flex flex-col items-center animate-fade-in" data-message-index="${index}">
-                                <div class="visual-event-card bg-gray-900/40 border border-gray-700/50 rounded-xl overflow-hidden max-w-lg w-full shadow-2xl relative animate-pulse flex flex-col items-center justify-center min-h-[320px] backdrop-blur-sm">
+                                <div class="visual-event-card bg-gray-900/40 border border-gray-700/50 rounded-xl overflow-hidden max-w-lg w-full shadow-2xl relative animate-pulse flex flex-col items-center justify-center min-h-[320px] backdrop-blur-sm group">
+                                    <div class="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+                                         <button data-action="confirm-delete-message" data-index="${index}" class="bg-black/50 hover:bg-red-500/80 p-2 rounded-full text-white backdrop-blur-md transition-colors" title="Delete Placeholder">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                         </button>
+                                    </div>
                                     <div class="flex flex-col items-center text-gray-500">
                                         <svg class="w-12 h-12 mb-3 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -11441,13 +11415,29 @@
             getPortraitSrc(character, mood) {
                 const cache = UIManager.RUNTIME.characterImageCache || {};
 
-                const emoKey = mood ? `${character.id}::emotion::${mood}` : null;
+                // By default, most messages pass 'neutral'. If there's an explicit extra_portrait for 'neutral', 
+                // we should ONLY use it if the base portrait does not exist, to prevent it from permanently shadowing new primary images.
+                const emoKey = mood && mood !== 'neutral' ? `${character.id}::emotion::${mood}` : null;
+                const neutralEmoKey = `${character.id}::emotion::neutral`;
+
+                // 1. Explicit Non-Neutral Emotion
                 if (emoKey && cache[emoKey]) return cache[emoKey];
 
+                // 2. Base Portrait (Cache)
                 if (cache[character.id]) return cache[character.id];
 
+                // 3. Explicit Neutral Emotion Fallback (if they have a neutral portrait but no base)
+                if (cache[neutralEmoKey]) return cache[neutralEmoKey];
+
+                // 4. Legacy Web URL Fallback
                 if (character.image_url && !character.image_url.startsWith('local_idb_')) {
                     return character.image_url;
+                }
+
+                // 5. User Character Fallback
+                if (character.is_user && typeof AppController !== 'undefined') {
+                    const fallbackUserImage = AppController.getUserAvatarImage();
+                    if (fallbackUserImage) return fallbackUserImage;
                 }
 
                 return null;
@@ -12691,60 +12681,80 @@
 
                 // --- Bindings: Prompt Tab ---
                 if (document.getElementById('system-prompt-input')) setListener('system-prompt-input', 'system_prompt');
-                if (document.getElementById('event-master-prob-input')) {
-                    setListener('event-master-prob-input', 'event_master_probability');
-                    // Robust Initialization: Fix for "Reset to 50%" issue
-                    const input = document.getElementById('event-master-prob-input');
-                    if (state.event_master_probability === undefined || state.event_master_probability === null) {
-                        input.value = 0;
-                        state.event_master_probability = 0;
+                // --- Event & Visual Master Sliders ---
+                const setupProbSlider = (sliderId, valueId, stateKey, defaultValue) => {
+                    const slider = document.getElementById(sliderId);
+                    const label = document.getElementById(valueId);
+                    if (!slider || !label) return;
+
+                    if (state[stateKey] === undefined || state[stateKey] === null) {
+                        state[stateKey] = defaultValue;
                     }
+                    slider.value = state[stateKey];
+                    label.textContent = `${state[stateKey]}%`;
+
+                    const debouncedSaver = debounce(() => {
+                        if (typeof ReactiveStore.forceSave === 'function') ReactiveStore.forceSave();
+                    }, 500);
+
+                    slider.addEventListener('input', (e) => {
+                        label.textContent = `${e.target.value}%`;
+                        state[stateKey] = parseInt(e.target.value, 10);
+                        debouncedSaver();
+                    });
+                };
+
+                setupProbSlider('event-master-prob-slider', 'event-master-prob-value', 'event_master_probability', 0);
+                setupProbSlider('visual-master-prob-slider', 'visual-master-prob-value', 'visual_master_probability', 50);
+
+                // --- Prompt Editor Logic ---
+                const promptSelector = document.getElementById('prompt-template-selector');
+                const promptEditor = document.getElementById('prompt-template-editor');
+                const promptHint = document.getElementById('prompt-template-hint');
+
+                if (promptSelector && promptEditor && promptHint) {
+                    const promptInfo = {
+                        'event_master_base_prompt': 'Define the base instruction for the Event Master, which injects plot twists.',
+                        'visual_master_base_prompt': 'Automatically generates visuals for the scene based on chat context. Variable: {chat_history}',
+                        'prompt_persona_gen': 'Used by the AI button on a character\'s persona. Variables: {concept}, {name}',
+                        'prompt_response_options_gen': 'Guide the AI as it generates 4 follow-up options for the user. Variables: {context}, {last_response}',
+                        'prompt_world_map_gen': 'Generates the entire world map. Variables: {characters}, {static}, {recent}',
+                        'prompt_location_gen': 'Generates a location\'s detailed prompt. Variables: {name}, {description}',
+                        'prompt_entry_gen': 'Used for Static/Dynamic memory entries. Variables: {title}, {triggers}',
+                        'prompt_location_memory_gen': 'Auto-summarizes events when leaving a location. Variable: {transcript}',
+                        'prompt_auto_static_knowledge': 'Runs in background every 6 turns to generate static knowledge. Variables: {transcript}, {existing_knowledge}'
+                    };
+
+                    const savePromptChange = debounce(() => {
+                        if (typeof ReactiveStore.forceSave === 'function') ReactiveStore.forceSave();
+                    }, 500);
+
+                    const loadPrompt = (key) => {
+                        const defs = UTILITY.getDefaultSystemPrompts();
+                        let val = state[key];
+                        if (val === undefined || val === null || val === '') {
+                            val = defs[key] || '';
+                            state[key] = val;
+                            savePromptChange();
+                        }
+                        promptEditor.value = val;
+
+                        const info = promptInfo[key] || '';
+                        promptHint.innerHTML = info.replace(/\{([^}]+)\}/g, '<code class="bg-black/40 px-1 rounded text-indigo-300">{$1}</code>');
+                    };
+
+                    loadPrompt(promptSelector.value);
+
+                    promptSelector.addEventListener('change', (e) => {
+                        loadPrompt(e.target.value);
+                    });
+
+                    promptEditor.addEventListener('input', (e) => {
+                        const key = promptSelector.value;
+                        state[key] = e.target.value;
+                        savePromptChange();
+                    });
                 }
-
-                // Event Master Prompt (Base)
-                if (document.getElementById('event-master-prompt-input')) {
-                    setListener('event-master-prompt-input', 'event_master_base_prompt');
-                    // Ensure default display if missing
-                    const input = document.getElementById('event-master-prompt-input');
-                    if (!input.value) {
-                        const def = UTILITY.getDefaultSystemPrompts().event_master_base_prompt;
-                        input.value = def;
-                        if (!state.event_master_base_prompt) state.event_master_base_prompt = def;
-                    }
-                }
-
-                // Visual Master Probability
-                if (document.getElementById('visual-master-prob-input')) {
-                    setListener('visual-master-prob-input', 'visual_master_probability');
-
-                    // Robust Initialization: Fix for "Reset to 50%" issue
-                    const input = document.getElementById('visual-master-prob-input');
-                    // If the state used the fallback default (empty string -> 0) it is fine.
-                    // But if it was undefined initially, setListener might have set it to '', causing the browser to render 50%.
-                    // We force it to 0 if the state is missing.
-                    if (state.visual_master_probability === undefined || state.visual_master_probability === null) {
-                        input.value = 0;
-                        state.visual_master_probability = 0;
-                    }
-                }
-
-                // Visual Master Prompt (Base) - NEW BINDING
-                if (document.getElementById('visual-master-prompt-input')) {
-                    setListener('visual-master-prompt-input', 'visual_master_base_prompt');
-                    const input = document.getElementById('visual-master-prompt-input');
-                    if (!input.value) {
-                        const def = UTILITY.getDefaultSystemPrompts().visual_master_base_prompt || "";
-                        input.value = def;
-                        if (!state.visual_master_base_prompt) state.visual_master_base_prompt = def;
-                    }
-                }
-
-                if (document.getElementById('prompt-persona-gen-input')) setListener('prompt-persona-gen-input', 'prompt_persona_gen');
-                if (document.getElementById('prompt-world-map-gen-input')) setListener('prompt-world-map-gen-input', 'prompt_world_map_gen');
-                if (document.getElementById('prompt-location-gen-input')) setListener('prompt-location-gen-input', 'prompt_location_gen');
-                if (document.getElementById('prompt-entry-gen-input')) setListener('prompt-entry-gen-input', 'prompt_entry_gen');
-                if (document.getElementById('prompt-location-memory-gen-input')) setListener('prompt-location-memory-gen-input', 'prompt_location_memory_gen');
-                if (document.getElementById('prompt-auto-static-knowledge-input')) setListener('prompt-auto-static-knowledge-input', 'prompt_auto_static_knowledge');
 
                 // Auto-Knowledge Toggle
                 const autoKnowToggle = document.getElementById('enable-auto-knowledge-toggle');
@@ -12763,6 +12773,20 @@
                     respOptToggle.addEventListener('change', (e) => {
                         state.enableResponseOptions = e.target.checked;
                         if (typeof ReactiveStore.forceSave === 'function') ReactiveStore.forceSave();
+
+                        if (e.target.checked) {
+                            const lastMsg = state.chat_history && state.chat_history[state.chat_history.length - 1];
+                            const userChar = (state.characters || []).find(c => c.is_user);
+                            if (lastMsg && lastMsg.type === 'chat' && lastMsg.character_id !== userChar?.id) {
+                                NarrativeController.generateResponseOptions();
+                            }
+                        } else {
+                            const container = document.getElementById('response-options-container');
+                            if (container) {
+                                container.innerHTML = '';
+                                container.classList.add('hidden');
+                            }
+                        }
                     });
                 }
 
@@ -12782,15 +12806,7 @@
                 }
 
                 // Response Options Prompt Gen
-                if (document.getElementById('prompt-response-options-gen-input')) {
-                    setListener('prompt-response-options-gen-input', 'prompt_response_options_gen');
-                    const input = document.getElementById('prompt-response-options-gen-input');
-                    if (!input.value) {
-                        const def = UTILITY.getDefaultSystemPrompts().prompt_response_options_gen;
-                        input.value = def;
-                        if (!state.prompt_response_options_gen) state.prompt_response_options_gen = def;
-                    }
-                }
+                // (Now handled dynamically by prompt-template-selector)
 
                 // Toggle for Analysis
                 const analysisToggle = document.getElementById('enable-analysis-toggle');
@@ -16221,25 +16237,28 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 this.RUNTIME.isProcessing = true;
 
                 // 1. ADD PLACEHOLDER IMMEDIATELY (Order Preservation)
+                const tempId = 'visual_placeholder_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
                 const placeholder = {
                     type: 'visual_event',
                     content: 'Painting the scene...',
                     isLoading: true,
+                    _tempId: tempId,
                     timestamp: new Date().toISOString()
                 };
-                const placeholderIndex = state.chat_history.length;
+                // We no longer rely purely on absolute index, as clearSystemErrors could shift it
                 state.chat_history.push(placeholder);
 
                 // 2. Start Async Process
                 return (async () => {
                     try {
                         console.log("Visual Master: 🎲 Roll successful. Generating scene...");
-                        await this.triggerVisualEvent(placeholderIndex); // Update the placeholder at this index
+                        await this.triggerVisualEvent(tempId); // Update the placeholder dynamically via tempId
                     } catch (e) {
                         console.warn("Visual Master failed:", e);
                         // Clean up the placeholder on failure
-                        if (state.chat_history[placeholderIndex] && state.chat_history[placeholderIndex].isLoading) {
-                            state.chat_history.splice(placeholderIndex, 1);
+                        const idx = state.chat_history.findIndex(m => m._tempId === tempId);
+                        if (idx !== -1) {
+                            state.chat_history.splice(idx, 1);
                         }
                     } finally {
                         this.RUNTIME.isProcessing = false;
@@ -16250,10 +16269,10 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
 
             /**
              * Orchestrates the visual generation process.
-             * @param {number} [atIndex] - Optional index to generate from (history slicing).
+             * @param {number|string} [atIndexOrTempId] - Optional index or _tempId to generate from (history slicing).
              * @param {HTMLElement} [btnElement] - Optional button element to show loading state.
              */
-            async triggerVisualEvent(atIndex = null, btnElement = null) {
+            async triggerVisualEvent(atIndexOrTempId = null, btnElement = null) {
                 // Guard: Global Image Gen Disabled
                 if (typeof UIManager !== 'undefined' && !UIManager.isImageGenEnabled()) {
                     UIManager.showNotification("Image generation is disabled in settings.", "warning");
@@ -16262,11 +16281,17 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
 
                 const state = ReactiveStore.state;
 
+                // --- RESOLVE INDEX IF USING TEMPID ---
+                let atIndex = atIndexOrTempId;
+                if (typeof atIndexOrTempId === 'string') {
+                    atIndex = state.chat_history.findIndex(m => m._tempId === atIndexOrTempId);
+                }
+
                 // 1. Determine Range
                 let historySlice;
                 let contextDescription = "";
 
-                if (typeof atIndex === 'number' && !state.chat_history[atIndex]?.isLoading) {
+                if (typeof atIndex === 'number' && atIndex !== -1 && !state.chat_history[atIndex]?.isLoading) {
                     // Specific point in history: [atIndex-4 ... atIndex]
                     // Safe slice handling
                     const start = Math.max(0, atIndex - 4);
@@ -16346,9 +16371,9 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     };
 
                     // CRITICAL FIX: If we have an isLoading placeholder at atIndex, replace it
-                    if (typeof atIndex === 'number' && state.chat_history[atIndex]?.type === 'visual_event') {
+                    if (typeof atIndex === 'number' && atIndex !== -1 && state.chat_history[atIndex]?.type === 'visual_event') {
                         state.chat_history[atIndex] = visualEntry;
-                    } else if (typeof atIndex === 'number' && atIndex < state.chat_history.length - 1) {
+                    } else if (typeof atIndex === 'number' && atIndex !== -1 && atIndex < state.chat_history.length - 1) {
                         // Splice into array using splice (ReactiveStore should trap this)
                         state.chat_history.splice(atIndex + 1, 0, visualEntry);
                     } else {
@@ -17017,8 +17042,9 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                 const chatWindow = document.getElementById('chat-window');
                 if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
 
-                // Trigger Response Options if enabled (and it's a new AI message)
-                if (targetMessageIndex === null && state.enableResponseOptions) {
+                // Trigger Response Options if enabled (and it's the last AI message)
+                const isLatestMessage = targetMessageIndex === null || targetMessageIndex === state.chat_history.length - 1;
+                if (isLatestMessage && state.enableResponseOptions) {
                     const lastMsg = state.chat_history[state.chat_history.length - 1];
                     const userChar = state.characters.find(c => c.is_user);
                     if (lastMsg && lastMsg.character_id !== userChar?.id) {
@@ -17034,8 +17060,16 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                 const state = ReactiveStore.state;
                 if (!state.enableResponseOptions) return;
 
-                const lastMsg = state.chat_history[state.chat_history.length - 1];
-                if (!lastMsg || lastMsg.type !== 'chat') return;
+                // Find the absolute LAST CHAT message by traversing backwards
+                let lastMsg = null;
+                for (let i = state.chat_history.length - 1; i >= 0; i--) {
+                    if (state.chat_history[i].type === 'chat' && !state.chat_history[i].isHidden) {
+                        lastMsg = state.chat_history[i];
+                        break;
+                    }
+                }
+
+                if (!lastMsg) return;
 
                 const userChar = state.characters.find(c => c.is_user);
                 if (lastMsg.character_id === userChar?.id) return;
@@ -17059,9 +17093,14 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                     const charNames = state.characters.reduce((acc, c) => ({ ...acc, [c.id]: c.name }), {});
                     const context = state.chat_history.slice(-10).map(m => `${charNames[m.character_id] || 'Unknown'}: ${m.content}`).join('\n');
 
-                    const prompt = systemPrompt
+                    const userName = userChar?.name || 'the player';
+                    let prompt = systemPrompt
+                        .replace(/{user_character}/g, userName)
                         .replace('{context}', context)
                         .replace('{last_response}', lastMsg.content);
+
+                    // Always append a critical instruction to override older saved prompts
+                    prompt += `\n\nCRITICAL INSTRUCTION: You MUST generate these options strictly from the perspective of the user's character (${userName}). The options MUST describe their direct actions or dialogue, written from their perspective. DO NOT generate options for any non-user characters.`;
 
                     // Call AI
                     const response = await APIService.callAI(prompt);
@@ -17124,6 +17163,13 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                 const state = ReactiveStore.state;
                 if (!StateManager.getLibrary().active_narrative_id) { alert("Load a narrative first."); return; }
                 if (this.RUNTIME.activeRequestAbortController || UIManager.RUNTIME.streamingInterval) return;
+
+                // Hide response options if visible
+                const container = document.getElementById('response-options-container');
+                if (container) {
+                    container.innerHTML = '';
+                    container.classList.add('hidden');
+                }
 
                 const history = state.chat_history;
                 let targetIndex = -1;
@@ -18247,9 +18293,9 @@ Rules:
             // --- Character Management ---
 
             /**
-             * Adds a new character to the roster.
+             * Adds a new character (Blank) to the roster.
              */
-            addCharacter() {
+            addCharacterBlank() {
                 const aiCount = ReactiveStore.state.characters.filter(c => !c.is_user).length;
                 const color = this.CONSTANTS.CHARACTER_COLORS[aiCount % this.CONSTANTS.CHARACTER_COLORS.length];
 
@@ -18261,6 +18307,370 @@ Rules:
 
                 ReactiveStore.state.characters.push(newChar);
                 AppController.openModal('character-detail-modal', newChar.id);
+            },
+
+            /**
+             * Opens the modal to generate a new character via AI.
+             */
+            openAIGenCharacterModal() {
+                document.getElementById('ai-gen-char-name').value = '';
+                document.getElementById('ai-gen-char-desc').value = '';
+                AppController.openModal('ai-character-gen-modal');
+            },
+
+            /**
+             * Submits the generation request from the AI Character Gen Modal.
+             */
+            async submitAIGenCharacter() {
+                const nameInput = document.getElementById('ai-gen-char-name').value.trim();
+                const descInput = document.getElementById('ai-gen-char-desc').value.trim();
+
+                if (!nameInput) {
+                    UIManager.showNotification("Character name is required.", "error");
+                    return;
+                }
+
+                AppController.closeModal('ai-character-gen-modal');
+                UIManager.showLoadingSpinner(`Generating profile for ${nameInput}...`);
+
+                try {
+                    let contextString = `This character's name is ${nameInput}.`;
+                    if (descInput) {
+                        contextString += `\nConcept/Description: ${descInput}`;
+                    }
+
+                    // Incorporate current story context
+                    const state = ReactiveStore.state;
+                    const prompts = StateManager.data?.globalSettings?.storyPrompts || [];
+                    const storyContext = `
+                    Story Genre/Setting: ${prompts.find(p => p.id === state.genre)?.content || 'General Roleplay'}
+                    Current Location: ${state.worldMap?.currentLocation ? state.worldMap.grid.find(t => t.x === state.worldMap.currentLocation.x && t.y === state.worldMap.currentLocation.y)?.description : 'Unknown'}
+                    `;
+
+                    contextString += `\nAdditional World Context:\n${storyContext}`;
+
+                    const charData = await this.generateCharacterProfile(nameInput, contextString);
+
+                    const aiCount = ReactiveStore.state.characters.filter(c => !c.is_user).length;
+                    const color = this.CONSTANTS.CHARACTER_COLORS[aiCount % this.CONSTANTS.CHARACTER_COLORS.length];
+
+                    const charId = UTILITY.uuid();
+                    let imageUrl = '';
+                    let baseBlob = null;
+
+                    // Auto-Image Gen (Base Portrait)
+                    try {
+                        UIManager.showLoadingSpinner(`Generating portrait for ${nameInput}...`);
+                        const imagePrompt = `portrait of ${nameInput}, ${charData.short_description || charData.description}, ${charData.tags ? charData.tags.join(', ') : ''}, detailed face, fantasy art, masterpiece`;
+                        baseBlob = await ImageGenerationService.generateImage(imagePrompt);
+                        if (baseBlob) {
+                            await DBService.saveImage(charId, baseBlob);
+                            imageUrl = `local_idb_${charId}`;
+                            UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(baseBlob);
+                        }
+                    } catch (err) { console.warn("Primary image fail", err); }
+
+                    const extraPortraits = [];
+                    // [NEW] Auto-Generate Emotional Portraits using I2I
+                    if (baseBlob) {
+                        const emotions = ['happy', 'sad', 'angry'];
+                        for (const emotion of emotions) {
+                            try {
+                                UIManager.showLoadingSpinner(`Loading ${emotion} expression...`);
+                                const emoPrompt = `portrait of ${nameInput} expressing ${emotion} emotion, ${emotion} facial expression`;
+                                // Use I2I with relatively low denoising to maintain character identity
+                                const emoBlob = await ImageGenerationService.generateImage(emoPrompt, "", { denoising_strength: 0.5 }, baseBlob);
+                                if (emoBlob) {
+                                    const emoKey = `${charId}::emotion::${emotion}`;
+                                    await DBService.saveImage(emoKey, emoBlob);
+                                    UIManager.RUNTIME.characterImageCache[emoKey] = URL.createObjectURL(emoBlob);
+                                    extraPortraits.push({ emotion: emotion, url: '' }); // url is empty since it's in IDB
+                                }
+                            } catch (err) { console.warn(`Emotion ${emotion} fail`, err); }
+                        }
+                    }
+
+                    const newChar = {
+                        id: charId,
+                        name: nameInput,
+                        description: charData.description || "",
+                        short_description: charData.short_description || "Summary",
+                        model_instructions: charData.model_instructions || `Write the next response for ${nameInput}.`,
+                        image_url: imageUrl,
+                        extra_portraits: extraPortraits,
+                        tags: charData.tags || [],
+                        is_user: false,
+                        is_active: true,
+                        color: color,
+                        is_narrator: false
+                    };
+
+                    ReactiveStore.state.characters.push(newChar);
+                    AppController.openModal('character-detail-modal', newChar.id);
+                    UIManager.showNotification(`Created character: ${nameInput}`, "success");
+
+                } catch (e) {
+                    console.error("AI Character Gen Failed:", e);
+                    UIManager.showNotification("Failed to generate character.", "error");
+                } finally {
+                    UIManager.hideLoadingSpinner();
+                }
+            },
+
+            /**
+             * Opens the modal to select existing characters from other stories.
+             */
+            async openExistingCharacterModal() {
+                const container = document.getElementById('existing-character-list');
+                const loading = document.getElementById('existing-character-loading');
+                const empty = document.getElementById('existing-character-empty');
+                const countSpan = document.getElementById('existing-character-selected-count');
+
+                container.innerHTML = '';
+                loading.classList.remove('hidden');
+                empty.classList.add('hidden');
+                countSpan.textContent = '0';
+
+                // Store selected IDs temporarily
+                this._selectedExistingChars = new Set();
+
+                AppController.openModal('roster-existing-character-modal');
+
+                try {
+                    const allStories = await DBService.getAllStories();
+                    const currentStoryId = ReactiveStore.state.id;
+                    const charDataList = [];
+
+                    for (const story of allStories) {
+                        if (story.id === currentStoryId) continue; // Skip current story
+                        if (!story.characters) continue;
+
+                        for (const char of story.characters) {
+                            if (char.is_user) continue; // Skip user personas
+
+                            let imgDataUrl = null;
+                            if (char.image_url && char.image_url.startsWith('local_idb_')) {
+                                try {
+                                    const blob = await DBService.getImage(char.id);
+                                    if (blob) imgDataUrl = URL.createObjectURL(blob);
+                                } catch (e) {
+                                    console.warn(`Could not load image for ${char.name}`, e);
+                                }
+                            }
+                            charDataList.push({ char, storyName: story.name, imgDataUrl });
+                        }
+                    }
+
+                    loading.classList.add('hidden');
+
+                    if (charDataList.length === 0) {
+                        empty.classList.remove('hidden');
+                        return;
+                    }
+
+                    charDataList.sort((a, b) => a.char.name.localeCompare(b.char.name));
+
+                    charDataList.forEach(data => {
+                        const card = document.createElement('div');
+                        card.className = "bg-gray-700/50 rounded-lg p-3 cursor-pointer border-2 border-transparent hover:border-gray-500 transition-colors flex flex-col gap-2 relative overflow-hidden group";
+                        card.dataset.id = data.char.id;
+
+                        // Selection toggle logic
+                        card.onclick = () => {
+                            if (this._selectedExistingChars.has(data.char.id)) {
+                                this._selectedExistingChars.delete(data.char.id);
+                                card.classList.remove('border-indigo-500', 'bg-indigo-900/30');
+                                card.classList.add('border-transparent', 'bg-gray-700/50');
+                            } else {
+                                this._selectedExistingChars.add(data.char.id);
+                                card.classList.remove('border-transparent', 'bg-gray-700/50');
+                                card.classList.add('border-indigo-500', 'bg-indigo-900/30');
+                            }
+                            countSpan.textContent = this._selectedExistingChars.size;
+                        };
+
+                        let imgHTML = `<div class="w-full aspect-square bg-gray-800 rounded flex items-center justify-center text-gray-500 text-3xl font-bold flex-shrink-0">${data.char.name.charAt(0)}</div>`;
+                        if (data.imgDataUrl) {
+                            imgHTML = `<div class="w-full aspect-square rounded bg-cover bg-center flex-shrink-0" style="background-image: url('${data.imgDataUrl}')"></div>`;
+                        }
+
+                        card.innerHTML = `
+                            ${imgHTML}
+                            <div class="flex flex-col flex-grow min-h-0">
+                                <div class="font-bold text-white text-sm truncate" title="${data.char.name}">${data.char.name}</div>
+                                <div class="text-xs text-gray-400 truncate" title="From: ${data.storyName}">From: ${data.storyName}</div>
+                                <div class="text-xs text-gray-300 mt-1 line-clamp-2 italic" title="${data.char.short_description || ''}">${data.char.short_description || ''}</div>
+                            </div>
+                        `;
+
+                        // CSS hack for parent selector to style checkbox
+                        if (this._selectedExistingChars.has(data.char.id)) {
+                            card.classList.remove('border-transparent', 'bg-gray-700/50');
+                            card.classList.add('border-indigo-500', 'bg-indigo-900/30');
+                        }
+
+                        container.appendChild(card);
+                    });
+
+                    // Search functionality
+                    const searchInput = document.getElementById('existing-character-search');
+                    if (searchInput) {
+                        searchInput.value = '';
+                        searchInput.oninput = (e) => {
+                            const term = e.target.value.toLowerCase();
+                            Array.from(container.children).forEach(card => {
+                                const name = card.querySelector('.font-bold').textContent.toLowerCase();
+                                const story = card.querySelector('.text-xs.text-gray-400').textContent.toLowerCase();
+                                const desc = card.querySelector('.italic').textContent.toLowerCase();
+
+                                if (name.includes(term) || story.includes(term) || desc.includes(term)) {
+                                    card.style.display = '';
+                                } else {
+                                    card.style.display = 'none';
+                                }
+                            });
+                        };
+                    }
+
+                    // Store raw data for import
+                    this._existingCharsData = charDataList;
+
+                } catch (e) {
+                    console.error("Failed to load existing characters:", e);
+                    loading.classList.add('hidden');
+                    empty.classList.remove('hidden');
+                    empty.textContent = "Error loading characters.";
+                }
+            },
+
+            /**
+             * Copies the selected existing characters into the current story roster.
+             */
+            async copySelectedExistingCharacters() {
+                if (!this._selectedExistingChars || this._selectedExistingChars.size === 0) {
+                    UIManager.showNotification("No characters selected.", "info");
+                    return;
+                }
+
+                AppController.closeModal('roster-existing-character-modal');
+                UIManager.showLoadingSpinner(`Importing ${this._selectedExistingChars.size} characters...`);
+
+                try {
+                    let importCount = 0;
+
+                    for (const charId of this._selectedExistingChars) {
+                        const dataMatch = this._existingCharsData.find(d => d.char.id === charId);
+                        if (!dataMatch) continue;
+
+                        const ogChar = dataMatch.char;
+                        const newId = UTILITY.uuid();
+
+                        let newImageUrl = "";
+                        if (ogChar.image_url && ogChar.image_url.startsWith('local_idb_')) {
+                            try {
+                                const blob = await DBService.getImage(ogChar.id);
+                                if (blob) {
+                                    await DBService.saveImage(newId, blob);
+                                    newImageUrl = `local_idb_${newId}`;
+                                    UIManager.RUNTIME.characterImageCache[newId] = URL.createObjectURL(blob);
+                                }
+                            } catch (e) {
+                                console.warn(`Failed to copy image for ${ogChar.name}`, e);
+                            }
+                        }
+
+                        const newChar = {
+                            id: newId,
+                            name: ogChar.name,
+                            description: ogChar.description || "",
+                            short_description: ogChar.short_description || "Summary",
+                            model_instructions: ogChar.model_instructions || `Write the next response for ${ogChar.name}.`,
+                            image_url: newImageUrl,
+                            extra_portraits: ogChar.extra_portraits ? JSON.parse(JSON.stringify(ogChar.extra_portraits)) : [],
+                            tags: ogChar.tags ? [...ogChar.tags] : [],
+                            is_user: false,
+                            is_active: true,
+                            color: ogChar.color || { base: '#4b5563', bold: '#e5e7eb' },
+                            is_narrator: false
+                        };
+
+                        newChar.extra_portraits = [];
+
+                        ReactiveStore.state.characters.push(newChar);
+                        importCount++;
+                    }
+
+                    UIManager.renderCharacters();
+                    UIManager.showNotification(`Imported ${importCount} characters successfully.`, "success");
+
+                } catch (e) {
+                    console.error("Failed to copy characters:", e);
+                    UIManager.showNotification("Error importing characters.", "error");
+                } finally {
+                    UIManager.hideLoadingSpinner();
+                    // Cleanup memory
+                    if (this._existingCharsData) {
+                        this._existingCharsData.forEach(d => {
+                            if (d.imgDataUrl) URL.revokeObjectURL(d.imgDataUrl);
+                        });
+                        this._existingCharsData = null;
+                        this._selectedExistingChars = null;
+                    }
+                }
+            },
+
+            /**
+             * Opens the modal to select a User Persona for the current story.
+             */
+            openUserPersonaModal() {
+                const container = document.getElementById('roster-user-persona-list');
+                const empty = document.getElementById('roster-user-persona-empty');
+                const personas = StateManager.data.globalSettings.userPersonas || [];
+
+                container.innerHTML = '';
+
+                if (personas.length === 0) {
+                    empty.classList.remove('hidden');
+                    AppController.openModal('roster-user-character-modal');
+                    return;
+                }
+
+                empty.classList.add('hidden');
+
+                personas.forEach(async (persona) => {
+                    const card = document.createElement('div');
+                    card.className = "bg-gray-700/50 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors flex items-center gap-4 border border-gray-600 hover:border-indigo-400";
+
+                    card.onclick = () => {
+                        AppController.closeModal('roster-user-character-modal');
+                        AppController.applyUserPersonaToCurrentStory(persona.id);
+                    };
+
+                    let imgHTML = `<div class="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center text-gray-500 text-xl font-bold flex-shrink-0">${persona.name.charAt(0)}</div>`;
+
+                    if (persona.image_url && persona.image_url.startsWith('local_idb_')) {
+                        try {
+                            const blob = await DBService.getImage(persona.id);
+                            if (blob) {
+                                const url = URL.createObjectURL(blob);
+                                imgHTML = `<div class="w-16 h-16 rounded-full bg-cover bg-center flex-shrink-0 shadow-md" style="background-image: url('${url}')"></div>`;
+                            }
+                        } catch (e) {
+                            console.warn("Could not load persona image.");
+                        }
+                    }
+
+                    card.innerHTML = `
+                        ${imgHTML}
+                        <div class="flex flex-col flex-grow min-h-0 justify-center">
+                            <div class="font-bold text-white text-lg truncate">${persona.name}</div>
+                            <div class="text-sm text-gray-300 italic line-clamp-2">${persona.short_description || 'No description'}</div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                AppController.openModal('roster-user-character-modal');
             },
 
             /**
@@ -18283,14 +18693,25 @@ Rules:
                 UIManager.showConfirmationModal('Delete primary portrait?', async () => {
                     const char = ReactiveStore.state.characters.find(c => c.id === charId);
                     if (char) {
+                        const legacyUrl = char.image_url;
                         char.image_url = '';
                         await DBService.deleteImage(charId);
+
+                        // If there was a legacy random ID stored here, delete that too from DB to prevent orphans
+                        if (legacyUrl && legacyUrl.startsWith('local_idb_')) {
+                            const legacyKey = legacyUrl.replace('local_idb_', '');
+                            if (legacyKey !== charId) {
+                                await DBService.deleteImage(legacyKey);
+                            }
+                        }
+
                         if (UIManager.RUNTIME.characterImageCache[charId]) {
-                            delete UIManager.RUNTIME.characterImageCache[charId];
                             if (UIManager.RUNTIME.characterImageCache[charId].startsWith('blob:')) {
                                 URL.revokeObjectURL(UIManager.RUNTIME.characterImageCache[charId]);
                             }
+                            delete UIManager.RUNTIME.characterImageCache[charId];
                         }
+                        ReactiveStore.forceSave();
                         UIManager.openCharacterDetailModal(charId);
                         UIManager.renderCharacters();
                     }
@@ -18479,17 +18900,25 @@ Rules:
                     const char = ReactiveStore.state.characters.find(c => c.id === charId);
                     if (!char || !char.extra_portraits) return;
 
+                    const emotion = char.extra_portraits[index]?.emotion || 'neutral';
+                    const emoKey = `${charId}::emotion::${emotion}`;
+
                     // Remove from array
                     char.extra_portraits.splice(index, 1);
 
-                    // Attempt to clean up IDB image
-                    // Note: This matches the key format in handleLocalEmotionImageUpload
-                    // But we can't easily know the *previous* emotion name if we just have index.
-                    // However, if we assume keys abide by emotion name... validation is tricky.
-                    // Best effort cleanup not critical for IDB space immediately, but good practice.
-                    // For now, we rely on the state change.
+                    // Clean up IDB image aggressively
+                    await DBService.deleteImage(emoKey);
+                    if (UIManager.RUNTIME.characterImageCache[emoKey]) {
+                        if (UIManager.RUNTIME.characterImageCache[emoKey].startsWith('blob:')) {
+                            URL.revokeObjectURL(UIManager.RUNTIME.characterImageCache[emoKey]);
+                        }
+                        delete UIManager.RUNTIME.characterImageCache[emoKey];
+                    }
+
+                    ReactiveStore.forceSave(); // Ensure the array deletion is saved
 
                     UIManager.openCharacterDetailModal(charId);
+                    UIManager.renderChat(); // Refresh chat immediately to drop the emotion portrait
                 });
             },
 
@@ -18736,7 +19165,20 @@ Rules:
                     const blob = await ImageProcessor.processImageAsBlob(file);
                     await DBService.saveImage(charId, blob);
                     UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
-                    this.updateCharacterField(charId, 'image_url', ''); // Clear legacy
+
+                    const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                    if (char) {
+                        const legacyUrl = char.image_url;
+                        char.image_url = ''; // Clear legacy 
+
+                        // Clean up legacy ID to prevent orphans
+                        if (legacyUrl && legacyUrl.startsWith('local_idb_')) {
+                            const legacyKey = legacyUrl.replace('local_idb_', '');
+                            if (legacyKey !== charId) DBService.deleteImage(legacyKey); // Fire and forget
+                        }
+                    }
+                    ReactiveStore.forceSave(); // Force save to persist immediately
+
                     UIManager.renderCharacters();
                 } catch (e) {
                     alert("Image upload failed: " + e.message);
@@ -20691,6 +21133,15 @@ Rules:
                     if (!state.character_stats || Object.keys(state.character_stats).length === 0) {
                         setTimeout(() => NarrativeController.initializeStats(), 500);
                     }
+
+                    // Generate CYOA options on load if enabled and last message is from AI
+                    if (state.enableResponseOptions && state.chat_history && state.chat_history.length > 0) {
+                        const lastMsg = state.chat_history[state.chat_history.length - 1];
+                        const userChar = (state.characters || []).find(c => c.is_user);
+                        if (lastMsg && lastMsg.type === 'chat' && lastMsg.character_id !== userChar?.id) {
+                            setTimeout(() => NarrativeController.generateResponseOptions(), 1000); // 1s delay to let UI settle
+                        }
+                    }
                 }
 
                 // Enable line breaks for single newlines (Chat Style Markdown)
@@ -20803,6 +21254,15 @@ Rules:
                         // (Clicks inside are handled by their own buttons or need to bubble for data-action)
                         if (!dropdown.contains(e.target)) {
                             dropdown.classList.add('hidden');
+                        }
+                    }
+
+                    // Character Roster New Menu Logic
+                    const rosterMenu = document.getElementById('roster-new-menu');
+                    const rosterMenuBtn = document.getElementById('roster-new-btn');
+                    if (rosterMenu && !rosterMenu.classList.contains('hidden')) {
+                        if (!rosterMenu.contains(e.target) && (!rosterMenuBtn || !rosterMenuBtn.contains(e.target))) {
+                            rosterMenu.classList.add('hidden');
                         }
                     }
                 });
