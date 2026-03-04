@@ -3322,7 +3322,8 @@
         <div
             class="bg-gray-800 rounded-lg p-6 w-full max-w-xl flex flex-col h-[85vh] shadow-2xl border border-gray-700">
             <h3 class="text-white font-bold mb-4 text-lg">Crop Character Portrait</h3>
-            <p class="text-xs text-gray-400 mb-2">Drag to pan. Scroll or use slider to zoom.</p>
+            <p class="text-xs text-gray-400 mb-2">Drag image to pan. Drag bottom-right corner of frame to resize.
+                Scroll/slide to zoom.</p>
 
             <div class="flex-grow bg-black/50 relative overflow-hidden flex items-center justify-center border border-gray-600 rounded-lg cursor-move select-none"
                 id="crop-container">
@@ -3332,7 +3333,12 @@
                 <!-- Overlay Frame (Variable Aspect Ratio) -->
                 <div id="crop-overlay-frame"
                     class="absolute pointer-events-none border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.7)] rounded-sm transition-all duration-200"
-                    style="width: 300px; height: 450px;"></div>
+                    style="width: 300px; height: 450px;">
+                    <!-- Resize Handle -->
+                    <div id="crop-resize-handle"
+                        class="absolute -bottom-3 -right-3 w-6 h-6 bg-white border-2 border-gray-500 rounded-full shadow-md pointer-events-auto cursor-nwse-resize hover:scale-110 transition-transform flex items-center justify-center">
+                    </div>
+                </div>
             </div>
 
             <div class="mt-6 space-y-4">
@@ -5365,10 +5371,15 @@
                 // The correct format is: models/{model_id}:generateContent
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${rawModel}:generateContent?key=${apiKey}`;
 
+                let cleanPrompt = prompt;
+                if (typeof cleanPrompt === 'string') {
+                    cleanPrompt = cleanPrompt.replace(/<\|ELLIPSIS_CACHE_BREAK\|>\n?/g, '');
+                }
+
                 const res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+                    body: JSON.stringify({ contents: [{ parts: [{ text: cleanPrompt }] }] }),
                     signal
                 });
 
@@ -5399,7 +5410,56 @@
                 const apiKey = global.openRouterKey || state.openRouterKey;
                 const model = state.openRouterModel || global.openRouterModel;
                 if (!apiKey || !model) throw new Error("OpenRouter API key or model not set.");
-                const res = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }] }), signal });
+
+                let messagesPayload = [];
+                const cacheDelimiter = "<|ELLIPSIS_CACHE_BREAK|>";
+
+                if (typeof prompt === 'string' && prompt.includes(cacheDelimiter)) {
+                    // Split the prompt into static (cached) and dynamic (uncached) parts
+                    const parts = prompt.split(cacheDelimiter);
+                    const staticContext = parts[0].trim();
+                    const dynamicContext = parts[1].trim();
+
+                    if (staticContext) {
+                        messagesPayload.push({
+                            role: "user",
+                            content: [
+                                {
+                                    type: "text",
+                                    text: staticContext,
+                                    cache_control: { type: "ephemeral" }
+                                }
+                            ]
+                        });
+                    }
+
+                    if (dynamicContext) {
+                        // If static context exists, append dynamic context to the same message array
+                        // or add a new user message. OpenRouter (Anthropic) supports multiple blocks.
+                        if (messagesPayload.length > 0) {
+                            messagesPayload[0].content.push({
+                                type: "text",
+                                text: "\n\n" + dynamicContext
+                            });
+                        } else {
+                            messagesPayload.push({
+                                role: "user",
+                                content: dynamicContext
+                            });
+                        }
+                    }
+                } else {
+                    // Standard single-block prompt
+                    messagesPayload = [{ role: 'user', content: prompt }];
+                }
+
+                const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                    body: JSON.stringify({ model: model, messages: messagesPayload }),
+                    signal
+                });
+
                 if (!res.ok) { let errorDetails = `Status: ${res.status} ${res.statusText}.`; try { const errorJson = await res.json(); errorDetails += ` Message: ${errorJson.error.message || JSON.stringify(errorJson.error)}`; } catch (e) { errorDetails += ` Response body: ${await res.text()}`; } throw new Error(`API Error: ${errorDetails}`); }
                 const data = await res.json();
                 return data.choices[0].message.content;
@@ -5439,8 +5499,13 @@
             async callKoboldCPP(prompt, signal) {
                 const state = StateManager.getState();
 
+                let cleanPrompt = prompt;
+                if (typeof cleanPrompt === 'string') {
+                    cleanPrompt = cleanPrompt.replace(/<\|ELLIPSIS_CACHE_BREAK\|>\n?/g, '');
+                }
+
                 const payload = {
-                    prompt: prompt,
+                    prompt: cleanPrompt,
                     use_story: false, use_memory: false, use_authors_note: false, use_world_info: false,
                     max_context_length: 16384,
                     max_length: 512, // Updated to 512 as per your snippet
@@ -5499,9 +5564,14 @@
             async streamKoboldPolled(prompt, onChunk, signal) {
                 const state = StateManager.getState();
 
+                let cleanPrompt = prompt;
+                if (typeof cleanPrompt === 'string') {
+                    cleanPrompt = cleanPrompt.replace(/<\|ELLIPSIS_CACHE_BREAK\|>\n?/g, '');
+                }
+
                 // Identical Payload to callKoboldCPP to ensure consistency
                 const payload = {
-                    prompt: prompt,
+                    prompt: cleanPrompt,
                     use_story: false, use_memory: false, use_authors_note: false, use_world_info: false,
                     max_context_length: 16384,
                     max_length: 2048, // Updated to 512 as per your snippet
@@ -6093,7 +6163,7 @@
                     prompt_story_tags_gen: "Based on the following story context (characters, lore), generate 3-5 relevant, one-word, comma-separated tags for this story (e.g., fantasy, sci-fi, mystery, horror, romance).\n\nCONTEXT:\n{context}",
                     visual_master_base_prompt: "You are a visual director. Based on the provided chat history, characters, and location, generate a high-quality, vivid, and detailed image generation prompt that captures the current scene. Focus on atmosphere, lighting, and key subjects. Output ONLY the visual description.",
                     prompt_auto_static_knowledge: "You are an automated archivist. Analyze the recent conversation transcript and the EXISTING static knowledge base. Your goal is to keep the knowledge base up-to-date and concise.\n\nTASKS:\n1. Identify SIGNIFICANT new facts, rules, or lore established in the transcript.\n2. Review EXISTING entries to avoid redundancy.\n3. If a new fact updates or contradicts an existing entry, propose an update to that entry using its exact current Title.\n4. If a fact is completely new, propose a new entry.\n\nEXISTING KNOWLEDGE:\n{existing_knowledge}\n\nTRANSCRIPT:\n{transcript}\n\nOUTPUT FORMAT:\nRespond with a valid JSON object or array of objects: { \"title\": \"Exact Title\", \"content\": \"Updated or New Content\" }.\nIf no changes are needed, return { \"title\": null }.",
-                    prompt_response_options_gen: "You are a master roleplayer and choose-your-own-adventure guide.\nBased on the current story context, characters, and the last response, generate 4 possible follow-up actions or responses strictly from the first-person perspective of the user character, {user_character}.\nEach option should have a short, catchy 'label' (for a button) and a full 'prompt' (the text that will be sent to the AI if selected, written from the user character's perspective).\nLabels should be distinct and represent different emotional or strategic paths (e.g., Bold, Diplomatic, Curious, Aggressive).\n\nCONTEXT:\n{context}\n\nLAST RESPONSE:\n{last_response}\n\nRespond ONLY with a valid JSON array of objects: [{ \"label\": \"Short Action\", \"prompt\": \"The full detailed response text representing {user_character}'s action or dialogue.\" }]. Generate exactly 4 options.",
+                    prompt_response_options_gen: "You are a master roleplayer and choose-your-own-adventure guide.\nBased on the current story context, characters, and the last response, generate 4 drastically different and divergent follow-up actions or responses strictly from the first-person perspective of the user character, {user_character}.\nEach option must take the narrative in a completely distinct direction. Ensure no two options are similar in tone, intent, or action.\nEach option should have a short, catchy 'label' (for a button) and a full 'prompt' (the text that will be sent to the AI if selected, written from the user character's perspective).\nLabels should be highly distinct and represent entirely different emotional or strategic paths (e.g., Aggressive Confrontation, Cautious Retreat, Clever Deception, Compassionate Inquiry).\n\nCONTEXT:\n{context}\n\nLAST RESPONSE:\n{last_response}\n\nRespond ONLY with a valid JSON array of objects: [{ \"label\": \"Short Action\", \"prompt\": \"The full detailed response text representing {user_character}'s action or dialogue.\" }]. Generate exactly 4 options.",
                     prompt_stats_init: "You are analyzing a roleplay story to determine appropriate character stats for a game-like RPG system.\n\nSTORY CONTEXT:\n{context}\n\nCHARACTERS:\n{characters}\n\nTASK:\nGenerate 4 to 6 stats appropriate for this story's genre and setting, interpersonal relationships, and emotions. Each stat must have a brief one-sentence description explaining what it measures and how it can change. Each character should have unique values reflecting their strengths, weaknesses, and relationships. Values range 0-100.\n\nReturn valid JSON:\n{\n  \"stats\": [{\"name\": \"Stat1\", \"description\": \"Brief explanation of what this stat measures.\"}, {\"name\": \"Stat2\", \"description\": \"Brief explanation.\"}],\n  \"characters\": {\n    \"CharacterName1\": [val1, val2],\n    \"CharacterName2\": [val1, val2]\n  }\n}"
                 };
             },
@@ -6427,6 +6497,10 @@
                     });
                     p += "\n";
                 }
+
+                // --- PROMPT CACHING BREAKPOINT ---
+                // Everything above this point is considered "Static" and can be cached by supported APIs (like OpenRouter/Anthropic).
+                p += "\n<|ELLIPSIS_CACHE_BREAK|>\n";
 
                 p += "## RECENT CONVERSATION & EVENTS\n";
                 components.history.forEach(msg => {
@@ -12966,6 +13040,23 @@
             // --- User Persona Methods ---
 
             /**
+             * Retrieves a fallback user avatar.
+             * Checks the first user persona for an image, or returns null.
+             * @returns {string|null}
+             */
+            getUserAvatarImage() {
+                const globalSettings = StateManager.data.globalSettings;
+                if (!globalSettings || !globalSettings.userPersonas || globalSettings.userPersonas.length === 0) {
+                    return null;
+                }
+                const persona = globalSettings.userPersonas[0];
+                if (!persona) return null;
+
+                // If the persona has an image, return its cache or url
+                return UIManager.RUNTIME.characterImageCache[persona.id] || persona.image_url || null;
+            },
+
+            /**
              * Creates a new user persona with default values.
              */
             addUserPersona() {
@@ -16686,9 +16777,37 @@ You must return a SINGLE valid JSON object. Do not include markdown code blocks.
                     skeleton = { tags: [], color_hex: "#ffffff", short_description: "New Character", model_instructions: "" };
                 }
 
-                // STEP 2: Generate Description (Text/Prose)
-                // We use the EXACT original prompt language for the description task, but strictly for text output.
-                const descriptionPrompt = `You are a creative writer and roleplayer. You are interviewing a character named "${name}".
+                // STEP 2: Generate Description (Text/Prose) via Multi-Prompt Interview
+                const interviewQuestions = [
+                    {
+                        heading: "Appearance",
+                        question: "Describe your appearance; how you think people see you. Include descriptions of your physical attributes, facial features, hair and eye color, and typical clothing."
+                    },
+                    {
+                        heading: "Description",
+                        question: "Describe who you are in this world. Include your position in society, relation to others, and what you do professionally or otherwise."
+                    },
+                    {
+                        heading: "Character intentions",
+                        question: "What drives you? What are your goals, both long term and short term?"
+                    },
+                    {
+                        heading: "Personal History",
+                        question: "Describe your personal history; how you became who you are today and what you consider to be the most formative events of your life. They can be large or small events, but should be things that you feel molded how you approach the world."
+                    },
+                    {
+                        heading: "Fears and Joys",
+                        question: "What scares you? What brings you the most joy?"
+                    }
+                ];
+
+                let compiledDescription = "";
+                let previousAnswersContext = "";
+
+                for (let i = 0; i < interviewQuestions.length; i++) {
+                    const q = interviewQuestions[i];
+
+                    const descriptionPrompt = `You are a creative writer and roleplayer. You are interviewing a character named "${name}".
                 
 CONTEXT FOR THIS CHARACTER:
 ${contextString}
@@ -16697,22 +16816,33 @@ EXISTING METADATA:
 Short Bio: ${skeleton.short_description}
 Instructions: ${skeleton.model_instructions}
 
+${previousAnswersContext ? `PREVIOUS INTERVIEW ANSWERS (Use these to maintain consistency):\n${previousAnswersContext}\n` : ""}
+
 TASK:
-Adopt the persona of ${name}. I will ask you to describe yourself. You must answer in the first person, using prose that reflects your voice, mannerisms, and internal thoughts. Use first person 'prose-style' writing (e.g. "That's what I'm telling you!" I brush the hair from my eyes as I look out at the sunset. "Don't you understand *anything*?")
+Adopt the persona of ${name}. I will ask you to describe yourself based on a specific question. You must answer in the first person, using prose that reflects your voice, mannerisms, and internal thoughts. Use first person 'prose-style' writing (e.g. "That's what I'm telling you!" I brush the hair from my eyes as I look out at the sunset. "Don't you understand *anything*?")
 
 OUTPUT FORMAT:
 Write ONLY the character's response text. Do NOT wrap in JSON. Do NOT include introductory text.
 
-Your response to the interview question: Tell me about yourself - your appearance, your personality, and what drives you. Write this as a prose scene. Use dialogue tags and action beats. Example: "I've never cared much for rules," I say, leaning back in my chair...
+Your response to the interview question: ${q.question}
+Write this as a prose scene. Use dialogue tags and action beats. Example: "I've never cared much for rules," I say, leaning back in my chair...
 
 CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context roleplay response (First Person Prose). Do NOT write a third-person bio. The goal of this is to set the standard for how responses will be formatted during the roleplay.`;
 
-                const description = await APIService.callAI(descriptionPrompt, false);
+                    const response = await APIService.callAI(descriptionPrompt, false);
+                    if (response && response.trim()) {
+                        const answer = response.trim();
+                        // Format specifically for markdown rendering with headings
+                        compiledDescription += `### ${q.heading}\n${answer}\n\n`;
+                        // Keep previous answers in context for AI consistency
+                        previousAnswersContext += `Question: ${q.question}\nAnswer: ${answer}\n\n`;
+                    }
+                }
 
                 // STEP 3: Merge
                 return {
                     ...skeleton,
-                    description: description ? description.trim() : "No description generated."
+                    description: compiledDescription ? compiledDescription.trim() : "No description generated."
                 };
             },
             /**
@@ -17100,7 +17230,7 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                         .replace('{last_response}', lastMsg.content);
 
                     // Always append a critical instruction to override older saved prompts
-                    prompt += `\n\nCRITICAL INSTRUCTION: You MUST generate these options strictly from the perspective of the user's character (${userName}). The options MUST describe their direct actions or dialogue, written from their perspective. DO NOT generate options for any non-user characters.`;
+                    prompt += `\n\nCRITICAL INSTRUCTION: You MUST generate these 4 options strictly from the perspective of the user's character (${userName}). The options MUST describe their direct actions or dialogue, written from their perspective. DO NOT generate options for any non-user characters. Furthermore, each option MUST lead to a completely different consequence, emotion, or narrative direction. DO NOT make the options similar to each other.`;
 
                     // Call AI
                     const response = await APIService.callAI(prompt);
@@ -19589,7 +19719,8 @@ Rules:
         const CropController = {
             RUNTIME: {
                 file: null, img: null, scale: 1, posX: 0, posY: 0,
-                isDragging: false, startX: 0, startY: 0, callback: null,
+                isDragging: false, isResizing: false, startX: 0, startY: 0,
+                startWidth: 0, startHeight: 0, callback: null,
                 cropWidth: 300, cropHeight: 450 // Default 2:3
             },
 
@@ -19670,39 +19801,138 @@ Rules:
             init() {
                 const container = document.getElementById('crop-container');
                 const slider = document.getElementById('crop-scale');
+                const resizeHandle = document.getElementById('crop-resize-handle');
+                const overlay = document.getElementById('crop-overlay-frame');
 
-                slider.addEventListener('input', (e) => {
-                    this.RUNTIME.scale = parseFloat(e.target.value);
-                    this.updateTransform();
-                });
+                if (slider) {
+                    slider.addEventListener('input', (e) => {
+                        this.RUNTIME.scale = parseFloat(e.target.value);
+                        this.updateTransform();
+                    });
+                }
 
-                container.addEventListener('mousedown', (e) => {
+                // --- Pan Event Handlers ---
+                const startPan = (clientX, clientY) => {
+                    if (this.RUNTIME.isResizing) return;
                     this.RUNTIME.isDragging = true;
-                    this.RUNTIME.startX = e.clientX - this.RUNTIME.posX;
-                    this.RUNTIME.startY = e.clientY - this.RUNTIME.posY;
-                });
+                    this.RUNTIME.startX = clientX - this.RUNTIME.posX;
+                    this.RUNTIME.startY = clientY - this.RUNTIME.posY;
+                };
+
+                const movePan = (clientX, clientY) => {
+                    if (!this.RUNTIME.isDragging) return;
+                    this.RUNTIME.posX = clientX - this.RUNTIME.startX;
+                    this.RUNTIME.posY = clientY - this.RUNTIME.startY;
+                    this.updateTransform();
+                };
+
+                // --- Resize Event Handlers ---
+                const startResize = (clientX, clientY, e) => {
+                    if (e) {
+                        e.stopPropagation(); // prevent pan
+                        e.preventDefault(); // prevent selection
+                    }
+                    this.RUNTIME.isResizing = true;
+                    this.RUNTIME.startX = clientX;
+                    this.RUNTIME.startY = clientY;
+                    this.RUNTIME.startWidth = this.RUNTIME.cropWidth;
+                    this.RUNTIME.startHeight = this.RUNTIME.cropHeight;
+                    // Disable CSS transition for smooth resizing
+                    if (overlay) overlay.style.transition = 'none';
+                };
+
+                const moveResize = (clientX, clientY) => {
+                    if (!this.RUNTIME.isResizing) return;
+                    const deltaX = clientX - this.RUNTIME.startX;
+                    const deltaY = clientY - this.RUNTIME.startY;
+
+                    // Add constraints
+                    const newWidth = Math.max(50, Math.min(container.clientWidth - 20, this.RUNTIME.startWidth + deltaX * 2));
+                    const newHeight = Math.max(50, Math.min(container.clientHeight - 20, this.RUNTIME.startHeight + deltaY * 2));
+
+                    this.setAspectRatio(newWidth, newHeight);
+                };
+
+                // Mouse Events - Pan
+                if (container) {
+                    container.addEventListener('mousedown', (e) => {
+                        if (e.target === resizeHandle || e.target.closest('#crop-resize-handle')) return;
+                        startPan(e.clientX, e.clientY);
+                    });
+                }
 
                 window.addEventListener('mousemove', (e) => {
-                    if (!this.RUNTIME.isDragging) return;
-                    e.preventDefault();
-                    this.RUNTIME.posX = e.clientX - this.RUNTIME.startX;
-                    this.RUNTIME.posY = e.clientY - this.RUNTIME.startY;
-                    this.updateTransform();
+                    if (this.RUNTIME.isResizing) {
+                        e.preventDefault(); // prevent text selection
+                        moveResize(e.clientX, e.clientY);
+                    } else if (this.RUNTIME.isDragging) {
+                        e.preventDefault(); // prevent text selection
+                        movePan(e.clientX, e.clientY);
+                    }
                 });
 
-                window.addEventListener('mouseup', () => { this.RUNTIME.isDragging = false; });
-                window.addEventListener('mouseleave', () => { this.RUNTIME.isDragging = false; });
+                // Mouse Events - Resize
+                // Wait for DOM to be fully loaded or handle dynamically? 
+                if (resizeHandle) {
+                    resizeHandle.addEventListener('mousedown', (e) => startResize(e.clientX, e.clientY, e));
+                } else {
+                    // Fallback to fetch dynamically on demand if we attach event to container
+                    if (container) {
+                        container.addEventListener('mousedown', (e) => {
+                            if (e.target.id === 'crop-resize-handle' || e.target.closest('#crop-resize-handle')) {
+                                startResize(e.clientX, e.clientY, e);
+                            }
+                        });
+                    }
+                }
+
+                // Touch Events - Pan & Resize
+                if (container) {
+                    container.addEventListener('touchstart', (e) => {
+                        if (e.target.id === 'crop-resize-handle' || e.target.closest('#crop-resize-handle')) {
+                            startResize(e.touches[0].clientX, e.touches[0].clientY, e);
+                            return;
+                        }
+                        if (e.touches.length === 1) startPan(e.touches[0].clientX, e.touches[0].clientY);
+                    }, { passive: false });
+                }
+
+                window.addEventListener('touchmove', (e) => {
+                    if (this.RUNTIME.isResizing) {
+                        e.preventDefault();
+                        moveResize(e.touches[0].clientX, e.touches[0].clientY);
+                    } else if (this.RUNTIME.isDragging) {
+                        e.preventDefault();
+                        movePan(e.touches[0].clientX, e.touches[0].clientY);
+                    }
+                }, { passive: false });
+
+                const endInteractions = () => {
+                    this.RUNTIME.isDragging = false;
+                    if (this.RUNTIME.isResizing) {
+                        this.RUNTIME.isResizing = false;
+                        const overlayNow = document.getElementById('crop-overlay-frame');
+                        if (overlayNow) overlayNow.style.transition = ''; // Restore transition
+                    }
+                };
+
+                window.addEventListener('mouseup', endInteractions);
+                window.addEventListener('mouseleave', endInteractions);
+                window.addEventListener('touchend', endInteractions);
+                window.addEventListener('touchcancel', endInteractions);
 
                 // Wheel zoom
-                container.addEventListener('wheel', (e) => {
-                    e.preventDefault();
-                    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-                    let newScale = this.RUNTIME.scale - delta;
-                    newScale = Math.max(0.1, Math.min(3, newScale));
-                    this.RUNTIME.scale = newScale;
-                    slider.value = newScale;
-                    this.updateTransform();
-                });
+                if (container) {
+                    container.addEventListener('wheel', (e) => {
+                        e.preventDefault();
+                        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                        let newScale = this.RUNTIME.scale - delta;
+                        newScale = Math.max(0.1, Math.min(3, newScale));
+                        this.RUNTIME.scale = newScale;
+                        if (slider) slider.value = newScale;
+                        this.updateTransform();
+                    });
+                }
             },
 
             updateTransform() {
