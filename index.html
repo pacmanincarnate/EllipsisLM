@@ -98,6 +98,23 @@
         }
 
         /* ==========================================================================
+           Custom CSS Utilities
+           ========================================================================== */
+        
+        /* Auto-Hide Scrollbars (Only show on hover) */
+        .scrollbar-autohide::-webkit-scrollbar { width: 6px; height: 6px; }
+        .scrollbar-autohide::-webkit-scrollbar-button { display: none; }
+        .scrollbar-autohide::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-autohide::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; }
+        .scrollbar-autohide:hover::-webkit-scrollbar-thumb { background: rgba(107, 114, 128, 0.5); }
+        .scrollbar-autohide { scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color 0.2s; }
+        .scrollbar-autohide:hover { scrollbar-color: rgba(107, 114, 128, 0.5) transparent; }
+
+        /* Completely Hide Scrollbars */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ==========================================================================
            [SEC:CSS:RESET]
            2. RESET & BASE STYLES
            ========================================================================== */
@@ -2783,6 +2800,21 @@
                     </label>
                 </div>
 
+                <!-- Living Persona Toggle -->
+                <div
+                    class="flex items-center justify-between bg-gray-900/30 p-4 rounded-lg border border-gray-700/50 hover:bg-gray-900/40 transition-colors">
+                    <div>
+                        <span class="text-gray-200 font-medium block">Living Persona</span>
+                        <span class="text-xs text-gray-500">AI periodically evolves a character's personality based on chat history.</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="enable-living-persona-toggle" class="sr-only peer">
+                        <div
+                            class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                        </div>
+                    </label>
+                </div>
+
                 <!-- Response Options Toggle -->
                 <div
                     class="flex items-center justify-between bg-gray-900/30 p-4 rounded-lg border border-gray-700/50 hover:bg-gray-900/40 transition-colors">
@@ -2837,6 +2869,7 @@
                             <option value="event_master_base_prompt">Event Master</option>
                             <option value="visual_master_base_prompt">Visual Master</option>
                             <option value="prompt_persona_gen">Persona Generation</option>
+                            <option value="prompt_living_persona_gen">Living Persona Evolution</option>
                             <option value="prompt_response_options_gen">Response Options Generation</option>
                             <option value="prompt_world_map_gen">World Map Generation</option>
                             <option value="prompt_location_gen">Location Prompt Generation</option>
@@ -4742,12 +4775,12 @@
                             'visual_master_base_prompt', 'visual_master_probability', // Visual Master Probability
 
                             // Generation Prompts
-                            'prompt_persona_gen', 'prompt_world_map_gen', 'prompt_location_gen',
+                            'prompt_persona_gen', 'prompt_living_persona_gen', 'prompt_world_map_gen', 'prompt_location_gen',
                             'prompt_entry_gen', 'prompt_location_memory_gen', 'prompt_story_notes_gen', 'prompt_story_tags_gen',
                             'prompt_auto_static_knowledge', 'prompt_stats_init',
 
                             // AI Logic Toggles
-                            'enableAutoStaticKnowledge', 'enableAnalysis', 'enableResponseOptions', 'enableStats',
+                            'enableAutoStaticKnowledge', 'enableAnalysis', 'enableResponseOptions', 'enableStats', 'enableLivingPersona',
 
                             // Visual
                             'imageGenArtStyle',
@@ -4807,7 +4840,8 @@
                     state: {
                         chat_history: [], messageCounter: 0,
                         static_entries: [{ id: UTILITY.uuid(), title: "World Overview", content: "The location for this roleplay as described in the character descriptions." }],
-                        worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
+                        worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] },
+                        livingPersonaCounters: {}, evolved_characters: {}
                     }
                 };
 
@@ -4917,7 +4951,8 @@
                         chat_history: [],
                         messageCounter: 0,
                         static_entries: scenario.static_entries ? JSON.parse(JSON.stringify(scenario.static_entries)) : [{ id: UTILITY.uuid(), title: "World Overview", content: "The world." }],
-                        worldMap: scenario.worldMap ? JSON.parse(JSON.stringify(scenario.worldMap)) : { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
+                        worldMap: scenario.worldMap ? JSON.parse(JSON.stringify(scenario.worldMap)) : { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] },
+                        livingPersonaCounters: {}, evolved_characters: {}
                     }
                 };
 
@@ -5452,7 +5487,8 @@
                     }
 
                     if (isJson) {
-                        const jsonMatch = text.match(/\{[\s\S]*\}/);
+                        // Match either {} or [] patterns, whichever comes first
+                        const jsonMatch = text.match(/[\{\[][\s\S]*[\}\]]/);
                         if (jsonMatch && jsonMatch[0]) return jsonMatch[0];
                         throw new Error("AI response was not in the expected JSON format.");
                     }
@@ -6296,6 +6332,7 @@
                     enableAutoStaticKnowledge: true,
                     enableResponseOptions: false,
                     enableStats: false,
+                    enableLivingPersona: false,
                     responseLength: 'normal'
                 };
             },
@@ -6309,6 +6346,7 @@
                     event_master_base_prompt: 'You are a secret Event Master. Read the chat. Generate a brief, secret instruction for AI characters to introduce a logical but unexpected event.',
                     event_master_prompt: 'You are a secret Event Master. Read the chat. Generate a brief, secret instruction for AI characters to introduce a logical but unexpected event.',
                     prompt_persona_gen: "Embellish this character concept into a rich, detailed, and compelling persona description, focusing on detailed appearance, personality, goals, relationships, and backstory.\n\nCRITICAL: Use double quotes for any dialogue or specific terms (e.g., \"Term\"). Do NOT use single quotes.\n\nNAME: \"{name}\"\nCONCEPT: \"{concept}\"",
+                    prompt_living_persona_gen: "You are a character evolution analyzer. Review the following roleplay transcript and the character's base persona. If the events logically necessitate a permanent change in their worldview, relationships, goals, or personality, rewrite the persona to incorporate those changes. Respond ONLY with the newly revised persona verbatim. If no major changes are needed, output the original persona unchanged.\n\nBASE PERSONA:\n{base_persona}\n\nRECENT TRANSCRIPT:\n{transcript}",
                     prompt_world_map_gen: "Based on the following story context, generate a genre-appropriate 8x8 grid of interconnected locations. The central location (4,4) should be a neutral starting point. Attempt to include locations mentioned in the context.\nCONTEXT:\nCHARACTERS:\n{characters}\n\nSTATIC LORE:\n{static}\n\nRECENT EVENTS:\n{recent}\n\nRespond with a valid JSON object: { \"grid\": [ { \"coords\": {\"x\":int, \"y\":int}, \"name\": \"string\", \"description\": \"string (one-line summary)\", \"prompt\": \"string (a rich, detailed paragraph description of the location and its appearance)\", \"imageUrl\": \"\" } ] }. The grid must contain exactly 64 locations.",
                     prompt_location_gen: "Generate a rich, detailed, and evocative paragraph-long prompt for a location named '{name}' which is briefly described as '{description}'.",
                     prompt_entry_gen: "Generate a detailed and informative encyclopedia-style entry for a lore topic titled '{title}'. If relevant, use the following triggers as context: '{triggers}'.",
@@ -6451,6 +6489,45 @@
          */
         const PromptBuilder = {
             /**
+             * Generates a prompt for creating 3 location-specific characters.
+             * @param {string} locationName - The name of the location.
+             * @param {string} locationDesc - The description of the location.
+             * @returns {string} The formatted prompt.
+             */
+            buildLocationCharactersPrompt(locationName, locationDesc) {
+                return `[SYSTEM INSTRUCTION]
+You are a creative world-building assistant. You are tasked with populating a location with exactly 3 distinct characters.
+The characters should fit the setting, but also offer varied interaction opportunities for the user.
+
+[LOCATION INFO]
+Name: ${locationName}
+Description: ${locationDesc}
+
+[REQUIREMENTS]
+Generate exactly 3 characters with the following archetypes:
+1. Normal: An ordinary resident or worker (e.g., innkeeper, guard, merchant, commoner). Unimportant to the grand plot, but adds flavor to the world.
+2. Impactful: Someone with authority, specialized knowledge, or significant influence in this specific location (e.g., mayor, captain, guild master, headpriest).
+3. Mysterious: An intriguing individual who has their own hidden agenda or a 'side quest' they want the user to be involved in (e.g., a shaded figure, a stranger looking for an artifact, an exiled noble).
+
+[OUTPUT FORMAT]
+You must respond with a raw JSON object containing a "characters" array with exactly 3 objects. Do NOT wrap the JSON in markdown code blocks or add any conversational text. Use this exact schema:
+{
+  "characters": [
+    {
+      "name": "Character Name",
+      "short_description": "A very brief 1-sentence summary.",
+      "role": "Their role/archetype (e.g. 'Normal: Innkeeper' or 'Mysterious: Stranger')",
+      "personal_goal": "What they currently want or are trying to achieve.",
+      "reason_for_being_there": "Why they are at this location.",
+      "physical_description": "A detailed physical description of what they look like and what they are wearing.",
+      "description": "A massive, multi-paragraph deep dive into their psychological profile, history, secrets, and personality traits. Write at least 3 paragraphs detailing who they are and how they got to this location.",
+      "model_instructions": "Direct instructions to the AI on how to roleplay this string. Include speech patterns, conversational tics, typical moods, and boundaries. (e.g. 'Always speak in short, nervous sentences. You are highly suspicious of strangers. Never reveal your true name.')"
+    }
+  ]
+}`;
+            },
+
+            /**
              * Creates a replacement function for template strings.
              * @param {Object} contextCharacter - The character context.
              * @returns {Function} - The replacer function.
@@ -6538,7 +6615,7 @@
              */
             buildPrompt(charToActId, isForUser = false, historyOverride = null, customInstruction = null) {
                 const state = StateManager.getState();
-                const charToAct = state.characters.find(c => c.id === charToActId);
+                const charToAct = ReactiveStore.getCharacter(charToActId);
                 if (!charToAct) return "";
 
                 const replacer = this._getReplacer(charToAct);
@@ -6595,7 +6672,7 @@
                     static_entries: (state.static_entries || []).map(l => `### ${l.title}\n${replacer(l.content)}`).join('\n\n'),
                     // Only include Narrator description if THAT Narrator is the one acting.
                     // Standard characters are always included if active.
-                    characters: (state.characters || [])
+                    characters: [...(state.characters || []), ...ReactiveStore.getActiveLocationCharacters()]
                         .filter(c => c.is_active)
                         .filter(c => {
                             if (c.is_narrator) {
@@ -6603,7 +6680,10 @@
                             }
                             return true;
                         })
-                        .map(c => `### Character: ${c.name}\n\n${replacer(c.description)}`)
+                        .map(c => {
+                            const desc = (state.evolved_characters && state.evolved_characters[c.id]) ? state.evolved_characters[c.id] : c.description;
+                            return `### Character: ${c.name}\n\n${replacer(desc)}`;
+                        })
                         .join('\n\n'), history: this._getSmartHistorySlice(historyOverride || state.chat_history || [], 8000),
                     charToAct: charToAct,
                     isForUser: isForUser,
@@ -6623,6 +6703,34 @@
                     return this.buildKoboldTemplatedPrompt(components, replacer);
                 }
                 return this.buildDefaultPrompt(components, replacer);
+            },
+
+            /**
+             * Builds the prompt for the background generation of a Living Persona.
+             * @param {string} characterId - The ID of the character to evolve.
+             * @returns {string} - The constructed prompt.
+             */
+            buildLivingPersonaPrompt(characterId) {
+                const state = StateManager.getState();
+                const char = ReactiveStore.getCharacter(characterId);
+                if (!char) return "";
+
+                const promptTemplate = state.prompt_living_persona_gen || UTILITY.getDefaultSystemPrompts().prompt_living_persona_gen;
+                const basePersona = char.description;
+                
+                // Get the last N messages, excluding the *very last* one per requirements
+                const chatHistory = state.chat_history || [];
+                const visibleHistory = chatHistory.filter(m => m.type === 'chat' && !m.isHidden);
+                const historySlice = visibleHistory.slice(-21, -1); // Last 20 messages, skip the newest
+                
+                const transcript = historySlice.map(msg => {
+                    const speaker = ReactiveStore.getCharacter(msg.character_id) || { name: 'Unknown' };
+                    return `${speaker.name}: ${msg.content}`;
+                }).join('\n\n');
+
+                return promptTemplate
+                    .replace(/\{base_persona\}/g, basePersona)
+                    .replace(/\{transcript\}/g, transcript);
             },
 
             /**
@@ -6646,7 +6754,7 @@
                     exampleDialogue.forEach(msg => {
                         // Safety Check
                         if (!msg) return;
-                        const char = state.characters.find(c => c.id === msg.character_id);
+                        const char = ReactiveStore.getCharacter(msg.character_id);
                         if (char) p += `${char.name}: ${replacer(msg.content)}\n`;
                     });
                     p += "\n";
@@ -6663,7 +6771,7 @@
                     if (msg.type === 'chat' && msg.isHidden) return;
 
                     if (msg.type === 'chat') {
-                        const char = state.characters.find(c => c.id === msg.character_id);
+                        const char = ReactiveStore.getCharacter(msg.character_id);
                         if (char) p += `[${char.name}:]\n${replacer(msg.content)}\n\n`;
                     } else if (msg.type === 'lore_reveal') {
                         p += `[System Note:\n${replacer(msg.content)}]\n\n`;
@@ -6726,7 +6834,7 @@
                     exampleDialogue.forEach(msg => {
                         // Safety Check
                         if (!msg) return;
-                        const char = state.characters.find(c => c.id === msg.character_id);
+                        const char = ReactiveStore.getCharacter(msg.character_id);
                         if (char) examples += `${char.name}: ${replacer(msg.content)}\n`;
                     });
                     system.push(examples);
@@ -6776,7 +6884,7 @@
                         let role = 'user';
                         let content = '';
                         if (msg.type === 'chat') {
-                            const char = state.characters.find(c => c.id === msg.character_id);
+                            const char = ReactiveStore.getCharacter(msg.character_id);
                             if (!char) return null;
                             role = char.is_user ? 'user' : 'assistant';
                             content = `${char.name}:\n${replacer(msg.content)}`;
@@ -6798,7 +6906,7 @@
                         let content = '';
 
                         if (msg.type === 'chat') {
-                            const char = state.characters.find(c => c.id === msg.character_id);
+                            const char = ReactiveStore.getCharacter(msg.character_id);
                             if (!char) return null;
                             role = char.is_user ? 'user' : 'model';
                             content = `${char.name}:\n${replacer(msg.content)}`;
@@ -6820,7 +6928,7 @@
                         let role = 'user';
                         let content = '';
                         if (msg.type === 'chat') {
-                            const char = state.characters.find(c => c.id === msg.character_id);
+                            const char = ReactiveStore.getCharacter(msg.character_id);
                             if (!char) return null;
                             role = char.is_user ? 'user' : 'assistant';
                             content = `${char.name}:\n${replacer(msg.content)}`;
@@ -6839,7 +6947,7 @@
                     const history_str = components.history.map(msg => {
                         if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
                         if (msg.type === 'chat') {
-                            const char = state.characters.find(c => c.id === msg.character_id);
+                            const char = ReactiveStore.getCharacter(msg.character_id);
                             if (char) return `${char.is_user ? 'user' : 'assistant'}:${char.name}:\n${replacer(msg.content)}`;
                         } else {
                             return `system:${formatSystemMsg(msg)}`;
@@ -6856,7 +6964,7 @@
                         let role = 'system';
                         let content = '';
                         if (msg.type === 'chat') {
-                            const char = state.characters.find(c => c.id === msg.character_id);
+                            const char = ReactiveStore.getCharacter(msg.character_id);
                             if (!char) return null;
                             role = char.is_user ? 'user' : 'assistant';
                             content = `${char.name}:\n${replacer(msg.content)}`;
@@ -6872,7 +6980,7 @@
                 if (template === 'alpaca') {
                     const history_str = components.history.map(msg => {
                         if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
-                        const char = state.characters.find(c => c.id === msg.character_id);
+                        const char = ReactiveStore.getCharacter(msg.character_id);
                         if (char) return `${char.name}: ${replacer(msg.content)}`;
                         else return formatSystemMsg(msg);
                     }).filter(Boolean).join('\n');
@@ -8176,6 +8284,7 @@
                     system_prompt: story.system_prompt,
                     event_master_base_prompt: story.event_master_base_prompt,
                     prompt_persona_gen: story.prompt_persona_gen,
+                    prompt_living_persona_gen: story.prompt_living_persona_gen,
                     prompt_world_map_gen: story.prompt_world_map_gen,
                     prompt_location_gen: story.prompt_location_gen,
                     prompt_entry_gen: story.prompt_entry_gen,
@@ -8444,7 +8553,8 @@
                     id: UTILITY.uuid(), name: name, last_modified: new Date().toISOString(),
                     state: {
                         chat_history: [], messageCounter: 0, static_entries: [],
-                        worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] }
+                        worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] },
+                        livingPersonaCounters: {}, evolved_characters: {}
                     }
                 };
             },
@@ -8591,6 +8701,45 @@
                 window.addEventListener('beforeunload', saveNow);
 
                 console.log("ReactiveStore: Initialized with Safety Nets.");
+            },
+
+            /**
+             * Helper to find a character by ID, checking both the main roster and the world map.
+             * Returns the proxied character object so edits trigger saves.
+             * @param {string} id - The character ID.
+             * @returns {Object|undefined} The reactive character object.
+             */
+            getCharacter(id) {
+                if (!this.state || !this.state.characters) return undefined;
+                let char = this.state.characters.find(c => c.id === id);
+                if (!char && this.state.worldMap && this.state.worldMap.grid) {
+                    for (const loc of this.state.worldMap.grid) {
+                        if (loc.characters) {
+                            const found = loc.characters.find(c => c.id === id);
+                            if (found) return found;
+                        }
+                    }
+                }
+                return char;
+            },
+
+            /**
+             * Helper to retrieve all active location characters at the current coordinates.
+             * Returns an array of reactive character objects.
+             * @returns {Array} List of active location characters.
+             */
+            getActiveLocationCharacters() {
+                if (!this.state || !this.state.worldMap || !this.state.worldMap.currentLocation || !this.state.worldMap.grid) {
+                    return [];
+                }
+                const currentLoc = this.state.worldMap.grid.find(loc =>
+                    loc.coords.x === this.state.worldMap.currentLocation.x &&
+                    loc.coords.y === this.state.worldMap.currentLocation.y
+                );
+                if (currentLoc && currentLoc.characters) {
+                    return currentLoc.characters.filter(c => c.is_active);
+                }
+                return [];
             },
 
             // New method to explicitly stop the auto-save mechanism
@@ -8975,7 +9124,7 @@
                     return DOM.html`<div class="w-full text-center my-2"><p class="text-sm italic text-gray-400">${msg.content}</p></div>`;
                 }
 
-                const character = state.characters.find(c => c.id === msg.character_id);
+                const character = ReactiveStore.getCharacter(msg.character_id);
                 if (!character) return '';
 
                 const userChar = state.characters.find(c => c.is_user);
@@ -9188,35 +9337,44 @@
              */
             ScenarioItem(scenario, storyId) {
                 const messageHTML = DOM.unsafe(marked.parse(scenario.message || '*(No message)*'));
-                return DOM.html`
-            <details open class="bg-gray-700/30 rounded-lg overflow-hidden group relative">
-                <summary class="p-3 cursor-pointer hover:bg-gray-700/50 flex justify-between items-center font-semibold select-none pl-4 transition-[padding] scenario-content focus:outline-none">
-                    <span>${scenario.name}</span>
-                    <span class="text-xs text-gray-400 group-open:hidden">▼</span>
-                    <span class="text-xs text-gray-400 hidden group-open:block">▲</span>
-                </summary>
+                // Extract custom Scenario aesthetic configs (Cascading: Scenario -> Story -> Default)
+                const story = StateManager.getLibrary().stories.find(s => s.id === storyId);
+                const customFont = scenario.font || (story && story.font) || 'var(--font-primary)';
+                const customColor = scenario.chatTextColor || (story && story.chatTextColor) || '#fff';
                 
-                <div class="absolute top-3 left-3 z-10 flex items-center justify-center h-6 w-6 hidden scenario-checkbox-container" onclick="event.stopPropagation()"> <!-- Stop propagation to prevent collapsing -->
+                return DOM.html`
+            <div class="relative bg-gradient-to-b from-gray-900/90 to-black/95 rounded-xl border border-gray-700/50 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden group transition-all hover:border-gray-500 min-w-[280px] w-[280px] md:min-w-[340px] md:w-[340px] shrink-0 snap-start flex flex-col h-[380px] hover:-translate-y-1">
+                
+                <!-- Checkbox for Bulk Actions (Positioned top-left) -->
+                <div class="absolute top-4 left-4 z-10 flex items-center justify-center h-6 w-6 hidden scenario-checkbox-container">
                     <input type="checkbox" 
                            class="scenario-select-check w-4 h-4 rounded border-gray-500 bg-black/40 text-indigo-600 focus:ring-0 cursor-pointer" 
                            value="${scenario.id}" 
                            onchange="UIManager.updateBulkActionUI()">
                 </div>
 
-                <div class="p-3 bg-black/20 border-t border-gray-600 space-y-3 cursor-default">
-                    <div>
-                        <p class="text-xs text-gray-400 font-bold mb-1">First Message:</p>
-                        <div class="text-sm text-gray-300 prose prose-invert prose-sm max-w-none">
-                            ${messageHTML}
-                        </div>
+                <div class="p-8 flex flex-col h-full cursor-default">
+                    <!-- Title synced with custom typography -->
+                    <h3 class="text-2xl md:text-3xl font-black text-center mb-6 tracking-wide drop-shadow-md" style="font-family: ${customFont}; color: ${customColor};">
+                        ${scenario.name}
+                    </h3>
+                    
+                    <!-- Decorative Divider -->
+                    <div class="w-16 h-px bg-gray-600/50 mx-auto mb-6"></div>
+
+                    <!-- Blurb (First Message) styled as back cover synopsis -->
+                    <div class="text-sm md:text-base text-gray-300/90 prose prose-invert prose-sm max-w-none text-center leading-relaxed italic px-2 md:px-6 flex-grow flex flex-col justify-center">
+                        ${messageHTML}
                     </div>
-                    <div class="flex gap-2 justify-end pt-2">
-                        <button data-action="load-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-1 px-3 rounded" title="Load Scenario">Load</button>
-                        <button data-action="rename-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="bg-gray-600 hover:bg-gray-500 text-white text-xs font-bold py-1 px-3 rounded" title="Rename">Rename</button>
-                        <button data-action="delete-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="text-xs bg-red-900/50 hover:bg-red-700/80 text-red-200 font-semibold py-2 px-3 rounded"" title="Delete">Delete</button>
+
+                    <!-- Modernized Controls (Minimal Pill footer) -->
+                    <div class="flex gap-3 justify-center pt-8 mt-auto opacity-70 group-hover:opacity-100 transition-opacity">
+                        <button data-action="load-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="text-xs font-semibold uppercase tracking-wider text-indigo-300 hover:text-white px-4 py-2 border border-indigo-500/30 hover:border-indigo-400 bg-indigo-900/20 hover:bg-indigo-600/40 rounded-full transition-all" title="Load Scenario">Load</button>
+                        <button data-action="rename-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-white px-4 py-2 border border-gray-600/50 hover:border-gray-500 bg-gray-800/30 hover:bg-gray-700/50 rounded-full transition-all" title="Rename">Rename</button>
+                        <button data-action="delete-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="text-xs font-semibold uppercase tracking-wider text-red-300/70 hover:text-red-200 px-4 py-2 border border-red-900/30 hover:border-red-500/50 bg-red-900/10 hover:bg-red-900/40 rounded-full transition-all" title="Delete">Delete</button>
                     </div>
                 </div>
-            </details>
+            </div>
         `;
             },
 
@@ -9240,6 +9398,10 @@
                     ? 'border-sky-500/40 bg-sky-900/10 border-l-2 border-l-sky-400'
                     : 'border-gray-700/60 bg-gray-700/40 border-l-2 border-l-transparent';
 
+                const msgText = narrative.messageCounter !== undefined 
+                    ? (narrative.messageCounter === 1 ? '1 msg &middot; ' : `${narrative.messageCounter} msgs &middot; `)
+                    : '';
+
                 return DOM.html`
             <div class="p-3 rounded-lg flex justify-between items-center gap-2 relative group border transition-colors ${activeClass}">
                 <div class="absolute left-3 z-10 flex items-center justify-center h-6 w-6 hidden narrative-checkbox-container" onclick="event.stopPropagation()">
@@ -9250,7 +9412,7 @@
                 </div>
                 <div class="flex-grow min-w-0 transition-[padding] narrative-content">
                     <p class="font-semibold truncate text-gray-100 text-sm">${narrative.name}</p>
-                    <p class="text-xs text-gray-500 mt-0.5">${dateDisplay}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">${DOM.unsafe(msgText)}${dateDisplay}</p>
                 </div>
                 ${activeBadge}
                 <div class="flex-shrink-0 flex items-center gap-1">
@@ -10065,7 +10227,7 @@
              * Populates the modal with scenarios, narratives, and character carousel.
              * @param {string} storyId - The ID of the story to open.
              */
-            openStoryDetails(storyId) {
+            async openStoryDetails(storyId) {
                 const library = StateManager.getLibrary();
                 const story = library.stories.find(s => s.id === storyId);
                 if (!story) return;
@@ -10083,45 +10245,87 @@
                     UIComponents.ScenarioItem(scenario, story.id)
                 );
 
+                // Fetch Narratives recursively to inject message counts into the stubs
+                const sortedNarrativeStubs = (story.narratives || []).slice().sort((a, b) => new Date(b.last_modified) - new Date(a.last_modified));
+                await Promise.all(sortedNarrativeStubs.map(async stub => {
+                    try {
+                        const fullNarrative = await DBService.getNarrative(stub.id);
+                        stub.messageCounter = fullNarrative && fullNarrative.state ? (fullNarrative.state.messageCounter || 0) : 0;
+                    } catch(e) {
+                        stub.messageCounter = 0;
+                    }
+                }));
+
                 // Componentize Narratives
-                const narrativesHTML = (story.narratives || []).sort((a, b) => new Date(b.last_modified) - new Date(a.last_modified)).map(narrative => {
+                const narrativesHTML = sortedNarrativeStubs.map(narrative => {
                     const isActive = (narrative.id === library.active_narrative_id && story.id === library.active_story_id);
                     return UIComponents.NarrativeItem(narrative, story.id, isActive);
                 });
 
                 const hasImages = (story.characters || []).some(c => UIManager.getPortraitSrc(c));
+                
+                // Extract custom typography config from the story object natively
+                const customFont = story.font || 'var(--font-primary)';
+                const customColor = story.chatTextColor || 'inherit';
 
                 const carouselHTML = hasImages ? DOM.html`
-            <div class="relative w-full aspect-square bg-black/50 group cursor-pointer hover:opacity-90 transition-opacity" title="Click to view full image">
-                 <div id="details-carousel" class="w-full h-full object-cover"></div>
-                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    <svg class="w-12 h-12 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+            <div class="relative w-full aspect-square md:h-[48rem] md:aspect-auto bg-black border-b border-gray-800 group cursor-pointer" title="Click to view full image">
+                 <div id="details-carousel" class="w-full h-full object-cover opacity-70 transition-opacity"></div>
+                 <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent pointer-events-none z-10"></div>
+                 
+                 <!-- Story Title & Creator's Note overlay at the bottom of the hero -->
+                 <div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-2 z-20 pointer-events-none">
+                     <input type="text" 
+                        value="${story.name}" 
+                        style="font-family: ${customFont}; color: ${customColor};"
+                        oninput="LibraryController.updateStoryField('${story.id}', 'name', this.value)" 
+                        class="text-4xl md:text-6xl font-black bg-transparent border-0 p-0 placeholder-gray-400 tracking-tight focus:ring-0 focus:outline-none w-full md:w-11/12 pr-16 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] hover:bg-white/10 focus:bg-white/20 rounded px-2 -ml-2 transition-colors cursor-text pointer-events-auto leading-none"
+                        placeholder="STORY TITLE">
+                     
+                     <div class="relative w-full md:w-11/12 pointer-events-auto group/note">
+                         <textarea oninput="LibraryController.updateStoryField('${story.id}', 'creator_notes', this.value)" style="font-family: ${customFont}; color: ${customColor};" class="w-full bg-transparent border border-transparent hover:border-gray-500/50 focus:border-indigo-500/50 focus:bg-black/60 p-3 -ml-3 rounded-lg resize-none text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] placeholder-gray-400 focus:ring-0 transition-all font-medium scrollbar-hide leading-snug" rows="4" placeholder="Creator's note...">${story.creator_notes || ''}</textarea>
+                         <button data-action="gen-story-notes" data-id="${story.id}" class="absolute top-2 right-2 p-1.5 bg-indigo-900/80 text-white rounded-md border border-indigo-500/50 opacity-0 group-focus-within/note:opacity-100 group-hover/note:opacity-100 transition-opacity micro-hover backdrop-blur-md z-20" title="Generate with AI">${this.getAIGenIcon()}</button>
+                     </div>
                  </div>
-            </div>` : '';
+                 
+                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                    <svg class="w-12 h-12 text-white/50 drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                 </div>
+            </div>` : DOM.html`
+            <div class="relative w-full bg-gray-900 border-b border-gray-800 p-6 pt-24 pb-8 flex flex-col gap-2">
+                 <!-- Imageless fallback header -->
+                 <input type="text" 
+                    value="${story.name}" 
+                    style="font-family: ${customFont}; color: ${customColor};"
+                    oninput="LibraryController.updateStoryField('${story.id}', 'name', this.value)" 
+                    class="text-4xl md:text-6xl font-black bg-transparent border-0 p-0 placeholder-gray-400 tracking-tight focus:ring-0 focus:outline-none w-full md:w-11/12 pr-16 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] hover:bg-white/10 focus:bg-white/20 rounded px-2 -ml-2 transition-colors cursor-text leading-none"
+                    placeholder="STORY TITLE">
+                 
+                 <div class="relative w-full md:w-11/12 group/note mt-2">
+                     <textarea oninput="LibraryController.updateStoryField('${story.id}', 'creator_notes', this.value)" style="font-family: ${customFont}; color: ${customColor};" class="w-full bg-transparent border border-transparent hover:border-gray-500/50 focus:border-indigo-500/50 focus:bg-black/60 p-3 -ml-3 rounded-lg resize-none text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] placeholder-gray-400 focus:ring-0 transition-all font-medium scrollbar-hide leading-snug" rows="4" placeholder="Creator's note...">${story.creator_notes || ''}</textarea>
+                     <button data-action="gen-story-notes" data-id="${story.id}" class="absolute top-2 right-2 p-1.5 bg-indigo-900/80 text-white rounded-md border border-indigo-500/50 opacity-0 group-focus-within/note:opacity-100 group-hover/note:opacity-100 transition-opacity micro-hover backdrop-blur-md z-20" title="Generate with AI">${this.getAIGenIcon()}</button>
+                 </div>
+            </div>`;
 
-                // Added 'pt-24' (Padding Top) if there are no images, so content doesn't hide behind the absolute header
-                const contentPaddingClass = hasImages ? '' : 'pt-24';
+                // Pre-process Tags HTML to pill spans matching Character Details UI exactly
+                let tagsHTML = '';
+                (story.tags || []).forEach(tag => {
+                    const escaped = String(tag).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+                    tagsHTML += `<span class="bg-indigo-900/40 text-indigo-300 text-[11px] font-bold px-2.5 py-1 rounded-md border border-indigo-500/30 flex items-center shadow-sm whitespace-nowrap gap-1">${escaped} <button onclick="LibraryController.removeStoryTag('${story.id}', '${escaped}')" class="hover:text-white transition-colors ml-1">&times;</button></span>`;
+                });
 
                 const detailsHTML = DOM.html`
-            <div class="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent" style="padding-top: calc(1rem + env(safe-area-inset-top));">
-                <input type="text" 
-                   value="${story.name}" 
-                   oninput="LibraryController.updateStoryField('${story.id}', 'name', this.value)" 
-                   class="text-xl font-bold bg-transparent border border-transparent hover:border-gray-600 focus:border-indigo-500 rounded px-2 py-1 text-white w-2/3 transition-colors focus:outline-none focus:bg-black/30 story-details-title-input"
-                   placeholder="Story Title">
-                
-                <div class="story-details-title-balancer"></div>
-
-                <div class="flex items-center space-x-2">
-                    <button data-action="duplicate-story" data-id="${story.id}" class="bg-gray-700/50 hover:bg-gray-600/80 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Duplicate Story">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <div class="absolute top-0 right-0 z-50 p-4 flex justify-end items-center pointer-events-none" style="padding-top: calc(1rem + env(safe-area-inset-top));">
+                <!-- Action Buttons overlapping Hero top-right -->
+                <div class="flex items-center space-x-2 pointer-events-auto">
+                    <button data-action="duplicate-story" data-id="${story.id}" class="bg-black/40 hover:bg-gray-700 text-gray-300 hover:text-white p-2 rounded-full backdrop-blur-sm transition-colors shadow-lg" title="Duplicate Story">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                     </button>
-                    <button data-action="delete-story" data-id="${story.id}" class="text-xs bg-red-900/50 hover:bg-red-700/80 text-red-200 font-semibold py-2 px-3 rounded" title="Delete Story">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    <button data-action="delete-story" data-id="${story.id}" class="bg-red-900/50 hover:bg-red-700/80 text-red-200 p-2 rounded-full backdrop-blur-sm transition-colors shadow-lg" title="Delete Story">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
-                    <div class="w-px h-6 bg-gray-600/50 mx-2"></div>
-                    <button data-action="close-modal" data-id="${targetModal}" class="story-details-close-btn bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <button data-action="close-modal" data-id="${targetModal}" class="bg-black/40 hover:bg-gray-700 text-gray-300 hover:text-white p-2 ml-2 rounded-full backdrop-blur-sm transition-colors shadow-lg" title="Close">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
             </div>
@@ -10130,33 +10334,40 @@
                 
                 ${carouselHTML}
 
-                <div class="p-6 space-y-8 ${contentPaddingClass}">
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="md:col-span-2">
-                             <label class="text-sm text-gray-400 font-bold mb-1 block">Creator's Note</label>
-                             <div class="relative">
-                                 <textarea oninput="LibraryController.updateStoryField('${story.id}', 'creator_notes', this.value)" class="w-full bg-black/30 border-gray-600 p-3 rounded-lg resize-none h-24 text-sm focus:ring-1 focus:ring-indigo-500 transition-all">${story.creator_notes || ''}</textarea>
-                                 <button data-action="gen-story-notes" data-id="${story.id}" class="absolute top-2 right-2 text-gray-500 hover:text-indigo-400 transition-colors" title="Generate with AI">${this.getAIGenIcon()}</button>
-                             </div>
-                        </div>
-                        <div>
-                            <label class="text-sm text-gray-400 font-bold mb-1 block">Tags</label>
-                            <div class="relative">
-                                <input type="text" value="${(story.tags || []).join(', ')}" oninput="LibraryController.updateStoryTags('${story.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-3 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 transition-all">
-                                <button data-action="gen-story-tags" data-id="${story.id}" class="absolute top-1/2 right-2 -translate-y-1/2 text-gray-500 hover:text-indigo-400 transition-colors" title="Generate with AI">${this.getAIGenIcon()}</button>
+                <div class="p-6 space-y-8">
+                    <!-- Top Row: Tags & Actions -->
+                    <div class="w-full flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                        
+                        <!-- Tag Pills Area (Flex-grow) -->
+                        <div class="w-full md:flex-1 md:max-w-xl">
+                            <label class="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-2 block">Global Tags</label>
+                            <div class="flex flex-wrap gap-2 mb-2" id="story-tags-container-${story.id}">
+                                ${DOM.unsafe(tagsHTML)}
+                            </div>
+                            <div class="relative group w-full">
+                                <input type="text" id="story-tag-input-${story.id}" placeholder="Type a tag and press comma..." 
+                                       onkeyup="if(event.key===','){LibraryController.addStoryTag('${story.id}', this.value); this.value='';}"
+                                       class="w-full bg-gray-900/60 border border-gray-700 p-2.5 rounded-lg text-sm text-gray-300 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder-gray-600 shadow-inner">
+                                <button data-action="gen-story-tags" data-id="${story.id}" class="absolute top-1/2 right-2 -translate-y-1/2 p-1 micro-hover text-gray-500 opacity-0 group-hover:opacity-100 hover:text-indigo-400 bg-gray-800/50 rounded-md transition-all" title="Generate with AI">${this.getAIGenIcon()}</button>
                             </div>
                         </div>
-                        <div>
-                            <label class="text-sm text-gray-400 font-bold mb-1 block">Folder</label>
-                            <select onchange="LibraryController.setStoryFolder('${story.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-3 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 transition-all appearance-none">
-                                <option value="">(No Folder)</option>
-                                ${(library.folders || []).map(f => DOM.html`<option value="${f.id}" ${(story.folder_ids && story.folder_ids.includes(f.id)) ? 'selected' : ''}>${f.name}</option>`).join('')}
-                            </select>
+
+                        <!-- Action Button (Shrinks to wrap) -->
+                        ${sortedNarrativeStubs.length > 0 ? DOM.html`
+                        <div class="w-full md:w-auto flex-shrink-0">
+                            <button onclick="LibraryController.loadNarrative('${story.id}', '${sortedNarrativeStubs[0].id}')" class="w-full md:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] transition-all flex items-center justify-center gap-2.5 group text-base transform hover:-translate-y-0.5 border border-indigo-400/50">
+                                <svg class="w-5 h-5 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                                </svg>
+                                Continue
+                            </button>
                         </div>
+                        ` : ''}
+
                     </div>
 
-                    <hr class="border-gray-700">
+                    <hr class="border-gray-800">
 
                     <div>
                         <div class="flex justify-between items-center mb-4">
@@ -10176,7 +10387,22 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="space-y-3" id="scenarios-list-container">${scenariosHTML.length ? scenariosHTML : DOM.unsafe('<p class="text-sm text-gray-500 italic">No scenarios available.</p>')}</div>
+                        
+                        <div class="relative group/slider flex items-center">
+                            <!-- Scroll Left Arrow -->
+                            <button onclick="document.getElementById('scenarios-list-container').scrollBy({left: -320, behavior: 'smooth'})" class="absolute left-2 z-10 p-2 bg-black/80 hover:bg-gray-800 border-2 border-gray-600 rounded-full text-white opacity-0 group-hover/slider:opacity-100 transition-opacity disabled:opacity-0 focus:outline-none" aria-label="Scroll Left">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            </button>
+                            
+                            <div id="scenarios-list-container" class="flex flex-row overflow-x-auto snap-x snap-mandatory scrollbar-hide space-x-6 pb-4 w-full px-2" style="-webkit-overflow-scrolling: touch;">
+                                ${scenariosHTML.length ? scenariosHTML : DOM.unsafe('<p class="text-sm text-gray-500 italic w-full text-center py-8 border border-dashed border-gray-700 rounded-xl">No scenarios available.</p>')}
+                            </div>
+                            
+                            <!-- Scroll Right Arrow -->
+                            <button onclick="document.getElementById('scenarios-list-container').scrollBy({left: 320, behavior: 'smooth'})" class="absolute right-2 z-10 p-2 bg-black/80 hover:bg-gray-800 border-2 border-gray-600 rounded-full text-white opacity-0 group-hover/slider:opacity-100 transition-opacity disabled:opacity-0 focus:outline-none" aria-label="Scroll Right">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </button>
+                        </div>
                     </div>
 
                     <hr class="border-gray-700">
@@ -10451,11 +10677,14 @@
                     return;
                 }
 
+                // Filter out any accidentally saved location characters from the main array just in case
+                const regularChars = state.characters.filter(c => !c.is_location_character);
+
                 // Sorting Logic: Prioritize User, then Active, then Alphabetical
                 // 1. User First
                 // 2. Active Next (Alphabetical)
                 // 3. Inactive Last (Alphabetical)
-                const sortedChars = [...state.characters].sort((a, b) => {
+                const sortedChars = [...regularChars].sort((a, b) => {
                     // Priority 1: User Character
                     if (a.is_user && !b.is_user) return -1;
                     if (!a.is_user && b.is_user) return 1;
@@ -10470,7 +10699,24 @@
                     return nameA.localeCompare(nameB);
                 });
 
-                container.innerHTML = sortedChars.map(UIComponents.CharacterTile).join('');
+                let html = sortedChars.map(UIComponents.CharacterTile).join('');
+
+                // Location Characters
+                if (state.worldMap && state.worldMap.currentLocation) {
+                    const currentLoc = state.worldMap.grid.find(loc => loc.coords.x === state.worldMap.currentLocation.x && loc.coords.y === state.worldMap.currentLocation.y);
+                    if (currentLoc && currentLoc.characters && currentLoc.characters.length > 0) {
+                        html += `
+                            <div class="mt-8 mb-3 mx-2 flex items-center gap-2 border-b border-indigo-500/30 pb-2">
+                                <i class="fas fa-map-marker-alt text-indigo-400/80 text-[10px]"></i>
+                                <h3 class="text-xs font-bold tracking-widest uppercase text-indigo-300/90 glow-text-sm">Local Encounters</h3>
+                            </div>
+                        `;
+                        // Map using the existing tile component
+                        html += currentLoc.characters.map(UIComponents.CharacterTile).join('');
+                    }
+                }
+
+                container.innerHTML = html;
             },
 
             /**
@@ -10776,7 +11022,7 @@
                         if (!msg) continue; // Safety check
                         if (msg.type !== 'chat' || msg.isHidden) continue;
 
-                        const speaker = state.characters.find(c => c.id === msg.character_id);
+                        const speaker = ReactiveStore.getCharacter(msg.character_id);
                         if (speaker && !speaker.is_user) {
                             const candidate = this.getPortraitSrc(speaker, msg.emotion);
                             if (candidate) { latestAiImageUrl = candidate; break; }
@@ -11004,9 +11250,9 @@
                 }
 
                 const lastChatMessages = (state.chat_history || [])
-                    .filter(m => m.type === 'chat' && !m.isHidden && !state.characters.find(c => c.id === m.character_id)?.is_user);
+                    .filter(m => m.type === 'chat' && !m.isHidden && !ReactiveStore.getCharacter(m.character_id)?.is_user);
                 const lastSpeakerMsg = lastChatMessages.length ? lastChatMessages[lastChatMessages.length - 1] : null;
-                const lastSpeaker = lastSpeakerMsg ? state.characters.find(c => c.id === lastSpeakerMsg.character_id) : null;
+                const lastSpeaker = lastSpeakerMsg ? ReactiveStore.getCharacter(lastSpeakerMsg.character_id) : null;
 
                 if (!lastSpeaker) {
                     if (portraitContainer) portraitContainer.innerHTML = '';
@@ -11407,7 +11653,14 @@
                         <button onclick="UIManager.switchWorldMapTab('worldmap')" class="pb-2 text-lg font-bold border-b-2 ${activeWorldMapTab === 'worldmap' ? 'border-indigo-500 text-white' : 'border-transparent text-gray-400 hover:text-white'} transition-colors">Edit Map</button>
                      </div>
                      <div class="flex items-center space-x-3">
-                        <button data-action="clear-world-map" class="text-red-400 hover:text-red-300 transition-colors mr-3" title="Clear World Map">
+                        <div class="flex items-center mr-4 border-r border-gray-600 pr-4">
+                            <label class="relative inline-flex items-center cursor-pointer" title="Generate specialized NPCs in each new location">
+                                <input type="checkbox" onchange="WorldController.toggleLocationCharacters(this.checked)" class="sr-only" ${state.enableLocationCharacters !== false ? 'checked' : ''}>
+                                <div class="w-10 h-5 bg-gray-700 rounded-full toggle-bg border-2 border-gray-600"></div>
+                            </label>
+                            <span class="text-xs text-gray-400 font-bold ml-2 uppercase tracking-wide">NPCs</span>
+                        </div>
+                        <button data-action="clear-world-map" class="text-red-400 hover:text-red-300 transition-colors" title="Clear World Map">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
                         <button id="generate-world-button" data-action="gen-world-map" class="text-sky-400 hover:text-sky-300 transition-colors" title="Generate World with AI">${this.getAIGenIcon()}</button>
@@ -11685,16 +11938,30 @@
              */
             openCharacterDetailModal(charId) {
                 const state = StateManager.getState();
-                const char = state.characters.find(c => c.id === charId);
+                let char = ReactiveStore.getCharacter(charId);
+
+                // Fallback: Check if it's a location specific character embedded in the world map
+                if (!char && state.worldMap && state.worldMap.grid) {
+                    for (const loc of state.worldMap.grid) {
+                        if (loc.characters) {
+                            const found = loc.characters.find(c => c.id === charId);
+                            if (found) {
+                                char = found;
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 if (!char) return;
                 const container = document.getElementById('character-detail-modal-content');
 
-                // Preserve State of Details Section
                 const detailsId = `extra-portraits-details-${char.id}`;
                 const existingDetails = document.getElementById(detailsId);
                 const wasOpen = existingDetails ? existingDetails.hasAttribute('open') : false;
 
                 const canGenImage = UIManager.isImageGenEnabled();
+                const hasEvolvedPersona = state.evolved_characters && state.evolved_characters[char.id];
 
                 let currentRole = 'none';
                 if (char.is_user) currentRole = 'user';
@@ -11741,131 +12008,279 @@
                     <!-- Emotion Selector Footer -->
                     <div class="p-2 border-t border-gray-700 bg-gray-900/30">
                         <select onchange="NarrativeController.updateExtraPortrait('${char.id}', ${index}, 'emotion', this.value)" class="w-full bg-transparent text-xs text-gray-300 font-bold focus:outline-none text-center appearance-none cursor-pointer hover:text-white transition-colors">
-                            <option value="happy" ${emo === 'happy' ? 'selected' : ''}>Happy</option>
-                            <option value="sad" ${emo === 'sad' ? 'selected' : ''}>Sad</option>
-                            <option value="angry" ${emo === 'angry' ? 'selected' : ''}>Angry</option>
-                            <option value="surprised" ${emo === 'surprised' ? 'selected' : ''}>Surprised</option>
-                            <option value="neutral" ${emo === 'neutral' ? 'selected' : ''}>Neutral</option>
-                            <option value="fear" ${emo === 'fear' ? 'selected' : ''}>Fear</option>
-                            <option value="disgust" ${emo === 'disgust' ? 'selected' : ''}>Disgust</option>
-                            <option value="blush" ${emo === 'blush' ? 'selected' : ''}>Blush</option>
+                            <option value="happy" class="bg-gray-800 text-white" ${emo === 'happy' ? 'selected' : ''}>Happy</option>
+                            <option value="sad" class="bg-gray-800 text-white" ${emo === 'sad' ? 'selected' : ''}>Sad</option>
+                            <option value="angry" class="bg-gray-800 text-white" ${emo === 'angry' ? 'selected' : ''}>Angry</option>
+                            <option value="surprised" class="bg-gray-800 text-white" ${emo === 'surprised' ? 'selected' : ''}>Surprised</option>
+                            <option value="neutral" class="bg-gray-800 text-white" ${emo === 'neutral' ? 'selected' : ''}>Neutral</option>
+                            <option value="fear" class="bg-gray-800 text-white" ${emo === 'fear' ? 'selected' : ''}>Fear</option>
+                            <option value="disgust" class="bg-gray-800 text-white" ${emo === 'disgust' ? 'selected' : ''}>Disgust</option>
+                            <option value="blush" class="bg-gray-800 text-white" ${emo === 'blush' ? 'selected' : ''}>Blush</option>
                         </select>
                     </div>
                 </div>`;
                 });
 
-                const tagsValue = (char.tags || []).join(', ');
+                const tagsValue = ''; // Replaced by dynamic pill additions
                 const color = char.color || { base: '#334155', bold: '#94a3b8' };
 
-                const modalHTML = DOM.html`
-            <!-- animate-modal-enter: spring-like pop-in for the whole modal content -->
-            <div class="animate-modal-enter p-6 border-b border-gray-700 flex flex-row justify-between items-center gap-2">
-                <div class="flex-grow min-w-0">
-                    <input type="text" value="${char.name}" oninput="NarrativeController.updateCharacterField('${char.id}', 'name', this.value)" class="text-2xl font-semibold bg-transparent border-b border-transparent hover:border-gray-500 focus:border-indigo-500 transition-colors w-full focus:outline-none" placeholder="Character Name">
-                    <div class="flex items-center space-x-2 mt-1">
-                        <span class="text-sm text-gray-400">Active in this chat</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" ${char.is_active ? 'checked' : ''} onchange="NarrativeController.toggleCharacterActive(event, '${char.id}')">
-                            <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                        </label>
-                    </div>
+                // Pre-process Tags HTML to pill spans
+                let tagsHTML = '';
+                (char.tags || []).forEach(tag => {
+                    const escaped = String(tag).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+                    tagsHTML += `<span class="bg-indigo-900/40 text-indigo-300 text-[11px] font-bold px-2.5 py-1 rounded-md border border-indigo-500/30 flex items-center shadow-sm whitespace-nowrap gap-1">${escaped} <button onclick="NarrativeController.removeCharacterTag('${char.id}', '${escaped}')" class="hover:text-white transition-colors ml-1">&times;</button></span>`;
+                });
+
+            const modalHTML = DOM.html`
+            <!-- Header Area (Tabs + Active Toggle) -->
+            <div class="px-6 pt-4 flex flex-row items-center border-b border-gray-700/50 bg-gray-900/80 rounded-t-xl relative z-40">
+                <!-- Active Toggle shifted to far left Header -->
+                <div class="flex items-center gap-3 mr-6 flex-shrink-0 border-r border-gray-700/50 pr-6">
+                    <label class="relative inline-flex items-center cursor-pointer group" title="Active in this chat">
+                        <input type="checkbox" class="sr-only peer" ${char.is_active !== false ? 'checked' : ''} onchange="NarrativeController.toggleCharacterActive(event, '${char.id}')">
+                        <div class="w-11 h-6 bg-gray-700/80 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500 shadow-inner group-hover:ring-2 ring-indigo-500/30 transition-all"></div>
+                    </label>
+                    <span class="text-[10px] uppercase tracking-[0.2em] font-bold ${char.is_active !== false ? 'text-indigo-300' : 'text-gray-500'} transition-colors hidden sm:inline pt-0.5 mt-px">Active</span>
                 </div>
-                
-                <div class="flex items-center space-x-4">
-                    <!-- Role pills: micro-hover for snappy feedback -->
-                    <div class="flex bg-black/40 rounded-lg p-1">
-                        <button data-action="set-char-role" data-id="${char.id}" data-role="user" class="micro-hover px-3 py-1 rounded-md text-sm font-bold transition-colors ${currentRole === 'user' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}">User</button>
-                        <button data-action="set-char-role" data-id="${char.id}" data-role="none" class="micro-hover px-3 py-1 rounded-md text-sm font-bold transition-colors ${currentRole === 'none' ? 'bg-gray-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}">NPC</button>
-                        <button data-action="set-char-role" data-id="${char.id}" data-role="narrator" class="micro-hover px-3 py-1 rounded-md text-sm font-bold transition-colors ${currentRole === 'narrator' ? 'bg-teal-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}">Narrator</button>
-                    </div>
-                    <button data-action="close-modal" data-id="character-detail-modal" class="micro-hover bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white p-2 rounded-lg transition-colors" title="Close">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+
+                <!-- Tab Navigation Bar -->
+                <div class="flex flex-row space-x-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                    <button onclick="window.switchCharTab(this, 'tab-identity')" data-tab="tab-identity" class="character-tab-btn border-b-2 border-indigo-500 text-indigo-400 px-4 py-3 font-semibold text-sm transition-colors hover:text-indigo-300 flex-shrink-0 tracking-wide uppercase">Identity</button>
+                    <button onclick="window.switchCharTab(this, 'tab-prompts')" data-tab="tab-prompts" class="character-tab-btn border-b-2 border-transparent text-gray-400 px-4 py-3 font-semibold text-sm transition-colors hover:text-gray-300 flex-shrink-0 tracking-wide uppercase">Prompts</button>
+                    <button onclick="window.switchCharTab(this, 'tab-advanced')" data-tab="tab-advanced" class="character-tab-btn border-b-2 border-transparent text-gray-400 px-4 py-3 font-semibold text-sm transition-colors hover:text-gray-300 flex-shrink-0 tracking-wide uppercase">Advanced</button>
                 </div>
             </div>
 
-            <div class="p-6 overflow-y-auto space-y-4">
-                <!-- Staggered details sections: each delays 0.06s more than the previous -->
-                <details open class="motion-details animate-fade-rise" style="animation-delay: 0.06s;">
-                    <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 transition-colors">Primary Info</summary>
-                    <div class="p-4 space-y-4 bg-black/20 rounded-b-lg">
+            <!-- Controls & Close (Absolute Top Right overriding Header) -->
+            <div class="absolute top-2.5 right-2.5 z-50">
+                <button data-action="close-modal" data-id="character-detail-modal" class="micro-hover bg-black/40 hover:bg-gray-700 text-gray-300 hover:text-white p-2 rounded-full backdrop-blur-sm transition-colors shadow-lg" title="Close">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Scrollable Content Area -->
+            <div class="p-6 md:p-8 overflow-y-auto space-y-6 bg-gray-800/80 rounded-b-xl relative">
+                
+                <!-- V4 Hero Identity Tab -->
+                <div id="tab-identity" class="character-tab-content animate-fade-rise">
+                    <!-- Hero Image Container -->
+                    <div class="relative w-full aspect-square md:aspect-[21/9] rounded-2xl overflow-hidden group mb-6 shadow-2xl bg-gray-900 border border-gray-700/50 flex transition-all">
+                        ${this.getPortraitSrc(char) ? DOM.html`
+                            <img src="${this.getPortraitSrc(char)}" class="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105">
+                        ` : DOM.html`
+                            <div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/50">
+                                <svg class="w-16 h-16 text-gray-500 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                <span class="text-gray-500 text-[10px] font-bold tracking-widest uppercase">Upload Hero Portrait</span>
+                            </div>
+                        `}
                         
-                        <div><label class="text-sm text-gray-400">Short Description (for roster card)</label><input type="text" value="${char.short_description}" oninput="NarrativeController.updateCharacterField('${char.id}', 'short_description', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"></div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label class="text-sm text-gray-400" style="padding-right: 1rem;">Bubble Base Color</label><input type="color" value="${color.base}" oninput="NarrativeController.updateCharacterColor('${char.id}', 'base', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded" style="width: 4rem;"></div>
-                            <div><label class="text-sm text-gray-400" style="padding-right: 1rem;">Name Color</label><input type="color" value="${color.bold}" oninput="NarrativeController.updateCharacterColor('${char.id}', 'bold', this.value)" class="w-full h-10 p-1 bg-black/30 border-gray-600 rounded" style="width: 4rem;"></div>
-                        </div>
-                        
-                        <!-- TTS Voice Selector -->
-                        <div>
-                            <label class="text-sm text-gray-400 block mb-1">TTS Voice Override</label>
-                            <select onchange="NarrativeController.updateCharacterField('${char.id}', 'ttsVoice', this.value)" class="w-full bg-black/30 border-gray-600 rounded p-2 text-sm text-gray-200 focus:border-indigo-500 focus:outline-none">
-                                <option value="" ${!char.ttsVoice ? 'selected' : ''}>Default (Global Setting)</option>
-                                ${TTSService && TTSService.CONSTANTS && TTSService.CONSTANTS.VOICES ? DOM.unsafe(TTSService.CONSTANTS.VOICES.map(v => `<option value="${v.id}" ${char.ttsVoice === v.id ? 'selected' : ''}>${v.name}</option>`).join('')) : DOM.unsafe('<option disabled>No voices available</option>')}
-                            </select>
+                        <!-- Gradient Overlay -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent pointer-events-none z-0"></div>
+
+                        <!-- Hover Upload Overlay -->
+                        <label class="absolute inset-0 cursor-pointer z-10 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm">
+                            <svg class="w-8 h-8 text-white mb-1 drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span class="text-white text-xs font-bold tracking-widest uppercase drop-shadow-md">Change Portrait</span>
+                            <input type="file" accept="image/*" data-action-change="upload-local-image" data-id="${char.id}" class="hidden">
+                        </label>
+
+                        <!-- Floating Text Over Image -->
+                        <div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-2 z-20 pointer-events-none">
+                            <div class="pointer-events-auto w-full md:w-3/4">
+                                <input type="text" value="${char.name}" style="font-family: var(--chat-font-family)" oninput="NarrativeController.updateCharacterField('${char.id}', 'name', this.value)" class="text-5xl md:text-6xl font-black bg-transparent border-0 p-0 text-white placeholder-gray-400 tracking-tight focus:ring-0 focus:outline-none w-full leading-none hover:bg-white/10 focus:bg-white/20 rounded-lg px-2 -ml-2 drop-shadow-lg transition-colors" placeholder="CHARACTER NAME">
+                                
+                                <div class="relative group mt-2">
+                                    <!-- Markdown Styling Overlay (Synced metrics to fix caret alignment) -->
+                                    <div class="markdown-backdrop absolute inset-0 p-3 text-xl md:text-2xl text-gray-200 pointer-events-none whitespace-pre-wrap break-words drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-0 overflow-y-auto scrollbar-hide leading-snug border border-transparent" aria-hidden="true" style="font-family: var(--chat-font-family)">${DOM.unsafe(NarrativeController.formatMarkdownOverlay(char.short_description || ''))}</div>
+                                    <!-- Transparent Text input -->
+                                    <textarea oninput="NarrativeController.updateCharacterField('${char.id}', 'short_description', this.value); NarrativeController.syncMarkdownOverlay(this)" onscroll="NarrativeController.syncMarkdownOverlay(this)" placeholder="A shadowed past, a bright future..." class="relative z-10 w-full bg-transparent border border-transparent hover:border-gray-500/50 focus:border-indigo-500/50 focus:bg-black/60 p-3 text-xl md:text-2xl text-transparent caret-white placeholder-gray-400 focus:ring-0 resize-none overflow-y-auto scrollbar-hide max-h-[15rem] leading-snug rounded-xl transition-all" style="font-family: var(--chat-font-family)" rows="2">${char.short_description || ''}</textarea>
+                                    
+                                    <button data-action="gen-short-desc" data-id="${char.id}" class="absolute top-2 right-2 p-1.5 bg-indigo-900/80 text-white rounded-md border border-indigo-500/50 opacity-0 group-focus-within:opacity-100 hover:opacity-100 transition-opacity micro-hover backdrop-blur-md z-20" title="Summarize Persona">
+                                        ${this.getAIGenIcon()}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
-                        <div><label class="text-sm text-gray-400">Tags (comma-separated)</label><input type="text" value="${tagsValue}" oninput="NarrativeController.updateCharacterTags('${char.id}', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded"><button data-action="gen-char-tags" data-id="${char.id}" class="micro-hover text-xs text-sky-400 hover:text-sky-300 mt-1 p-1 bg-sky-600/80 rounded">${this.getAIGenIcon()}</button></div>
+                        <!-- Action Buttons floating Top Right -->
+                        ${this.getPortraitSrc(char) ? DOM.html`
+                        <div class="absolute top-4 right-4 flex items-center gap-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
+                            ${canGenImage ? DOM.html`<button onclick="NarrativeController.openCharacterImageGenerator('${char.id}', 'primary')" class="micro-hover p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full border border-indigo-400/50 shadow-lg" title="Generate New Avatar">${this.getAIGenIcon()}</button>` : ''}
+                            <button onclick="NarrativeController.openImageCropper('${char.id}', 'primary')" class="micro-hover p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-full border border-gray-600 shadow-lg" title="Crop Avatar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
+                            <button onclick="NarrativeController.deleteCharacterImage('${char.id}')" class="micro-hover p-2 bg-red-600 hover:bg-red-500 text-white rounded-full border border-red-400/50 shadow-lg" title="Delete Avatar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                        </div>` : ''}
+                    </div>
+
+                    <!-- Lower Dossier Elements -->
+                    <div class="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-gray-900/40 p-5 rounded-xl border border-gray-700/50">
+                        <!-- Role Pills -->
+                        <div class="flex gap-2 items-center">
+                            <label class="text-[10px] uppercase tracking-widest font-bold text-gray-500 mr-2">Role</label>
+                            <button data-action="set-char-role" data-id="${char.id}" data-role="user" class="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${currentRole === 'user' ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}">User</button>
+                            <button data-action="set-char-role" data-id="${char.id}" data-role="none" class="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${currentRole === 'none' ? 'bg-gray-600 text-white shadow-[0_0_15px_rgba(75,85,99,0.4)]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}">NPC</button>
+                            <button data-action="set-char-role" data-id="${char.id}" data-role="narrator" class="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${currentRole === 'narrator' ? 'bg-teal-500 text-white shadow-[0_0_15px_rgba(20,184,166,0.4)]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}">Narrator</button>
+                        </div>
                         
-                        <div class="mt-4 pt-4 border-t border-gray-800">
-                            <label class="text-sm text-gray-400">Default Image</label>
-                            <div class="flex items-start gap-4 mt-2">
-                                ${this.getPortraitSrc(char) ? DOM.html`<div class="card-hover w-64 h-64 flex-shrink-0 bg-gray-800 rounded overflow-hidden border border-gray-600 relative group">
-                                    <img src="${this.getPortraitSrc(char)}" class="w-full h-full object-cover">
-                                    <div class="absolute bottom-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onclick="NarrativeController.openImageCropper('${char.id}', 'primary')" class="micro-hover bg-black/70 hover:bg-black text-white text-xs font-bold p-1 px-2 rounded backdrop-blur-sm shadow-sm" title="Crop Image">
-                                            Crop
-                                        </button>
-                                        <button onclick="NarrativeController.deleteCharacterImage('${char.id}')" class="micro-hover bg-red-600/80 hover:bg-red-500 text-white text-xs font-bold p-1 px-2 rounded backdrop-blur-sm shadow-sm" title="Delete Image">
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>` : ''}
-                                <div class="flex-grow flex flex-row items-center gap-2">
-                                    <input type="file" accept="image/*" data-action-change="upload-local-image" data-id="${char.id}" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600 cursor-pointer">
-                                    ${canGenImage ? DOM.html`<button onclick="NarrativeController.openCharacterImageGenerator('${char.id}', 'primary')" class="micro-hover w-10 h-10 flex-shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white rounded flex items-center justify-center shadow-sm" title="Generate Portrait">
-                                        ${this.getAIGenIcon()}
-                                    </button>` : ''}
+                        <!-- Tiny Color Pickers -->
+                        <div class="flex items-center gap-6">
+                            <div class="flex items-center gap-3 group">
+                                <label class="text-[10px] uppercase tracking-widest font-bold text-gray-500 group-hover:text-gray-300 transition-colors">Bubble Color</label>
+                                <div class="w-5 h-5 rounded-full overflow-hidden border border-gray-600 shadow-sm relative cursor-pointer group-hover:scale-110 transition-transform">
+                                    <input type="color" value="${color.base}" oninput="NarrativeController.updateCharacterColor('${char.id}', 'base', this.value)" class="absolute inset-[-10px] w-12 h-12 cursor-pointer border-0 p-0">
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 group">
+                                <label class="text-[10px] uppercase tracking-widest font-bold text-gray-500 group-hover:text-gray-300 transition-colors">Name Color</label>
+                                <div class="w-5 h-5 rounded-full overflow-hidden border border-gray-600 shadow-sm relative cursor-pointer group-hover:scale-110 transition-transform">
+                                    <input type="color" value="${color.bold}" oninput="NarrativeController.updateCharacterColor('${char.id}', 'bold', this.value)" class="absolute inset-[-10px] w-12 h-12 cursor-pointer border-0 p-0">
                                 </div>
                             </div>
                         </div>
                     </div>
-                </details>
-                <details class="motion-details animate-fade-rise" style="animation-delay: 0.12s;">
-                    <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 transition-colors">Persona</summary>
-                    <div class="p-4 space-y-4 bg-black/20 rounded-b-lg">
-                         <textarea id="persona-description-${char.id}" oninput="NarrativeController.updateCharacterField('${char.id}', 'description', this.value); UIManager.updateTokenCount('${char.id}', this.value)" class="w-full h-48 bg-black/30 border-gray-600 p-2 resize-y rounded">${char.description}</textarea>
-                         <div class="flex justify-between items-center"><span class="text-right text-sm text-gray-400" id="token-counter-${char.id}">~${Math.round((char.description || '').length / 4)} tokens</span><button data-action="enhance-persona" data-id="${char.id}" class="micro-hover text-sm bg-sky-600/80 hover:bg-sky-500/80 font-semibold py-2 px-3 rounded-lg">${this.getAIGenIcon()}</button></div>
-                    </div>
-                </details>
-                <details class="motion-details animate-fade-rise" style="animation-delay: 0.18s;">
-                    <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 transition-colors">Model Instructions</summary>
-                    <div class="p-4 space-y-4 bg-black/20 rounded-b-lg">
-                         <textarea oninput="NarrativeController.updateCharacterField('${char.id}', 'model_instructions', this.value)" class="w-full h-48 bg-black/30 border-gray-600 p-2 resize-y rounded">${char.model_instructions}</textarea>
-                         <div class="text-right"><button data-action="gen-model-instructions" data-id="${char.id}" class="micro-hover text-sm bg-sky-600/80 hover:bg-sky-700/80 font-semibold py-2 px-3 rounded-lg">${this.getAIGenIcon()}</button></div>
-                    </div>
-                </details>
-                <details id="${detailsId}" ${wasOpen ? 'open' : ''} class="motion-details animate-fade-rise" style="animation-delay: 0.24s;">
-                    <summary class="font-semibold text-lg cursor-pointer hover:text-indigo-300 transition-colors">Emotional Portraits</summary>
-                    <div class="p-4 space-y-4 bg-black/20 rounded-b-lg">
-                        <div id="extra-portraits-${char.id}" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                            ${extraPortraitsHTML}
-                            
-                            <!-- Add Button as a Card -->
-                            <button data-action="add-extra-portrait" data-id="${char.id}" class="micro-hover aspect-square rounded-lg border-2 border-dashed border-gray-700 hover:border-indigo-500 hover:bg-indigo-900/20 text-gray-500 hover:text-indigo-300 transition-colors flex flex-col items-center justify-center gap-2">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                <span class="text-xs font-bold">Add New</span>
-                            </button>
+
+                    <!-- Tags Section (Pill on Comma) -->
+                    <div class="mt-6 flex flex-col gap-2 bg-gray-900/40 p-5 rounded-xl border border-gray-700/50">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Identifiers / Tags</label>
+                            <button data-action="gen-char-tags" data-id="${char.id}" class="text-[10px] uppercase tracking-widest font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1 transition-colors">${this.getAIGenIcon()} Auto-Detect</button>
+                        </div>
+                        <div class="w-full flex flex-wrap gap-2 items-center min-h-[2rem] bg-gray-950/20 p-2 rounded-lg border border-gray-800">
+                            ${DOM.unsafe(tagsHTML)}
+                            <input type="text" id="tag-input-${char.id}" onkeyup="NarrativeController.handleTagInput(event, '${char.id}')" placeholder="Type a tag and press comma..." class="flex-grow bg-transparent border-0 text-sm font-medium text-gray-300 focus:ring-0 min-w-[150px] p-1 px-2">
                         </div>
                     </div>
-                </details>
+                </div>
+
+
+                <!-- Prompts Tab -->
+                <div id="tab-prompts" class="character-tab-content hidden animate-fade-rise">
+                    <div class="space-y-6">
+                        <div class="bg-gray-900/40 border border-gray-700 rounded-xl overflow-hidden shadow-inner flex flex-col">
+                            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-gray-900/60">
+                                <label class="text-[10px] uppercase tracking-widest font-bold text-indigo-400 flex items-center gap-2">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                    Persona Description
+                                </label>
+                                <div class="flex items-center gap-4">
+                                    <span class="text-[10px] font-mono text-gray-500" id="token-counter-${char.id}">~${Math.round((char.description || '').length / 4)} tokens</span>
+                                    <button onclick="NarrativeController.viewEvolvedPersona('${char.id}')" class="micro-hover px-2 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md transition-colors border ${hasEvolvedPersona ? 'bg-indigo-900/40 text-indigo-300 border-indigo-500/50 hover:bg-indigo-500 hover:text-white cursor-pointer' : 'bg-gray-800 text-gray-500 border-gray-700 opacity-50 cursor-not-allowed'}" ${hasEvolvedPersona ? '' : 'disabled'} title="View Narrative (Evolved) Persona">
+                                        View Narrative Persona
+                                    </button>
+                                    <button data-action="enhance-persona" data-id="${char.id}" class="micro-hover text-indigo-400 hover:text-indigo-300 p-1.5 bg-indigo-900/20 rounded-md transition-colors border border-transparent hover:border-indigo-500/30" title="Enhance Persona via AI">
+                                        ${this.getAIGenIcon()}
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <!-- Markdown Styling Overlay (Synced metrics to fix caret alignment) -->
+                                <div class="markdown-backdrop absolute inset-0 p-5 text-base leading-relaxed text-gray-200 pointer-events-none whitespace-pre-wrap break-words z-0 overflow-y-auto scrollbar-hide text-left border border-transparent" aria-hidden="true">${DOM.unsafe(NarrativeController.formatMarkdownOverlay(char.description || ''))}</div>
+                                <textarea id="persona-description-${char.id}" oninput="NarrativeController.updateCharacterField('${char.id}', 'description', this.value); UIManager.updateTokenCount('${char.id}', this.value); NarrativeController.syncMarkdownOverlay(this)" onscroll="NarrativeController.syncMarkdownOverlay(this)" class="relative z-10 w-full min-h-[16rem] bg-transparent border border-transparent p-5 resize-y text-transparent caret-white focus:bg-gray-900/40 focus:ring-0 focus:outline-none text-base leading-relaxed transition-colors" placeholder="Describe the character's personality, background, appearance, and typical behavior...">${char.description}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-900/40 border border-gray-700 rounded-xl overflow-hidden shadow-inner flex flex-col">
+                            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-gray-900/60">
+                                <label class="text-[10px] uppercase tracking-widest font-bold text-purple-400 flex items-center gap-2">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                                    Model Instructions
+                                </label>
+                                <button data-action="gen-model-instructions" data-id="${char.id}" class="micro-hover text-purple-400 hover:text-purple-300 p-1.5 bg-purple-900/20 rounded-md transition-colors border border-transparent hover:border-purple-500/30" title="Generate Instructions via AI">
+                                    ${this.getAIGenIcon()}
+                                </button>
+                            </div>
+                            <div class="relative">
+                                <!-- Markdown Styling Overlay (Synced metrics to fix caret alignment) -->
+                                <div class="markdown-backdrop absolute inset-0 p-5 text-base leading-relaxed text-gray-200 pointer-events-none whitespace-pre-wrap break-words z-0 overflow-y-auto scrollbar-hide text-left border border-transparent" aria-hidden="true">${DOM.unsafe(NarrativeController.formatMarkdownOverlay(char.model_instructions || ''))}</div>
+                                <textarea oninput="NarrativeController.updateCharacterField('${char.id}', 'model_instructions', this.value); NarrativeController.syncMarkdownOverlay(this)" onscroll="NarrativeController.syncMarkdownOverlay(this)" class="relative z-10 w-full min-h-[16rem] bg-transparent border border-transparent p-5 resize-y text-transparent caret-white focus:bg-gray-900/40 focus:ring-0 focus:outline-none text-base leading-relaxed transition-colors" placeholder="Specific instructions for how the AI should play this character (e.g., 'Speak with an Irish accent', 'Never use modern slang', etc.)...">${char.model_instructions}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Tab (Voice + Portraits) -->
+                <div id="tab-advanced" class="character-tab-content hidden animate-fade-rise">
+                    <div class="space-y-12">
+                        
+                        <!-- Voice Section (Shifted Above Portraits) -->
+                        <section>
+                            <label class="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
+                                <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                                Text-to-Speech Override
+                            </label>
+                            <div class="max-w-xl bg-gray-900/40 rounded-xl p-6 shadow-inner border border-gray-800">
+                                <p class="text-xs text-gray-400 mb-3 block">Select a specific voice to override the global setting.</p>
+                                <select onchange="NarrativeController.updateCharacterField('${char.id}', 'ttsVoice', this.value)" class="w-full bg-gray-800 text-white border border-gray-700 hover:border-gray-500 rounded-lg p-3 text-sm focus:border-indigo-500 focus:outline-none transition-colors shadow-inner appearance-none cursor-pointer">
+                                    <option value="" class="bg-gray-800 text-white" ${!char.ttsVoice ? 'selected' : ''}>Default (Use Global Setting)</option>
+                                    ${TTSService && TTSService.CONSTANTS && TTSService.CONSTANTS.VOICES ? DOM.unsafe(TTSService.CONSTANTS.VOICES.map(v => `<option value="${v.id}" class="bg-gray-800 text-white" ${char.ttsVoice === v.id ? 'selected' : ''}>${v.name}</option>`).join('')) : DOM.unsafe('<option class="bg-gray-800 text-white" disabled>No voices available</option>')}
+                                </select>
+                            </div>
+                        </section>
+
+                        <!-- Portraits Section -->
+                        <section>
+                            <label class="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
+                                <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                Emotional Portraits
+                            </label>
+                            <div id="extra-portraits-${char.id}" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                ${extraPortraitsHTML}
+                                <!-- Add Button as a Card -->
+                                <button data-action="add-extra-portrait" data-id="${char.id}" class="aspect-square rounded-xl border-2 border-dashed border-gray-600 bg-gray-800/30 hover:border-indigo-500 hover:bg-indigo-900/20 text-gray-500 hover:text-indigo-400 transition-all flex flex-col items-center justify-center gap-3 shadow-inner group">
+                                    <div class="bg-gray-800 group-hover:bg-indigo-900/50 p-3 rounded-full transition-colors">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    </div>
+                                    <span class="text-[10px] font-bold tracking-widest uppercase">Add New</span>
+                                </button>
+                            </div>
+                        </section>
+                        
+                    </div>
+                </div>
             </div>
-            <div class="animate-fade-rise p-4 bg-black/20 border-t border-gray-700 flex justify-between" style="animation-delay: 0.3s;">
-                <button data-action="delete-character" data-id="${char.id}" class="micro-hover text-xs bg-red-900/50 hover:bg-red-700/80 text-red-200 font-semibold py-2 px-3 rounded">Delete</button>
+
+            
+            <div class="p-5 flex flex-row-reverse justify-between rounded-b-lg border-t border-gray-700 bg-gray-900/60 backdrop-blur-sm">
+                <!-- Empty spacer to push delete button to the left -->
+                <button data-action="delete-character" data-id="${char.id}" class="px-4 py-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 text-xs uppercase tracking-wider font-bold rounded-lg border border-red-500/30 hover:border-red-500/50 transition-all flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Delete Character
+                </button>
             </div>
         `;
                 container.innerHTML = modalHTML.toString();
+
+                // Attach inline JS tab switcher with state persistence
+                if (!window.switchCharTab) {
+                    window.switchCharTab = function(btn, tabId) {
+                        window.activeCharTab = tabId; // Persist state across re-renders
+                        const container = btn.closest('#character-detail-modal-content');
+                        if (!container) return;
+                        
+                        container.querySelectorAll('.character-tab-content').forEach(el => {
+                            el.classList.add('hidden');
+                        });
+                        
+                        container.querySelectorAll('.character-tab-btn').forEach(b => {
+                            b.classList.remove('border-indigo-500', 'text-indigo-400');
+                            b.classList.add('border-transparent', 'text-gray-400');
+                        });
+
+                        const targetContent = container.querySelector('#' + tabId);
+                        if (targetContent) targetContent.classList.remove('hidden');
+                        
+                        btn.classList.remove('border-transparent', 'text-gray-400');
+                        btn.classList.add('border-indigo-500', 'text-indigo-400');
+                    };
+                }
+
+                // Restore previous active tab state seamlessly
+                setTimeout(() => {
+                    const defaultTab = window.activeCharTab || 'tab-identity';
+                    const targetBtn = container.querySelector('[data-tab="' + defaultTab + '"]');
+                    if (targetBtn && window.switchCharTab) {
+                        window.switchCharTab(targetBtn, defaultTab);
+                    }
+                }, 0);
 
                 container.querySelectorAll('textarea').forEach(textarea => {
                     const autoResize = () => { textarea.style.height = 'auto'; textarea.style.height = `${textarea.scrollHeight}px`; };
@@ -11892,11 +12307,19 @@
                 }
 
                 // activeAiChars contains ONLY non-user characters
-                const activeAiChars = state.characters.filter(c => !c.is_user && c.is_active);
+                let activeAiChars = state.characters.filter(c => !c.is_user && c.is_active);
+
+                // Look for strictly local NPCs bound to your current world coordinates
+                if (state.worldMap && state.worldMap.currentLocation && state.worldMap.grid) {
+                    const currentLoc = state.worldMap.grid.find(loc => loc.coords.x === state.worldMap.currentLocation.x && loc.coords.y === state.worldMap.currentLocation.y);
+                    if (currentLoc && currentLoc.characters && currentLoc.characters.length > 0) {
+                        const localOnlyNpcs = currentLoc.characters.filter(c => c.is_active && !c.is_user);
+                        activeAiChars = activeAiChars.concat(localOnlyNpcs);
+                    }
+                }
 
                 // FIX: Item 7 - Logic check:
                 // If 1 AI char + 1 User = 2 total. activeAiChars.length is 1. 1 <= 1 is true. Hidden. Correct.
-                // If 2 AI chars + 1 User = 3 total. activeAiChars.length is 2. 2 <= 1 is false. Shown. Correct.
                 // If Event Master is configured, always show the selector
                 if (activeAiChars.length <= 1 && !state.event_master_base_prompt) {
                     selector.style.display = 'none';
@@ -13060,6 +13483,16 @@
                     analysisToggle.checked = state.enableAnalysis !== false; // Default true
                     analysisToggle.addEventListener('change', (e) => {
                         state.enableAnalysis = e.target.checked;
+                        if (typeof ReactiveStore.forceSave === 'function') ReactiveStore.forceSave();
+                    });
+                }
+
+                // Toggle for Living Persona
+                const livingPersonaToggle = document.getElementById('enable-living-persona-toggle');
+                if (livingPersonaToggle) {
+                    livingPersonaToggle.checked = state.enableLivingPersona === true; // Default false
+                    livingPersonaToggle.addEventListener('change', (e) => {
+                        state.enableLivingPersona = e.target.checked;
                         if (typeof ReactiveStore.forceSave === 'function') ReactiveStore.forceSave();
                     });
                 }
@@ -14605,6 +15038,49 @@ JSON array of objects: { "title": "...", "content": "..." }`;
             }, 300),
 
             /**
+             * Adds a new tag to the story and saves.
+             */
+            addStoryTag: debounce(async function (storyId, newTag) {
+                if (!newTag || !newTag.trim()) return;
+                try {
+                    const library = StateManager.getLibrary();
+                    const story = library.stories.find(s => s.id === storyId);
+                    if (!story) return;
+
+                    let tags = [...(story.tags || [])];
+                    const cleanTag = newTag.trim();
+                    if (!tags.includes(cleanTag)) {
+                        tags.push(cleanTag);
+                        await this.updateStoryTags(storyId, tags.join(', '));
+                        if (UIManager.RUNTIME.viewingStoryId === storyId) {
+                            UIManager.openStoryDetails(storyId);
+                        } else {
+                            UIManager.renderStoryLibrary();
+                        }
+                    }
+                } catch (e) { console.error("Failed to add story tag", e); }
+            }, 300),
+
+            /**
+             * Removes a tag from the story and saves.
+             */
+            removeStoryTag: async function (storyId, tagToRemove) {
+                try {
+                    const library = StateManager.getLibrary();
+                    const story = library.stories.find(s => s.id === storyId);
+                    if (!story) return;
+
+                    let tags = (story.tags || []).filter(t => t !== tagToRemove);
+                    await this.updateStoryTags(storyId, tags.join(', '));
+                    if (UIManager.RUNTIME.viewingStoryId === storyId) {
+                        UIManager.openStoryDetails(storyId);
+                    } else {
+                        UIManager.renderStoryLibrary();
+                    }
+                } catch (e) { console.error("Failed to remove story tag", e); }
+            },
+
+            /**
              * Updates a story's tags (debounced).
              * @param {string} storyId - The ID of the story.
              * @param {string} value - The comma-separated tags string.
@@ -15154,6 +15630,7 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                             system_prompt: story.system_prompt,
                             event_master_base_prompt: story.event_master_base_prompt,
                             prompt_persona_gen: story.prompt_persona_gen,
+                            prompt_living_persona_gen: story.prompt_living_persona_gen,
                             prompt_world_map_gen: story.prompt_world_map_gen,
                             prompt_location_gen: story.prompt_location_gen,
                             prompt_entry_gen: story.prompt_entry_gen,
@@ -16573,13 +17050,13 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 const recentHistory = historySlice
                     .filter(m => m && m.type === 'chat' && !m.isHidden)
                     .map(m => {
-                        const char = state.characters.find(c => c.id === m.character_id);
+                        const char = ReactiveStore.getCharacter(m.character_id);
                         return `${char ? char.name : 'Unknown'}: ${m.content}`;
                     })
                     .join('\n');
 
                 // 2. Gather Personas & Location
-                const activeChars = state.characters.filter(c => c.is_active || c.is_user); // Include user
+                const activeChars = [...state.characters, ...ReactiveStore.getActiveLocationCharacters()].filter(c => c.is_active || c.is_user); // Include user
                 const charPersonas = activeChars.map(c => `${c.name}: ${c.description.substring(0, 300)}`).join('\n\n');
 
                 let locationContext = "";
@@ -17089,12 +17566,16 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
 
                 if (state.messageCounter > 0 && state.messageCounter % 6 === 0) {
                     const history = state.chat_history;
-                    // Get last 6 chat messages
-                    const recent = history.filter(m => m.type === 'chat').slice(-6);
-                    if (recent.length < 6) return;
+                    // Get last 6 chat messages, EXCLUDING the very last one.
+                    // This prevents unreviewed AI responses from immediately polluting the knowledge base,
+                    // allowing the user to regenerate the last message without issues.
+                    const chatMessages = history.filter(m => m.type === 'chat');
+                    const recent = chatMessages.slice(0, -1).slice(-6);
+
+                    if (recent.length === 0) return;
 
                     const transcript = recent.map(m => {
-                        const char = state.characters.find(c => c.id === m.character_id);
+                        const char = ReactiveStore.getCharacter(m.character_id);
                         return `${char ? char.name : 'Unknown'}: ${m.content}`;
                     }).join('\n');
 
@@ -17316,6 +17797,16 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
 
                     // Increment Counter (Only on NEW messages)
                     state.messageCounter = (state.messageCounter || 0) + 1;
+
+                    // Living Persona Check
+                    if (state.enableLivingPersona) {
+                        state.livingPersonaCounters = state.livingPersonaCounters || {};
+                        state.livingPersonaCounters[charId] = (state.livingPersonaCounters[charId] || 0) + 1;
+                        if (state.livingPersonaCounters[charId] >= 10) {
+                            state.livingPersonaCounters[charId] = 0; // Reset
+                            this.evaluateLivingPersona(charId); // Fire & Forget
+                        }
+                    }
                 }
 
                 // 2. Render UI
@@ -17394,7 +17885,7 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                     const systemPrompt = state.prompt_response_options_gen || UTILITY.getDefaultSystemPrompts().prompt_response_options_gen;
 
                     // Build Context (Names mapping)
-                    const charNames = state.characters.reduce((acc, c) => ({ ...acc, [c.id]: c.name }), {});
+                    const charNames = [...state.characters, ...ReactiveStore.getActiveLocationCharacters()].reduce((acc, c) => ({ ...acc, [c.id]: c.name }), {});
                     const context = state.chat_history.slice(-10).map(m => `${charNames[m.character_id] || 'Unknown'}: ${m.content}`).join('\n');
 
                     const userName = userChar?.name || 'the player';
@@ -17482,7 +17973,7 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                 for (let i = history.length - 1; i >= 0; i--) {
                     const msg = history[i];
                     if (msg.type === 'chat' && !msg.isHidden) {
-                        const char = state.characters.find(c => c.id === msg.character_id);
+                        const char = ReactiveStore.getCharacter(msg.character_id);
 
                         // If we hit an AI character first, we regenerate THAT message.
                         if (char && !char.is_user) {
@@ -17547,7 +18038,7 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                         let finalHTML = DOM.unsafe(marked.parse(styledContent || ''));
 
                         // Re-apply character image if in bubble mode
-                        const char = state.characters.find(c => c.id === msg.character_id);
+                        const char = ReactiveStore.getCharacter(msg.character_id);
                         if (state.characterImageMode === 'bubble' && char) {
                             const imgSrc = UIManager.getPortraitSrc(char, msg.versions[nextVer].emotion);
                             if (imgSrc) finalHTML = `<img src="${imgSrc}" class="bubble-char-image">${finalHTML}`;
@@ -17612,6 +18103,16 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                 if (type === 'chat') {
                     ReactiveStore.state.messageCounter++;
                     this.checkAutoStaticKnowledge();
+
+                    // Living Persona Check
+                    if (state.enableLivingPersona) {
+                        state.livingPersonaCounters = state.livingPersonaCounters || {};
+                        state.livingPersonaCounters[id] = (state.livingPersonaCounters[id] || 0) + 1;
+                        if (state.livingPersonaCounters[id] >= 10) {
+                            state.livingPersonaCounters[id] = 0; // Reset
+                            this.evaluateLivingPersona(id); // Fire & Forget
+                        }
+                    }
                 }
 
                 // Await the save operation to ensure iOS persistence
@@ -17621,6 +18122,86 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                     const chatWindow = document.getElementById('chat-window');
                     if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
                 }, 50);
+            },
+
+            /**
+             * Asynchronously evaluates the character's persona based on chat history.
+             * @param {string} charId - The character ID.
+             */
+            async evaluateLivingPersona(charId) {
+                this._pendingEvolutions = this._pendingEvolutions || new Set();
+                this._pendingEvolutions.add(charId);
+
+                try {
+                    const prompt = PromptBuilder.buildLivingPersonaPrompt(charId);
+                    if (!prompt) {
+                        this._pendingEvolutions.delete(charId);
+                        return;
+                    }
+
+                    const responseText = await APIService.callAI(prompt, false);
+
+                    if (responseText && responseText.trim() && !responseText.includes("No major changes") && !responseText.includes("original persona unchanged")) {
+                        const newPersona = responseText.trim();
+                        if (newPersona.length > 50) {
+                            const state = StateManager.getState();
+                            state.evolved_characters = state.evolved_characters || {};
+                            state.evolved_characters[charId] = newPersona;
+                            
+                            // Unobtrusive visual indicator (optional, maybe a small console log or toast)
+                            const char = ReactiveStore.getCharacter(charId);
+                            if (char) {
+                                UIManager.showNotification(`✨ ${char.name}'s Persona Evolved!`, "success");
+                            }
+                            
+                            if (typeof ReactiveStore.forceSave === 'function') {
+                                ReactiveStore.forceSave();
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Living Persona evaluation failed:", e);
+                } finally {
+                    this._pendingEvolutions.delete(charId);
+                }
+            },
+
+            /**
+             * Views the narrative-specific evolved persona for a character.
+             * @param {string} charId - The character ID.
+             */
+            viewEvolvedPersona(charId) {
+                const state = StateManager.getState();
+                const char = ReactiveStore.getCharacter(charId);
+                if (!char) return;
+
+                const evolvedText = (state.evolved_characters && state.evolved_characters[charId]) ? state.evolved_characters[charId] : null;
+
+                if (!evolvedText) {
+                    Swal.fire({
+                        title: 'No Changes Yet',
+                        text: `${char.name} has not evolved enough to produce a distinct narrative persona.`,
+                        icon: 'info',
+                        background: '#1e293b',
+                        color: '#f8fafc'
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: `${char.name}'s Narrative Persona`,
+                    html: `
+                        <div class="text-left text-sm text-gray-300 max-h-96 overflow-y-auto w-full whitespace-pre-wrap font-sans custom-scrollbar leading-relaxed">
+                            ${UTILITY.escapeHTML(evolvedText)}
+                        </div>
+                    `,
+                    width: '600px',
+                    background: '#1e293b',
+                    color: '#f8fafc',
+                    showCloseButton: true,
+                    confirmButtonText: 'Close',
+                    confirmButtonColor: '#6366f1'
+                });
             },
 
             /**
@@ -17956,7 +18537,7 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                 this.clearSystemErrors();
 
                 // 1. Validation
-                const activeAiChars = state.characters.filter(c => !c.is_user && c.is_active);
+                const activeAiChars = [...state.characters, ...ReactiveStore.getActiveLocationCharacters()].filter(c => !c.is_user && c.is_active);
                 if (activeAiChars.length === 0) {
                     this.addSystemMessageToHistory("No active AI characters.");
                     return;
@@ -17995,6 +18576,16 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                 }
 
                 if (!targetId) return;
+
+                // Living Persona Block Check
+                this._pendingEvolutions = this._pendingEvolutions || new Set();
+                if (this._pendingEvolutions.has(targetId)) {
+                    UIManager.showLoadingSpinner('Evaluating Living Persona...');
+                    while (this._pendingEvolutions.has(targetId)) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                    UIManager.hideLoadingSpinner();
+                }
 
                 // 3. Setup UI for Generation
                 if (targetMessageIndex !== null) {
@@ -18108,7 +18699,7 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                         // Resolve Voice
                         // We resolved targetId earlier
                         let voice = 'Puck'; // Default
-                        const char = state.characters.find(c => c.id === targetId);
+                        const char = ReactiveStore.getCharacter(targetId);
                         if (char && char.ttsVoice) {
                             voice = char.ttsVoice;
                         } else if (globalSettings.ttsVoice) {
@@ -18159,7 +18750,7 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
              * @param {string} emotion - The new emotion.
              */
             updateMessagePortrait(index, charId, emotion) {
-                const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                const char = ReactiveStore.getCharacter(charId);
                 if (!char) return;
 
                 const imgSrc = UIManager.getPortraitSrc(char, emotion);
@@ -18204,7 +18795,7 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
              */
             async determineNextSpeaker(isAfterMove) {
                 const state = ReactiveStore.state;
-                const pool = state.characters.filter(c => !c.is_user && c.is_active);
+                const pool = [...state.characters, ...ReactiveStore.getActiveLocationCharacters()].filter(c => !c.is_user && c.is_active);
 
                 if (pool.length === 0) return null;
                 if (pool.length === 1 && !isAfterMove) return pool[0].id; // Optimization for single char
@@ -18225,7 +18816,7 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                     const narrators = state.characters.filter(c => c.is_narrator).map(c => c.name).join(', ');
 
                     const recentHistory = state.chat_history.slice(-10).map(m => {
-                        const char = state.characters.find(c => c.id === m.character_id);
+                        const char = ReactiveStore.getCharacter(m.character_id);
                         return `${char ? char.name : 'System'}: ${m.content}`;
                     }).join('\n');
 
@@ -18273,7 +18864,7 @@ Rules:
 
                     if (!selection && typeof response === 'string') {
                         // Fallback: simple text scan if JSON failed
-                        const priorityList = [...pool, ...state.characters.filter(c => !c.is_user && !c.is_active)];
+                        const priorityList = [...pool, ...state.characters.filter(c => !c.is_user && !c.is_active), ...ReactiveStore.getActiveLocationCharacters().filter(c => !c.is_active)];
                         for (const char of priorityList) {
                             if (response.includes(char.name)) {
                                 selection = char.name;
@@ -18332,7 +18923,7 @@ Rules:
 
                     // 5. Resolve Selection to ID
                     // Try exact match
-                    let targetChar = state.characters.find(c => c.name.toLowerCase() === selection.toLowerCase());
+                    let targetChar = [...state.characters, ...ReactiveStore.getActiveLocationCharacters()].find(c => c.name.toLowerCase() === selection.toLowerCase());
 
                     if (!targetChar) {
                         // Unlisted Character Logic
@@ -18412,7 +19003,7 @@ Rules:
                 let validEmotions = ['happy', 'sad', 'angry', 'surprised', 'neutral', 'fear', 'disgust', 'blush']; // Default
 
                 if (charId) {
-                    const char = state.characters.find(c => c.id === charId);
+                    const char = ReactiveStore.getCharacter(charId);
                     if (char) {
                         const hasImages = ['neutral']; // Base is always assumed neutral/available
                         if (char.extra_portraits) {
@@ -18995,7 +19586,7 @@ Rules:
              */
             deleteCharacterImage(charId) {
                 UIManager.showConfirmationModal('Delete primary portrait?', async () => {
-                    const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                    const char = ReactiveStore.getCharacter(charId);
                     if (char) {
                         const legacyUrl = char.image_url;
                         char.image_url = '';
@@ -19044,7 +19635,7 @@ Rules:
                         .slice(-30)
                         .filter(m => m.type === 'chat' && !m.isHidden)
                         .map(m => {
-                            const char = state.characters.find(c => c.id === m.character_id);
+                            const char = ReactiveStore.getCharacter(m.character_id);
                             return `${char ? char.name : 'Unknown'}: ${m.content}`;
                         })
                         .join('\n');
@@ -19104,7 +19695,7 @@ Rules:
              * @param {string} value - The new value.
              */
             updateCharacterField: debounce(function (id, field, value) {
-                const char = ReactiveStore.state.characters.find(c => c.id === id);
+                const char = ReactiveStore.getCharacter(id);
                 if (char) {
                     char[field] = value;
                     if (field === 'name') { // Live update modal header
@@ -19119,12 +19710,79 @@ Rules:
              * @param {string} id - The character ID.
              * @param {string} value - The comma-separated tags string.
              */
+
             updateCharacterTags: debounce(function (id, value) {
-                const char = ReactiveStore.state.characters.find(c => c.id === id);
+                const char = ReactiveStore.getCharacter(id);
                 if (char) {
                     char.tags = value.split(',').map(t => t.trim()).filter(Boolean);
                 }
             }, 300),
+
+            /**
+             * Adds a single character tag and re-renders modal
+             */
+            addCharacterTag(id, tag) {
+                const char = ReactiveStore.getCharacter(id);
+                if (char && tag) {
+                    char.tags = [...(char.tags || []), tag];
+                    UIManager.openCharacterDetailModal(id);
+                }
+            },
+
+            /**
+             * Removes a single character tag and re-renders modal
+             */
+            removeCharacterTag(id, tagToRemove) {
+                const char = ReactiveStore.getCharacter(id);
+                if (char && char.tags) {
+                    char.tags = char.tags.filter(t => t !== tagToRemove);
+                    UIManager.openCharacterDetailModal(id);
+                }
+            },
+
+            /**
+             * Handles keydown on the tag input pill creator
+             */
+            handleTagInput(event, id) {
+                if (event.key === ',' || event.key === 'Enter') {
+                    event.preventDefault();
+                    let newTag = event.target.value.replace(/,/g, '').trim();
+                    if (newTag) {
+                        NarrativeController.addCharacterTag(id, newTag);
+                        // Re-focus the input after 50ms to allow DOM refresh
+                        setTimeout(() => {
+                            const input = document.getElementById(`tag-input-${id}`);
+                            if (input) input.focus();
+                        }, 50);
+                    } else {
+                        event.target.value = ''; // just clear commas
+                    }
+                }
+            },
+
+            /**
+             * Parses lightweight markdown for pure visual highlighting overlay
+             */
+            formatMarkdownOverlay(text) {
+                if (!text) return '';
+                return String(text)
+                    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") // sanitize base
+                    .replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-gray-100 drop-shadow-md">**$1**</span>')
+                    .replace(/\*(.*?)\*/g, '<span class="italic text-gray-200 drop-shadow-sm">*$1*</span>');
+            },
+
+            /**
+             * Syncs the transparent textarea scroll and content with its backdrop
+             */
+            syncMarkdownOverlay(textarea) {
+                if (!textarea) return;
+                const overlay = textarea.previousElementSibling;
+                if (overlay && overlay.classList.contains('markdown-backdrop')) {
+                    overlay.innerHTML = NarrativeController.formatMarkdownOverlay(textarea.value);
+                    overlay.scrollTop = textarea.scrollTop;
+                }
+            },
+
 
             /**
              * Sets the role of a character (user or narrator).
@@ -19149,7 +19807,7 @@ Rules:
              * @param {string} id - The character ID.
              */
             toggleCharacterActive(event, id) {
-                const char = ReactiveStore.state.characters.find(c => c.id === id);
+                const char = ReactiveStore.getCharacter(id);
                 if (char) char.is_active = event.target.checked;
             },
 
@@ -19161,7 +19819,7 @@ Rules:
              * @param {string} value - The hex color code.
              */
             updateCharacterColor: debounce(function (id, type, value) {
-                const char = ReactiveStore.state.characters.find(c => c.id === id);
+                const char = ReactiveStore.getCharacter(id);
                 if (char) {
                     if (!char.color) char.color = { base: '#334155', bold: '#94a3b8' };
                     char.color[type] = value;
@@ -19178,7 +19836,7 @@ Rules:
              * @param {string} charId - The character ID.
              */
             addExtraPortrait(charId) {
-                const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                const char = ReactiveStore.getCharacter(charId);
                 if (!char) return;
                 if (!char.extra_portraits) char.extra_portraits = [];
 
@@ -19201,7 +19859,7 @@ Rules:
              */
             removeExtraPortrait(charId, index) {
                 UIManager.showConfirmationModal('Delete this emotional portrait?', async () => {
-                    const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                    const char = ReactiveStore.getCharacter(charId);
                     if (!char || !char.extra_portraits) return;
 
                     const emotion = char.extra_portraits[index]?.emotion || 'neutral';
@@ -19234,7 +19892,7 @@ Rules:
              * @param {string} value - The new value.
              */
             updateExtraPortrait: debounce(function (charId, index, field, value) {
-                const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                const char = ReactiveStore.getCharacter(charId);
                 if (char && char.extra_portraits && char.extra_portraits[index]) {
                     char.extra_portraits[index][field] = value;
                 }
@@ -19249,7 +19907,7 @@ Rules:
             async handleLocalEmotionImageUpload(event, charId, index) {
                 const file = event.target.files[0];
                 if (!file) return;
-                const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                const char = ReactiveStore.getCharacter(charId);
                 if (!char || !char.extra_portraits[index]) return;
 
                 UIManager.showLoadingSpinner('Processing image...');
@@ -19341,7 +19999,7 @@ Rules:
              * @param {string} charId - The character ID.
              */
             async enhancePersonaWithAI(event, charId) {
-                const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                const char = ReactiveStore.getCharacter(charId);
                 if (!char) return;
 
                 // Capture the button immediately, as 'event' may be lost/stale in the async callback
@@ -19383,7 +20041,7 @@ Rules:
              */
             async openCharacterImageGenerator(charId, type = 'primary', index = null) {
                 const state = StateManager.getState();
-                const char = state.characters.find(c => c.id === charId);
+                const char = ReactiveStore.getCharacter(charId);
                 if (!char) return;
 
                 // [NEW] Get base portrait blob for I2I if it exists
@@ -19429,7 +20087,7 @@ Rules:
              * @param {string} charId - The character ID.
              */
             async generateTagsForCharacter(event, charId) {
-                const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                const char = ReactiveStore.getCharacter(charId);
                 if (!char) return;
                 const prompt = `Generate 3-5 tags for: ${char.name}. Description: ${char.description}`;
                 const res = await this._gen(event, prompt);
@@ -19445,12 +20103,33 @@ Rules:
              * @param {string} charId - The character ID.
              */
             async generateModelInstructions(event, charId) {
-                const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                const char = ReactiveStore.getCharacter(charId);
                 if (!char) return;
                 const prompt = `Generate model instructions for ${char.name} based on: ${char.description}`;
                 const res = await this._gen(event, prompt);
                 if (res) {
                     char.model_instructions = res;
+                    UIManager.openCharacterDetailModal(charId);
+                }
+            },
+
+            /**
+             * Generates a short description for a character using AI.
+             * @param {Event} event - The click event.
+             * @param {string} charId - The character ID.
+             */
+            async generateShortDescForCharacter(event, charId) {
+                const char = ReactiveStore.getCharacter(charId);
+                if (!char) return;
+                // If there's no main description, we can't reliably condense it.
+                if (!char.description || char.description.trim() === '') {
+                    alert("Please write or generate a Persona Description first.");
+                    return;
+                }
+                const prompt = `Read the following persona description and create a condensed, 1-3 sentence summary/short description representing the character's core identity:\n\n${char.description}`;
+                const res = await this._gen(event, prompt);
+                if (res) {
+                    char.short_description = res.trim();
                     UIManager.openCharacterDetailModal(charId);
                 }
             },
@@ -19470,7 +20149,7 @@ Rules:
                     await DBService.saveImage(charId, blob);
                     UIManager.RUNTIME.characterImageCache[charId] = URL.createObjectURL(blob);
 
-                    const char = ReactiveStore.state.characters.find(c => c.id === charId);
+                    const char = ReactiveStore.getCharacter(charId);
                     if (char) {
                         const legacyUrl = char.image_url;
                         char.image_url = ''; // Clear legacy 
@@ -19484,6 +20163,7 @@ Rules:
                     ReactiveStore.forceSave(); // Force save to persist immediately
 
                     UIManager.renderCharacters();
+                    UIManager.openCharacterDetailModal(charId); // Ensure modal view updates with new image
                 } catch (e) {
                     alert("Image upload failed: " + e.message);
                 } finally {
@@ -19844,7 +20524,7 @@ Rules:
              */
             async openImageCropper(charId, type = 'primary', index = null) {
                 const state = ReactiveStore.state;
-                const char = state.characters.find(c => c.id === charId);
+                const char = ReactiveStore.getCharacter(charId);
                 if (!char) return;
 
                 let key = charId;
@@ -20146,6 +20826,99 @@ Rules:
 
 
             /**
+             * Toggles location specific characters generation on or off.
+             * @param {boolean} enabled - True to enable, false to disable.
+             */
+            toggleLocationCharacters(enabled) {
+                ReactiveStore.state.enableLocationCharacters = enabled;
+            },
+
+            /**
+             * Generates location-specific characters for a given location using the AI.
+             * @param {Object} location - The location object from the world map grid.
+             * @param {boolean} skipIfExisting - Whether to abort if the location already has characters.
+             */
+            async generateLocationCharacters(location, skipIfExisting = true) {
+                if (!location) return;
+                const state = ReactiveStore.state;
+
+                console.log(`[Location NPCs] Triggered for location: ${location.name || 'Unnamed tile'}. Skip if existing: ${skipIfExisting}`);
+
+                if (skipIfExisting && location.characters && location.characters.length > 0) {
+                    console.log(`[Location NPCs] Location already has ${location.characters.length} characters. Skipping.`);
+                    return;
+                }
+
+                try {
+                    console.log(`[Location NPCs] Calling API to generate 3 characters for: ${location.name}`);
+                    const prompt = PromptBuilder.buildLocationCharactersPrompt(location.name, location.description || "");
+                    const jsonResponse = await APIService.callAI(prompt, true);
+                    console.log(`[Location NPCs] Received API response payload. Attempting to parse JSON...`);
+
+                    const characters = UTILITY.extractAndParseJSON(jsonResponse);
+
+                    // Sometimes LLMs wrap it in an object like { "characters": [...] } instead of raw array
+                    let charArray = characters;
+                    if (characters && typeof characters === 'object' && !Array.isArray(characters) && Array.isArray(characters.characters)) {
+                        charArray = characters.characters;
+                    }
+
+                    if (Array.isArray(charArray) && charArray.length > 0) {
+                        location.characters = charArray.map(char => ({
+                            ...char,
+                            id: UTILITY.uuid(),
+                            is_location_character: true,
+                            is_active: true
+                        }));
+                        console.log(`[Location NPCs] Success! Generated ${charArray.length} location characters for ${location.name}.`);
+                        console.log(`[Location NPCs] Characters Created:`);
+                        location.characters.forEach((c, idx) => {
+                            console.log(`  ${idx + 1}. Name: ${c.name} | Role: ${c.role || c.short_description || 'Unknown'} | Goal: ${c.personal_goal || 'None'}`);
+                        });
+
+                        // Provide initial image tracking keys before firing the parallel generation
+                        location.characters.forEach(char => {
+                            char.image_url = `local_idb_${char.id}`;
+                        });
+
+                        // Force an initial re-render to show the cards with loading/default avatars
+                        if (typeof UIManager !== 'undefined' && state.worldMap.currentLocation.x === location.coords.x && state.worldMap.currentLocation.y === location.coords.y) {
+                            UIManager.renderCharacters();
+                        }
+
+                        // Fire Async Image Generation Loop
+                        setTimeout(async () => {
+                            for (const char of location.characters) {
+                                try {
+                                    if (typeof ImageGenerationService === 'undefined') continue;
+                                    console.log(`[Location NPCs] 🎨 Requesting image generation for: ${char.name}`);
+                                    const imagePrompt = `Portrait of a fantasy character. ${char.physical_description}`;
+                                    const blob = await ImageGenerationService.generateImage(imagePrompt, "text, signature, watermark, multiple people, full body");
+
+                                    if (blob) {
+                                        await DBService.saveImage(char.id, blob);
+                                        UIManager.RUNTIME.characterImageCache[char.id] = URL.createObjectURL(blob);
+                                        console.log(`[Location NPCs] 🖼️ Saved image to indexedDB for: ${char.name}`);
+                                        // Try to softly re-render again if they are still on this tile
+                                        if (state.worldMap.currentLocation.x === location.coords.x && state.worldMap.currentLocation.y === location.coords.y) {
+                                            UIManager.renderCharacters();
+                                        }
+                                    }
+                                } catch (imgErr) {
+                                    console.error(`[Location NPCs] Image gen failed for ${char.name}`, imgErr);
+                                }
+                            }
+                        }, 500); // 500ms delay to let the UI breathe
+
+                    } else {
+                        console.warn(`[Location NPCs] Failed to parse an array of characters. Parsed data:`, characters);
+                    }
+                } catch (e) {
+                    console.error("[Location NPCs] Exception during character generation:", e);
+                }
+            },
+
+            /**
              * Selects a tile for a pending move operation.
              * @param {number} x - The x-coordinate.
              * @param {number} y - The y-coordinate.
@@ -20210,6 +20983,18 @@ Rules:
                     this.RUNTIME.selectedMapTile = null;
                     this.RUNTIME.pendingMove = null;
 
+                    // 4.5 Try to Generate Location Characters if enabled and missing
+                    if (state.enableLocationCharacters !== false) {
+                        if (!targetLocation.characters || targetLocation.characters.length === 0) {
+                            console.log(`[Location NPCs] Moving to new location ${targetLocation.name}. Initiating character generation.`);
+                            this.generateLocationCharacters(targetLocation, true);
+                        } else {
+                            console.log(`[Location NPCs] Moving to location ${targetLocation.name}. Characters already exist.`);
+                        }
+                    } else {
+                        console.log(`[Location NPCs] Movement detected, but Location NPCs feature is disabled.`);
+                    }
+
                     // 5. Trigger AI Response (Narrator prefers to speak on move)
                     const narrator = state.characters.find(c => c.is_narrator && c.is_active);
                     if (typeof NarrativeController !== 'undefined') {
@@ -20246,7 +21031,7 @@ Rules:
                     if (relevantHistory.length === 0) return;
 
                     const chatTranscript = relevantHistory.map(msg => {
-                        const char = state.characters.find(c => c.id === msg.character_id);
+                        const char = ReactiveStore.getCharacter(msg.character_id);
                         return `${char ? char.name : 'Unknown'}: ${msg.content}`;
                     }).join('\n');
 
@@ -20436,6 +21221,14 @@ Rules:
                     state.worldMap.currentLocation = { x: 4, y: 4 };
                     state.worldMap.destination = { x: null, y: null };
                     state.worldMap.path = [];
+
+                    // 4.5 Try to Generate Location Characters for starting tile
+                    if (state.enableLocationCharacters !== false) {
+                        const startLoc = state.worldMap.grid.find(loc => loc.coords.x === 4 && loc.coords.y === 4);
+                        if (startLoc && (!startLoc.characters || startLoc.characters.length === 0)) {
+                            this.generateLocationCharacters(startLoc, true);
+                        }
+                    }
 
                     this.RUNTIME.selectedMapTile = null;
                     UIManager.renderWorldMapModal();
@@ -21115,7 +21908,7 @@ Rules:
 
                 try {
                     // 2. Construct Prompt
-                    const char = state.characters.find(c => c.id === msg.character_id);
+                    const char = ReactiveStore.getCharacter(msg.character_id);
                     const speaker = char ? char.name : "Unknown Character";
 
                     const prompt = `Analyze the following roleplay message from ${speaker}.
@@ -21267,6 +22060,7 @@ Rules:
                 ActionHandler.register('delete-character', (ds) => NarrativeController.deleteCharacter(ds.id));
                 ActionHandler.register('set-char-role', (ds) => NarrativeController.setCharacterRole(ds.id, ds.role));
                 ActionHandler.register('gen-char-tags', (ds, val, e) => NarrativeController.generateTagsForCharacter(e, ds.id));
+                ActionHandler.register('gen-short-desc', (ds, val, e) => NarrativeController.generateShortDescForCharacter(e, ds.id));
                 ActionHandler.register('enhance-persona', (ds, val, e) => NarrativeController.enhancePersonaWithAI(e, ds.id));
                 ActionHandler.register('gen-model-instructions', (ds, val, e) => NarrativeController.generateModelInstructions(e, ds.id));
                 ActionHandler.register('add-extra-portrait', (ds) => NarrativeController.addExtraPortrait(ds.id));
