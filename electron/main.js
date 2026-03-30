@@ -15,7 +15,7 @@ const https = require('https');
 // ============================================================
 // CONSTANTS
 // ============================================================
-const HTML_FILE = path.join(__dirname, '..', '251231 - Group chat.html');
+const HTML_FILE = path.join(__dirname, '..', 'index.html');
 
 function getExecutableName() {
     if (process.platform === 'darwin') {
@@ -286,7 +286,15 @@ function startKobold(opts = {}) {
 
     // Build CLI args — model is optional; user may load one from the KoboldCPP UI
     const args = [];
-    if (useCuda) args.push('--usecublas');
+    if (useCuda) {
+        if (process.platform === 'darwin') {
+            // Apple Silicon and Intel Macs use Metal for GPU acceleration
+            args.push('--usemetal');
+        } else {
+            // Windows/Linux use CUDA (NVIDIA)
+            args.push('--usecublas');
+        }
+    }
     args.push('--contextsize', String(contextSize));
     args.push('--quantkv', String(quantKv));
     args.push('--port', String(port));
@@ -418,7 +426,8 @@ ipcMain.handle('app:getLatestVersion', async () => {
 let appUpdateDownloader = null;
 ipcMain.handle('app:downloadUpdate', async (_event, url) => {
     const tempDir = app.getPath('temp');
-    const installerPath = path.join(tempDir, 'EllipsisLM_Setup_Update.exe');
+    const ext = process.platform === 'darwin' ? '.dmg' : '.exe';
+    const installerPath = path.join(tempDir, `EllipsisLM_Setup_Update${ext}`);
     
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(installerPath);
@@ -457,14 +466,18 @@ ipcMain.handle('app:downloadUpdate', async (_event, url) => {
 
 ipcMain.handle('app:applyUpdate', (_event, installerPath) => {
     console.log('[AppUpdate] Launching installer:', installerPath);
-    // Use spawn to launch the installer and detach it so it survives app.quit()
-    // NSIS installers usually prompt the user, so no /S here unless we want it fully silent
-    const installer = spawn(installerPath, [], {
-        detached: true,
-        stdio: 'ignore'
-    });
-    installer.unref();
-    app.quit();
+    
+    if (process.platform === 'darwin') {
+        shell.openPath(installerPath);
+        app.quit();
+    } else {
+        const installer = spawn(installerPath, [], {
+            detached: true,
+            stdio: 'ignore'
+        });
+        installer.unref();
+        app.quit();
+    }
 });
 
 ipcMain.handle('dialog:pickModelFile', async () => {

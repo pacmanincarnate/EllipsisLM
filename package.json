@@ -25,7 +25,7 @@
     },
     "mac": {
       "target": "dmg",
-      "icon": "electron/icon.png"
+      "icon": "logo.png"
     },
     "nsis": {
       "oneClick": false,
@@ -47,7 +47,7 @@
     ],
     "files": [
       "electron/**",
-      "251231 - Group chat.html"
+      "index.html"
     ],
     "directories": {
       "output": "dist"

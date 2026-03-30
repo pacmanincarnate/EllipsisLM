@@ -3305,8 +3305,10 @@
                         const progressContainer = document.getElementById("app-update-progress-container");
                         const statusText = document.getElementById("app-update-status");
 
-                        const asset = release.assets.find(a => a.name.endsWith(".exe"));
-                        if (!asset) { alert("This release does not contain a Windows installer."); return; }
+                        const platform = window.electronBridge.app.getPlatform();
+                        const ext = platform === 'darwin' ? '.dmg' : '.exe';
+                        const asset = release.assets.find(a => a.name.endsWith(ext));
+                        if (!asset) { alert(`This release does not contain an update for your platform (${ext}).`); return; }
 
                         btn.classList.add("hidden");
                         progressContainer.classList.remove("hidden");

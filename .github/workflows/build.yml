@@ -1,0 +1,93 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build App (Windows)
+        if: matrix.os == 'windows-latest'
+        run: npm run dist
+
+      - name: Build App (Mac)
+        if: matrix.os == 'macos-latest'
+        run: npm run dist:mac
+
+      - name: Upload Build Artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ellipsis-lm-windows
+          path: dist/*.exe
+
+      - name: Upload Build Artifact (Mac)
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ellipsis-lm-mac
+          path: dist/*.dmg
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    # Only create a release on pushes to main (not PRs or manual dispatches from forks)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Get App Version
+        id: version
+        run: echo "VERSION=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ellipsis-lm-windows
+          path: release-assets/
+
+      - name: Download Mac Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ellipsis-lm-mac
+          path: release-assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          name: EllipsisLM v${{ steps.version.outputs.VERSION }}
+          body: |
+            ## EllipsisLM v${{ steps.version.outputs.VERSION }}
+
+            ### Downloads
+            - **Windows**: Download the `.exe` installer below.
+            - **macOS**: Download the `.dmg` file below. 
+
+            > **macOS Note:** This app is not yet code-signed. On first launch, right-click the app and select **Open** to bypass Gatekeeper.
+          files: release-assets/*
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

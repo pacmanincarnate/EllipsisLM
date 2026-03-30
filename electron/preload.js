@@ -86,6 +86,11 @@ contextBridge.exposeInMainWorld('electronBridge', {
 
     /** App metadata and Update system */
     app: {
+        /** Returns the OS platform string (e.g., 'win32', 'darwin'). */
+        getPlatform() {
+            return process.platform;
+        },
+
         /** Returns the app version string from package.json */
         getVersion() {
             return ipcRenderer.invoke('app:getVersion');
