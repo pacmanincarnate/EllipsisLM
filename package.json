@@ -1,0 +1,56 @@
+{
+  "name": "ellipsis-lm",
+  "version": "1.0.1",
+  "description": "EllipsisLM — AI-powered roleplay, self-hosted desktop edition.",
+  "author": "EllipsisLM",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "dist:mac": "electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^30.5.1",
+    "electron-builder": "^24.13.3",
+    "tailwindcss": "3.4"
+  },
+  "build": {
+    "appId": "com.ellipsislm.app",
+    "productName": "EllipsisLM",
+    "copyright": "Copyright © 2025 EllipsisLM",
+    "win": {
+      "target": "nsis",
+      "icon": "electron/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "electron/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "EllipsisLM"
+    },
+    "extraResources": [
+      {
+        "from": ".",
+        "to": ".",
+        "filter": [
+          "koboldcpp.exe",
+          "koboldcpp-mac-arm64",
+          "koboldcpp-mac-x64"
+        ]
+      }
+    ],
+    "files": [
+      "electron/**",
+      "251231 - Group chat.html"
+    ],
+    "directories": {
+      "output": "dist"
+    }
+  }
+}
