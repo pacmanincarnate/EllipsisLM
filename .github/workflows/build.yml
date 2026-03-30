@@ -29,6 +29,10 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Clear macOS Attributes
+        if: matrix.os == 'macos-latest'
+        run: xattr -cr .
+
       - name: Build App (Windows)
         if: matrix.os == 'windows-latest'
         run: npm run dist
@@ -91,7 +95,7 @@ jobs:
             - **Windows**: Download the `.exe` installer below.
             - **macOS**: Download the `.dmg` file below. 
 
-            > **macOS Note:** This app is ad-hoc signed but not yet notarized. If you see a "damaged" or "unknown developer" warning on first launch, **Right-Click the app and select Open** to bypass Gatekeeper.
+            > **macOS Note:** This app is ad-hoc signed but not yet notarized. On first launch, **Right-Click the app and select Open** to bypass Gatekeeper.
           files: release-assets/*
           fail_on_unmatched_files: false
         env:
