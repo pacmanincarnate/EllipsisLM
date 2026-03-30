@@ -26,6 +26,8 @@
 <html lang="en">
 
 <head>
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*; connect-src 'self' https://* http://localhost:* http://127.0.0.1:*; manifest-src 'self' data:;">
     <meta charset="UTF-8">
     <!-- Updated Viewport for Notch Support -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -46,7 +48,7 @@
     <link rel="icon" type="image/png" href="https://github.com/pacmanincarnate/EllipsisLM/blob/main/logo.jpg?raw=true">
 
     <!-- External Libraries -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="electron/tailwind.css">
     <script src="https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
@@ -100,19 +102,49 @@
         /* ==========================================================================
            Custom CSS Utilities
            ========================================================================== */
-        
+
         /* Auto-Hide Scrollbars (Only show on hover) */
-        .scrollbar-autohide::-webkit-scrollbar { width: 6px; height: 6px; }
-        .scrollbar-autohide::-webkit-scrollbar-button { display: none; }
-        .scrollbar-autohide::-webkit-scrollbar-track { background: transparent; }
-        .scrollbar-autohide::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; }
-        .scrollbar-autohide:hover::-webkit-scrollbar-thumb { background: rgba(107, 114, 128, 0.5); }
-        .scrollbar-autohide { scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color 0.2s; }
-        .scrollbar-autohide:hover { scrollbar-color: rgba(107, 114, 128, 0.5) transparent; }
+        .scrollbar-autohide::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .scrollbar-autohide::-webkit-scrollbar-button {
+            display: none;
+        }
+
+        .scrollbar-autohide::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollbar-autohide::-webkit-scrollbar-thumb {
+            background: transparent;
+            border-radius: 10px;
+        }
+
+        .scrollbar-autohide:hover::-webkit-scrollbar-thumb {
+            background: rgba(107, 114, 128, 0.5);
+        }
+
+        .scrollbar-autohide {
+            scrollbar-width: thin;
+            scrollbar-color: transparent transparent;
+            transition: scrollbar-color 0.2s;
+        }
+
+        .scrollbar-autohide:hover {
+            scrollbar-color: rgba(107, 114, 128, 0.5) transparent;
+        }
 
         /* Completely Hide Scrollbars */
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
 
         /* ==========================================================================
            [SEC:CSS:RESET]
@@ -2262,6 +2294,55 @@
 
 
         <div id="settings-appearance-content" class="space-y-6">
+            <!-- Application Update Checker [MANUAL] -->
+            <div class="mb-6 animate-in fade-in slide-in-from-top-2 duration-500">
+                <div class="p-4 bg-indigo-500/10 rounded-xl border border-indigo-500/20 shadow-lg backdrop-blur-sm">
+                    <div class="flex items-center justify-between mb-3 border-b border-indigo-500/10 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 bg-indigo-500/20 rounded-lg">
+                                <i class="fas fa-rocket text-indigo-400 text-xs"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-200 uppercase tracking-widest">App Maintenance
+                                </h4>
+                                <div id="app-current-version" class="text-[10px] text-gray-500 font-medium">Checking
+                                    version...</div>
+                            </div>
+                        </div>
+                        <button id="app-check-update-btn" onclick="window.electronCheckAppUpdate()"
+                            class="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-[10px] font-bold rounded-lg border border-indigo-600/30 transition-all active:scale-95">
+                            Check for Updates
+                        </button>
+                    </div>
+
+                    <div id="app-update-status-container" class="flex flex-col gap-2">
+                        <div id="app-update-status" class="text-xs text-gray-400 leading-relaxed italic">Click the
+                            button above to manually check GitHub for new releases.</div>
+
+                        <!-- Progress Bar (Hidden by default) -->
+                        <div id="app-update-progress-container" class="hidden space-y-2 py-2">
+                            <div class="flex justify-between items-center px-1">
+                                <span class="text-[10px] text-gray-500 font-bold uppercase">Downloading assets...</span>
+                                <span id="app-update-percent" class="text-[10px] text-indigo-400 font-black">0%</span>
+                            </div>
+                            <div
+                                class="w-full bg-gray-800/50 rounded-full h-2 overflow-hidden border border-white/5 p-[1px]">
+                                <div id="app-update-bar"
+                                    class="bg-gradient-to-r from-indigo-600 to-violet-500 h-full rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,0.4)]"
+                                    style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div id="app-update-action" class="hidden">
+                            <button id="app-install-btn" onclick="window.electronApplyAppUpdate()"
+                                class="w-full py-2.5 bg-green-600/30 hover:bg-green-600/40 text-green-400 text-[11px] font-black uppercase tracking-widest rounded-lg border border-green-600/40 transition-all shadow-md active:scale-[0.98]">
+                                Install <span id="app-new-version"
+                                    class="underline decoration-2 underline-offset-2"></span> & Reload
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
@@ -2805,7 +2886,8 @@
                     class="flex items-center justify-between bg-gray-900/30 p-4 rounded-lg border border-gray-700/50 hover:bg-gray-900/40 transition-colors">
                     <div>
                         <span class="text-gray-200 font-medium block">Living Persona</span>
-                        <span class="text-xs text-gray-500">AI periodically evolves a character's personality based on chat history.</span>
+                        <span class="text-xs text-gray-500">AI periodically evolves a character's personality based on
+                            chat history.</span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="enable-living-persona-toggle" class="sr-only peer">
@@ -3019,6 +3101,275 @@
                 </div>
                 <p class="text-amber-400 text-sm mb-2 bg-amber-900/50 p-2 rounded-md">Ensure your local server is
                     running.</p>
+                <!-- Electron desktop: inline launch/stop controls with live status & progress -->
+                <div id="kobold-electron-controls" class="hidden mb-4">
+                    <div id="kobold-status-bar"
+                        class="flex flex-col gap-2 mb-3 p-3 rounded-lg bg-gray-800/50 text-sm border border-gray-700/50">
+                        <div class="flex items-center gap-2">
+                            <span id="kobold-status-dot"
+                                class="w-2.5 h-2.5 rounded-full bg-gray-500 flex-shrink-0"></span>
+                            <span id="kobold-status-text" class="text-gray-200 font-medium">KoboldCPP: Stopped</span>
+                        </div>
+
+                        <!-- Download Progress Bar -->
+                        <div id="kobold-download-container" class="hidden mt-1">
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span id="kobold-download-label">Downloading core components...</span>
+                                <span id="kobold-download-percent">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-900 rounded-full h-1.5 overflow-hidden">
+                                <div id="kobold-download-bar" class="bg-indigo-500 h-full transition-all duration-300"
+                                    style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Error Message Display -->
+                        <div id="kobold-error-display"
+                            class="hidden mt-1 text-[11px] text-red-400 bg-red-900/20 p-2 rounded border border-red-800/30">
+                            <strong>Error:</strong> <span id="kobold-error-text">Unknown error</span>
+                        </div>
+                        <!-- Update Checker UI -->
+                        <div id="kobold-update-container" class="mt-2 pt-2 border-t border-gray-700/30">
+                            <div class="flex justify-between items-center">
+                                <span id="kobold-update-status" class="text-[11px] text-gray-400">Version:
+                                    Checking...</span>
+                                <button id="kobold-check-update-btn" onclick="window.electronCheckKoboldUpdate()"
+                                    class="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors">Check
+                                    for Updates</button>
+                            </div>
+                            <div id="kobold-update-action" class="hidden mt-2">
+                                <button onclick="window.electronUpdateKobold()"
+                                    class="w-full bg-green-600/20 hover:bg-green-600/30 text-green-400 text-[11px] font-bold py-1 px-2 rounded border border-green-600/30 transition-all">
+                                    Update to <span id="kobold-new-version"></span> Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="kobold-electron-start-btn" onclick="window.electronLaunchKobold()"
+                        class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg transition-all shadow-lg flex justify-center items-center mb-2">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Launch KoboldCPP
+                    </button>
+                    <button id="kobold-electron-stop-btn" onclick="window.electronStopKobold()"
+                        class="w-full hidden bg-red-900/40 hover:bg-red-800/60 text-red-200 font-bold py-2 px-4 rounded-lg transition-all border border-red-700/30 flex justify-center items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none"></rect>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Stop KoboldCPP
+                    </button>
+                </div>
+
+                <script>
+                    (function initElectronKoboldUI() {
+                        if (!window.electronBridge) return;
+                        // Set current version
+                        window.electronBridge.app.getVersion().then(v => {
+                            document.getElementById("app-current-version").textContent = "Version: " + v;
+                        });
+                        document.getElementById('kobold-electron-controls').classList.remove('hidden');
+
+                        const STATUS_MAP = {
+                            stopped: { dot: 'bg-gray-500', label: 'KoboldCPP: Stopped' },
+                            downloading: { dot: 'bg-indigo-400 animate-pulse', label: 'Downloading KoboldCPP...' },
+                            starting: { dot: 'bg-amber-400 animate-pulse', label: 'Starting Backend...' },
+                            running: { dot: 'bg-green-400', label: 'Running on port 5001' },
+                            error: { dot: 'bg-red-500', label: 'Error — see details below' }
+                        };
+
+                        function applyStatus(s) {
+                            console.log('[UI] Applying status:', s);
+                            const cfg = STATUS_MAP[s] || STATUS_MAP.stopped;
+                            document.getElementById('kobold-status-dot').className = 'w-2.5 h-2.5 rounded-full flex-shrink-0 ' + cfg.dot;
+                            document.getElementById('kobold-status-text').textContent = cfg.label;
+
+                            const isDownloading = (s === 'downloading');
+                            const isActive = (s === 'running' || s === 'starting');
+                            const isStopped = (s === 'stopped' || s === 'error');
+
+                            document.getElementById('kobold-download-container').classList.toggle('hidden', !isDownloading);
+                            document.getElementById('kobold-electron-start-btn').classList.toggle('hidden', !isStopped);
+                            document.getElementById('kobold-electron-stop-btn').classList.toggle('hidden', !isActive);
+
+                            // Hide error display if we just started something new
+                            if (!isStopped) {
+                                document.getElementById('kobold-error-display').classList.add('hidden');
+                            }
+                        }
+
+                        // Status and Log handlers
+                        window.electronBridge.kobold.onStatusChange(applyStatus);
+                        window.electronBridge.kobold.onDownloadProgress((p) => {
+                            const bar = document.getElementById('kobold-download-bar');
+                            const txt = document.getElementById('kobold-download-percent');
+                            if (bar) bar.style.width = p + '%';
+                            if (txt) txt.textContent = Math.round(p) + '%';
+                        });
+
+                        window.electronBridge.kobold.onLog((line) => {
+                            console.log('[KoboldCPP Log]:', line);
+                            // If it's an error line, show it in the UI
+                            if (line.includes('[ERROR]')) {
+                                const errDisplay = document.getElementById('kobold-error-display');
+                                const errText = document.getElementById('kobold-error-text');
+                                if (errDisplay && errText) {
+                                    errDisplay.classList.remove('hidden');
+                                    errText.textContent = line.replace('[ERROR]', '').trim();
+                                }
+                            }
+                        });
+
+                        window.electronBridge.kobold.getStatus().then(applyStatus);
+                    })();
+                    // Updater Logic
+                    window.electronCheckKoboldUpdate = async function () {
+                        if (!window.electronBridge) return;
+                        const btn = document.getElementById("kobold-check-update-btn");
+                        const statusText = document.getElementById("kobold-update-status");
+                        const actionDiv = document.getElementById("kobold-update-action");
+                        const newVerSpan = document.getElementById("kobold-new-version");
+
+
+                        btn.disabled = true; btn.textContent = "Checking...";
+                        try {
+                            const [local, remote] = await Promise.all([
+                                window.electronBridge.kobold.getLocalVersion(),
+                                window.electronBridge.kobold.getLatestVersion()
+                            ]);
+
+                            if (local === remote) {
+                                statusText.textContent = `Up to date (${local})`;
+                                actionDiv.classList.add("hidden");
+                            } else {
+                                statusText.textContent = `Update available: ${remote} (Local: ${local})`;
+                                newVerSpan.textContent = remote;
+                                actionDiv.classList.remove("hidden");
+                            }
+                        } catch (e) {
+                            statusText.textContent = e.message || "Check failed.";
+                            console.error("Update check failed:", e);
+                        } finally {
+                            btn.disabled = false; btn.textContent = "Check again";
+                        }
+                    };
+
+                    window.electronUpdateKobold = async function () {
+                        if (!window.electronBridge) return;
+                        const remote = document.getElementById("kobold-new-version").textContent;
+                        const statusText = document.getElementById("kobold-update-status");
+                        if (!confirm(`Download KoboldCPP ${remote} in the background? You can continue roleplaying during the download.`)) return;
+
+                        statusText.textContent = `Downloading ${remote}...`;
+                        document.getElementById("kobold-update-action").classList.add("hidden");
+                        await window.electronBridge.kobold.update(remote);
+                    };
+
+                    // EllipsisLM Application Updater Logic
+                    let downloadedInstallerPath = null;
+                    window.electronCheckAppUpdate = async function () {
+                        if (!window.electronBridge) return;
+                        const btn = document.getElementById("app-check-update-btn");
+                        const statusText = document.getElementById("app-update-status");
+
+                        btn.disabled = true; btn.textContent = "Checking GitHub...";
+                        try {
+                            const current = await window.electronBridge.app.getVersion();
+                            const latest = await window.electronBridge.app.getLatestVersion();
+
+                            if (current === latest.version) {
+                                statusText.innerHTML = `<span class="text-indigo-300">✓ You are running the latest version (${current}).</span>`;
+                                btn.textContent = "Up to Date";
+                            } else {
+                                statusText.innerHTML = `<span class="text-green-400 font-bold block mb-1">Update Available: ${latest.version}</span><p class="text-[10px] text-gray-500 leading-tight">A newer build is ready on GitHub. Click download to fetch the installer.</p>`;
+                                btn.textContent = "Download Update";
+                                btn.classList.replace("text-indigo-400", "text-green-400");
+                                btn.onclick = () => window.electronDownloadAppUpdate(latest);
+                            }
+                        } catch (e) {
+                            statusText.textContent = e.message || "Unable to reach GitHub. Check your connection.";
+                            console.error(e);
+                            btn.textContent = "Try Again"; btn.disabled = false;
+                        }
+                    };
+
+                    window.electronDownloadAppUpdate = async function (release) {
+                        const btn = document.getElementById("app-check-update-btn");
+                        const progressContainer = document.getElementById("app-update-progress-container");
+                        const statusText = document.getElementById("app-update-status");
+
+                        const asset = release.assets.find(a => a.name.endsWith(".exe"));
+                        if (!asset) { alert("This release does not contain a Windows installer."); return; }
+
+                        btn.classList.add("hidden");
+                        progressContainer.classList.remove("hidden");
+                        statusText.classList.add("hidden");
+
+                        window.electronBridge.app.onUpdateProgress((p) => {
+                            document.getElementById("app-update-bar").style.width = p + "%";
+                            document.getElementById("app-update-percent").textContent = Math.round(p) + "%";
+                        });
+
+                        try {
+                            downloadedInstallerPath = await window.electronBridge.app.downloadUpdate(asset.url);
+                            document.getElementById("app-update-status").innerHTML = `<span class="text-green-400">Update downloaded and ready!</span>`;
+                            document.getElementById("app-update-status").classList.remove("hidden");
+                            document.getElementById("app-new-version").textContent = release.version;
+                            document.getElementById("app-update-action").classList.remove("hidden");
+                        } catch (e) {
+                            alert("Download interrupted: " + e.message);
+                            btn.classList.remove("hidden");
+                        } finally {
+                            progressContainer.classList.add("hidden");
+                        }
+                    };
+
+                    window.electronApplyAppUpdate = function () {
+                        if (!window.electronBridge) return;
+                        if (confirm("The application will close now to install the update. Please allow the installer to finish before restarting manually.")) {
+                            window.electronBridge.app.applyUpdate(downloadedInstallerPath);
+                        }
+                    };
+
+                    // Bootstrap App Version
+                    if (window.electronBridge) {
+                        window.electronBridge.app.getVersion().then(v => {
+                            const display = document.getElementById("app-current-version");
+                            if (display) display.textContent = "Local Instance: v" + v;
+                        });
+                    }
+                    // Initial version check (silent)
+                    if (window.electronBridge) {
+                        setTimeout(async () => {
+                            const local = await window.electronBridge.kobold.getLocalVersion();
+                            document.getElementById("kobold-update-status").textContent = `Version: ${local}`;
+                        }, 1000);
+                    }
+
+                    window.electronLaunchKobold = async function () {
+                        if (!window.electronBridge) return;
+                        const st = typeof ReactiveStore !== 'undefined' ? ReactiveStore.state : {};
+                        await window.electronBridge.kobold.start({
+                            contextSize: 18432,
+                            port: 5001,
+                            useCuda: true,
+                            quantKv: 1,
+                            modelPath: st.kobold_model_path || ''
+                        });
+                    };
+
+                    window.electronStopKobold = function () {
+                        if (window.electronBridge) window.electronBridge.kobold.stop();
+                    };
+
+                </script>
                 <input type="text" id="koboldcpp-url-input" class="w-full rounded-lg p-2 mb-4"
                     placeholder="http://localhost:5001">
                 <div>
@@ -3494,7 +3845,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 2026.03.08 - 21:30 CST";
+        const APP_BUILD_TIMESTAMP = "Version: 2026.03.30 - 10:30";
 
 
         /**
@@ -5372,9 +5723,6 @@
 
         /**
          * APIService Module
-         */
-        /**
-         * APIService Module
          * Handles interactions with various AI providers (Gemini, OpenRouter, KoboldCPP, LM Studio).
          * Manages API keys, request formatting, and error handling.
          */
@@ -5478,12 +5826,12 @@
                         text = await this.callGemini(prompt, signal);
                     } else if (state.apiProvider === 'openrouter') {
                         text = await this.callOpenRouter(prompt, signal);
-                    } else if (state.apiProvider === 'koboldcpp') {
-                        text = await this.callKoboldCPP(prompt, signal);
-                    } else if (state.apiProvider === 'lmstudio') {
-                        text = await this.callLMStudio(prompt, signal);
                     } else if (state.apiProvider === 'webllm') {
                         text = await this.callWebLLM(prompt, signal);
+                    } else if (state.apiProvider === 'koboldcpp') {
+                        text = await this.callKoboldCPP(prompt, signal, isJson);
+                    } else if (state.apiProvider === 'lmstudio') {
+                        text = await this.callLMStudio(prompt, signal, isJson);
                     }
 
                     if (isJson) {
@@ -5649,10 +5997,20 @@
                     signal
                 });
 
-                if (!res.ok) { let errorDetails = `Status: ${res.status} ${res.statusText}.`; try { const errorJson = await res.json(); errorDetails += ` Message: ${errorJson.error.message || JSON.stringify(errorJson.error)}`; } catch (e) { errorDetails += ` Response body: ${await res.text()}`; } throw new Error(`API Error: ${errorDetails}`); }
+                if (!res.ok) {
+                    let errorDetails = `Status: ${res.status} ${res.statusText}.`;
+                    try {
+                        const errorJson = await res.json();
+                        errorDetails += ` Message: ${errorJson.error.message || JSON.stringify(errorJson.error)}`;
+                    } catch (e) {
+                        errorDetails += ` Response body: ${await res.text()}`;
+                    }
+                    throw new Error(`API Error: ${errorDetails}`);
+                }
                 const data = await res.json();
                 return data.choices[0].message.content;
             },
+
             /**
              * Fetches available models from OpenRouter API.
              * @returns {Promise<Array>} Array of model objects with id, name, pricing, context_length, etc.
@@ -5679,13 +6037,14 @@
                 const data = await res.json();
                 return data.data || [];
             },
+
             /**
              * Calls the KoboldCPP API.
              * @param {string} prompt - The prompt.
              * @param {AbortSignal} signal - AbortSignal.
              * @returns {Promise<string>}
              */
-            async callKoboldCPP(prompt, signal) {
+            async callKoboldCPP(prompt, signal, isJson = false) {
                 const state = StateManager.getState();
 
                 let cleanPrompt = prompt;
@@ -5696,36 +6055,32 @@
                 const payload = {
                     prompt: cleanPrompt,
                     use_story: false, use_memory: false, use_authors_note: false, use_world_info: false,
-                    max_context_length: 16384,
-                    max_length: 512, // Updated to 512 as per your snippet
+                    max_context_length: 18432,
+                    max_length: 1024,
                     quiet: true,
-
-                    // Sampling Settings
                     temperature: 1.0,
                     min_p: state.koboldcpp_min_p,
-                    top_p: 1.0, // Disabled when using Min-P/DRY for pure results, or keep 0.92 if preferred
+                    top_p: 1.0,
                     top_k: 0,
                     tfs: 1,
                     typical: 1,
-
-                    // Disable Legacy Repetition Penalty (Conflict avoidance)
                     rep_pen: 1.0,
                     rep_pen_range: 2048,
                     rep_pen_slope: 0.7,
-
-                    // Disable Mirostat to prevent interference with other samplers.
                     mirostat: 0,
                     mirostat_tau: 4,
                     mirostat_eta: 0.1,
-
-                    // Configure DRY (Don't Repeat Yourself) sampler.
                     dry_multiplier: state.koboldcpp_dry,
                     dry_base: 1.75,
                     dry_allowed_length: 2,
-                    dry_penalty_last_n: -1, // Scan entire context
-
+                    dry_penalty_last_n: -1,
                     sampler_order: [6, 0, 1, 2, 3, 4, 5]
                 };
+
+                if (isJson) {
+                    // Try to enforce a basic JSON grammar for KoboldCPP
+                    payload.grammar = 'root ::= "{" [^}]+ "}"';
+                }
 
                 const res = await fetch(`${state.koboldcpp_url}/api/v1/generate`, {
                     method: 'POST',
@@ -5758,55 +6113,34 @@
                     cleanPrompt = cleanPrompt.replace(/<\|ELLIPSIS_CACHE_BREAK\|>\n?/g, '');
                 }
 
-                // Identical Payload to callKoboldCPP to ensure consistency
                 const payload = {
                     prompt: cleanPrompt,
                     use_story: false, use_memory: false, use_authors_note: false, use_world_info: false,
-                    max_context_length: 16384,
-                    max_length: 2048, // Updated to 512 as per your snippet
+                    max_context_length: 18432,
+                    max_length: 1024,
                     quiet: true,
-
-                    // Sampling Settings
                     temperature: 1.0,
                     min_p: state.koboldcpp_min_p,
-                    top_p: 1.0, // Disabled when using Min-P/DRY for pure results, or keep 0.92 if preferred
-                    top_k: 0,
-                    tfs: 1,
-                    typical: 1,
-
-                    // Disable Legacy Repetition Penalty.
-                    rep_pen: 1.0,
-                    rep_pen_range: 2048,
-                    rep_pen_slope: 0.7,
-
-                    // Disable Mirostat.
-                    mirostat: 0,
-                    mirostat_tau: 4,
-                    mirostat_eta: 0.1,
-
-                    // Configure DRY sampler.
+                    top_p: 1.0,
                     dry_multiplier: state.koboldcpp_dry,
                     dry_base: 1.75,
                     dry_allowed_length: 2,
-                    dry_penalty_last_n: -1, // Scan entire context
-
+                    dry_penalty_last_n: -1,
                     sampler_order: [6, 0, 1, 2, 3, 4, 5]
                 };
 
-                // 1. Start Generation
-                await fetch(`${state.koboldcpp_url}/api/v1/generate`, {
+                const res = await fetch(`${state.koboldcpp_url}/api/v1/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
                     signal
                 });
 
+                if (!res.ok) throw new Error(`KoboldCPP Error: ${res.status}`);
+
                 let finished = false;
-
-                // 2. Poll for Tokens
                 while (!finished) {
-                    if (signal.aborted) break;
-
+                    if (signal?.aborted) return;
                     try {
                         const check = await fetch(`${state.koboldcpp_url}/api/extra/generate/check`, { signal });
                         const data = await check.json();
@@ -5818,9 +6152,7 @@
                         if (data.done) finished = true;
                     } catch (e) {
                         if (e.name !== 'AbortError') console.warn("Polling error:", e);
-                        // Don't break loop on transient network error, wait and retry
                     }
-
                     if (!finished) await new Promise(r => setTimeout(r, 100));
                 }
             },
@@ -5831,18 +6163,25 @@
              * @param {AbortSignal} signal - AbortSignal.
              * @returns {Promise<string>}
              */
-            async callLMStudio(prompt, signal) {
+            async callLMStudio(prompt, signal, isJson = false) {
                 const state = StateManager.getState();
                 if (!state.lmstudio_url) throw new Error("LM Studio URL not set.");
                 const endpoint = `${state.lmstudio_url}/v1/chat/completions`;
+                const payload = {
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0.7,
+                    max_tokens: -1,
+                    stream: false
+                };
+
+                if (isJson) {
+                    payload.response_format = { type: "json_object" };
+                }
+
                 const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: [{ role: 'user', content: prompt }],
-                        temperature: 0.7,
-                        stream: false
-                    }),
+                    body: JSON.stringify(payload),
                     signal
                 });
 
@@ -6287,7 +6626,7 @@
              */
             getDefaultApiSettings() {
                 return {
-                    apiProvider: 'gemini',
+                    apiProvider: 'koboldcpp',
                     geminiApiKey: '',
                     geminiModel: 'gemini-1.5-flash',
                     openRouterKey: '',
@@ -6717,12 +7056,12 @@ You must respond with a raw JSON object containing a "characters" array with exa
 
                 const promptTemplate = state.prompt_living_persona_gen || UTILITY.getDefaultSystemPrompts().prompt_living_persona_gen;
                 const basePersona = char.description;
-                
+
                 // Get the last N messages, excluding the *very last* one per requirements
                 const chatHistory = state.chat_history || [];
                 const visibleHistory = chatHistory.filter(m => m.type === 'chat' && !m.isHidden);
                 const historySlice = visibleHistory.slice(-21, -1); // Last 20 messages, skip the newest
-                
+
                 const transcript = historySlice.map(msg => {
                     const speaker = ReactiveStore.getCharacter(msg.character_id) || { name: 'Unknown' };
                     return `${speaker.name}: ${msg.content}`;
@@ -9151,6 +9490,7 @@ You must respond with a raw JSON object containing a "characters" array with exa
                 // Styling
                 let bubbleStyle = '';
                 let characterNameColor = '';
+                // Determine which portrait to show (default vs emotion-specific)
                 const imgSrc = UIManager.getPortraitSrc(character, msg.emotion);
 
                 if (state.characterImageMode === 'bubble' && imgSrc) {
@@ -9341,7 +9681,7 @@ You must respond with a raw JSON object containing a "characters" array with exa
                 const story = StateManager.getLibrary().stories.find(s => s.id === storyId);
                 const customFont = scenario.font || (story && story.font) || 'var(--font-primary)';
                 const customColor = scenario.chatTextColor || (story && story.chatTextColor) || '#fff';
-                
+
                 return DOM.html`
             <div class="relative bg-gradient-to-b from-gray-900/90 to-black/95 rounded-xl border border-gray-700/50 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden group transition-all hover:border-gray-500 min-w-[280px] w-[280px] md:min-w-[340px] md:w-[340px] shrink-0 snap-start flex flex-col h-[380px] hover:-translate-y-1">
                 
@@ -9353,25 +9693,27 @@ You must respond with a raw JSON object containing a "characters" array with exa
                            onchange="UIManager.updateBulkActionUI()">
                 </div>
 
-                <div class="p-8 flex flex-col h-full cursor-default">
+                <div class="p-6 flex flex-col h-full cursor-default relative">
                     <!-- Title synced with custom typography -->
-                    <h3 class="text-2xl md:text-3xl font-black text-center mb-6 tracking-wide drop-shadow-md" style="font-family: ${customFont}; color: ${customColor};">
+                    <h3 class="text-2xl font-black text-center mb-3 tracking-wide drop-shadow-md" style="font-family: ${customFont}; color: ${customColor};">
                         ${scenario.name}
                     </h3>
                     
                     <!-- Decorative Divider -->
-                    <div class="w-16 h-px bg-gray-600/50 mx-auto mb-6"></div>
+                    <div class="w-16 h-px bg-gray-600/50 mx-auto mb-4"></div>
 
                     <!-- Blurb (First Message) styled as back cover synopsis -->
-                    <div class="text-sm md:text-base text-gray-300/90 prose prose-invert prose-sm max-w-none text-center leading-relaxed italic px-2 md:px-6 flex-grow flex flex-col justify-center">
+                    <!-- Decreased margins and padding so more is visible -->
+                    <div class="text-sm md:text-base text-gray-300/90 prose prose-invert prose-sm max-w-none text-center leading-relaxed italic px-1 md:px-2 flex-grow flex flex-col justify-start overflow-hidden pb-4">
                         ${messageHTML}
                     </div>
 
-                    <!-- Modernized Controls (Minimal Pill footer) -->
-                    <div class="flex gap-3 justify-center pt-8 mt-auto opacity-70 group-hover:opacity-100 transition-opacity">
-                        <button data-action="load-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="text-xs font-semibold uppercase tracking-wider text-indigo-300 hover:text-white px-4 py-2 border border-indigo-500/30 hover:border-indigo-400 bg-indigo-900/20 hover:bg-indigo-600/40 rounded-full transition-all" title="Load Scenario">Load</button>
-                        <button data-action="rename-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-white px-4 py-2 border border-gray-600/50 hover:border-gray-500 bg-gray-800/30 hover:bg-gray-700/50 rounded-full transition-all" title="Rename">Rename</button>
-                        <button data-action="delete-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="text-xs font-semibold uppercase tracking-wider text-red-300/70 hover:text-red-200 px-4 py-2 border border-red-900/30 hover:border-red-500/50 bg-red-900/10 hover:bg-red-900/40 rounded-full transition-all" title="Delete">Delete</button>
+                    <!-- Modernized Controls (Hover Overlay) -->
+                    <!-- Absolute positioned to hover over text, appearing only on card hover -->
+                    <div class="absolute bottom-0 left-0 right-0 p-6 pt-12 bg-gradient-to-t from-black via-black/80 to-transparent flex gap-3 justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 pointer-events-none">
+                        <button data-action="load-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="pointer-events-auto text-xs font-semibold uppercase tracking-wider text-indigo-300 hover:text-white px-4 py-2 border border-indigo-500/30 hover:border-indigo-400 bg-indigo-900/60 hover:bg-indigo-600/80 rounded-full transition-all shadow-lg backdrop-blur-sm" title="Load Scenario">Load</button>
+                        <button data-action="rename-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="pointer-events-auto text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-white px-4 py-2 border border-gray-600/50 hover:border-gray-500 bg-gray-800/60 hover:bg-gray-700/80 rounded-full transition-all shadow-lg backdrop-blur-sm" title="Rename">Rename</button>
+                        <button data-action="delete-scenario" data-story-id="${storyId}" data-scenario-id="${scenario.id}" class="pointer-events-auto text-xs font-semibold uppercase tracking-wider text-red-300/70 hover:text-red-200 px-4 py-2 border border-red-900/30 hover:border-red-500/50 bg-red-900/40 hover:bg-red-900/80 rounded-full transition-all shadow-lg backdrop-blur-sm" title="Delete">Delete</button>
                     </div>
                 </div>
             </div>
@@ -9398,37 +9740,24 @@ You must respond with a raw JSON object containing a "characters" array with exa
                     ? 'border-sky-500/40 bg-sky-900/10 border-l-2 border-l-sky-400'
                     : 'border-gray-700/60 bg-gray-700/40 border-l-2 border-l-transparent';
 
-                const msgText = narrative.messageCounter !== undefined 
+                const msgText = narrative.messageCounter !== undefined
                     ? (narrative.messageCounter === 1 ? '1 msg &middot; ' : `${narrative.messageCounter} msgs &middot; `)
                     : '';
 
                 return DOM.html`
-            <div class="p-3 rounded-lg flex justify-between items-center gap-2 relative group border transition-colors ${activeClass}">
+            <div class="narrative-item p-3 rounded-lg flex justify-between items-center gap-2 relative group border transition-all cursor-pointer hover:bg-gray-600/40 ${activeClass}" 
+                 onclick="UIManager.selectNarrative('${narrative.id}', this)" data-narrative-id="${narrative.id}">
                 <div class="absolute left-3 z-10 flex items-center justify-center h-6 w-6 hidden narrative-checkbox-container" onclick="event.stopPropagation()">
                     <input type="checkbox" 
                            class="narrative-select-check w-4 h-4 rounded border-gray-500 bg-black/40 text-sky-500 focus:ring-0 cursor-pointer" 
                            value="${narrative.id}" 
                            onchange="UIManager.updateBulkActionUI()">
                 </div>
-                <div class="flex-grow min-w-0 transition-[padding] narrative-content">
+                <div class="flex-grow min-w-0 transition-[padding] narrative-content overflow-hidden">
                     <p class="font-semibold truncate text-gray-100 text-sm">${narrative.name}</p>
                     <p class="text-xs text-gray-500 mt-0.5">${DOM.unsafe(msgText)}${dateDisplay}</p>
                 </div>
                 ${activeBadge}
-                <div class="flex-shrink-0 flex items-center gap-1">
-                    <button data-action="delete-narrative" data-story-id="${storyId}" data-narrative-id="${narrative.id}" class="p-1.5 text-gray-500 hover:text-red-400 rounded transition-colors" title="Delete">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    </button>
-                    <button data-action="elevate-narrative" data-story-id="${storyId}" data-narrative-id="${narrative.id}" class="p-1.5 text-gray-500 hover:text-teal-400 rounded transition-colors" title="Elevate to Scenario">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z"/></svg>
-                    </button>
-                    <button data-action="duplicate-narrative" data-story-id="${storyId}" data-narrative-id="${narrative.id}" class="p-1.5 text-gray-500 hover:text-gray-300 rounded transition-colors" title="Duplicate">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                    </button>
-                    <button data-action="load-narrative" data-story-id="${storyId}" data-narrative-id="${narrative.id}" class="p-1.5 text-green-500 hover:text-green-300 rounded transition-colors" title="Load Narrative">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 0 0 4 4.11V15.89a1.5 1.5 0 0 0 2.3 1.269l9.344-5.89a1.5 1.5 0 0 0 0-2.538L6.3 2.84Z"/></svg>
-                    </button>
-                </div>
             </div>
         `;
             },
@@ -10251,7 +10580,7 @@ You must respond with a raw JSON object containing a "characters" array with exa
                     try {
                         const fullNarrative = await DBService.getNarrative(stub.id);
                         stub.messageCounter = fullNarrative && fullNarrative.state ? (fullNarrative.state.messageCounter || 0) : 0;
-                    } catch(e) {
+                    } catch (e) {
                         stub.messageCounter = 0;
                     }
                 }));
@@ -10263,14 +10592,14 @@ You must respond with a raw JSON object containing a "characters" array with exa
                 });
 
                 const hasImages = (story.characters || []).some(c => UIManager.getPortraitSrc(c));
-                
+
                 // Extract custom typography config from the story object natively
                 const customFont = story.font || 'var(--font-primary)';
                 const customColor = story.chatTextColor || 'inherit';
 
                 const carouselHTML = hasImages ? DOM.html`
             <div class="relative w-full aspect-square md:h-[48rem] md:aspect-auto bg-black border-b border-gray-800 group cursor-pointer" title="Click to view full image">
-                 <div id="details-carousel" class="w-full h-full object-cover opacity-70 transition-opacity"></div>
+                 <div id="details-carousel" class="w-full h-full object-cover transition-opacity"></div>
                  <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent pointer-events-none z-10"></div>
                  
                  <!-- Story Title & Creator's Note overlay at the bottom of the hero -->
@@ -10279,11 +10608,11 @@ You must respond with a raw JSON object containing a "characters" array with exa
                         value="${story.name}" 
                         style="font-family: ${customFont}; color: ${customColor};"
                         oninput="LibraryController.updateStoryField('${story.id}', 'name', this.value)" 
-                        class="text-4xl md:text-6xl font-black bg-transparent border-0 p-0 placeholder-gray-400 tracking-tight focus:ring-0 focus:outline-none w-full md:w-11/12 pr-16 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] hover:bg-white/10 focus:bg-white/20 rounded px-2 -ml-2 transition-colors cursor-text pointer-events-auto leading-none"
+                        class="text-3xl md:text-4xl font-black bg-transparent border-0 p-0 placeholder-gray-400 tracking-tight focus:ring-0 focus:outline-none w-full md:w-11/12 pr-16 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] hover:bg-white/10 focus:bg-white/20 rounded px-2 -ml-2 transition-colors cursor-text pointer-events-auto leading-none"
                         placeholder="STORY TITLE">
                      
                      <div class="relative w-full md:w-11/12 pointer-events-auto group/note">
-                         <textarea oninput="LibraryController.updateStoryField('${story.id}', 'creator_notes', this.value)" style="font-family: ${customFont}; color: ${customColor};" class="w-full bg-transparent border border-transparent hover:border-gray-500/50 focus:border-indigo-500/50 focus:bg-black/60 p-3 -ml-3 rounded-lg resize-none text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] placeholder-gray-400 focus:ring-0 transition-all font-medium scrollbar-hide leading-snug" rows="4" placeholder="Creator's note...">${story.creator_notes || ''}</textarea>
+                         <textarea oninput="LibraryController.updateStoryField('${story.id}', 'creator_notes', this.value)" style="font-family: ${customFont}; color: ${customColor};" class="w-full bg-transparent border border-transparent hover:border-gray-500/50 focus:border-indigo-500/50 focus:bg-black/60 p-3 -ml-3 rounded-lg resize-none text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] placeholder-gray-400 focus:ring-0 transition-all font-medium scrollbar-hide leading-snug" rows="4" placeholder="Creator's note...">${story.creator_notes || ''}</textarea>
                          <button data-action="gen-story-notes" data-id="${story.id}" class="absolute top-2 right-2 p-1.5 bg-indigo-900/80 text-white rounded-md border border-indigo-500/50 opacity-0 group-focus-within/note:opacity-100 group-hover/note:opacity-100 transition-opacity micro-hover backdrop-blur-md z-20" title="Generate with AI">${this.getAIGenIcon()}</button>
                      </div>
                  </div>
@@ -10298,11 +10627,11 @@ You must respond with a raw JSON object containing a "characters" array with exa
                     value="${story.name}" 
                     style="font-family: ${customFont}; color: ${customColor};"
                     oninput="LibraryController.updateStoryField('${story.id}', 'name', this.value)" 
-                    class="text-4xl md:text-6xl font-black bg-transparent border-0 p-0 placeholder-gray-400 tracking-tight focus:ring-0 focus:outline-none w-full md:w-11/12 pr-16 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] hover:bg-white/10 focus:bg-white/20 rounded px-2 -ml-2 transition-colors cursor-text leading-none"
+                    class="text-3xl md:text-4xl font-black bg-transparent border-0 p-0 placeholder-gray-400 tracking-tight focus:ring-0 focus:outline-none w-full md:w-11/12 pr-16 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] hover:bg-white/10 focus:bg-white/20 rounded px-2 -ml-2 transition-colors cursor-text leading-none"
                     placeholder="STORY TITLE">
                  
                  <div class="relative w-full md:w-11/12 group/note mt-2">
-                     <textarea oninput="LibraryController.updateStoryField('${story.id}', 'creator_notes', this.value)" style="font-family: ${customFont}; color: ${customColor};" class="w-full bg-transparent border border-transparent hover:border-gray-500/50 focus:border-indigo-500/50 focus:bg-black/60 p-3 -ml-3 rounded-lg resize-none text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] placeholder-gray-400 focus:ring-0 transition-all font-medium scrollbar-hide leading-snug" rows="4" placeholder="Creator's note...">${story.creator_notes || ''}</textarea>
+                     <textarea oninput="LibraryController.updateStoryField('${story.id}', 'creator_notes', this.value)" style="font-family: ${customFont}; color: ${customColor};" class="w-full bg-transparent border border-transparent hover:border-gray-500/50 focus:border-indigo-500/50 focus:bg-black/60 p-3 -ml-3 rounded-lg resize-none text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] placeholder-gray-400 focus:ring-0 transition-all font-medium scrollbar-hide leading-snug" rows="4" placeholder="Creator's note...">${story.creator_notes || ''}</textarea>
                      <button data-action="gen-story-notes" data-id="${story.id}" class="absolute top-2 right-2 p-1.5 bg-indigo-900/80 text-white rounded-md border border-indigo-500/50 opacity-0 group-focus-within/note:opacity-100 group-hover/note:opacity-100 transition-opacity micro-hover backdrop-blur-md z-20" title="Generate with AI">${this.getAIGenIcon()}</button>
                  </div>
             </div>`;
@@ -10373,7 +10702,7 @@ You must respond with a raw JSON object containing a "characters" array with exa
                         <div class="flex justify-between items-center mb-4">
                             <h4 class="font-bold text-lg text-indigo-300 flex items-center">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                                Scenarios (Templates)
+                                Scenarios
                             </h4>
                             <div class="flex gap-2 items-center">
                                 <button id="scenario-select-btn" onclick="UIManager.toggleSelectionMode('scenario')" class="text-xs font-bold text-gray-400 hover:text-indigo-400 mr-2 transition-colors">Select</button>
@@ -10409,17 +10738,31 @@ You must respond with a raw JSON object containing a "characters" array with exa
 
                     <div>
                     <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <h4 class="font-bold text-lg text-sky-300 flex items-center">
+                        <div class="flex justify-between items-center mb-4 min-h-[40px]">
+                            <h4 class="font-bold text-lg text-sky-300 flex items-center shrink-0">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-                                Narratives (Chats)
+                                Narratives
                             </h4>
-                            <div class="flex gap-2 items-center">
-                                <div id="narrative-bulk-actions" class="hidden flex items-center gap-2 mr-2">
+                            <div class="flex items-center gap-4">
+                                <button id="narrative-select-btn" onclick="UIManager.toggleSelectionMode('narrative')" class="text-xs font-bold text-gray-400 hover:text-sky-400 transition-colors flex-shrink-0">Select</button>
+                                <div id="narrative-bulk-actions" class="hidden flex items-center gap-2">
                                     <span id="narrative-bulk-count" class="text-xs text-gray-400 font-mono">0 selected</span>
                                     <button onclick="LibraryController.deleteMultipleNarratives('${story.id}')" class="text-xs bg-red-900/80 hover:bg-red-700 text-white font-bold py-1 px-3 rounded border border-red-500 transition-colors">Delete Selected</button>
                                 </div>
-                                <button id="narrative-select-btn" onclick="UIManager.toggleSelectionMode('narrative')" class="text-xs font-bold text-gray-400 hover:text-sky-400 transition-colors">Select</button>
+                                <div id="narrative-active-actions" class="hidden flex gap-4 items-center">
+                                    <button id="narrative-action-delete" data-action="delete-narrative" data-story-id="${story.id}" data-narrative-id="" class="p-2 text-gray-500 hover:text-red-400 rounded transition-colors" title="Delete">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                    <button id="narrative-action-elevate" data-action="elevate-narrative" data-story-id="${story.id}" data-narrative-id="" class="p-2 text-gray-500 hover:text-teal-400 rounded transition-colors" title="Elevate to Scenario">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z"/></svg>
+                                    </button>
+                                    <button id="narrative-action-duplicate" data-action="duplicate-narrative" data-story-id="${story.id}" data-narrative-id="" class="p-2 text-gray-500 hover:text-gray-300 rounded transition-colors" title="Duplicate">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                    </button>
+                                    <button id="narrative-action-load" data-action="load-narrative" data-story-id="${story.id}" data-narrative-id="" class="p-2 text-green-500 hover:text-green-300 rounded transition-colors" title="Load Narrative">
+                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 0 0 4 4.11V15.89a1.5 1.5 0 0 0 2.3 1.269l9.344-5.89a1.5 1.5 0 0 0 0-2.538L6.3 2.84Z"/></svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div id="narratives-list-container" class="space-y-2">${narrativesHTML.length ? narrativesHTML : DOM.unsafe('<p class="text-sm text-gray-500 italic">No narratives started. Load a scenario to begin.</p>')}</div>
@@ -10443,6 +10786,49 @@ You must respond with a raw JSON object containing a "characters" array with exa
                 if (hasImages) {
                     this.startCarousel(story.characters, 'details-carousel', story.id);
                 }
+            },
+
+            /**
+             * Selects a narrative from the list to enable top-level action controls.
+             * @param {string} narrativeId - The ID of the narrative
+             * @param {HTMLElement} element - The DOM element of the narrative item clicked
+             */
+            selectNarrative(narrativeId, element) {
+                const container = document.getElementById('narratives-list-container');
+                if (container && container.dataset.selectionMode === 'true') {
+                    // Bulk select mode: toggle checkbox instead of active highlighting
+                    const cb = element.querySelector('.narrative-select-check');
+                    if (cb) {
+                        cb.checked = !cb.checked;
+                        UIManager.updateBulkActionUI();
+                    }
+                    return;
+                }
+                
+                // Deselect previously selected items
+                document.querySelectorAll('.narrative-item.selected').forEach(el => {
+                    el.classList.remove('selected', 'ring-2', 'ring-sky-500', 'bg-gray-700/80');
+                });
+                
+                // Highlight the new selection
+                if (element) {
+                    element.classList.add('selected', 'ring-2', 'ring-sky-500', 'bg-gray-700/80');
+                }
+                
+                // Show actions container
+                const actionsContainer = document.getElementById('narrative-active-actions');
+                if (actionsContainer) {
+                    actionsContainer.classList.remove('hidden');
+                }
+                
+                // Update datasets for controls
+                const actions = ['load', 'duplicate', 'elevate', 'delete'];
+                actions.forEach(action => {
+                    const btn = document.getElementById(`narrative-action-${action}`);
+                    if (btn) {
+                        btn.dataset.narrativeId = narrativeId;
+                    }
+                });
             },
 
             /**
@@ -12031,7 +12417,7 @@ You must respond with a raw JSON object containing a "characters" array with exa
                     tagsHTML += `<span class="bg-indigo-900/40 text-indigo-300 text-[11px] font-bold px-2.5 py-1 rounded-md border border-indigo-500/30 flex items-center shadow-sm whitespace-nowrap gap-1">${escaped} <button onclick="NarrativeController.removeCharacterTag('${char.id}', '${escaped}')" class="hover:text-white transition-colors ml-1">&times;</button></span>`;
                 });
 
-            const modalHTML = DOM.html`
+                const modalHTML = DOM.html`
             <!-- Header Area (Tabs + Active Toggle) -->
             <div class="px-6 pt-4 flex flex-row items-center border-b border-gray-700/50 bg-gray-900/80 rounded-t-xl relative z-40">
                 <!-- Active Toggle shifted to far left Header -->
@@ -12251,15 +12637,15 @@ You must respond with a raw JSON object containing a "characters" array with exa
 
                 // Attach inline JS tab switcher with state persistence
                 if (!window.switchCharTab) {
-                    window.switchCharTab = function(btn, tabId) {
+                    window.switchCharTab = function (btn, tabId) {
                         window.activeCharTab = tabId; // Persist state across re-renders
                         const container = btn.closest('#character-detail-modal-content');
                         if (!container) return;
-                        
+
                         container.querySelectorAll('.character-tab-content').forEach(el => {
                             el.classList.add('hidden');
                         });
-                        
+
                         container.querySelectorAll('.character-tab-btn').forEach(b => {
                             b.classList.remove('border-indigo-500', 'text-indigo-400');
                             b.classList.add('border-transparent', 'text-gray-400');
@@ -12267,7 +12653,7 @@ You must respond with a raw JSON object containing a "characters" array with exa
 
                         const targetContent = container.querySelector('#' + tabId);
                         if (targetContent) targetContent.classList.remove('hidden');
-                        
+
                         btn.classList.remove('border-transparent', 'text-gray-400');
                         btn.classList.add('border-indigo-500', 'text-indigo-400');
                     };
@@ -13764,20 +14150,12 @@ You must respond with a raw JSON object containing a "characters" array with exa
                     return;
                 }
 
-                // Hydrate image if missing from cache
-                if (!UIManager.RUNTIME.characterImageCache[persona.id]) {
-                    try {
-                        const blob = await DBService.getImage(persona.id);
-                        if (blob) UIManager.RUNTIME.characterImageCache[persona.id] = URL.createObjectURL(blob);
-                    } catch (e) { /* Ignore */ }
-                }
-
+                // Renders the details form for the selected user persona using DOM.html.
                 const imgSrc = UIManager.RUNTIME.characterImageCache[persona.id] || persona.image_url;
-                // Standard placeholder (URL encoded)
                 const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234b5563' opacity='0.25'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
                 const displayImage = imgSrc ? imgSrc : placeholder;
 
-                container.innerHTML = `
+                container.innerHTML = DOM.html`
             <div class="flex flex-col gap-4">
                 <div class="flex justify-between items-center pb-2 border-b border-gray-700">
                     <h3 class="text-xl font-bold">Edit Persona</h3>
@@ -13802,7 +14180,7 @@ You must respond with a raw JSON object containing a "characters" array with exa
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-400 mb-1">Short Description</label>
-                            <input type="text" value="${persona.short_description}" oninput="AppController.updateUserPersonaField('${persona.id}', 'short_description', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded focus:border-indigo-500">
+                            <input type="text" value="${persona.short_description || ''}" oninput="AppController.updateUserPersonaField('${persona.id}', 'short_description', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded focus:border-indigo-500">
                         </div>
                     </div>
                 </div>
@@ -13821,8 +14199,7 @@ You must respond with a raw JSON object containing a "characters" array with exa
                     <label class="block text-sm font-bold text-gray-400 mb-1">Tags (comma-separated)</label>
                     <input type="text" value="${(persona.tags || []).join(', ')}" oninput="AppController.updateUserPersonaField('${persona.id}', 'tags', this.value)" class="w-full bg-black/30 border-gray-600 p-2 rounded focus:border-indigo-500">
                 </div>
-            </div>
-        `;
+            </div>`;
             },
 
             /**
@@ -18041,7 +18418,11 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                         const char = ReactiveStore.getCharacter(msg.character_id);
                         if (state.characterImageMode === 'bubble' && char) {
                             const imgSrc = UIManager.getPortraitSrc(char, msg.versions[nextVer].emotion);
-                            if (imgSrc) finalHTML = `<img src="${imgSrc}" class="bubble-char-image">${finalHTML}`;
+                            if (imgSrc) {
+                                // Ensure we use safe interpolation to avoid browser error
+                                const imgTag = DOM.html`<img src="${imgSrc}" class="bubble-char-image">`;
+                                finalHTML = DOM.unsafe(`${imgTag}${finalHTML}`);
+                            }
                         }
 
                         contentEl.innerHTML = finalHTML;
@@ -18147,13 +18528,13 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                             const state = StateManager.getState();
                             state.evolved_characters = state.evolved_characters || {};
                             state.evolved_characters[charId] = newPersona;
-                            
+
                             // Unobtrusive visual indicator (optional, maybe a small console log or toast)
                             const char = ReactiveStore.getCharacter(charId);
                             if (char) {
                                 UIManager.showNotification(`✨ ${char.name}'s Persona Evolved!`, "success");
                             }
-                            
+
                             if (typeof ReactiveStore.forceSave === 'function') {
                                 ReactiveStore.forceSave();
                             }
@@ -18894,7 +19275,7 @@ Rules:
 
                         if (top3Match && top3Match[1]) {
                             // Split by comma, trim whitespace and punctuation
-                            const candidates = top3Match[1].split(',').map(s => s.trim().replace(/['"`\.]*$/, ''));
+                            const candidates = top3Match[1].split(',').map(s => s.trim().replace(/['"\x60\.]*$/, ''));
 
                             for (const candidate of candidates) {
                                 // Ignore if candidate is empty or is the user
@@ -18968,18 +19349,20 @@ Rules:
             },
 
             /**
-             * Analyzes a text turn for emotion and location changes.
+             * Analyzes a text turn for emotion, location changes, and stat changes.
+             * Builds a single holistic JSON prompt. The location section is omitted
+             * entirely when the world map has no named locations, preventing noise.
              * @param {string} text - The text to analyze.
              * @param {string} [charId] - Optional character ID to constrain emotions.
-             * @returns {Promise<Object>} - The analysis result { emotion, locationName }.
+             * @returns {Promise<Object>} - { emotion, locationName, stat_changes }
              */
             async analyzeTurn(text, charId = null) {
                 const state = ReactiveStore.state;
 
                 // 1. Check Toggle
-                if (state.enableAnalysis === false) return { emotion: 'neutral', locationName: null };
+                if (state.enableAnalysis === false) return { emotion: 'neutral', locationName: null, stat_changes: [] };
 
-                // 2. Context-Aware Location List (Current + Adjacent)
+                // 2. Context-Aware Location List (Current cell + adjacent cells)
                 const grid = state.worldMap?.grid || [];
                 const currentCoords = state.worldMap?.currentLocation;
                 let validLocations = [];
@@ -18997,15 +19380,17 @@ Rules:
                 }
                 if (validLocations.length === 0) validLocations = grid.map(l => l.name);
                 validLocations = [...new Set(validLocations)].filter(Boolean);
+
+                // Only ask about locations if the map has actual named locations.
+                const hasLocations = validLocations.length > 0;
                 const locStr = validLocations.join(', ');
 
-                // 3. Constrain Emotions based on Character Images
-                let validEmotions = ['happy', 'sad', 'angry', 'surprised', 'neutral', 'fear', 'disgust', 'blush']; // Default
-
+                // 3. Constrain Emotions to portraits that exist for this character
+                let validEmotions = ['happy', 'sad', 'angry', 'surprised', 'neutral', 'fear', 'disgust', 'blush'];
                 if (charId) {
                     const char = ReactiveStore.getCharacter(charId);
                     if (char) {
-                        const hasImages = ['neutral']; // Base is always assumed neutral/available
+                        const hasImages = ['neutral'];
                         if (char.extra_portraits) {
                             char.extra_portraits.forEach(p => {
                                 if (p.emotion) hasImages.push(p.emotion.toLowerCase());
@@ -19014,34 +19399,65 @@ Rules:
                         validEmotions = [...new Set(hasImages)];
                     }
                 }
-                const emoStr = validEmotions.map(e => `'${e}'`).join(', ');
+                const emoStr = validEmotions.map(e => `"${e}"`).join(' | ');
+
+                // 4. Build stat context (conditional)
+                let hasStats = false;
+                let statsContext = '';
+                if (state.enableStats !== false && state.character_stats && charId) {
+                    const charStats = state.character_stats[charId];
+                    if (charStats && charStats.length > 0) {
+                        statsContext = charStats.map(s => `${s.name}${s.description ? ' (' + s.description + ')' : ''}: ${Math.round(s.value)}`).join(', ');
+                        hasStats = true;
+                    }
+                }
 
                 try {
-                    // Build analysis prompt — include stat change analysis if stats are active
-                    let statsInstruction = '';
-                    let statsContext = '';
-                    if (state.enableStats !== false && state.character_stats && charId) {
-                        const charStats = state.character_stats[charId];
-                        if (charStats && charStats.length > 0) {
-                            statsContext = charStats.map(s => `${s.name}${s.description ? ' (' + s.description + ')' : ''}: ${Math.round(s.value)}`).join(', ');
-                            statsInstruction = `\n3. Determine stat changes for the speaking character based on their actions.\n   Current stats: ${statsContext}\n   Only include stats that actually changed. Values are delta (-10 to +10). If no stats changed, return empty array.`;
-                        }
+                    // 5. Build one holistic JSON analysis prompt.
+                    // Schema is declared first, then tasks follow — clean and unambiguous.
+                    let taskNum = 1;
+                    const schemaLines = [`  "emotion": ${emoStr}`];
+                    const taskLines = [`${taskNum++}. Set "emotion" to the primary emotion of the speaker. You MUST pick one of these exact values: ${emoStr}.`];
+
+                    if (hasLocations) {
+                        schemaLines.push(`  "locationName": <one of [${locStr}], or null>`);
+                        taskLines.push(`${taskNum++}. Set "locationName" to the destination if the text explicitly describes moving to a location from this list: [${locStr}]. If no movement to a listed location is described, set it to null.`);
                     }
 
-                    const prompt = `Analyze the text.
-                    1. Identify the speaker's emotion. Options: ${emoStr}.
-                    2. Determine if the text explicitly indicates moving to a location.
-                    IMPORTANT: You may ONLY select a location from this list: [${locStr}].
-                    If the text does not strictly match a location in that list, set "locationName" to null.${statsInstruction}
-                    TEXT: "${text}"
-                    Return valid JSON: { "emotion": "string", "locationName": "string" or null${statsInstruction ? ', "stat_changes": [{"name": "string", "delta": number}] or []' : ''} }`;
+                    if (hasStats) {
+                        schemaLines.push(`  "stat_changes": [{ "name": <string>, "delta": <integer -10..10> }]`);
+                        taskLines.push(`${taskNum++}. Set "stat_changes" to an array of stats that changed due to the speaker's actions. Stat context: ${statsContext}. Only include stats that actually changed; use [] if none changed.`);
+                    }
 
+                    const prompt =
+                        `You are an analysis engine. Analyze the TEXT and return a single JSON object matching this schema:
+
+{
+${schemaLines.join(',\n')}
+}
+
+TASKS:
+${taskLines.join('\n')}
+
+TEXT:
+"${text}"
+
+Return ONLY the JSON object. No preamble or explanation.`;
+
+                    console.log('[AnalyzeTurn Prompt]:', prompt);
                     const res = await APIService.callAI(prompt, true);
-                    const data = UTILITY.extractAndParseJSON(res); // Use safe parser
+                    const data = UTILITY.extractAndParseJSON(res);
+                    console.log('[AnalyzeTurn Response]:', data);
 
-                    const emotion = (data?.emotion && validEmotions.includes(data.emotion.toLowerCase())) ? data.emotion.toLowerCase() : 'neutral';
-                    return { emotion, locationName: data?.locationName || null, stat_changes: Array.isArray(data?.stat_changes) ? data.stat_changes : [] };
+                    const emotion = (data?.emotion && validEmotions.includes(data.emotion.toLowerCase()))
+                        ? data.emotion.toLowerCase() : 'neutral';
+                    return {
+                        emotion,
+                        locationName: hasLocations ? (data?.locationName || null) : null,
+                        stat_changes: Array.isArray(data?.stat_changes) ? data.stat_changes : []
+                    };
                 } catch (e) {
+                    console.warn('[AnalyzeTurn] Failed:', e);
                     return { emotion: 'neutral', locationName: null, stat_changes: [] };
                 }
             },
