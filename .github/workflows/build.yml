@@ -39,7 +39,42 @@ jobs:
 
       - name: Build App (Mac)
         if: matrix.os == 'macos-latest'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
         run: npm run dist:mac
+
+      - name: Ad-hoc Sign macOS App
+        if: matrix.os == 'macos-latest'
+        run: |
+          APP=$(find dist -name "*.app" -maxdepth 2 | head -1)
+          if [ -z "$APP" ]; then
+            echo "No .app found in dist/"; find dist -maxdepth 3; exit 1
+          fi
+          echo "Signing: $APP"
+          find "$APP/Contents/Frameworks" \( -name "*.framework" -o -name "*.dylib" \) 2>/dev/null | while read f; do
+            codesign --force --sign - "$f" 2>/dev/null || true
+          done
+          find "$APP/Contents/Frameworks" -name "*.app" 2>/dev/null | while read helper; do
+            codesign --force --sign - "$helper" 2>/dev/null || true
+          done
+          find "$APP/Contents/MacOS" -type f 2>/dev/null | while read bin; do
+            codesign --force --sign - "$bin" 2>/dev/null || true
+          done
+          codesign --force --sign - --entitlements electron/entitlements.mac.plist "$APP"
+          codesign --verify --verbose=2 "$APP" && echo "Ad-hoc signature OK" || { echo "Signature failed"; exit 1; }
+
+      - name: Rebuild DMG from Signed App
+        if: matrix.os == 'macos-latest'
+        run: |
+          APP=$(find dist -name "*.app" -maxdepth 2 | head -1)
+          APP_NAME=$(basename "$APP" .app)
+          brew install create-dmg --quiet
+          create-dmg --volname "$APP_NAME" --no-internet-enable "dist/${APP_NAME}-mac.dmg" "$APP" || true
+          if [ ! -f "dist/${APP_NAME}-mac.dmg" ]; then
+            EXISTING=$(find dist -name "*.dmg" -maxdepth 1 | head -1)
+            [ -n "$EXISTING" ] && cp "$EXISTING" "dist/${APP_NAME}-mac.dmg" || { echo "No DMG found"; exit 1; }
+          fi
+          ls -lh dist/*.dmg
 
       - name: Upload Build Artifact (Windows)
         if: matrix.os == 'windows-latest'
@@ -53,12 +88,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ellipsis-lm-mac
-          path: dist/*.dmg
+          path: dist/*-mac.dmg
 
   release:
     needs: build
     runs-on: ubuntu-latest
-    # Only create a release on pushes to main (not PRs or manual dispatches from forks)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
@@ -93,9 +127,13 @@ jobs:
 
             ### Downloads
             - **Windows**: Download the `.exe` installer below.
-            - **macOS**: Download the `.dmg` file below. 
+            - **macOS**: Download the `.dmg` file below.
 
-            > **macOS Note:** This app is ad-hoc signed but not yet notarized. On first launch, **Right-Click the app and select Open** to bypass Gatekeeper.
+            > **macOS Note:** This app is ad-hoc signed but not notarized.
+            > On first launch, **Right-Click → Open** to bypass Gatekeeper, or run:
+            > ```
+            > xattr -d com.apple.quarantine /Applications/EllipsisLM.app
+            > ```
           files: release-assets/*
           fail_on_unmatched_files: false
         env:
