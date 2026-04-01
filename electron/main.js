@@ -346,29 +346,40 @@ function startKobold(opts = {}) {
  */
 function stopKobold(force = false) {
     if (force && process.platform === 'win32') {
-        console.log('[KoboldCPP] Performing force-kill on all koboldcpp.exe instances...');
+        console.log('[KoboldCPP] Performing force-kill on koboldcpp.exe...');
         try {
-            // /F = Force, /IM = Image Name, /T = Tree kill
-            spawnSync('taskkill', ['/F', '/IM', EXE_NAME, '/T'], { windowsHide: true });
+            if (koboldProcess && koboldProcess.pid) {
+                // Kill by PID for precision
+                spawnSync('taskkill', ['/F', '/PID', String(koboldProcess.pid), '/T'], { windowsHide: true });
+            } else {
+                // Fallback: Kill by image name to ensure no orphans are left
+                spawnSync('taskkill', ['/F', '/IM', EXE_NAME, '/T'], { windowsHide: true });
+            }
         } catch (e) {
-            console.warn('[KoboldCPP] taskkill failed (process might not be running):', e.message);
+            console.warn('[KoboldCPP] taskkill failed:', e.message);
         }
     }
 
     if (!koboldProcess) return;
     
     console.log('[KoboldCPP] Stopping tracked process...');
-    koboldProcess.kill('SIGTERM');
-    
-    // Force-kill the tracked process after 3 seconds if still alive
-    setTimeout(() => {
-        if (koboldProcess) {
-            try {
-                koboldProcess.kill('SIGKILL');
-            } catch (e) { /* ignore */ }
+    try {
+        koboldProcess.kill('SIGTERM');
+        // Give it a moment to die gracefully if not forced
+        if (!force) {
+            setTimeout(() => {
+                if (koboldProcess) {
+                    try { koboldProcess.kill('SIGKILL'); } catch (e) {}
+                    koboldProcess = null;
+                }
+            }, 3000);
+        } else {
             koboldProcess = null;
         }
-    }, 3000);
+    } catch (e) {
+        console.warn('[KoboldCPP] Error killing process:', e.message);
+        koboldProcess = null;
+    }
 }
 
 // ============================================================
@@ -560,11 +571,11 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-    // Kill KoboldCPP before exit
-    stopKobold();
+    // Force-kill KoboldCPP before exit to ensure no orphans
+    stopKobold(true);
     if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('before-quit', () => {
-    stopKobold();
+    stopKobold(true);
 });

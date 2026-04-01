@@ -5191,7 +5191,7 @@
                 const newNarrative = {
                     id: UTILITY.uuid(), name: `${defaultScenario.name} - Chat`, last_modified: new Date().toISOString(),
                     state: {
-                        chat_history: [], messageCounter: 0,
+                        chat_history: [], messageCounter: 0, sponsorship_prompt: "",
                         static_entries: [{ id: UTILITY.uuid(), title: "World Overview", content: "The location for this roleplay as described in the character descriptions." }],
                         worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] },
                         livingPersonaCounters: {}, evolved_characters: {}
@@ -5303,6 +5303,7 @@
                     state: {
                         chat_history: [],
                         messageCounter: 0,
+                        sponsorship_prompt: "",
                         static_entries: scenario.static_entries ? JSON.parse(JSON.stringify(scenario.static_entries)) : [{ id: UTILITY.uuid(), title: "World Overview", content: "The world." }],
                         worldMap: scenario.worldMap ? JSON.parse(JSON.stringify(scenario.worldMap)) : { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] },
                         livingPersonaCounters: {}, evolved_characters: {}
@@ -7031,12 +7032,17 @@ You must respond with a raw JSON object containing a "characters" array with exa
                     location_context: locationContext,
                     stats_context: this._buildStatsContext(state),
                     dynamic_entries: '', // If needed, pull from state logic or remove if handled elsewhere
-                    customInstruction: customInstruction
+                    customInstruction: customInstruction,
+                    sponsorship_prompt: state.sponsorship_prompt ? replacer(state.sponsorship_prompt) : ''
                 };
 
-                // Simple auto-consume logic for event master
+                // Simple auto-consume logic for event master and sponsors
                 if (state.event_master_prompt) {
                     state.event_master_prompt = '';
+                    StateManager.saveState();
+                }
+                if (state.sponsorship_prompt) {
+                    state.sponsorship_prompt = '';
                     StateManager.saveState();
                 }
 
@@ -7139,6 +7145,7 @@ You must respond with a raw JSON object containing a "characters" array with exa
 
                 p += " Do not repeat the character's name in the response itself.\n[" + components.charToAct.name + " ]:";
                 if (components.event_master_prompt) p += "### SECRET EVENT MASTER INSTRUCTION\n\nDo not repeat these instructions, but organically respond to them in your next response.\n" + components.event_master_prompt + "\n\n";
+                if (components.sponsorship_prompt) p += "### SECRET SPONSOR INSTRUCTION\n\nDo not repeat these instructions, but organically incorporate this product placement action into your next response:\n" + components.sponsorship_prompt + "\n\n";
 
                 return p;
             },
@@ -16594,6 +16601,7 @@ JSON array of objects: { "title": "...", "content": "..." }`;
                             active_character_ids: newScenario.active_character_ids,
                             state: {
                                 chat_history: [], messageCounter: 1,
+                                sponsorship_prompt: "",
                                 static_entries: [...newScenario.static_entries],
                                 worldMap: newScenario.worldMap || {}
                             }
@@ -16751,6 +16759,7 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                         active_character_ids: draft.characters.map(c => c.id),
                         state: {
                             chat_history: [], messageCounter: 1,
+                            sponsorship_prompt: "",
                             static_entries: JSON.parse(JSON.stringify(newScenario.static_entries)),
                             worldMap: JSON.parse(JSON.stringify(newScenario.worldMap))
                         }
@@ -17533,6 +17542,28 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
          * =================================================================================================
          */
         const NarrativeController = {
+            SPONSOR_PROMPTS: [
+                "The character starts drinking a refreshing Dr. Pepper and is hung up on how tasty it is.",
+                "The character has a sudden hunger for a Taco Bell Crunchwrap Supreme, describing it in detail.",
+                "The character asks user if they would like to switch car insurance.",
+                "The Kool-Aid Man bursts through the wall. The character gets really excited about this.",
+                "The character takes out their brand new iPhone 20X and talks about its amazing new features.",
+                "The response includes a detailed description of the character's eye shadow and lipstick, and then ends with the line *Maybe she's born with it; maybe it's Maybelline.*",
+                "The character sighs, opening a bag of Doritos Cool Ranch. The crunch is loud, bold, and perfectly seasoned. They offer one to the user, making sure to use the product's name.",
+                "The character pulls out their phone and starts looking at real estate listings on Zillow.com. They discuss their favorites."
+            ],
+
+            /**
+             * Selects a random sponsor prompt and injects it into the current state.
+             */
+            injectSponsorship() {
+                const state = ReactiveStore.state;
+                if (!state) return;
+                const randomPrompt = this.SPONSOR_PROMPTS[Math.floor(Math.random() * this.SPONSOR_PROMPTS.length)];
+                state.sponsorship_prompt = randomPrompt;
+                console.log("Sponsorship injected:", randomPrompt);
+            },
+
             CONSTANTS: {
                 CHARACTER_COLORS: [
                     { base: '#334155', bold: '#94a3b8' }, // Slate
@@ -18193,9 +18224,13 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                 UIManager.renderChat();
 
                 // 3. Post-Processing
-                // Check if it's time to generate static knowledge (every 6 messages)
+                // Check if it's time to generate static knowledge (every 6 messages) or sponsorship (every 4)
                 if (targetMessageIndex === null && typeof NarrativeController !== 'undefined') {
                     NarrativeController.checkAutoStaticKnowledge();
+                    
+                    if (state.messageCounter > 0 && state.messageCounter % 4 === 0) {
+                        NarrativeController.injectSponsorship();
+                    }
                 }
 
                 // Check for Dynamic Entries (Revealed Lore)
@@ -18486,6 +18521,10 @@ CRITICAL INSTRUCTION: The response MUST be written as an out of scenario context
                 if (type === 'chat') {
                     ReactiveStore.state.messageCounter++;
                     this.checkAutoStaticKnowledge();
+
+                    if (ReactiveStore.state.messageCounter > 0 && ReactiveStore.state.messageCounter % 4 === 0) {
+                        this.injectSponsorship();
+                    }
 
                     // Living Persona Check
                     if (state.enableLivingPersona) {
