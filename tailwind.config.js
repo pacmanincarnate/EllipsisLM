@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./251231 - Group chat.html"],
+  content: ["./index.html"],
   theme: {
     extend: {},
   },

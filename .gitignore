@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+release/
+out/
+bin/
+
+# Temporary files & logs
+*.log
+debug.log
+log.txt
+asar_contents.txt
+.DS_Store
+Thumbs.db
+*.tmp
+
+# IDE / Project files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Local Environment
+.env
+.env.local
+.env.*.local
