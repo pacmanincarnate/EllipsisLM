@@ -56,7 +56,7 @@ EllipsisLM views every character as part of a larger world that can be explored 
 ### The Story Hierarchy
 We use a tiered structure to manage complex, branching narratives without cluttering your library.
 
-![Story Library Dashboard](assets/screenshots/library_view.png)
+![Story Hierarchy](assets/screenshots/story_hierarchy.png)
 
 | Level | Component | Purpose |
 | :--- | :--- | :--- |
