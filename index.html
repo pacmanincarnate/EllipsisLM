@@ -5383,7 +5383,16 @@
                 const narratives = await DBService.getAllNarratives();
                 dataFolder.file("narratives.json", JSON.stringify(narratives, null, 2));
 
-                // 4. Export Images Iteratively (Memory Safe)
+                // 4. Export Folders
+                const folders = await DBService.getAllFolders();
+                dataFolder.file("folders.json", JSON.stringify(folders, null, 2));
+
+                // 5. Export Global Settings (contains User Personas)
+                if (typeof StateManager !== 'undefined') {
+                    dataFolder.file("globalSettings.json", JSON.stringify(StateManager.data.globalSettings, null, 2));
+                }
+
+                // 6. Export Images Iteratively (Memory Safe)
                 // Capture the report from iterateStore
                 const report = await DBService.iterateStore("characterImages", (key, blob) => {
                     if (blob) {
@@ -5414,6 +5423,8 @@
                 // 0. Pre-Flight Validation (Memory-Safe)
                 let stories = [];
                 let narratives = [];
+                let folders = [];
+                let globalSettings = null;
 
                 const storiesFile = zip.file("data/stories.json");
                 if (storiesFile) {
@@ -5431,11 +5442,28 @@
                     } catch (e) { throw new Error("Invalid 'narratives.json' in backup file."); }
                 }
 
+                const foldersFile = zip.file("data/folders.json");
+                if (foldersFile) {
+                    try {
+                        const str = await foldersFile.async("string");
+                        folders = JSON.parse(str);
+                    } catch (e) { console.warn("Could not parse folders.json", e); }
+                }
+
+                const globalSettingsFile = zip.file("data/globalSettings.json");
+                if (globalSettingsFile) {
+                    try {
+                        const str = await globalSettingsFile.async("string");
+                        globalSettings = JSON.parse(str);
+                    } catch (e) { console.warn("Could not parse globalSettings.json", e); }
+                }
+
                 // 1. Clear existing data (Only after validation passes)
                 await Promise.all([
                     DBService.clearStore("stories"),
                     DBService.clearStore("narratives"),
-                    DBService.clearStore("characterImages")
+                    DBService.clearStore("characterImages"),
+                    DBService.clearStore("folders")
                 ]);
 
                 // 2. Import Stories
@@ -5450,7 +5478,19 @@
                     if (!success) throw new Error(`Failed to save narrative "${narrative.name || 'Unknown'}". Storage may be full.`);
                 }
 
-                // 4. Import Images
+                // 4. Import Folders
+                for (const folder of folders) {
+                    await DBService.saveFolder(folder);
+                }
+
+                // 5. Restore Global Settings
+                if (globalSettings && typeof StateManager !== 'undefined') {
+                    StateManager.data.globalSettings = globalSettings;
+                    StateManager.saveGlobalSettings();
+                    StateManager.loadGlobalSettings();
+                }
+
+                // 6. Import Images
                 const imageFolder = zip.folder("images");
                 if (imageFolder) {
                     const imageFiles = [];
