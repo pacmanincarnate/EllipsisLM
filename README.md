@@ -4,6 +4,9 @@ EllipsisLM is a private, local-first roleplay interface designed to give users t
 
 Unlike traditional chat interfaces that are limited to linear exchanges, EllipsisLM provides a framework for building complex worlds that remain consistent over long-running roleplays.
 
+
+![EllipsisLM Hero Shot](assets/screenshots/hero_shot.png)
+
 ---
 
 ## Getting Started
@@ -69,6 +72,8 @@ This hierarchy allows you to start multiple "runs" of the same scenario without 
 - **Bulk Operations**: Automatically import every character card from a local folder in one go.
 - **Full Backups**: Export your entire library, settings, and histories as a single portable ZIP file.
 
+![Import and Export Options](assets/screenshots/import_export.png)
+
 ---
 
 ## The Roleplay Engine
@@ -83,6 +88,8 @@ EllipsisLM supports unlimited characters in any given story.
 - **Targeted Generation**: Force a specific character to reply next, or let the system choose which active character makes the most sense. This includes the ability to generate new, undefined characters on the fly (like a waiter at a restaurant).
 - **CYOA (Choose Your Own Adventure)**: Instead of writing every response from scratch, you can prompt the AI to generate multiple response options for you. Choose how the story continues from several logical paths.
 
+![CYOA Branching Options](assets/screenshots/cyoa_options.png)
+
 ### Background Agents
 - **Event Master**: Runs roughly every 6 turns to review history and inject a logical background event or plot twist.
 - **Sentiment Agent**: Analyzes chat history to determine character emotions, automatically switching character portraits to match the mood.
@@ -92,8 +99,10 @@ EllipsisLM supports unlimited characters in any given story.
 
 - **Character State Tracking**: Agents periodically deduce the current feelings, internal states, and "stats" of characters to drive long-term consistency.
 
+![Character Stats and State Tracking](assets/screenshots/stats_panel.png)
+
 ### Lore and Context Management
-![Lorebook Management](assets/screenshots/lorebook.png)
+![Dynamic Lore Entry and Logic Gates](assets/screenshots/dynamic_lore.png)
 
 - **Static Knowledge**: Persistent summaries and world rules that are always included in the AI's context. 
 - **Dynamic Knowledge (Lorebook)**: Trigger-based entries that only enter context when specific keywords match.

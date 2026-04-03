@@ -22798,6 +22798,13 @@ Return ONLY the JSON object. No preamble or explanation.`;
                 if (titleInput) titleInput.addEventListener('input', titleInputHandler);
                 if (mobileTitle) mobileTitle.addEventListener('input', titleInputHandler);
 
+                // FIX: Blur title input on Enter
+                const titleKeydownHandler = (e) => {
+                    if (e.key === 'Enter') e.target.blur();
+                };
+                if (titleInput) titleInput.addEventListener('keydown', titleKeydownHandler);
+                if (mobileTitle) mobileTitle.addEventListener('keydown', titleKeydownHandler);
+
                 // Enter-to-Send Logic
                 const chatInput = document.getElementById('chat-input');
                 if (chatInput) {
@@ -22912,6 +22919,11 @@ Return ONLY the JSON object. No preamble or explanation.`;
                     titleTrigger.addEventListener('mouseenter', showTitle);
                     titleTrigger.addEventListener('mouseleave', () => hideTitle());
                     titleTrigger.addEventListener('touchstart', (e) => { e.preventDefault(); if (mobileTitle && mobileTitle.style.opacity === '1') { hideTitle(true); } else { showTitle(); hideTitle(); } });
+                }
+
+                // FIX: Ensure mobile title hides on blur (after editing)
+                if (mobileTitle) {
+                    mobileTitle.addEventListener('blur', () => hideTitle(true));
                 }
 
                 // Update: Use NarrativeController for Chat Buttons
