@@ -134,6 +134,8 @@ EllipsisLM supports unlimited characters in any given story.
 - **Image Creation**: The integrated "AI Painter" allows you to generate new character portraits and background images directly within the app using your chosen backend.
 - **Text-to-Speech (TTS)**: Built-in TTS support allows for the AI's responses to be read aloud for a more immersive experience.
 
+![TTS and Emotional Portraits](assets/screenshots/tts_sentiment.png)
+
 ---
 
 ## Backends and Privacy
@@ -150,7 +152,62 @@ EllipsisLM is backend-agnostic. You can switch between local and cloud models de
 | **Control** | Fixed settings and models. | Complete control over prompts and backend. |
 | **Cost** | Monthly subscription fees. | Free for local use or pay-per-token for APIs. |
 
+
+## Backend Setup Guide
+
+To use EllipsisLM, you need to connect it to an AI model. You can choose between **Cloud APIs** (easiest to set up) or **Local Backends** (completely private and free if you have the hardware). The installed version of EllipsisLM will allow you to automatically download and run KoboldCPP from within the app, so you don't need to manually download or start it separately from EllipsisLM to run locally, and for the html version, you also have the option to run a model fully in your browser using the built-in WebLLM.
+
+### 1. Google Gemini (Cloud)
+Google offers a generous free tier for their Gemini models.
+1.  Visit **[Google AI Studio](https://aistudio.google.com/)**.
+2.  Sign in with your Google account.
+3.  Click **"Get API key"** in the left sidebar.
+4.  Create a new API key in a new or existing project.
+5.  **In EllipsisLM**: Open **Global Settings** (gear icon) > **AI Backend** > Select **Google Gemini** > Paste your key into the **Gemini API Key** field.
+
+* Note: Gemini is necessary for TTS functionality.
+
+### 2. OpenRouter (Cloud)
+OpenRouter provides access to dozens of models (Claude, GPT-4, Llama 3) through a single API.
+1.  Visit **[OpenRouter Keys](https://openrouter.ai/keys)**.
+2.  Sign in and click **"Create Key"**.
+3.  Name your key (e.g., "EllipsisLM") and click **"Create"**.
+4.  **Copy your key immediately**—you won't be able to see it again.
+5.  **In EllipsisLM**: Open **Global Settings** > **AI Backend** > Select **OpenRouter** > Paste your key into the **OpenRouter API Key** field.
+
+* Note: OpenRouter is recommended for the best selection of models and features. There are generous free tiers for many models, and adding $10 in credits will increase free model limits indefinitely, and can last months if use with larger paid models and image generation.
+
+### 3. KoboldCPP (Local)
+The preferred local backend for GGUF models on Windows and macOS.
+**Note:** The installed version of EllipsisLM will allow you to automatically download and run KoboldCPP from within the app, so you don't need to manually download or start it separately from EllipsisLM.
+1.  Download the latest release from the **[Official GitHub](https://github.com/LostRuins/koboldcpp/releases)**.
+2.  Launch `koboldcpp.exe`, click **"Browse"** to select your GGUF model file.
+3.  Configure your GPU layers (if applicable) and click **"Launch"**.
+4.  By default, KoboldCPP runs at `http://localhost:5001`.
+5.  **In EllipsisLM**: Open **Global Settings** > **AI Backend** > Select **KoboldCPP**. The **API Base URL** should already be set to `http://localhost:5001`.
+
+* Note: KoboldCPP is the recommended backend for either local text generation or local image generation.
+
+### 4. LM Studio (Local)
+A user-friendly local interface for downloading and running models.
+1.  Download and install from **[lmstudio.ai](https://lmstudio.ai/)**.
+2.  Search for and download a model within the app.
+3.  Go to the **"Developer / Local Server"** tab (terminal icon).
+4.  Select your model and click **"Start Server"**.
+5.  By default, LM Studio runs at `http://localhost:1234`.
+6.  **In EllipsisLM**: Open **Global Settings** > **AI Backend** > Select **LM Studio**. Ensure the **LM Studio Server URL** is set to `http://localhost:1234/v1`.
+
 ---
+
+### Connecting to EllipsisLM
+Once your backend is running or your API key is ready:
+1.  Click the **Global Settings** (gear icon) in the top-right corner of EllipsisLM.
+2.  Under the **AI Backend** section, use the dropdown to select your provider.
+3.  Input your **API Key** or **Server URL** as required.
+4.  For OpenRouter or LM Studio, you can use the **Search / Browse** icons next to the model field to select from available models.
+
+---
+
 
 ## Technical Details
 
