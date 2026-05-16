@@ -17173,7 +17173,7 @@ Write only the character's message.`;
                     const safeName = name.replace(/'/g, "\\'");
                     const subtextHtml = subtext ? `<span class="text-[10px] text-gray-500 leading-tight block truncate mt-0.5">${subtext}</span>` : '';
                     return `
-                        <button onclick="document.getElementById('ai-character-selector').value = '${val}'; document.getElementById('ai-character-selector-btn').innerHTML = '<span class=\'truncate\'>${safeName}</span>'; document.getElementById('ai-character-dropdown').classList.add('hidden');" class="w-full text-left hover:bg-indigo-600/20 px-3 py-2.5 rounded-lg text-sm flex items-center gap-3 transition-colors group" role="menuitem">
+                        <button onclick="document.getElementById('ai-character-selector').value = '${val}'; document.querySelector('#ai-character-selector-btn span').textContent = '${safeName}'; document.getElementById('ai-character-dropdown').classList.add('hidden');" class="w-full text-left hover:bg-indigo-600/20 px-3 py-2.5 rounded-lg text-sm flex items-center gap-3 transition-colors group" role="menuitem">
                             <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center group-hover:bg-gray-700 transition-colors overflow-hidden border border-gray-600/50">
                                 ${iconHtml}
                             </div>
@@ -17206,12 +17206,12 @@ Write only the character's message.`;
 
                 if (found) {
                     selectorInput.value = currentValue;
-                    if (currentValue === 'any') btn.innerHTML = '<span class="truncate">Any</span>';
-                    else if (currentValue === 'event_master') btn.innerHTML = '<span class="truncate">Event Master</span>';
-                    else btn.innerHTML = `<span class="truncate">${activeAiChars.find(c => c.id === currentValue).name}</span>`;
+                    if (currentValue === 'any') btn.querySelector('span').textContent = 'Any';
+                    else if (currentValue === 'event_master') btn.querySelector('span').textContent = 'Event Master';
+                    else btn.querySelector('span').textContent = activeAiChars.find(c => c.id === currentValue).name;
                 } else {
                     selectorInput.value = 'any';
-                    btn.innerHTML = '<span class="truncate">Any</span>';
+                    btn.querySelector('span').textContent = 'Any';
                 }
             },
 
