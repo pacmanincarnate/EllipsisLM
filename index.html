@@ -41,6 +41,7 @@
     [SEC:JS:TODO:app]       - app
     [SEC:JS:CTRL:HUB]       - HubController
     [SEC:JS:TODO:LibraryController] - LibraryController
+    [SEC:JS:TODO:UTILITY]   - UTILITY
     =================================================================================================
 -->
 <html lang="en">
@@ -1032,6 +1033,27 @@
         .music-indicator .music-vol-btn:hover {
             background: rgba(255, 255, 255, 0.18);
             color: rgba(199, 210, 254, 1);
+        }
+
+        /* Music Backend Selector Buttons */
+        .music-backend-option {
+            background: rgba(0, 0, 0, 0.2);
+            border-color: rgba(75, 85, 99, 0.6);
+            color: #9ca3af;
+            cursor: pointer;
+        }
+
+        .music-backend-option:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.4);
+            color: #c7d2fe;
+        }
+
+        .music-backend-option.active {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.7);
+            color: #e0e7ff;
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
         }
 
 
@@ -5056,42 +5078,102 @@
                         </svg>
                         Background Music
                     </h3>
-                    <span class="text-xs text-indigo-400 bg-indigo-900/30 px-2 py-1 rounded">Gemini / Lyria AI</span>
+                    <span id="music-backend-badge" class="text-xs text-indigo-400 bg-indigo-900/30 px-2 py-1 rounded">AI Music</span>
                 </div>
                 <div class="bg-black/20 p-4 rounded-lg border border-gray-700 space-y-4">
+
+                    <!-- Music Backend Selector -->
                     <div>
-                        <label class="text-sm font-semibold text-gray-400 block mb-1">Music Mode</label>
-                        <select id="music-mode-select"
-                            class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-gray-200 focus:border-indigo-500 focus:outline-none">
-                            <option value="off">Off</option>
-                            <option value="on">On</option>
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">AI-generated instrumental music that adapts to the
-                            current scene. Requires a Gemini API key.</p>
+                        <label class="text-sm font-semibold text-gray-400 block mb-2">Music Backend</label>
+                        <div id="music-backend-selector" class="grid grid-cols-3 gap-2">
+                            <button data-action="select-music-backend" data-action-val="off"
+                                class="music-backend-option active px-3 py-2.5 rounded-lg border text-sm font-medium transition-all duration-200 text-center"
+                                >Off</button>
+                            <button data-action="select-music-backend" data-action-val="gemini"
+                                class="music-backend-option px-3 py-2.5 rounded-lg border text-sm font-medium transition-all duration-200 text-center"
+                                >Gemini</button>
+                            <button data-action="select-music-backend" data-action-val="openrouter"
+                                class="music-backend-option px-3 py-2.5 rounded-lg border text-sm font-medium transition-all duration-200 text-center"
+                                >OpenRouter</button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">AI-generated instrumental music that adapts to the current scene.</p>
                     </div>
-                    <div>
-                        <label for="music-volume-slider"
-                            class="text-sm flex items-center justify-between text-gray-400 mb-1">
-                            <span>Volume</span>
-                            <span id="music-volume-value"
-                                class="text-xs text-indigo-300 font-mono bg-black/30 px-2 py-0.5 rounded">30%</span>
-                        </label>
-                        <input type="range" id="music-volume-slider" class="w-full" min="0" max="100" step="5"
-                            value="30">
+
+                    <!-- Hidden select to maintain musicMode state for backward compat -->
+                    <select id="music-mode-select" class="hidden">
+                        <option value="off">Off</option>
+                        <option value="on">On</option>
+                    </select>
+
+                    <!-- Gemini Provider Info -->
+                    <div id="music-gemini-info" class="hidden rounded-lg border border-indigo-500/20 bg-indigo-950/20 p-3 space-y-1">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-indigo-300">Google Lyria 3 (Direct)</span>
+                        </div>
+                        <p class="text-xs text-gray-400 leading-relaxed">Generates 30-second instrumental clips via Google's Generative AI API. Requires a <strong class="text-indigo-300">Gemini API key</strong> configured in the AI Backend tab.</p>
+                        <p class="text-xs text-gray-500">Model: <code class="text-indigo-400/80 bg-black/30 px-1 rounded">lyria-3-clip-preview</code> · $0.04/clip</p>
                     </div>
-                    <div>
-                        <label for="music-interval-slider"
-                            class="text-sm flex items-center justify-between text-gray-400 mb-1">
-                            <span>Regenerate Every</span>
-                            <span id="music-interval-value"
-                                class="text-xs text-indigo-300 font-mono bg-black/30 px-2 py-0.5 rounded">10
-                                msgs</span>
-                        </label>
-                        <input type="range" id="music-interval-slider" class="w-full" min="5" max="30" step="1"
-                            value="10">
-                        <p class="text-xs text-gray-500 mt-1">How often the music regenerates to match scene changes.
-                        </p>
+
+                    <!-- OpenRouter Provider Info + Model Picker -->
+                    <div id="music-openrouter-info" class="hidden space-y-3">
+                        <div class="rounded-lg border border-emerald-500/20 bg-emerald-950/20 p-3 space-y-1">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="text-sm font-medium text-emerald-300">OpenRouter</span>
+                            </div>
+                            <p class="text-xs text-gray-400 leading-relaxed">Route music generation through OpenRouter using your existing API key. Access Lyria 3 and other audio models without a separate Gemini key.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-400 mb-1">Music Model</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="music-openrouter-model-input"
+                                    class="flex-grow rounded-lg p-2 bg-black/20 border border-gray-600 text-white text-sm focus:border-indigo-500 focus:outline-none"
+                                    placeholder="google/lyria-3-clip-preview">
+                                <button onclick="AppController.openOpenRouterMusicModelBrowser()"
+                                    class="bg-gray-700 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-lg transition-colors"
+                                    title="Browse audio models">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Uses your main OpenRouter API key.</p>
+                        </div>
                     </div>
+
+                    <!-- Shared Playback Controls (visible when not Off) -->
+                    <div id="music-playback-controls" class="hidden space-y-4 pt-2 border-t border-gray-700/50">
+                        <div>
+                            <label for="music-volume-slider"
+                                class="text-sm flex items-center justify-between text-gray-400 mb-1">
+                                <span>Volume</span>
+                                <span id="music-volume-value"
+                                    class="text-xs text-indigo-300 font-mono bg-black/30 px-2 py-0.5 rounded">30%</span>
+                            </label>
+                            <input type="range" id="music-volume-slider" class="w-full" min="0" max="100" step="5"
+                                value="30">
+                        </div>
+                        <div>
+                            <label for="music-interval-slider"
+                                class="text-sm flex items-center justify-between text-gray-400 mb-1">
+                                <span>Regenerate Every</span>
+                                <span id="music-interval-value"
+                                    class="text-xs text-indigo-300 font-mono bg-black/30 px-2 py-0.5 rounded">10
+                                    msgs</span>
+                            </label>
+                            <input type="range" id="music-interval-slider" class="w-full" min="5" max="30" step="1"
+                                value="10">
+                            <p class="text-xs text-gray-500 mt-1">How often the music regenerates to match scene changes.
+                            </p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -5437,7 +5519,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 1.0.9 (2026.05.17 - 19:43)";
+        const APP_BUILD_TIMESTAMP = "Version: 1.0.10 (2026.05.18 - 18:52)";
 
 
         /**
@@ -8219,10 +8301,11 @@
 
             /**
              * Fetches available models from OpenRouter API.
-             * @param {string} [mode='text'] - 'text' or 'image'. When 'image', uses the
+             * @param {string} [mode='text'] - 'text', 'image', or 'audio'. When 'image', uses the
              *   ?output_modalities=image query param so the API returns all image-capable
              *   models (including pure image generators that are omitted from the default
-             *   endpoint). A separate cache is maintained per mode.
+             *   endpoint). When 'audio', uses ?output_modalities=audio for music models.
+             *   A separate cache is maintained per mode.
              * @returns {Promise<Array>} Array of model objects with id, name, pricing, context_length, etc.
              */
             async fetchOpenRouterModels(mode = 'text') {
@@ -8235,11 +8318,14 @@
                 }
 
                 // The default /api/v1/models endpoint only returns text-capable models.
-                // Pure image generators (Flux, Recraft, SDXL, etc.) are silently omitted
-                // unless we use ?output_modalities=image which returns all 28 image models.
-                const url = mode === 'image'
-                    ? 'https://openrouter.ai/api/v1/models?output_modalities=image'
-                    : 'https://openrouter.ai/api/v1/models';
+                // Pure image/audio generators are silently omitted unless we use
+                // ?output_modalities=image/audio which returns the relevant models.
+                let url = 'https://openrouter.ai/api/v1/models';
+                if (mode === 'image') {
+                    url = 'https://openrouter.ai/api/v1/models?output_modalities=image';
+                } else if (mode === 'audio') {
+                    url = 'https://openrouter.ai/api/v1/models?output_modalities=audio';
+                }
 
                 const res = await fetch(url, { method: 'GET', headers });
                 if (!res.ok) {
@@ -8255,10 +8341,11 @@
                 const data = await res.json();
                 const models = data.data || [];
 
-                // Use separate caches so image-browser results don't pollute the
-                // text model cache used by the main chat model browser.
+                // Use separate caches so browser results don't pollute each other.
                 if (mode === 'image') {
                     this.openRouterImageModelCache = models;
+                } else if (mode === 'audio') {
+                    this.openRouterAudioModelCache = models;
                 } else {
                     this.openRouterModelCache = models;
                 }
@@ -8764,8 +8851,8 @@
 
         /**
          * MusicService Module
-         * Handles AI-generated background music using Gemini's Lyria 3 API.
-         * Two-phase pipeline: Scene analysis (text LLM) → Music generation (Lyria).
+         * Handles AI-generated background music using Gemini's Lyria 3 API or OpenRouter.
+         * Two-phase pipeline: Scene analysis (text LLM) → Music generation (Lyria/OpenRouter).
          * Playback via Web Audio API with looping and crossfade support.
          */
         /* [SEC:JS:TODO:MusicService] -- recategorize and add to the TECHNICAL MAP at the top of the file. */
@@ -8801,9 +8888,15 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 const globalSettings = StateManager.data.globalSettings;
                 if (globalSettings.musicMode !== 'on') return;
 
-                // Require Gemini API key
-                const apiKey = globalSettings.geminiApiKey;
-                if (!apiKey) return;
+                // Validate the correct API key based on backend
+                const backend = globalSettings.musicBackend || 'gemini';
+                if (backend === 'gemini') {
+                    if (!globalSettings.geminiApiKey) return;
+                } else if (backend === 'openrouter') {
+                    if (!globalSettings.openRouterKey) return;
+                } else {
+                    return; // Unknown backend
+                }
 
                 if (this.RUNTIME.isGenerating) return;
 
@@ -8853,12 +8946,19 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     }
                     this.RUNTIME.lastMusicPrompt = musicPrompt.trim();
 
-                    // Phase 2: Lyria Music Generation
-                    console.log('🎵 MusicService: Generating music via Lyria...', musicPrompt.substring(0, 100));
-                    const audioBuffer = await this.callLyria(musicPrompt);
+                    // Phase 2: Music Generation — route based on backend
+                    const backend = StateManager.data.globalSettings.musicBackend || 'gemini';
+                    let audioBuffer;
+                    if (backend === 'openrouter') {
+                        console.log('🎵 MusicService: Generating music via OpenRouter...', musicPrompt.substring(0, 100));
+                        audioBuffer = await this.callOpenRouterAudio(musicPrompt);
+                    } else {
+                        console.log('🎵 MusicService: Generating music via Lyria (Direct)...', musicPrompt.substring(0, 100));
+                        audioBuffer = await this.callLyria(musicPrompt);
+                    }
 
                     if (!audioBuffer) {
-                        console.warn('MusicService: No audio data received from Lyria.');
+                        console.warn('MusicService: No audio data received from music backend.');
                         return;
                     }
 
@@ -8953,6 +9053,132 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 }
 
                 // Decode MP3 → AudioBuffer
+                const audioBuffer = await this.RUNTIME.audioContext.decodeAudioData(bytes.buffer.slice(0));
+                return audioBuffer;
+            },
+
+            /**
+             * Calls OpenRouter's chat completions API with audio modality to generate music.
+             * Uses streaming to collect base64 audio chunks from delta.audio.
+             * @param {string} musicPrompt - The music generation prompt.
+             * @returns {Promise<AudioBuffer|null>} Decoded audio buffer.
+             */
+            async callOpenRouterAudio(musicPrompt) {
+                const globalSettings = StateManager.data.globalSettings;
+                const apiKey = globalSettings.openRouterKey;
+                if (!apiKey) throw new Error('MusicService: OpenRouter API key not set.');
+
+                const model = globalSettings.musicOpenRouterModel || 'google/lyria-3-clip-preview';
+
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': window.location.href,
+                        'X-Title': 'Ellipsis LM'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [{ role: 'user', content: musicPrompt }],
+                        stream: true,
+                        modalities: ['audio']
+                    }),
+                    signal: this.RUNTIME.abortController?.signal
+                });
+
+                if (!response.ok) {
+                    let errorMsg = `Status ${response.status}`;
+                    try {
+                        const errText = await response.text();
+                        const errJson = JSON.parse(errText);
+                        errorMsg += `: ${errJson.error?.message || errText}`;
+                    } catch (e) {
+                        errorMsg += `: ${await response.text().catch(() => 'Unknown error')}`;
+                    }
+                    throw new Error(`OpenRouter Music API Error: ${errorMsg}`);
+                }
+
+                const contentType = response.headers.get('content-type') || '';
+                let audioBase64 = '';
+
+                if (contentType.includes('text/event-stream')) {
+                    // Stream-read the SSE response, collecting base64 audio chunks
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let audioChunks = [];
+                    let sseBuffer = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        sseBuffer += decoder.decode(value, { stream: true });
+                        const lines = sseBuffer.split('\n');
+                        // Keep the last (potentially incomplete) line in the buffer
+                        sseBuffer = lines.pop() || '';
+
+                        for (const line of lines) {
+                            const trimmed = line.trim();
+                            if (!trimmed.startsWith('data: ')) continue;
+                            const dataStr = trimmed.slice(6);
+                            if (dataStr === '[DONE]') continue;
+
+                            try {
+                                const json = JSON.parse(dataStr);
+                                const delta = json.choices?.[0]?.delta;
+                                if (delta?.audio) {
+                                    if (typeof delta.audio === 'string') {
+                                        audioChunks.push(delta.audio);
+                                    } else if (delta.audio.data) {
+                                        audioChunks.push(delta.audio.data);
+                                    }
+                                }
+                            } catch (e) {
+                                // Skip malformed chunks
+                            }
+                        }
+                    }
+                    audioBase64 = audioChunks.join('');
+                } else {
+                    // Parse non-streaming standard JSON response
+                    const data = await response.json();
+                    const message = data.choices?.[0]?.message;
+                    if (message?.audio?.data) {
+                        audioBase64 = message.audio.data;
+                    } else if (message?.audio && typeof message.audio === 'string') {
+                        audioBase64 = message.audio;
+                    } else if (data.candidates?.[0]?.content?.parts) {
+                        // Direct Gemini response wrapper passthrough fallback
+                        const parts = data.candidates[0].content.parts;
+                        for (const part of parts) {
+                            if (part.inlineData?.data) {
+                                audioBase64 = part.inlineData.data;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!audioBase64) {
+                    console.warn('MusicService: No audio data received from OpenRouter.');
+                    return null;
+                }
+
+                // Decode Base64 → ArrayBuffer
+                const binaryString = window.atob(audioBase64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                // Initialize AudioContext
+                if (!this.RUNTIME.audioContext) {
+                    this.RUNTIME.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                // Decode audio → AudioBuffer
                 const audioBuffer = await this.RUNTIME.audioContext.decodeAudioData(bytes.buffer.slice(0));
                 return audioBuffer;
             },
@@ -9199,7 +9425,79 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
          * Generic helper functions for formatting, parsing, and math.
          * =================================================================================================
          */
+        let activePromptResolver = null;
+
+        /* [SEC:JS:TODO:UTILITY] -- recategorize and add to the TECHNICAL MAP at the top of the file. */
         const UTILITY = {
+            /**
+             * Reusable custom input prompt modal that replaces the native window.prompt() dialog.
+             * This ensures full support in Electron environments where prompt() is disabled.
+             */
+            customPrompt(message, defaultValue = '', placeholder = '') {
+                return new Promise((resolve) => {
+                    const modal = document.getElementById('input-prompt-modal');
+                    const titleEl = document.getElementById('input-prompt-title');
+                    const msgEl = document.getElementById('input-prompt-message');
+                    const field = document.getElementById('input-prompt-field');
+
+                    if (!modal || !field) {
+                        resolve(window.prompt(message, defaultValue));
+                        return;
+                    }
+
+                    msgEl.textContent = message;
+                    field.value = defaultValue;
+                    field.placeholder = placeholder || 'Enter value...';
+
+                    activePromptResolver = resolve;
+
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+
+                    setTimeout(() => {
+                        field.focus();
+                        field.select();
+                    }, 50);
+
+                    const handleKey = (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            cleanup();
+                            this.submitCustomPrompt();
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            cleanup();
+                            this.closeCustomPrompt(null);
+                        }
+                    };
+
+                    const cleanup = () => {
+                        field.removeEventListener('keydown', handleKey);
+                    };
+
+                    field.addEventListener('keydown', handleKey);
+                });
+            },
+
+            closeCustomPrompt(value) {
+                const modal = document.getElementById('input-prompt-modal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+                if (activePromptResolver) {
+                    const resolve = activePromptResolver;
+                    activePromptResolver = null;
+                    resolve(value);
+                }
+            },
+
+            submitCustomPrompt() {
+                const field = document.getElementById('input-prompt-field');
+                const val = field ? field.value : null;
+                this.closeCustomPrompt(val);
+            },
+
             /**
              * Coerces a value into an array of trimmed, non-empty strings.
              * Accepts arrays, comma-separated strings, or scalars; returns [] for nullish/garbage input.
@@ -9770,6 +10068,8 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     userPersonas: [],
                     savedOpenRouterModels: [],
                     musicMode: 'off',
+                    musicBackend: 'gemini',
+                    musicOpenRouterModel: 'google/lyria-3-clip-preview',
                     musicVolume: 30,
                     musicInterval: 10,
                     pendingImage: null
@@ -12284,11 +12584,7 @@ Write only the character's message.`;
                 story.name = character.displayName || character.name || "Imported Character";
                 story.tags = character.tags || [];
 
-                const userChar = {
-                    id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "User.",
-                    model_instructions: "Respond with the next speech and actions for {user}.", is_user: true, is_active: true, image_url: '', tags: [], is_narrator: false,
-                    dynamic_knowledge: []
-                };
+                const userChar = UTILITY.getDefaultUserCharacter();
 
                 // Use first scenario for default model instructions match
                 const firstScenarioRaw = (scenariosData && scenariosData.length > 0) ? scenariosData[0] : {};
@@ -12510,7 +12806,7 @@ Write only the character's message.`;
                 const story = this._createEmptyEllipsisStory();
                 story.name = v2Data.name || "Imported Character";
                 story.tags = v2Data.tags || [];
-                const userChar = { id: UTILITY.uuid(), name: "You", description: "The protagonist.", short_description: "The main character.", model_instructions: "Write a response for {user} in a creative and descriptive style.", is_user: true, is_active: true, image_url: '', tags: [], is_narrator: false };
+                const userChar = UTILITY.getDefaultUserCharacter();
                 const aiChar = {
                     id: UTILITY.uuid(),
                     name: v2Data.name || "Imported Character",
@@ -14639,8 +14935,8 @@ Write only the character's message.`;
             /**
              * Shows a simple prompt to create a new folder.
              */
-            showCreateFolderModal() {
-                const name = prompt("Enter folder name:");
+            async showCreateFolderModal() {
+                const name = await UTILITY.customPrompt("Enter folder name:", "", "New Folder Name");
                 if (name && name.trim()) {
                     const parentId = UIManager.RUNTIME.currentLibraryFolder || null;
                     LibraryController.createFolder(name, parentId);
@@ -14843,7 +15139,8 @@ Write only the character's message.`;
                                 }
                             }
 
-                            // 3. Last Resort: User Image
+                            // 3. Last Resort: User Image (Commented out to prevent stories without portraits from incorrectly displaying the user's avatar)
+                            /*
                             if (!bgResolved && fallbackUserImage) {
                                 const src = await this.resolveImageSource(fallbackUserImage);
                                 if (src) {
@@ -14851,6 +15148,7 @@ Write only the character's message.`;
                                     bgResolved = true;
                                 }
                             }
+                            */
 
                             // 3. Final Fallback (If no Non-User found with image, maybe Gradient is enough?)
                             // Only warn if we really expected an image but found nothing good
@@ -17769,7 +18067,7 @@ Write only the character's message.`;
                     // TTS Keys
                     'ttsEnabled', 'ttsVoice', 'ttsAutoPlayback',
                     // Music Keys
-                    'musicMode', 'musicVolume', 'musicInterval'
+                    'musicMode', 'musicBackend', 'musicOpenRouterModel', 'musicVolume', 'musicInterval'
                 ]
             },
 
@@ -18347,6 +18645,36 @@ Write only the character's message.`;
                 if (musicModeSelect) {
                     musicModeSelect.value = globalSettings.musicMode || 'off';
                 }
+
+                // Hydrate backend selector buttons
+                const musicBackend = globalSettings.musicBackend || 'gemini';
+                const backendBtns = document.querySelectorAll('#music-backend-selector .music-backend-option');
+                const activeBackendValue = (globalSettings.musicMode === 'on') ? musicBackend : 'off';
+                backendBtns.forEach(btn => {
+                    btn.classList.toggle('active', btn.getAttribute('data-action-val') === activeBackendValue);
+                });
+
+                // Show/hide provider panels + playback controls
+                const geminiInfo = document.getElementById('music-gemini-info');
+                const orInfo = document.getElementById('music-openrouter-info');
+                const playbackCtrl = document.getElementById('music-playback-controls');
+                const badge = document.getElementById('music-backend-badge');
+
+                if (geminiInfo) geminiInfo.classList.toggle('hidden', activeBackendValue !== 'gemini');
+                if (orInfo) orInfo.classList.toggle('hidden', activeBackendValue !== 'openrouter');
+                if (playbackCtrl) playbackCtrl.classList.toggle('hidden', activeBackendValue === 'off');
+                if (badge) {
+                    badge.textContent = activeBackendValue === 'off' ? 'AI Music'
+                        : activeBackendValue === 'gemini' ? 'Gemini / Lyria'
+                        : 'OpenRouter';
+                }
+
+                // Populate OpenRouter music model input
+                const musicORModelInput = document.getElementById('music-openrouter-model-input');
+                if (musicORModelInput) {
+                    musicORModelInput.value = globalSettings.musicOpenRouterModel || 'google/lyria-3-clip-preview';
+                }
+
                 const musicVolSlider = document.getElementById('music-volume-slider');
                 const musicVolValue = document.getElementById('music-volume-value');
                 if (musicVolSlider) {
@@ -18557,6 +18885,62 @@ Write only the character's message.`;
                         globalSettings.musicInterval = val;
                         if (valDisplay) valDisplay.textContent = `${val} msgs`;
                         StateManager.saveGlobalSettings();
+                    });
+                }
+
+                // Backend selector button group (Off / Gemini / OpenRouter)
+                const backendSelector = document.getElementById('music-backend-selector');
+                if (backendSelector) {
+                    backendSelector.addEventListener('click', (e) => {
+                        const btn = e.target.closest('.music-backend-option');
+                        if (!btn) return;
+                        const val = btn.getAttribute('data-action-val');
+
+                        // Toggle active state on buttons
+                        backendSelector.querySelectorAll('.music-backend-option').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+
+                        // Update globalSettings
+                        if (val === 'off') {
+                            globalSettings.musicMode = 'off';
+                            if (typeof MusicService !== 'undefined') MusicService.stop();
+                        } else {
+                            globalSettings.musicMode = 'on';
+                            globalSettings.musicBackend = val;
+                        }
+
+                        // Sync hidden select for backward compat
+                        const hiddenSelect = document.getElementById('music-mode-select');
+                        if (hiddenSelect) hiddenSelect.value = globalSettings.musicMode;
+
+                        // Toggle provider info panels + playback controls
+                        const geminiInfo = document.getElementById('music-gemini-info');
+                        const orInfo = document.getElementById('music-openrouter-info');
+                        const playbackCtrl = document.getElementById('music-playback-controls');
+                        const badge = document.getElementById('music-backend-badge');
+
+                        if (geminiInfo) geminiInfo.classList.toggle('hidden', val !== 'gemini');
+                        if (orInfo) orInfo.classList.toggle('hidden', val !== 'openrouter');
+                        if (playbackCtrl) playbackCtrl.classList.toggle('hidden', val === 'off');
+                        if (badge) {
+                            badge.textContent = val === 'off' ? 'AI Music'
+                                : val === 'gemini' ? 'Gemini / Lyria'
+                                : 'OpenRouter';
+                        }
+
+                        StateManager.saveGlobalSettings();
+                    });
+                }
+
+                // Save music OpenRouter model when manually typed
+                const musicORModelInput = document.getElementById('music-openrouter-model-input');
+                if (musicORModelInput) {
+                    musicORModelInput.addEventListener('change', (e) => {
+                        const val = e.target.value.trim();
+                        if (val) {
+                            globalSettings.musicOpenRouterModel = val;
+                            StateManager.saveGlobalSettings();
+                        }
                     });
                 }
 
@@ -19429,7 +19813,7 @@ Write only the character's message.`;
 
             /**
              * Opens the OpenRouter model browser modal and fetches available models.
-             * @param {string} [mode='text'] - 'text' or 'image'.
+             * @param {string} [mode='text'] - 'text', 'image', or 'audio'.
              */
             async openOpenRouterModelBrowser(mode = 'text') {
                 this.RUNTIME.modelBrowserMode = mode;
@@ -19468,7 +19852,7 @@ Write only the character's message.`;
                     // In text mode, still filter out any pure image-only generators that
                     // may have slipped through (e.g. models with text->image modality) to
                     // keep the text browser clean.
-                    if (mode !== 'image') {
+                    if (mode === 'text') {
                         models = models.filter(m => {
                             const id = m.id.toLowerCase();
                             const mod = m.architecture?.modality;
@@ -19481,6 +19865,17 @@ Write only the character's message.`;
                     }
                     // Image mode: the API already filtered to only image-output models,
                     // so no additional client-side filtering is needed.
+
+                    // Audio mode: filter out speech-only models (GPT Audio) to focus on
+                    // music generation models (Lyria family).
+                    if (mode === 'audio') {
+                        models = models.filter(m => {
+                            const id = m.id.toLowerCase();
+                            // Keep Lyria and other music-gen models, exclude pure speech/TTS
+                            if (id.includes('gpt-audio') || id.includes('gpt-4o-audio')) return false;
+                            return true;
+                        });
+                    }
 
                     this._openRouterModelsList = models;
                     this._renderOpenRouterModelList(models);
@@ -19516,6 +19911,13 @@ Write only the character's message.`;
             },
 
             /**
+             * Helper to open the browser in Audio/Music Mode.
+             */
+            async openOpenRouterMusicModelBrowser() {
+                await this.openOpenRouterModelBrowser('audio');
+            },
+
+            /**
              * Renders the OpenRouter model list in the browser modal.
              * @param {Array} models - Array of model objects to render.
              */
@@ -19535,6 +19937,8 @@ Write only the character's message.`;
                 let currentModel;
                 if (this.RUNTIME.modelBrowserMode === 'image') {
                     currentModel = global.imageGenOpenRouterModel || state.imageGenOpenRouterModel;
+                } else if (this.RUNTIME.modelBrowserMode === 'audio') {
+                    currentModel = global.musicOpenRouterModel || 'google/lyria-3-clip-preview';
                 } else {
                     currentModel = global.openRouterModel || state.openRouterModel;
                 }
@@ -19608,6 +20012,16 @@ Write only the character's message.`;
                     }
 
                     ReactiveStore.state.imageGenOpenRouterModel = modelId;
+                } else if (this.RUNTIME.modelBrowserMode === 'audio') {
+                    // Audio/Music Mode Selection
+                    const input = document.getElementById('music-openrouter-model-input');
+                    if (input) {
+                        input.value = modelId;
+                    }
+                    // Save directly to global settings
+                    const globalSettings = StateManager.data.globalSettings;
+                    globalSettings.musicOpenRouterModel = modelId;
+                    StateManager.saveGlobalSettings();
                 } else {
                     // Text Mode Selection (Default)
                     const input = document.getElementById('openrouter-model-input');
@@ -19923,12 +20337,7 @@ Write only the character's message.`;
 
                 // Fallback User
                 if (!draft.characters.some(c => c.is_user)) {
-                    draft.characters.push({
-                        id: UTILITY.uuid(), name: "Traveler", description: "You.", short_description: "You.",
-                        is_user: true, is_active: true, color: { base: '#4b5563', bold: '#fff' },
-                        image_url: '', extra_portraits: [], tags: [], model_instructions: "Act as User.",
-                        dynamic_knowledge: []
-                    });
+                    draft.characters.push(UTILITY.getDefaultUserCharacter());
                 }
 
                 return relationshipContext;
@@ -20294,7 +20703,7 @@ Write only the descriptive paragraphs.`;
             },
 
             async promptImportLink() {
-                const url = prompt("Enter a Chub.ai or FictionLab character URL:");
+                const url = await UTILITY.customPrompt("Enter a Chub.ai, Backyard.ai, AIDungeon.com, or FictionLab character URL:", "", "https://...");
                 if (!url || !url.trim()) return;
                 const trimmed = url.trim();
 
@@ -20304,6 +20713,7 @@ Write only the descriptive paragraphs.`;
                     const fullPath = chubMatch[1];
                     const cdnUrl = `https://avatars.charhub.io/avatars/${fullPath}/chara_card_v2.png`;
 
+                    this.state.source = 'chub';
                     this.state.isLoading = true;
                     this.state.searchError = null;
                     this.renderResults();
@@ -20358,19 +20768,6 @@ Write only the descriptive paragraphs.`;
                         } catch (e) { /* API unavailable — proceed with PNG data only */ }
 
                         await this._saveImportedStory(newStory, imageBlob);
-                        const lib = StateManager.getLibrary();
-                        const idx = lib.stories.findIndex(s => s.id === newStory.id);
-                        if (idx !== -1) lib.stories[idx] = { ...newStory, narratives: lib.stories[idx].narratives };
-                        for (const char of (newStory.characters || [])) {
-                            if (char.image_id && !UIManager.RUNTIME.characterImageCache[char.id]) {
-                                try {
-                                    const b = await DBService.getImage(char.id);
-                                    if (b) UIManager.RUNTIME.characterImageCache[char.id] = URL.createObjectURL(b);
-                                } catch (e) {}
-                            }
-                        }
-                        UIManager.showNotification(`Successfully imported ${newStory.name || name}!`);
-                        await UIManager.openStoryDetails(newStory.id);
 
                     } catch (e) {
                         console.error('[HubController] Chub link import error:', e);
@@ -20383,84 +20780,680 @@ Write only the descriptive paragraphs.`;
                     return;
                 }
 
-                // FictionLab: desktop only — requires Electron scraper
-                if (!trimmed.includes('fictionlab.ai')) {
-                    alert("Supported sources: chub.ai/characters/... or fictionlab.ai URLs.");
-                    return;
-                }
+                // Backyard.ai Party / Character: fetch from public tRPC API
+                const backyardMatch = trimmed.match(/backyard\.ai\/hub\/character\/([a-zA-Z0-9_-]+)/);
+                const backyardPartyMatch = trimmed.match(/backyard\.ai\/hub\/party\/([a-zA-Z0-9_-]+)/);
+                if (backyardMatch || backyardPartyMatch) {
+                    const id = backyardMatch ? backyardMatch[1] : backyardPartyMatch[1];
+                    this.state.source = 'backyard';
+                    this.state.isLoading = true;
+                    this.state.searchError = null;
+                    this.renderResults();
 
-                if (!window.electronBridge || !window.electronBridge.app.scrapeUrl) {
-                    alert("FictionLab import is only available in the Desktop App.");
-                    return;
-                }
-
-                this.state.isLoading = true;
-                this.state.searchError = null;
-                this.renderResults();
-
-                try {
-                    const res = await window.electronBridge.app.scrapeUrl(trimmed);
-                    if (!res.success) {
-                        throw new Error(res.error || "Scraping failed.");
-                    }
-
-                    const data = res.data;
-                    console.log("[HubController] Scraped data:", data);
-
-                    // Extract data from standard Next.js __NEXT_DATA__
-                    const pageProps = data?.props?.pageProps || {};
-                    // Often in pageProps.trpcState for modern Next.js
-                    let trpcData = null;
                     try {
-                        const queries = pageProps?.trpcState?.json?.queries || [];
-                        const charQuery = queries.find(q => q.queryKey && JSON.stringify(q.queryKey).includes('scenario') || JSON.stringify(q.queryKey).includes('character'));
-                        trpcData = charQuery?.state?.data;
-                    } catch (e) { }
+                        let newStory = null;
+                        let mockResult = null;
 
-                    const sourceData = trpcData || pageProps?.scenario || pageProps?.character || pageProps?.data || {};
+                        if (backyardMatch) {
+                            const encodedInput = encodeURIComponent(JSON.stringify({ '0': { json: { hubCharacterConfigId: id, includeStandaloneGroupConfig: true } } }));
+                            const apiUrl = `https://backyard.ai/api/trpc/hub.browse.getHubCharacterConfigById?batch=1&input=${encodedInput}`;
+                            
+                            let res;
+                            try {
+                                res = await fetch(apiUrl);
+                            } catch (e) { /* CORS blocked - fall through to proxy */ }
+                            if (!res || !res.ok) {
+                                try {
+                                    res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`);
+                                } catch (e) { /* Fallback */ }
+                            }
+                            if (!res || !res.ok) {
+                                res = await fetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`);
+                            }
+                            
+                            const dataList = await res.json();
+                            const config = dataList[0]?.result?.data?.json;
 
-                    const name = sourceData.name || sourceData.title || "Imported Character";
-                    const description = sourceData.description || sourceData.tagline || sourceData.summary || "Imported from FictionLab";
-                    const persona = sourceData.persona || sourceData.personality || sourceData.system_prompt || sourceData.description || "";
-                    const firstMsg = sourceData.firstMessage || sourceData.first_mes || sourceData.greeting || "...";
-                    const avatarUrl = sourceData.avatarUrl || sourceData.image || sourceData.avatar_url || "";
+                            if (!config) throw new Error('Could not parse Backyard character data');
 
-                    const mockId = "fictionlab_" + Date.now();
-                    const mockResult = {
-                        id: mockId,
-                        name: name,
-                        tagline: description,
-                        avatarUrl: avatarUrl,
-                        usageCount: 0,
-                        createdAt: new Date().toISOString()
-                    };
+                            const chatConfig = config.standaloneGroupConfig?.PrimaryChat || {};
+                            const storyName = config.displayName || config.standaloneGroupConfig?.displayName || config.standaloneGroupConfig?.name || config.name || config.character?.name || 'Imported Backyard Character';
+                            const charName = config.name || config.character?.name || 'Imported Backyard Character';
+                            const persona = config.persona || config.personality || config.description || 
+                                            config.character?.persona || config.character?.personality || config.character?.description || '';
+                            const firstMsg = chatConfig.HubGreetingMessages?.[0]?.text || config.HubGreetingMessages?.[0]?.text || config.firstMessage || config.first_mes || config.greeting || '';
+                            const scenarioLore = chatConfig.context || config.scenario || config.context || '';
+                            const avatarUrl = config.Images?.[0]?.imageUrl || config.character?.Images?.[0]?.imageUrl || config.imageUrl || config.avatarUrl || config.avatar_url || config.character?.imageUrl || config.character?.avatarUrl;
 
-                    this.state.results = [mockResult];
-                    this.renderResults();
+                            let exampleDialogue = '';
+                            if (chatConfig.HubExampleMessages && Array.isArray(chatConfig.HubExampleMessages)) {
+                                exampleDialogue = chatConfig.HubExampleMessages.map(m => {
+                                    const isUser = m.role === 'user' || m.characterName?.toLowerCase() === 'user' || m.hubCharacterConfigId === 'global-user-persona';
+                                    const speaker = isUser ? '{{user}}' : (m.characterName || '{{char}}');
+                                    return `${speaker}: ${m.text}`;
+                                }).join('\n');
+                            } else if (config.exampleDialogue || config.mes_example || config.character?.exampleDialogue || config.character?.mes_example) {
+                                exampleDialogue = config.exampleDialogue || config.mes_example || config.character?.exampleDialogue || config.character?.mes_example || '';
+                            }
 
-                    const details = {
-                        source: 'fictionlab',
-                        persona: persona,
-                        firstMsg: firstMsg,
-                        scenario: sourceData.scenario || sourceData.context || "",
-                        exampleDialogue: sourceData.exampleDialogue || sourceData.mes_example || "",
-                        systemPrompt: sourceData.systemPrompt || sourceData.system_prompt || ""
-                    };
+                            const dynamic_entries = [];
+                            if (config.LorebookItems && Array.isArray(config.LorebookItems)) {
+                                config.LorebookItems.forEach(item => {
+                                    dynamic_entries.push({
+                                        id: crypto.randomUUID(),
+                                        title: item.key || "Lore",
+                                        triggers: item.key || '',
+                                        content_fields: [item.value || ''],
+                                        current_index: 0,
+                                        triggered_at_turn: null
+                                    });
+                                });
+                            }
 
-                    const overlay = document.getElementById('hub-character-details');
-                    if (overlay) {
-                        overlay.innerHTML = UIComponents.HubCharacterDetail(mockResult, details);
-                        overlay.classList.remove('hidden');
+                            const userChar = UTILITY.getDefaultUserCharacter();
+                            const userCharId = userChar.id;
+
+                            const charId = crypto.randomUUID();
+                            
+                            let modelInstructions = '';
+                            if (chatConfig.modelInstructions) {
+                                modelInstructions = typeof chatConfig.modelInstructions === 'string' ? chatConfig.modelInstructions : (chatConfig.modelInstructions.customText || '');
+                            } else if (config.modelInstructions) {
+                                modelInstructions = typeof config.modelInstructions === 'string' ? config.modelInstructions : (config.modelInstructions.customText || '');
+                            }
+                            
+                            if (!modelInstructions) {
+                                modelInstructions = chatConfig.systemPrompt || 
+                                                    chatConfig.system_prompt || 
+                                                    chatConfig.instruction || 
+                                                    chatConfig.instructions || 
+                                                    config.systemPrompt || 
+                                                    config.system_prompt || 
+                                                    config.instruction || 
+                                                    config.instructions || 
+                                                    config.character?.modelInstructions || 
+                                                    config.character?.systemPrompt || 
+                                                    config.character?.system_prompt || 
+                                                    config.character?.instruction || 
+                                                    config.character?.instructions || 
+                                                    '';
+                            }
+                            if (exampleDialogue) {
+                                modelInstructions += `\n\n### Example Dialogue\n${exampleDialogue}`;
+                            }
+
+                            newStory = {
+                                id: crypto.randomUUID(),
+                                name: storyName,
+                                description: (config.description || persona || '').substring(0, 100),
+                                created_date: new Date().toISOString(),
+                                last_modified: new Date().toISOString(),
+                                tags: ['Backyard.ai Import'],
+                                creator_notes: 'Imported from Backyard.ai URL',
+                                characters: [
+                                    userChar,
+                                    {
+                                        id: charId,
+                                        name: charName,
+                                        is_active: true,
+                                        prompt_tags: '',
+                                        persona: persona,
+                                        description: persona,
+                                        image_url: avatarUrl ? `local_idb_${charId}` : '',
+                                        model_instructions: modelInstructions
+                                    }
+                                ],
+                                static_entries: [
+                                    {
+                                        id: crypto.randomUUID(),
+                                        title: "Starting Scenario",
+                                        content: scenarioLore
+                                    }
+                                ],
+                                dynamic_entries: dynamic_entries,
+                                scenarios: [
+                                    {
+                                        id: crypto.randomUUID(),
+                                        name: 'Base Scenario',
+                                        description: 'Imported from Backyard',
+                                        characters: [userCharId, charId],
+                                        message: firstMsg,
+                                        initial_message: firstMsg,
+                                        scenario_knowledge: scenarioLore,
+                                        world_lore: scenarioLore,
+                                        player_context: '',
+                                        system_prompt_additions: modelInstructions
+                                    }
+                                ],
+                                narratives: []
+                            };
+
+                            if (avatarUrl) {
+                                try {
+                                    let imgRes;
+                                    try {
+                                        imgRes = await fetch(avatarUrl);
+                                    } catch (e) { /* CORS blocked */ }
+                                    if (!imgRes || !imgRes.ok) {
+                                        try {
+                                            imgRes = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(avatarUrl)}`);
+                                        } catch (e) { /* Fallback */ }
+                                    }
+                                    if (!imgRes || !imgRes.ok) {
+                                        imgRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(avatarUrl)}`);
+                                    }
+                                    const imgBlob = await imgRes.blob();
+                                    await DBService.saveImage(charId, imgBlob);
+                                    newStory.characters[1].image_id = charId;
+                                    newStory.characters[1].image_url = `local_idb_${charId}`;
+                                } catch (e) { console.warn('[HubController] Failed to download backyard image', e); }
+                            }
+
+                            mockResult = {
+                                id: id,
+                                name: storyName,
+                                tagline: config.description || '',
+                                avatarUrl: avatarUrl || '',
+                                usageCount: config.messageCount || 0,
+                                createdAt: config.createdAt || new Date().toISOString(),
+                                isParty: false
+                            };
+
+                        } else {
+                            // Backyard Party match
+                            const encodedInput = encodeURIComponent(JSON.stringify({ '0': { json: { hubGroupConfigId: id } } }));
+                            const apiUrl = `https://backyard.ai/api/trpc/hub.browse.getHubGroupConfigById?batch=1&input=${encodedInput}`;
+                            
+                            let res;
+                            try {
+                                res = await fetch(apiUrl);
+                            } catch (e) { /* CORS blocked - fall through to proxy */ }
+                            if (!res || !res.ok) {
+                                try {
+                                    res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`);
+                                } catch (e) { /* Fallback */ }
+                            }
+                            if (!res || !res.ok) {
+                                res = await fetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`);
+                            }
+                            
+                            const dataList = await res.json();
+                            const config = dataList[0]?.result?.data?.json;
+
+                            if (!config) throw new Error('Could not parse Backyard party data');
+
+                            const chatConfig = config.PrimaryChat || {};
+                            const name = config.name || 'Imported Backyard Party';
+                            
+                            let firstMsg = chatConfig.HubGreetingMessages?.[0]?.text || config.firstMessage || config.first_mes || config.greeting || '';
+                            const scenarioLore = chatConfig.context || config.scenario || '';
+
+                            const userChar = UTILITY.getDefaultUserCharacter();
+                            const userCharId = userChar.id;
+
+                            const characters = [userChar];
+                            const charIds = [userCharId];
+                            const dynamic_entries = [];
+
+                            let partyModelInstructions = '';
+                            if (chatConfig.modelInstructions) {
+                                if (typeof chatConfig.modelInstructions === 'string') {
+                                    partyModelInstructions = chatConfig.modelInstructions;
+                                } else if (chatConfig.modelInstructions.customText) {
+                                    partyModelInstructions = chatConfig.modelInstructions.customText;
+                                }
+                            }
+                            if (!partyModelInstructions) {
+                                partyModelInstructions = chatConfig.systemPrompt || chatConfig.system_prompt || chatConfig.instruction || chatConfig.instructions ||
+                                                         config.modelInstructions || config.systemPrompt || config.system_prompt || config.instruction || config.instructions || '';
+                            }
+
+                            const charConfigs = config.CharacterConfigs || [];
+                            if (!firstMsg) {
+                                for (const c of charConfigs) {
+                                    firstMsg = c.firstMessage || c.first_mes || c.greeting || c.character?.firstMessage || c.character?.first_mes || c.character?.greeting || '';
+                                    if (firstMsg) break;
+                                }
+                            }
+
+                            for (const c of charConfigs) {
+                                const charId = crypto.randomUUID();
+                                charIds.push(charId);
+
+                                const charName = c.name || c.character?.name || 'Group Character';
+                                const charPersona = c.persona || c.personality || c.description || 
+                                                     c.character?.persona || c.character?.personality || c.character?.description || '';
+                                
+                                let charModelInstructions = '';
+                                if (c.modelInstructions) {
+                                    charModelInstructions = typeof c.modelInstructions === 'string' ? c.modelInstructions : (c.modelInstructions.customText || '');
+                                } else if (c.character?.modelInstructions) {
+                                    charModelInstructions = typeof c.character.modelInstructions === 'string' ? c.character.modelInstructions : (c.character.modelInstructions.customText || '');
+                                }
+                                
+                                if (!charModelInstructions) {
+                                    charModelInstructions = c.systemPrompt || c.system_prompt || c.instruction || c.instructions ||
+                                                            c.character?.systemPrompt || c.character?.system_prompt || c.character?.instruction || c.character?.instructions || 
+                                                            partyModelInstructions;
+                                }
+
+                                let exampleDialogue = '';
+                                if (chatConfig.HubExampleMessages && Array.isArray(chatConfig.HubExampleMessages)) {
+                                    exampleDialogue = chatConfig.HubExampleMessages.map(m => {
+                                        const isUser = m.role === 'user' || m.characterName?.toLowerCase() === 'user' || m.hubCharacterConfigId === 'global-user-persona';
+                                        const speaker = isUser ? '{{user}}' : (m.characterName || '{{char}}');
+                                        return `${speaker}: ${m.text}`;
+                                    }).join('\n');
+                                } else if (c.exampleDialogue || c.mes_example || c.character?.exampleDialogue || c.character?.mes_example) {
+                                    exampleDialogue = c.exampleDialogue || c.mes_example || c.character?.exampleDialogue || c.character?.mes_example || '';
+                                }
+
+                                if (exampleDialogue) {
+                                    charModelInstructions += `\n\n### Example Dialogue\n${exampleDialogue}`;
+                                }
+
+                                const charObj = {
+                                    id: charId,
+                                    name: charName,
+                                    is_active: true,
+                                    prompt_tags: '',
+                                    persona: charPersona,
+                                    description: charPersona,
+                                    model_instructions: charModelInstructions
+                                };
+
+                                const avatarUrl = c.Images?.[0]?.imageUrl || c.character?.Images?.[0]?.imageUrl || c.avatarUrl || c.character?.avatarUrl;
+                                if (avatarUrl) {
+                                    try {
+                                        let imgRes;
+                                        try {
+                                            imgRes = await fetch(avatarUrl);
+                                        } catch (e) { /* CORS blocked */ }
+                                        if (!imgRes || !imgRes.ok) {
+                                            try {
+                                                imgRes = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(avatarUrl)}`);
+                                            } catch (e) { /* Fallback */ }
+                                        }
+                                        if (!imgRes || !imgRes.ok) {
+                                            imgRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(avatarUrl)}`);
+                                        }
+                                        const imgBlob = await imgRes.blob();
+                                        await DBService.saveImage(charId, imgBlob);
+                                        charObj.image_id = charId;
+                                    } catch (e) { console.warn('[HubController] Failed to download backyard character image', e); }
+                                }
+
+                                characters.push(charObj);
+
+                                const lorebookItems = c.LorebookItems || c.character?.LorebookItems || [];
+                                if (Array.isArray(lorebookItems)) {
+                                    lorebookItems.forEach(item => {
+                                        dynamic_entries.push({
+                                            id: crypto.randomUUID(),
+                                            title: item.key || "Lore",
+                                            triggers: item.key || '',
+                                            content_fields: [item.value || ''],
+                                            current_index: 0,
+                                            triggered_at_turn: null
+                                        });
+                                    });
+                                }
+                            }
+
+                            if (characters.length === 1) {
+                                const charId = crypto.randomUUID();
+                                charIds.push(charId);
+                                characters.push({
+                                    id: charId,
+                                    name: 'Narrator',
+                                    is_active: true,
+                                    prompt_tags: '',
+                                    persona: 'The Storyteller.',
+                                    description: 'The Storyteller.',
+                                    model_instructions: 'Describe the world and active scenes.'
+                                });
+                            }
+
+                            newStory = {
+                                id: crypto.randomUUID(),
+                                name: name,
+                                description: config.tagline || config.creatorNotes?.substring(0, 100) || '',
+                                created_date: new Date().toISOString(),
+                                last_modified: new Date().toISOString(),
+                                tags: ['Backyard.ai Party Import'],
+                                creator_notes: config.creatorNotes || 'Imported from Backyard.ai Party URL',
+                                characters: characters,
+                                static_entries: [
+                                    {
+                                        id: crypto.randomUUID(),
+                                        title: "Starting Scenario",
+                                        content: scenarioLore
+                                    }
+                                ],
+                                dynamic_entries: dynamic_entries,
+                                scenarios: [
+                                    {
+                                        id: crypto.randomUUID(),
+                                        name: 'Base Scenario',
+                                        description: 'Imported from Backyard Party',
+                                        characters: charIds,
+                                        message: firstMsg,
+                                        initial_message: firstMsg,
+                                        scenario_knowledge: scenarioLore,
+                                        world_lore: scenarioLore,
+                                        player_context: '',
+                                        system_prompt_additions: partyModelInstructions
+                                    }
+                                ],
+                                narratives: []
+                            };
+
+                            mockResult = {
+                                id: id,
+                                name: name,
+                                tagline: config.tagline || '',
+                                avatarUrl: '',
+                                usageCount: 0,
+                                createdAt: new Date().toISOString(),
+                                isParty: true
+                            };
+                        }
+
+                        await this._saveImportedStory(newStory);
+
+                        this.state.results = [mockResult];
+                        this.renderResults();
+
+                    } catch (e) {
+                        console.error('[HubController] Backyard link import error:', e);
+                        this.state.searchError = "Import failed: " + e.message;
+                        this.state.results = [];
+                    } finally {
+                        this.state.isLoading = false;
+                        this.renderResults();
                     }
-
-                } catch (e) {
-                    console.error('[HubController] Import Link error:', e);
-                    this.state.searchError = "Failed to extract data: " + e.message;
-                    this.state.results = [];
-                    this.renderResults();
-                } finally {
-                    this.state.isLoading = false;
+                    return;
                 }
+
+                // AIDungeon: fetch from public GraphQL endpoint using anonymous Firebase auth
+                const aidungeonMatch = trimmed.match(/(?:play\.)?aidungeon\.com\/scenario\/([^/?#\s]+)/);
+                if (aidungeonMatch) {
+                    const shortId = aidungeonMatch[1];
+                    this.state.source = 'aidungeon';
+                    this.state.isLoading = true;
+                    this.state.searchError = null;
+                    this.renderResults();
+
+                    try {
+                        // Step 1: Sign up anonymously to get Firebase ID token
+                        const apiKey = 'AIzaSyCnvo_XFPmAabrDkOKBRpbivp5UH8r_3mg';
+                        const authUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`;
+                        const authRes = await fetch(authUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ returnSecureToken: true })
+                        });
+                        if (!authRes.ok) {
+                            if (authRes.status === 403) {
+                                throw new Error('Failed to authenticate anonymously with AI Dungeon (403 Forbidden). Browser CORS/Referrer security restrictions prevent direct imports. Please use the EllipsisLM Desktop App to import AI Dungeon links seamlessly.');
+                            }
+                            throw new Error('Failed to authenticate anonymously with AI Dungeon Firebase');
+                        }
+                        const authData = await authRes.json();
+                        const idToken = authData.idToken;
+
+                        if (!idToken) throw new Error('Failed to obtain AI Dungeon authorization token');
+
+                        // Step 2: Query the scenario/adventure configuration via playAdventure GraphQL mutation
+                        const graphqlUrl = 'https://api.aidungeon.com/graphql';
+                        const query = `
+                            mutation StartPlayAdventure($scenarioShortId: String!) {
+                                playAdventure(scenarioShortId: $scenarioShortId) {
+                                    code
+                                    success
+                                    message
+                                    adventure {
+                                        id
+                                        title
+                                        description
+                                        memory
+                                        authorsNote
+                                        thirdPerson
+                                        storyCards {
+                                            id
+                                            keys
+                                            value
+                                            type
+                                            title
+                                            description
+                                        }
+                                        read {
+                                            actions {
+                                                id
+                                                text
+                                                type
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        `;
+
+                        const gqlRes = await fetch(graphqlUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `firebase ${idToken}`
+                            },
+                            body: JSON.stringify({
+                                query,
+                                variables: { scenarioShortId: shortId }
+                            })
+                        });
+
+                        if (!gqlRes.ok) throw new Error(`AI Dungeon API returned ${gqlRes.status}: ${gqlRes.statusText}`);
+                        const gqlData = await gqlRes.json();
+                        
+                        if (gqlData.errors && gqlData.errors.length > 0) {
+                            throw new Error(gqlData.errors[0].message);
+                        }
+
+                        const adventure = gqlData.data?.playAdventure?.adventure;
+                        if (!adventure) {
+                            const errMsg = gqlData.data?.playAdventure?.message || 'Scenario details could not be retrieved. Ensure it is public.';
+                            throw new Error(errMsg);
+                        }
+
+                        const name = adventure.title || 'Imported AI Dungeon Scenario';
+                        const description = adventure.description || 'Imported from AI Dungeon';
+                        const scenarioLore = adventure.memory || '';
+                        const systemPromptAdds = adventure.authorsNote ? `[Author's Note: ${adventure.authorsNote}]` : '';
+
+                        // Retrieve the first action starting message
+                        let firstMsg = 'The story begins...';
+                        if (adventure.read && adventure.read.actions && Array.isArray(adventure.read.actions)) {
+                            const startAction = adventure.read.actions.find(act => act.type === 'start' || act.id === '0');
+                            if (startAction && startAction.text) {
+                                firstMsg = startAction.text;
+                            } else if (adventure.read.actions[0] && adventure.read.actions[0].text) {
+                                firstMsg = adventure.read.actions[0].text;
+                            }
+                        }
+
+                        // Map storyCards to dynamic_entries
+                        const dynamic_entries = [];
+                        if (adventure.storyCards && Array.isArray(adventure.storyCards)) {
+                            adventure.storyCards.forEach(card => {
+                                dynamic_entries.push({
+                                    id: crypto.randomUUID(),
+                                    title: card.title || card.keys || 'Lorebook Item',
+                                    triggers: card.keys || '',
+                                    content_fields: [card.value || card.description || ''],
+                                    current_index: 0,
+                                    triggered_at_turn: null
+                                });
+                            });
+                        }
+
+                        const userChar = UTILITY.getDefaultUserCharacter();
+                        const userCharId = userChar.id;
+
+                        const charId = crypto.randomUUID();
+                        const newStory = {
+                            id: crypto.randomUUID(),
+                            name: name,
+                            description: description.substring(0, 200),
+                            created_date: new Date().toISOString(),
+                            last_modified: new Date().toISOString(),
+                            tags: ['AI Dungeon Import'],
+                            creator_notes: 'Imported from AIDungeon.com scenario share link.',
+                            characters: [
+                                userChar,
+                                {
+                                    id: charId,
+                                    name: 'Narrator',
+                                    is_active: true,
+                                    prompt_tags: '',
+                                    persona: 'The Storyteller.',
+                                    description: 'The Storyteller.',
+                                    model_instructions: 'You are the Narrator. Describe the actions and world vividly.',
+                                    is_narrator: true
+                                }
+                            ],
+                            static_entries: [
+                                {
+                                    id: crypto.randomUUID(),
+                                    title: "Starting Scenario",
+                                    content: scenarioLore
+                                }
+                            ],
+                            dynamic_entries: dynamic_entries,
+                            scenarios: [
+                                {
+                                    id: crypto.randomUUID(),
+                                    name: 'Base Scenario',
+                                    description: 'Imported from AI Dungeon',
+                                    characters: [userCharId, charId],
+                                    message: firstMsg,
+                                    initial_message: firstMsg,
+                                    scenario_knowledge: scenarioLore,
+                                    world_lore: scenarioLore,
+                                    player_context: '',
+                                    system_prompt_additions: systemPromptAdds
+                                }
+                            ],
+                            narratives: []
+                        };
+
+                        await this._saveImportedStory(newStory);
+
+                        // Save mockResult for the UI results state
+                        const mockResult = {
+                            id: shortId,
+                            name: name,
+                            tagline: description,
+                            avatarUrl: '',
+                            usageCount: 0,
+                            createdAt: new Date().toISOString()
+                        };
+                        this.state.results = [mockResult];
+                        this.renderResults();
+
+                    } catch (e) {
+                        console.error('[HubController] AI Dungeon link import error:', e);
+                        this.state.searchError = "Import failed: " + e.message;
+                        this.state.results = [];
+                    } finally {
+                        this.state.isLoading = false;
+                        this.renderResults();
+                    }
+                    return;
+                }
+
+                // FictionLab: fetch from public Svelte REST API with robust proxy fallbacks
+                if (trimmed.includes('fictionlab.ai')) {
+                    this.state.source = 'fictionlab';
+                    this.state.isLoading = true;
+                    this.state.searchError = null;
+                    this.renderResults();
+
+                    try {
+                        const uuidMatch = trimmed.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+                        if (!uuidMatch) throw new Error("Could not find a valid scenario ID in the FictionLab URL.");
+                        const scenarioId = uuidMatch[0];
+
+                        const apiUrl = `https://fictionlab.ai/api/scenario/fetch/${scenarioId}?token=null&version=2`;
+                        
+                        let res;
+                        try {
+                            res = await fetch(apiUrl);
+                        } catch (e) { /* CORS blocked - fall through to proxy */ }
+                        if (!res || !res.ok) {
+                            try {
+                                res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`);
+                            } catch (e) { /* Fallback */ }
+                        }
+                        if (!res || !res.ok) {
+                            res = await fetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`);
+                        }
+
+                        if (!res || !res.ok) {
+                            throw new Error(`Failed to fetch FictionLab API data (${res ? res.status : 'Network Error'}).`);
+                        }
+
+                        const sourceData = await res.json();
+                        if (!sourceData || !sourceData.displayName) {
+                            throw new Error("Invalid or empty scenario data returned from FictionLab.");
+                        }
+
+                        const name = sourceData.displayName || "Imported Character";
+                        const description = sourceData.description || "Imported from FictionLab";
+                        const persona = sourceData.backStory || "";
+                        const firstMsg = sourceData.customGreeting || "...";
+                        const avatarFilename = sourceData.avatarURL || "";
+                        const avatarUrl = avatarFilename ? `https://fictionlab.ai/image-cdn/${avatarFilename}` : "";
+
+                        const mockId = scenarioId; // Use the actual scenario ID
+                        const mockResult = {
+                            id: mockId,
+                            name: name,
+                            tagline: description,
+                            avatarUrl: avatarUrl,
+                            usageCount: 0,
+                            createdAt: new Date().toISOString(),
+                            rawScenarioData: sourceData
+                        };
+
+                        this.state.results = [mockResult];
+                        this.renderResults();
+
+                        const details = {
+                            source: 'fictionlab',
+                            persona: persona,
+                            firstMsg: firstMsg,
+                            scenario: sourceData.backStory || "",
+                            exampleDialogue: "",
+                            systemPrompt: sourceData.customInstructions || ""
+                        };
+
+                        const overlay = document.getElementById('hub-character-details');
+                        if (overlay) {
+                            overlay.innerHTML = UIComponents.HubCharacterDetail(mockResult, details);
+                            overlay.classList.remove('hidden');
+                        }
+
+                    } catch (e) {
+                        console.error('[HubController] Import Link error:', e);
+                        this.state.searchError = "Failed to extract data: " + e.message;
+                        this.state.results = [];
+                        this.renderResults();
+                    } finally {
+                        this.state.isLoading = false;
+                    }
+                    return;
+                }
+
+                alert("Supported URL sources: chub.ai, backyard.ai, aidungeon.com, or fictionlab.ai");
             },
 
             async viewDetails(valStr) {
@@ -20503,17 +21496,112 @@ Write only the descriptive paragraphs.`;
                             details.persona = "";
                         }
                     } else if (source === 'backyard') {
-                        const encodedInput = encodeURIComponent(JSON.stringify({ '0': { json: { hubCharacterConfigId: id, includeStandaloneGroupConfig: true } } }));
-                        const res = await fetch(`https://backyard.ai/api/trpc/hub.browse.getHubCharacterConfigById?batch=1&input=${encodedInput}`);
-                        const dataList = await res.json();
-                        const config = dataList[0]?.result?.data?.json;
-                        if (config) {
-                            const chatConfig = config.standaloneGroupConfig?.PrimaryChat || {};
-                            details.persona = config.persona || "";
-                            details.firstMsg = chatConfig.HubGreetingMessages?.[0]?.text || config.HubGreetingMessages?.[0]?.text || "";
-                            details.scenario = chatConfig.context || config.scenario || "";
-                            details.exampleDialogue = (chatConfig.HubExampleMessages || []).map(m => `${m.role === 'user' ? '{{user}}' : '{{char}}'}: ${m.text}`).join('\n') || "";
+                        let config;
+                        if (char.isParty) {
+                            const encodedInput = encodeURIComponent(JSON.stringify({ '0': { json: { hubGroupConfigId: id } } }));
+                            const apiUrl = `https://backyard.ai/api/trpc/hub.browse.getHubGroupConfigById?batch=1&input=${encodedInput}`;
+                            let res;
+                            try {
+                                res = await fetch(apiUrl);
+                            } catch (e) { /* CORS blocked */ }
+                            if (!res || !res.ok) {
+                                try {
+                                    res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`);
+                                } catch (e) { /* Fallback */ }
+                            }
+                            if (!res || !res.ok) {
+                                res = await fetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`);
+                            }
+                            const dataList = await res.json();
+                            config = dataList[0]?.result?.data?.json;
+                        } else {
+                            const encodedInput = encodeURIComponent(JSON.stringify({ '0': { json: { hubCharacterConfigId: id, includeStandaloneGroupConfig: true } } }));
+                            const apiUrl = `https://backyard.ai/api/trpc/hub.browse.getHubCharacterConfigById?batch=1&input=${encodedInput}`;
+                            let res;
+                            try {
+                                res = await fetch(apiUrl);
+                            } catch (e) { /* CORS blocked */ }
+                            if (!res || !res.ok) {
+                                try {
+                                    res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`);
+                                } catch (e) { /* Fallback */ }
+                            }
+                            if (!res || !res.ok) {
+                                res = await fetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`);
+                            }
+                            const dataList = await res.json();
+                            config = dataList[0]?.result?.data?.json;
                         }
+
+                        if (config) {
+                            if (char.isParty) {
+                                const chatConfig = config.PrimaryChat || {};
+                                details.persona = (config.CharacterConfigs || []).map(c => `[${c.name}]\n${c.persona || ''}`).join('\n\n');
+                                details.firstMsg = chatConfig.HubGreetingMessages?.[0]?.text || "";
+                                details.scenario = chatConfig.context || "";
+                                details.exampleDialogue = (chatConfig.HubExampleMessages || []).map(m => `${m.role === 'user' ? '{{user}}' : '{{char}}'}: ${m.text}`).join('\n') || "";
+                            } else {
+                                const chatConfig = config.standaloneGroupConfig?.PrimaryChat || {};
+                                details.persona = config.persona || "";
+                                details.firstMsg = chatConfig.HubGreetingMessages?.[0]?.text || config.HubGreetingMessages?.[0]?.text || "";
+                                details.scenario = chatConfig.context || config.scenario || "";
+                                details.exampleDialogue = (chatConfig.HubExampleMessages || []).map(m => `${m.role === 'user' ? '{{user}}' : '{{char}}'}: ${m.text}`).join('\n') || "";
+                            }
+                        }
+                    } else if (source === 'aidungeon') {
+                        try {
+                            const apiKey = 'AIzaSyCnvo_XFPmAabrDkOKBRpbivp5UH8r_3mg';
+                            const authUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`;
+                            const authRes = await fetch(authUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ returnSecureToken: true })
+                            });
+                            if (authRes.ok) {
+                                const authData = await authRes.json();
+                                const idToken = authData.idToken;
+                                if (idToken) {
+                                    const graphqlUrl = 'https://api.aidungeon.com/graphql';
+                                    const query = `
+                                        mutation StartPlayAdventure($scenarioShortId: String!) {
+                                            playAdventure(scenarioShortId: $scenarioShortId) {
+                                                adventure {
+                                                    title
+                                                    description
+                                                    memory
+                                                    authorsNote
+                                                }
+                                            }
+                                        }
+                                    `;
+                                    const gqlRes = await fetch(graphqlUrl, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Authorization': `firebase ${idToken}`
+                                        },
+                                        body: JSON.stringify({
+                                            query,
+                                            variables: { scenarioShortId: id }
+                                        })
+                                    });
+                                    if (gqlRes.ok) {
+                                        const gqlData = await gqlRes.json();
+                                        const adventure = gqlData.data?.playAdventure?.adventure;
+                                        if (adventure) {
+                                            details.persona = adventure.description || '';
+                                            details.scenario = adventure.memory || '';
+                                            details.systemPrompt = adventure.authorsNote || '';
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e) { console.error('[HubController] AIDungeon detail fetch error:', e); }
+                    } else if (source === 'fictionlab') {
+                        details.persona = char.rawScenarioData?.backStory || char.tagline || '';
+                        details.firstMsg = char.rawScenarioData?.customGreeting || '';
+                        details.scenario = char.rawScenarioData?.backStory || '';
+                        details.systemPrompt = char.rawScenarioData?.customInstructions || '';
                     }
                     overlay.innerHTML = UIComponents.HubCharacterDetail(char, details);
                 } catch (e) {
@@ -20720,71 +21808,433 @@ Write only the descriptive paragraphs.`;
                         await this._saveImportedStory(newStory, imageBlob);
 
                     } else if (source === 'backyard') {
-                        const encodedInput = encodeURIComponent(JSON.stringify({ '0': { json: { hubCharacterConfigId: id, includeStandaloneGroupConfig: true } } }));
-                        const res = await fetch(`https://backyard.ai/api/trpc/hub.browse.getHubCharacterConfigById?batch=1&input=${encodedInput}`);
-                        const dataList = await res.json();
-                        const config = dataList[0]?.result?.data?.json;
+                        let newStory = null;
+                        if (char && char.isParty) {
+                            const encodedInput = encodeURIComponent(JSON.stringify({ '0': { json: { hubGroupConfigId: id } } }));
+                            const apiUrl = `https://backyard.ai/api/trpc/hub.browse.getHubGroupConfigById?batch=1&input=${encodedInput}`;
+                            
+                            let res;
+                            try {
+                                res = await fetch(apiUrl);
+                            } catch (e) { /* CORS blocked - fall through to proxy */ }
+                            if (!res || !res.ok) {
+                                try {
+                                    res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`);
+                                } catch (e) { /* Fallback */ }
+                            }
+                            if (!res || !res.ok) {
+                                res = await fetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`);
+                            }
+                            
+                            const dataList = await res.json();
+                            const config = dataList[0]?.result?.data?.json;
 
-                        if (!config) throw new Error('Could not parse Backyard character data');
+                            if (!config) throw new Error('Could not parse Backyard party data');
 
-                        // Backyard.ai's latest schema uses standaloneGroupConfig.PrimaryChat for scenario/greetings
-                        const chatConfig = config.standaloneGroupConfig?.PrimaryChat || {};
-                        const name = config.name || char.name;
-                        const persona = config.persona || '';
-                        const firstMsg = chatConfig.HubGreetingMessages?.[0]?.text || config.HubGreetingMessages?.[0]?.text || '';
-                        const scenarioLore = chatConfig.context || config.scenario || '';
-                        const avatarUrl = config.imageUrl || char.avatarUrl;
+                            const chatConfig = config.PrimaryChat || {};
+                            const name = config.name || 'Imported Backyard Party';
+                            
+                            let firstMsg = chatConfig.HubGreetingMessages?.[0]?.text || config.firstMessage || config.first_mes || config.greeting || '';
+                            const scenarioLore = chatConfig.context || config.scenario || '';
 
-                        // Extract Example Dialogues
-                        let exampleDialogue = '';
-                        if (chatConfig.HubExampleMessages && Array.isArray(chatConfig.HubExampleMessages)) {
-                            exampleDialogue = chatConfig.HubExampleMessages.map(m => `${m.role === 'user' ? '{{user}}' : '{{char}}'}: ${m.text}`).join('\n');
+                            const userChar = UTILITY.getDefaultUserCharacter();
+                            const userCharId = userChar.id;
+
+                            const characters = [userChar];
+                            const charIds = [userCharId];
+                            const dynamic_entries = [];
+
+                            let partyModelInstructions = '';
+                            if (chatConfig.modelInstructions) {
+                                if (typeof chatConfig.modelInstructions === 'string') {
+                                    partyModelInstructions = chatConfig.modelInstructions;
+                                } else if (chatConfig.modelInstructions.customText) {
+                                    partyModelInstructions = chatConfig.modelInstructions.customText;
+                                }
+                            }
+                            if (!partyModelInstructions) {
+                                partyModelInstructions = chatConfig.systemPrompt || chatConfig.system_prompt || chatConfig.instruction || chatConfig.instructions ||
+                                                         config.modelInstructions || config.systemPrompt || config.system_prompt || config.instruction || config.instructions || '';
+                            }
+
+                            const charConfigs = config.CharacterConfigs || [];
+                            if (!firstMsg) {
+                                for (const c of charConfigs) {
+                                    firstMsg = c.firstMessage || c.first_mes || c.greeting || c.character?.firstMessage || c.character?.first_mes || c.character?.greeting || '';
+                                    if (firstMsg) break;
+                                }
+                            }
+
+                            for (const c of charConfigs) {
+                                const charId = crypto.randomUUID();
+                                charIds.push(charId);
+
+                                const charName = c.name || c.character?.name || 'Group Character';
+                                const charPersona = c.persona || c.personality || c.description || 
+                                                     c.character?.persona || c.character?.personality || c.character?.description || '';
+                                
+                                let charModelInstructions = '';
+                                if (c.modelInstructions) {
+                                    charModelInstructions = typeof c.modelInstructions === 'string' ? c.modelInstructions : (c.modelInstructions.customText || '');
+                                } else if (c.character?.modelInstructions) {
+                                    charModelInstructions = typeof c.character.modelInstructions === 'string' ? c.character.modelInstructions : (c.character.modelInstructions.customText || '');
+                                }
+                                
+                                if (!charModelInstructions) {
+                                    charModelInstructions = c.systemPrompt || c.system_prompt || c.instruction || c.instructions ||
+                                                            c.character?.systemPrompt || c.character?.system_prompt || c.character?.instruction || c.character?.instructions || 
+                                                            partyModelInstructions;
+                                }
+
+                                let exampleDialogue = '';
+                                if (chatConfig.HubExampleMessages && Array.isArray(chatConfig.HubExampleMessages)) {
+                                    exampleDialogue = chatConfig.HubExampleMessages.map(m => {
+                                        const isUser = m.role === 'user' || m.characterName?.toLowerCase() === 'user' || m.hubCharacterConfigId === 'global-user-persona';
+                                        const speaker = isUser ? '{{user}}' : (m.characterName || '{{char}}');
+                                        return `${speaker}: ${m.text}`;
+                                    }).join('\n');
+                                } else if (c.exampleDialogue || c.mes_example || c.character?.exampleDialogue || c.character?.mes_example) {
+                                    exampleDialogue = c.exampleDialogue || c.mes_example || c.character?.exampleDialogue || c.character?.mes_example || '';
+                                }
+
+                                if (exampleDialogue) {
+                                    charModelInstructions += `\n\n### Example Dialogue\n${exampleDialogue}`;
+                                }
+
+                                const charObj = {
+                                    id: charId,
+                                    name: charName,
+                                    is_active: true,
+                                    prompt_tags: '',
+                                    persona: charPersona,
+                                    description: charPersona,
+                                    model_instructions: charModelInstructions
+                                };
+
+                                const avatarUrl = c.Images?.[0]?.imageUrl || c.character?.Images?.[0]?.imageUrl || c.avatarUrl || c.character?.avatarUrl;
+                                if (avatarUrl) {
+                                    try {
+                                        let imgRes;
+                                        try {
+                                            imgRes = await fetch(avatarUrl);
+                                        } catch (e) { /* CORS blocked */ }
+                                        if (!imgRes || !imgRes.ok) {
+                                            try {
+                                                imgRes = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(avatarUrl)}`);
+                                            } catch (e) { /* Fallback */ }
+                                        }
+                                        if (!imgRes || !imgRes.ok) {
+                                            imgRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(avatarUrl)}`);
+                                        }
+                                        const imgBlob = await imgRes.blob();
+                                        await DBService.saveImage(charId, imgBlob);
+                                        charObj.image_id = charId;
+                                    } catch (e) { console.warn('[HubController] Failed to download backyard character image', e); }
+                                }
+
+                                characters.push(charObj);
+
+                                const lorebookItems = c.LorebookItems || c.character?.LorebookItems || [];
+                                if (Array.isArray(lorebookItems)) {
+                                    lorebookItems.forEach(item => {
+                                        dynamic_entries.push({
+                                            id: crypto.randomUUID(),
+                                            title: item.key || "Lore",
+                                            triggers: item.key || '',
+                                            content_fields: [item.value || ''],
+                                            current_index: 0,
+                                            triggered_at_turn: null
+                                        });
+                                    });
+                                }
+                            }
+
+                            if (characters.length === 1) {
+                                const charId = crypto.randomUUID();
+                                charIds.push(charId);
+                                characters.push({
+                                    id: charId,
+                                    name: 'Narrator',
+                                    is_active: true,
+                                    prompt_tags: '',
+                                    persona: 'The Storyteller.',
+                                    description: 'The Storyteller.',
+                                    model_instructions: 'Describe the world and active scenes.'
+                                });
+                            }
+
+                            newStory = {
+                                id: crypto.randomUUID(),
+                                name: name,
+                                description: config.tagline || config.creatorNotes?.substring(0, 100) || '',
+                                created_date: new Date().toISOString(),
+                                last_modified: new Date().toISOString(),
+                                tags: ['Backyard.ai Party Import'],
+                                creator_notes: config.creatorNotes || 'Imported from Backyard.ai Party URL',
+                                characters: characters,
+                                static_entries: [
+                                    {
+                                        id: crypto.randomUUID(),
+                                        title: "Starting Scenario",
+                                        content: scenarioLore
+                                    }
+                                ],
+                                dynamic_entries: dynamic_entries,
+                                scenarios: [
+                                    {
+                                        id: crypto.randomUUID(),
+                                        name: 'Base Scenario',
+                                        description: 'Imported from Backyard Party',
+                                        characters: charIds,
+                                        message: firstMsg,
+                                        initial_message: firstMsg,
+                                        scenario_knowledge: scenarioLore,
+                                        world_lore: scenarioLore,
+                                        player_context: '',
+                                        system_prompt_additions: partyModelInstructions
+                                    }
+                                ],
+                                narratives: []
+                            };
+                        } else {
+                            const encodedInput = encodeURIComponent(JSON.stringify({ '0': { json: { hubCharacterConfigId: id, includeStandaloneGroupConfig: true } } }));
+                            const res = await fetch(`https://backyard.ai/api/trpc/hub.browse.getHubCharacterConfigById?batch=1&input=${encodedInput}`);
+                            const dataList = await res.json();
+                            const config = dataList[0]?.result?.data?.json;
+
+                            if (!config) throw new Error('Could not parse Backyard character data');
+
+                            // Backyard.ai's latest schema uses standaloneGroupConfig.PrimaryChat for scenario/greetings
+                            const chatConfig = config.standaloneGroupConfig?.PrimaryChat || {};
+                            const storyName = config.displayName || config.standaloneGroupConfig?.displayName || config.standaloneGroupConfig?.name || config.name || char.name || 'Imported Backyard Character';
+                            const charName = config.name || config.character?.name || char.name || 'Imported Backyard Character';
+                            const persona = config.persona || config.personality || config.description || 
+                                            config.character?.persona || config.character?.personality || config.character?.description || '';
+                            const firstMsg = chatConfig.HubGreetingMessages?.[0]?.text || config.HubGreetingMessages?.[0]?.text || config.firstMessage || config.first_mes || config.greeting || '';
+                            const scenarioLore = chatConfig.context || config.scenario || config.context || '';
+                            const avatarUrl = config.Images?.[0]?.imageUrl || config.character?.Images?.[0]?.imageUrl || config.imageUrl || config.avatarUrl || config.avatar_url || config.character?.imageUrl || config.character?.avatarUrl || char.avatarUrl;
+
+                            // Extract Example Dialogues
+                            let exampleDialogue = '';
+                            if (chatConfig.HubExampleMessages && Array.isArray(chatConfig.HubExampleMessages)) {
+                                exampleDialogue = chatConfig.HubExampleMessages.map(m => {
+                                    const isUser = m.role === 'user' || m.characterName?.toLowerCase() === 'user' || m.hubCharacterConfigId === 'global-user-persona';
+                                    const speaker = isUser ? '{{user}}' : (m.characterName || '{{char}}');
+                                    return `${speaker}: ${m.text}`;
+                                }).join('\n');
+                            } else if (config.exampleDialogue || config.mes_example || config.character?.exampleDialogue || config.character?.mes_example) {
+                                exampleDialogue = config.exampleDialogue || config.mes_example || config.character?.exampleDialogue || config.character?.mes_example || '';
+                            }
+
+                            // Map Lorebook to dynamic_entries
+                            const dynamic_entries = [];
+                            if (config.LorebookItems && Array.isArray(config.LorebookItems)) {
+                                config.LorebookItems.forEach(item => {
+                                    dynamic_entries.push({
+                                        id: crypto.randomUUID(),
+                                        title: item.key || "Lore",
+                                        triggers: item.key || '',
+                                        content_fields: [item.value || ''],
+                                        current_index: 0,
+                                        triggered_at_turn: null
+                                    });
+                                });
+                            }
+
+                            const userChar = UTILITY.getDefaultUserCharacter();
+                            const userCharId = userChar.id;
+
+                            const charId = crypto.randomUUID();
+                            
+                            let modelInstructions = '';
+                            if (chatConfig.modelInstructions) {
+                                modelInstructions = typeof chatConfig.modelInstructions === 'string' ? chatConfig.modelInstructions : (chatConfig.modelInstructions.customText || '');
+                            } else if (config.modelInstructions) {
+                                modelInstructions = typeof config.modelInstructions === 'string' ? config.modelInstructions : (config.modelInstructions.customText || '');
+                            }
+                            
+                            if (!modelInstructions) {
+                                modelInstructions = chatConfig.systemPrompt || 
+                                                    chatConfig.system_prompt || 
+                                                    chatConfig.instruction || 
+                                                    chatConfig.instructions || 
+                                                    config.systemPrompt || 
+                                                    config.system_prompt || 
+                                                    config.instruction || 
+                                                    config.instructions || 
+                                                    config.character?.modelInstructions || 
+                                                    config.character?.systemPrompt || 
+                                                    config.character?.system_prompt || 
+                                                    config.character?.instruction || 
+                                                    config.character?.instructions || 
+                                                    '';
+                            }
+                            if (exampleDialogue) {
+                                modelInstructions += `\n\n### Example Dialogue\n${exampleDialogue}`;
+                            }
+
+                            newStory = {
+                                id: crypto.randomUUID(),
+                                name: storyName,
+                                description: char.tagline || persona.substring(0, 100),
+                                created_date: new Date().toISOString(),
+                                last_modified: new Date().toISOString(),
+                                tags: ['Backyard.ai Import'],
+                                creator_notes: 'Imported from Backyard.ai',
+                                characters: [
+                                    userChar,
+                                    {
+                                        id: charId,
+                                        name: charName,
+                                        is_active: true,
+                                        prompt_tags: '',
+                                        persona: persona,
+                                        description: persona,
+                                        image_url: avatarUrl ? `local_idb_${charId}` : '',
+                                        model_instructions: modelInstructions
+                                    }
+                                ],
+                                static_entries: [
+                                    {
+                                        id: crypto.randomUUID(),
+                                        title: "Starting Scenario",
+                                        content: scenarioLore
+                                    }
+                                ],
+                                dynamic_entries: dynamic_entries,
+                                scenarios: [
+                                    {
+                                        id: crypto.randomUUID(),
+                                        name: 'Base Scenario',
+                                        description: 'Imported from Backyard',
+                                        characters: [userCharId, charId],
+                                        message: firstMsg,
+                                        initial_message: firstMsg,
+                                        scenario_knowledge: scenarioLore,
+                                        world_lore: scenarioLore,
+                                        player_context: '',
+                                        system_prompt_additions: modelInstructions
+                                    }
+                                ],
+                                narratives: []
+                            };
+
+                            if (avatarUrl) {
+                                try {
+                                    let imgRes;
+                                    try {
+                                        imgRes = await fetch(avatarUrl);
+                                    } catch (e) { /* CORS blocked */ }
+                                    if (!imgRes || !imgRes.ok) {
+                                        try {
+                                            imgRes = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(avatarUrl)}`);
+                                        } catch (e) { /* Fallback */ }
+                                    }
+                                    if (!imgRes || !imgRes.ok) {
+                                        imgRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(avatarUrl)}`);
+                                    }
+                                    const imgBlob = await imgRes.blob();
+                                    await DBService.saveImage(charId, imgBlob);
+                                    newStory.characters[1].image_id = charId;
+                                    newStory.characters[1].image_url = `local_idb_${charId}`;
+                                } catch (e) { console.warn('[HubController] Failed to download backyard image', e); }
+                            }
                         }
 
-                        // Map Lorebook
-                        const lorebook = [];
-                        if (config.LorebookItems && Array.isArray(config.LorebookItems)) {
-                            config.LorebookItems.forEach(item => {
-                                lorebook.push({
-                                    id: crypto.randomUUID(),
-                                    keywords: item.key || '',
-                                    content: item.value || '',
-                                    description: `Imported from Backyard: ${item.key}`,
-                                    is_active: true
-                                });
+                        await this._saveImportedStory(newStory);
+                    } else if (source === 'fictionlab') {
+                        if (!char.rawScenarioData) throw new Error('Scenario data is missing.');
+                        const sourceData = char.rawScenarioData;
+                        
+                        const storyName = sourceData.displayName || "Imported FictionLab Character";
+                        const tagline = sourceData.description || "Imported from FictionLab";
+                        const backStory = sourceData.backStory || "";
+                        const customGreeting = sourceData.customGreeting || "...";
+                        const customInstructions = sourceData.customInstructions || "";
+                        const avatarFilename = sourceData.avatarURL || "";
+                        const avatarUrl = avatarFilename ? `https://fictionlab.ai/image-cdn/${avatarFilename}` : "";
+                        const lorePieces = sourceData.lorePieces || [];
+
+                        const userChar = UTILITY.getDefaultUserCharacter();
+                        const userCharId = userChar.id;
+                        const primaryCharId = crypto.randomUUID();
+
+                        const characters = [
+                            userChar,
+                            {
+                                id: primaryCharId,
+                                name: storyName,
+                                is_active: true,
+                                prompt_tags: '',
+                                persona: backStory || tagline || '',
+                                description: tagline || '',
+                                image_url: avatarUrl ? `local_idb_${primaryCharId}` : '',
+                                model_instructions: customInstructions || ''
+                            }
+                        ];
+                        const activeCharIds = [userCharId, primaryCharId];
+
+                        const dynamic_entries = [];
+                        if (Array.isArray(lorePieces)) {
+                            lorePieces.forEach(piece => {
+                                if (piece.type === 'character') {
+                                    const secondaryCharId = crypto.randomUUID();
+                                    const secName = piece.displayName || piece.title || 'Secondary Character';
+                                    const secPersona = piece.content || '';
+                                    const secAvatar = piece.avatarURL ? `https://fictionlab.ai/image-cdn/${piece.avatarURL}` : '';
+                                    characters.push({
+                                        id: secondaryCharId,
+                                        name: secName,
+                                        is_active: true,
+                                        prompt_tags: '',
+                                        persona: secPersona,
+                                        description: piece.description || '',
+                                        image_url: secAvatar ? `local_idb_${secondaryCharId}` : '',
+                                        model_instructions: ''
+                                    });
+                                    activeCharIds.push(secondaryCharId);
+                                } else {
+                                    dynamic_entries.push({
+                                        id: crypto.randomUUID(),
+                                        title: piece.title || piece.displayName || "Lore",
+                                        triggers: piece.title || piece.displayName || '',
+                                        content_fields: [piece.content || ''],
+                                        current_index: 0,
+                                        triggered_at_turn: null
+                                    });
+                                }
                             });
                         }
 
-                        const charId = crypto.randomUUID();
-                        const newStory = {
+                        newStory = {
                             id: crypto.randomUUID(),
-                            name: name,
-                            description: char.tagline || persona.substring(0, 100),
+                            name: storyName,
+                            description: tagline,
                             created_date: new Date().toISOString(),
                             last_modified: new Date().toISOString(),
-                            tags: ['Backyard.ai Import'],
-                            creator_notes: 'Imported from Backyard.ai',
-                            characters: [
+                            tags: ['FictionLab Import'],
+                            creator_notes: 'Imported from FictionLab.ai scenario link.',
+                            characters: characters,
+                            static_entries: [
                                 {
-                                    id: charId,
-                                    name: name,
-                                    is_active: true,
-                                    prompt_tags: '',
-                                    persona: persona,
-                                    model_instructions: exampleDialogue ? `[Example Dialogue]\n${exampleDialogue}` : ''
+                                    id: crypto.randomUUID(),
+                                    title: "Backstory",
+                                    content: backStory
                                 }
                             ],
-                            lorebook: lorebook,
+                            dynamic_entries: dynamic_entries,
                             scenarios: [
                                 {
                                     id: crypto.randomUUID(),
                                     name: 'Base Scenario',
-                                    description: 'Imported from Backyard',
-                                    characters: [charId],
-                                    initial_message: firstMsg,
-                                    world_lore: scenarioLore,
+                                    description: 'Imported from FictionLab',
+                                    characters: activeCharIds,
+                                    message: customGreeting,
+                                    initial_message: customGreeting,
+                                    scenario_knowledge: backStory,
+                                    world_lore: backStory,
                                     player_context: '',
-                                    system_prompt_additions: ''
+                                    system_prompt_additions: customInstructions
                                 }
                             ],
                             narratives: []
@@ -20792,17 +22242,54 @@ Write only the descriptive paragraphs.`;
 
                         if (avatarUrl) {
                             try {
-                                const imgRes = await fetch(avatarUrl);
+                                let imgRes;
+                                try {
+                                    imgRes = await fetch(avatarUrl);
+                                } catch (e) { /* CORS blocked */ }
+                                if (!imgRes || !imgRes.ok) {
+                                    try {
+                                        imgRes = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(avatarUrl)}`);
+                                    } catch (e) { /* Fallback */ }
+                                }
+                                if (!imgRes || !imgRes.ok) {
+                                    imgRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(avatarUrl)}`);
+                                }
                                 const imgBlob = await imgRes.blob();
-                                await DBService.saveImage(charId, imgBlob);
-                                newStory.characters[0].image_id = charId;
-                            } catch (e) { console.warn('[HubController] Failed to download backyard image', e); }
+                                await DBService.saveImage(primaryCharId, imgBlob);
+                                newStory.characters[1].image_id = primaryCharId;
+                                newStory.characters[1].image_url = `local_idb_${primaryCharId}`;
+                            } catch (e) { console.warn('[HubController] Failed to download FictionLab primary image', e); }
+                        }
+
+                        // Also download secondary character images!
+                        for (let i = 2; i < characters.length; i++) {
+                            const charObj = characters[i];
+                            const secPiece = lorePieces.find(p => p.type === 'character' && (p.displayName === charObj.name || p.title === charObj.name));
+                            const secAvatarUrl = secPiece && secPiece.avatarURL ? `https://fictionlab.ai/image-cdn/${secPiece.avatarURL}` : '';
+                            if (secAvatarUrl) {
+                                try {
+                                    let imgRes;
+                                    try {
+                                        imgRes = await fetch(secAvatarUrl);
+                                    } catch (e) { }
+                                    if (!imgRes || !imgRes.ok) {
+                                        try {
+                                            imgRes = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(secAvatarUrl)}`);
+                                        } catch (e) { }
+                                    }
+                                    if (!imgRes || !imgRes.ok) {
+                                        imgRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(secAvatarUrl)}`);
+                                    }
+                                    const imgBlob = await imgRes.blob();
+                                    await DBService.saveImage(charObj.id, imgBlob);
+                                    charObj.image_id = charObj.id;
+                                    charObj.image_url = `local_idb_${charObj.id}`;
+                                } catch (e) { console.warn('[HubController] Failed to download FictionLab secondary image', e); }
+                            }
                         }
 
                         await this._saveImportedStory(newStory);
                     }
-
-                    UIManager.showNotification(`Successfully imported ${char.name}!`);
                 } catch (e) {
                     console.error('[HubController] Import error:', e);
                     alert('Failed to import character: ' + e.message);
@@ -20837,16 +22324,29 @@ Write only the descriptive paragraphs.`;
                     } catch (e) { console.warn('[HubController] Image save failed:', e); }
                 }
 
-                library.stories.push({
-                    id: newStory.id,
-                    name: newStory.name,
-                    last_modified: newStory.last_modified,
-                    scenarios: (newStory.scenarios || []).map(s => ({ id: s.id, name: s.name })),
-                    narratives: narrativeStubs
-                });
+                library.stories.push(newStory);
 
                 StateManager.saveLibrary();
                 UIManager.renderLibraryInterface();
+
+                // Automate transition flow:
+                // 1. Close character hub (search) modal and open story library modal
+                AppController.closeModal('character-hub-modal');
+                AppController.openModal('story-library-modal');
+
+                // 2. Pre-cache character images in runtime cache to guarantee immediate rendering
+                for (const char of (newStory.characters || [])) {
+                    if (char.image_id && !UIManager.RUNTIME.characterImageCache[char.id]) {
+                        try {
+                            const b = await DBService.getImage(char.id);
+                            if (b) UIManager.RUNTIME.characterImageCache[char.id] = URL.createObjectURL(b);
+                        } catch (e) {}
+                    }
+                }
+
+                // 3. Notify success and hydrate details view
+                UIManager.showNotification(`Successfully imported ${newStory.name}!`);
+                await UIManager.openStoryDetails(newStory.id);
             }
         };
 
@@ -21282,7 +22782,7 @@ Write only the descriptive paragraphs.`;
                 const scenario = story.scenarios.find(sc => sc.id === scenarioId);
                 if (!scenario) return;
 
-                const newName = prompt("Enter new name for this scenario:", scenario.name);
+                const newName = await UTILITY.customPrompt("Enter new name for this scenario:", scenario.name, "Scenario Name");
                 if (!newName || newName.trim() === "") return;
 
                 try {
@@ -22054,7 +23554,7 @@ Write only the descriptive paragraphs.`;
              * Renames a folder.
              */
             async renameFolder(folderId, currentName) {
-                const newName = prompt("Enter new folder name:", currentName);
+                const newName = await UTILITY.customPrompt("Enter new folder name:", currentName, "Folder Name");
                 if (!newName || !newName.trim() || newName === currentName) return;
 
                 try {
@@ -27253,7 +28753,7 @@ ${formatRequirements.join('\n\n')}
                 }
 
                 // 1. Get the name
-                const name = prompt("Who would you like to create? Enter a name mentioned in the story:");
+                const name = await UTILITY.customPrompt("Who would you like to create? Enter a name mentioned in the story:", "", "Character Name");
                 if (!name || name.trim() === "") return;
 
                 UIManager.showLoadingSpinner(`Dreaming up ${name}...`);
@@ -30981,6 +32481,31 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
             <div class="mt-6 flex justify-end">
                 <button onclick="AppController.closeModal('prompt-modal')"
                     class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- Reusable Input Prompt Modal to replace native window.prompt() (unsupported in Electron) -->
+    <div id="input-prompt-modal"
+        class="hidden fixed inset-0 bg-black/85 flex flex-col items-center justify-center backdrop-blur-sm"
+        style="z-index: 99999;"
+        onclick="if(event.target === this) UTILITY.closeCustomPrompt(null)">
+        <div class="relative w-full max-w-md bg-gray-900/90 border border-gray-700/50 rounded-2xl shadow-2xl p-6 transform transition-all mx-4 backdrop-blur-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="input-prompt-title" class="text-lg font-bold text-white flex items-center gap-2">
+                    Input Requested
+                </h3>
+            </div>
+            <div class="mb-4">
+                <p id="input-prompt-message" class="text-sm text-gray-400 mb-3"></p>
+                <input type="text" id="input-prompt-field"
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg text-white px-4 py-2 text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 focus:outline-none transition-all shadow-inner"
+                    placeholder="">
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="UTILITY.closeCustomPrompt(null)"
+                    class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold py-2 px-4 rounded-lg transition-colors border border-gray-700/50">Cancel</button>
+                <button onclick="UTILITY.submitCustomPrompt()"
+                    class="bg-pink-600 hover:bg-pink-500 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-lg shadow-pink-500/20">Confirm</button>
             </div>
         </div>
     </div>

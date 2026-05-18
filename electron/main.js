@@ -6,7 +6,7 @@
  *   2. Manage the KoboldCPP child process lifecycle.
  *   3. Handle IPC requests from the renderer (via preload.js bridge).
  */
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, session } = require('electron');
 const { spawn, spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -591,6 +591,20 @@ ipcMain.handle('app:scrapeUrl', async (_event, url) => {
 // WINDOW CREATION
 // ============================================================
 function createWindow() {
+    // Intercept outgoing requests to AI Dungeon's Firebase Auth and GraphQL API
+    // and spoof the Referer/Origin headers so Google/Firebase permits the request.
+    session.defaultSession.webRequest.onBeforeSendHeaders(
+        { urls: [
+            'https://identitytoolkit.googleapis.com/*',
+            'https://api.aidungeon.com/*'
+        ] },
+        (details, callback) => {
+            details.requestHeaders['Referer'] = 'https://play.aidungeon.com/';
+            details.requestHeaders['Origin'] = 'https://play.aidungeon.com';
+            callback({ requestHeaders: details.requestHeaders });
+        }
+    );
+
     mainWindow = new BrowserWindow({
         width: 1440,
         height: 900,
