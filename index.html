@@ -39,6 +39,8 @@
     [SEC:JS:TODO:CropController] - CropController
     [SEC:JS:TODO:ActionDispatcher] - ActionDispatcher
     [SEC:JS:TODO:app]       - app
+    [SEC:JS:CTRL:HUB]       - HubController
+    [SEC:JS:TODO:LibraryController] - LibraryController
     =================================================================================================
 -->
 <html lang="en">
@@ -2700,7 +2702,7 @@
                         </button>
                         <!-- Dropdown Menu -->
                         <div id="new-story-dropdown"
-                            class="hidden absolute right-0 mt-2 w-60 rounded-xl shadow-2xl bg-gray-900 ring-1 ring-white/10 z-50 focus:outline-none border border-gray-700/80 overflow-hidden">
+                            class="hidden absolute right-0 mt-2 w-60 rounded-xl shadow-2xl bg-gray-900 ring-1 ring-white/10 z-[200] focus:outline-none border border-gray-700/80 overflow-hidden">
                             <div class="p-1.5" role="menu">
                                 <button
                                     onclick="LibraryController.startNewStoryGeneration(); document.getElementById('new-story-dropdown').classList.add('hidden')"
@@ -5435,7 +5437,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 1.0.8 (2026.05.15 - 15:16)";
+        const APP_BUILD_TIMESTAMP = "Version: 1.0.9 (2026.05.17 - 19:43)";
 
 
         /**
@@ -8217,9 +8219,13 @@
 
             /**
              * Fetches available models from OpenRouter API.
+             * @param {string} [mode='text'] - 'text' or 'image'. When 'image', uses the
+             *   ?output_modalities=image query param so the API returns all image-capable
+             *   models (including pure image generators that are omitted from the default
+             *   endpoint). A separate cache is maintained per mode.
              * @returns {Promise<Array>} Array of model objects with id, name, pricing, context_length, etc.
              */
-            async fetchOpenRouterModels() {
+            async fetchOpenRouterModels(mode = 'text') {
                 const state = StateManager.getState();
                 const global = StateManager.data.globalSettings;
                 const apiKey = global.imageGenOpenRouterKey || global.openRouterKey || state.openRouterKey;
@@ -8227,7 +8233,15 @@
                 if (apiKey) {
                     headers['Authorization'] = `Bearer ${apiKey}`;
                 }
-                const res = await fetch('https://openrouter.ai/api/v1/models', { method: 'GET', headers });
+
+                // The default /api/v1/models endpoint only returns text-capable models.
+                // Pure image generators (Flux, Recraft, SDXL, etc.) are silently omitted
+                // unless we use ?output_modalities=image which returns all 28 image models.
+                const url = mode === 'image'
+                    ? 'https://openrouter.ai/api/v1/models?output_modalities=image'
+                    : 'https://openrouter.ai/api/v1/models';
+
+                const res = await fetch(url, { method: 'GET', headers });
                 if (!res.ok) {
                     let errorDetails = `Status: ${res.status} ${res.statusText}.`;
                     try {
@@ -8240,7 +8254,14 @@
                 }
                 const data = await res.json();
                 const models = data.data || [];
-                this.openRouterModelCache = models;
+
+                // Use separate caches so image-browser results don't pollute the
+                // text model cache used by the main chat model browser.
+                if (mode === 'image') {
+                    this.openRouterImageModelCache = models;
+                } else {
+                    this.openRouterModelCache = models;
+                }
                 return models;
             },
 
@@ -19432,59 +19453,34 @@ Write only the character's message.`;
                 this.openModal('openrouter-model-modal');
 
                 try {
-                    let models = await APIService.fetchOpenRouterModels();
+                    // Pass mode to fetchOpenRouterModels so it uses the correct endpoint:
+                    // - 'image' mode -> ?output_modalities=image  (returns all 28 image models)
+                    // - 'text' mode  -> default endpoint          (returns text/multimodal models)
+                    let models = await APIService.fetchOpenRouterModels(mode);
 
                     if (models.length > 0) {
                         console.groupCollapsed("OpenRouter Model Fetch Debug");
-                        console.log("Total Models Fetched:", models.length);
+                        console.log(`Total Models Fetched (${mode} mode):`, models.length);
                         console.log("Sample Model 0:", models[0]);
                         console.groupEnd();
                     }
 
-                    // Filter based on mode
-                    if (mode === 'image') {
-                        models = models.filter(m => {
-                            const id = m.id.toLowerCase();
-
-                            // 1. Check root properties (Some APIs put it here)
-                            if (m.modalities && Array.isArray(m.modalities) && m.modalities.includes('image')) return true;
-
-                            // 2. Check Architecture Object
-                            if (m.architecture) {
-                                // Legacy: modality string (e.g., 'text->image')
-                                if (m.architecture.modality && String(m.architecture.modality).includes('->image')) return true;
-
-                                // New: output_modalities
-                                if (m.architecture.output_modalities && Array.isArray(m.architecture.output_modalities) && m.architecture.output_modalities.includes('image')) return true;
-                            }
-
-                            // 3. String Heuristics (Robust Fallback)
-                            if (id.includes('dall-e') ||
-                                id.includes('diffusion') ||
-                                id.includes('flux') ||
-                                id.includes('midjourney') ||
-                                id.includes('imagen') ||
-                                id.includes('recraft') ||
-                                id.includes('ideogram')) return true;
-
-                            return false;
-                        });
-                        console.log(`Filtered Image Models: ${models.length}`);
-                    } else {
-                        // Text Mode: Filter out known strict image generators to reduce noise
+                    // In text mode, still filter out any pure image-only generators that
+                    // may have slipped through (e.g. models with text->image modality) to
+                    // keep the text browser clean.
+                    if (mode !== 'image') {
                         models = models.filter(m => {
                             const id = m.id.toLowerCase();
                             const mod = m.architecture?.modality;
-                            if (mod && String(mod) === 'text->image') return false; // Strict image
-
-                            // Exclude obvious image-only models (heuristics)
-                            // Note: GPT-4 Vision is text->text (input image, output text), so we keep it.
+                            if (mod && String(mod) === 'text->image') return false; // Strict image-only
                             if (id.includes('dall-e')) return false;
                             if (id.includes('stable-diffusion') || id.includes('stabilityai/stable-diffusion')) return false;
-                            if (id.includes('flux') && !id.includes('text')) return false; // Flux usually image
+                            if (id.includes('flux') && !id.includes('text')) return false;
                             return true;
                         });
                     }
+                    // Image mode: the API already filtered to only image-output models,
+                    // so no additional client-side filtering is needed.
 
                     this._openRouterModelsList = models;
                     this._renderOpenRouterModelList(models);
@@ -20854,6 +20850,7 @@ Write only the descriptive paragraphs.`;
             }
         };
 
+        /* [SEC:JS:TODO:LibraryController] -- recategorize and add to the TECHNICAL MAP at the top of the file. */
         const LibraryController = {
 
             // --- Story Management ---
