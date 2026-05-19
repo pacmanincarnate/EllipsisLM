@@ -1,6 +1,6 @@
 // Using native fetch in Node 18+
 
-const apiKey = 'AIzaSyCnvo_XFPmAabrDkOKBRpbivp5UH8r_3mg';
+
 const authUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`;
 const proxiedUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(authUrl)}`;
 
