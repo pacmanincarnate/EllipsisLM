@@ -40,7 +40,6 @@
     [SEC:JS:MOD:AD]         - ActionDispatcher (Action Routing)
     [SEC:JS:CORE:BOOT]      - app (Bootstrap/Init)
     [SEC:JS:CTRL:HUB]       - HubController
-    [SEC:JS:TODO:UTILITY]   - UTILITY
     =================================================================================================
 -->
 <html lang="en">
@@ -9446,10 +9445,9 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
          * Generic helper functions for formatting, parsing, and math.
          * =================================================================================================
          */
-        let activePromptResolver = null;
-
-        /* [SEC:JS:TODO:UTILITY] -- recategorize and add to the TECHNICAL MAP at the top of the file. */
         const UTILITY = {
+            activePromptResolver: null,
+
             /**
              * Reusable custom input prompt modal that replaces the native window.prompt() dialog.
              * This ensures full support in Electron environments where prompt() is disabled.
@@ -9470,7 +9468,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     field.value = defaultValue;
                     field.placeholder = placeholder || 'Enter value...';
 
-                    activePromptResolver = resolve;
+                    UTILITY.activePromptResolver = resolve;
 
                     modal.classList.remove('hidden');
                     modal.classList.add('flex');
@@ -9506,9 +9504,9 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     modal.classList.add('hidden');
                     modal.classList.remove('flex');
                 }
-                if (activePromptResolver) {
-                    const resolve = activePromptResolver;
-                    activePromptResolver = null;
+                if (UTILITY.activePromptResolver) {
+                    const resolve = UTILITY.activePromptResolver;
+                    UTILITY.activePromptResolver = null;
                     resolve(value);
                 }
             },
