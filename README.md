@@ -66,9 +66,12 @@ We use a tiered structure to manage complex, branching narratives without clutte
 
 This hierarchy allows you to start multiple "runs" of the same scenario without overwriting your progress in either.
 
+- **Scenario Editor**: Customize scenarios with specific notes, active character rosters, and scenario-specific lore. Create new blank scenarios or edit existing templates directly from the UI.
+
 ### Organization
 - **Folders**: Manage large libraries by grouping stories into global folders. The UI includes full filtering, searching, and sorting capabilities to help you find specific characters or universes instantly.
-- **Export & Import**: Full support for standard **V2 Character Cards** (Tavern/SillyTavern) and **BYAF** cards.
+- **Discover Feature (Beta)**: Search and import characters directly from **Chub.ai** (works in-browser without Electron) or **Backyard.ai** (installed version), or import character/scenario links from **fictionlab.ai**.
+- **Export & Import**: Full support for standard **V2 Character Cards** (Tavern/SillyTavern) and **BYAF** cards. Automatic image cache hydration and story opening on import.
 - **Bulk Operations**: Automatically import every character card from a local folder in one go.
 - **Full Backups**: Export your entire library, settings, and histories as a single portable ZIP file.
 
@@ -86,7 +89,10 @@ EllipsisLM supports unlimited characters in any given story.
 - **Multi-Character Management**: Add any number of characters to a narrative. Toggle them as active or inactive to control who the AI can choose to respond for. You can also switch which character you are playing at any time.
 - **Narrator Mode**: A special toggle for characters acting as a "DM" or environment. A Narrator interjects with movement and background events but is prevented from speaking twice in a row, ensuring the player or other characters always have space to react.
 - **Targeted Generation**: Force a specific character to reply next, or let the system choose which active character makes the most sense. This includes the ability to generate new, undefined characters on the fly (like a waiter at a restaurant).
+- **AI Character Directives**: Inject specific behavioral instructions or plot guidance for a character's next generation using a right-click context menu on the chat interface.
+- **Vision & Image Input (Beta)**: Send images along with your messages. Characters will analyze and understand the image contents (requires a vision-capable model like Gemini or supported OpenRouter models).
 - **CYOA (Choose Your Own Adventure)**: Instead of writing every response from scratch, you can prompt the AI to generate multiple response options for you. Choose how the story continues from several logical paths.
+- **Chat History Cycling**: Quickly cycle through your last 3 sent messages using the `Up Arrow` key in the chat input for faster editing and resending.
 
 ![CYOA Branching Options](assets/screenshots/cyoa_options.png)
 
@@ -104,6 +110,7 @@ EllipsisLM supports unlimited characters in any given story.
 ### Lore and Context Management
 ![Dynamic Lore Entry and Logic Gates](assets/screenshots/dynamic_lore.png)
 
+- **Character-Specific Knowledge**: Define dynamic lore/knowledge entries directly within a character's description that are only visible to and used by that specific character (perfect for secrets and private motives!).
 - **Static Knowledge**: Persistent summaries and world rules that are always included in the AI's context. 
 - **Dynamic Knowledge (Lorebook)**: Trigger-based entries that only enter context when specific keywords match.
     - **Logic Gates**: AND/XOR triggers for precise lore injection.
@@ -129,8 +136,10 @@ EllipsisLM supports unlimited characters in any given story.
 
 - **Visual Styling**: Fully customizable fonts (Google Fonts), text sizes, and bubble opacity.
 - **Ambiance**: Support for background image blur and customizable theme colors to match the tone of your story.
+- **Default Settings Sheet**: Override the application default settings globally (UI styles, API keys, parameters) so they automatically apply to every new story.
 
 ### AI Painting and Media
+- **Beta Music Generation**: Analyze the current scene vibe and automatically generate background instrumental music every N messages using **Lyra 3** (requires Google Gemini API).
 - **Image Creation**: The integrated "AI Painter" allows you to generate new character portraits and background images directly within the app using your chosen backend.
 - **Text-to-Speech (TTS)**: Built-in TTS support allows for the AI's responses to be read aloud for a more immersive experience.
 
@@ -212,6 +221,8 @@ Once your backend is running or your API key is ready:
 ## Technical Details
 
 The core of EllipsisLM is a single "monolithic" HTML file containing 23,000+ lines of vanilla JavaScript and CSS. This design choice ensures the application remains portable and dependency-free. There are no external frameworks like React or Vue to manage; the entire state is handled through a custom reactive store.
+
+The codebase is tested via a custom test suite covering format parsing, lore triggering, and story generation stability to prevent regressions. A pre-commit hook automatically enforces technical map modularity across code updates.
 
 The Electron wrapper is a lightweight shell that adds desktop-specific features like auto-updating and local process management for KoboldCPP.
 
