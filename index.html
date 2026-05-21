@@ -5519,7 +5519,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 1.0.10 (2026.05.18 - 18:52)";
+        const APP_BUILD_TIMESTAMP = "Version: 1.0.11 (2026.05.21 - 16:52)";
 
 
         /**
@@ -30862,7 +30862,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     // Find textarea relative to the BUTTON
                     const textarea = button.parentElement.querySelector('textarea');
                     if (textarea) textarea.value = content;
-                } catch (e) { alert(e.message); }
+                } catch (e) { UIManager.showNotification(e.message, "error"); }
                 finally { button.disabled = false; button.innerHTML = UIManager.getAIGenIcon(); }
             },
 
@@ -30969,7 +30969,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     // Find textarea relative to the BUTTON, not the click target (event.target)
                     const textarea = button.parentElement.querySelector('textarea');
                     if (textarea) textarea.value = content;
-                } catch (e) { alert(e.message); }
+                } catch (e) { UIManager.showNotification(e.message, "error"); }
                 finally { button.disabled = false; button.innerHTML = UIManager.getAIGenIcon(); }
             },
 
@@ -31065,15 +31065,23 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         });
                     }
 
-                    if (changed && !silent) {
-                        UIManager.renderStaticEntries();
-                        alert("Static knowledge updated successfully.");
+                    if (!silent) {
+                        if (changed) {
+                            UIManager.renderStaticEntries();
+                            UIManager.showNotification("Static knowledge updated successfully.", "success");
+                        } else {
+                            UIManager.showNotification("No new static knowledge updates found.", "info");
+                        }
+                        const input = document.getElementById('chat-input');
+                        if (input) input.focus();
                     }
 
                 } catch (e) {
                     if (!silent) {
                         console.error("Static Entry Agent failed:", e);
-                        alert("The AI failed to update static entries.");
+                        UIManager.showNotification("The AI failed to update static entries.", "error");
+                        const input = document.getElementById('chat-input');
+                        if (input) input.focus();
                     }
                 } finally {
                     if (!silent) UIManager.hideTypingIndicator();
