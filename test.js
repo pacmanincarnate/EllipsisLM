@@ -145,6 +145,18 @@ test('normalizeStoryShape: ensures per-character extra_portraits and dynamic_kno
     assert.ok(Array.isArray(story.characters[0].dynamic_knowledge));
 });
 
+test('normalizeStoryShape: populates default visual settings when missing', () => {
+    const story = {
+        scenarios: [{ id: 'sc1', name: 'Start' }]
+    };
+    UTILITY.normalizeStoryShape(story);
+    assert.equal(story.font, "'Inter', sans-serif");
+    assert.equal(story.chatTextColor, '#cdc6b6');
+    assert.equal(story.bubbleOpacity, 0.35);
+    assert.equal(story.scenarios[0].prompts.font, "'Inter', sans-serif");
+    assert.equal(story.scenarios[0].prompts.bubbleOpacity, 0.35);
+});
+
 // ─── extractStructuredHeadings (the case-mismatch bug) ────────────────────
 
 test('extractStructuredHeadings: result is exposed under both original case and lowercase', () => {
@@ -593,3 +605,284 @@ test('matchStory: character: field matches character names', () => {
     assert.equal(UTILITY.matchStory(story, UTILITY.parseSearchQuery('char:thorne')), true);
     assert.equal(UTILITY.matchStory(story, UTILITY.parseSearchQuery('char:zog')), false);
 });
+
+// ─── estimateTokens ───────────────────────────────────────────────────────
+
+test('estimateTokens: returns 0 for empty or null input', () => {
+    assert.equal(UTILITY.estimateTokens(''), 0);
+    assert.equal(UTILITY.estimateTokens(null), 0);
+    assert.equal(UTILITY.estimateTokens(undefined), 0);
+});
+
+test('estimateTokens: approximates word tokens correctly', () => {
+    assert.equal(UTILITY.estimateTokens('hello world test'), 4);
+    assert.equal(UTILITY.estimateTokens('a'), 2);
+});
+
+// ─── truncateShortDescription ─────────────────────────────────────────────
+
+test('truncateShortDescription: returns empty string for null / empty input', () => {
+    assert.equal(UTILITY.truncateShortDescription(''), '');
+    assert.equal(UTILITY.truncateShortDescription(null), '');
+    assert.equal(UTILITY.truncateShortDescription(undefined), '');
+});
+
+test('truncateShortDescription: extracts first sentence when short enough', () => {
+    const result = UTILITY.truncateShortDescription('A brave hero. Also a poet.');
+    assert.equal(result, 'A brave hero.');
+});
+
+test('truncateShortDescription: works with exclamation and question marks', () => {
+    const excl = UTILITY.truncateShortDescription('What a twist! More story here.');
+    assert.equal(excl, 'What a twist!');
+    const quest = UTILITY.truncateShortDescription('Who goes there? Nobody knows.');
+    assert.equal(quest, 'Who goes there?');
+});
+
+test('truncateShortDescription: handles period-less descriptions without bloating (key bug regression)', () => {
+    // This is the exact scenario that caused the bloat bug: a long description
+    // with no periods means .split('.')[0] returns the entire string.
+    const longNoPeriods = 'A mysterious wandering adventurer\nDrawn to the crossroads by ancient power\nSeeking the fragments of a shattered crown across Aethermoor';
+    const result = UTILITY.truncateShortDescription(longNoPeriods);
+    // Must be bounded — old code returned the full ~130-char string as-is (plus a trailing ".")
+    assert.ok(result.length <= 165, `Expected <= 165 chars, got ${result.length}: "${result}"`);
+});
+
+test('truncateShortDescription: hard-truncates with ellipsis when no sentence boundary found before maxLen', () => {
+    // 200 chars of text with no punctuation
+    const noPunct = 'abcdefghij '.repeat(20).trim(); // 209 chars
+    const result = UTILITY.truncateShortDescription(noPunct, 160);
+    assert.ok(result.endsWith('...'), `Expected ellipsis, got: "${result}"`);
+    assert.ok(result.length <= 164, `Expected <= 164 chars, got ${result.length}`);
+});
+
+test('truncateShortDescription: text shorter than maxLen is returned as-is when no sentence boundary', () => {
+    const short = 'A witty rogue without punctuation';
+    const result = UTILITY.truncateShortDescription(short);
+    assert.equal(result, short);
+});
+
+test('truncateShortDescription: first sentence over maxLen falls back to hard truncation', () => {
+    // A single very long sentence (>160 chars) ending in a period
+    const longSentence = 'A ' + 'very '.repeat(40) + 'long sentence.'; // ~202 chars + period
+    const result = UTILITY.truncateShortDescription(longSentence, 160);
+    // Cannot end with just the long sentence - must be truncated
+    assert.ok(result.length <= 164, `Expected <= 164 chars, got ${result.length}`);
+    assert.ok(result.endsWith('...'), `Expected ellipsis, got: "${result}"`);
+});
+
+// ─── sanitizeEvolvedPersona ──────────────────────────────────────────────────
+
+test('sanitizeEvolvedPersona: returns null for nullish/empty/too short/no change input', () => {
+    assert.equal(UTILITY.sanitizeEvolvedPersona(null), null);
+    assert.equal(UTILITY.sanitizeEvolvedPersona(undefined), null);
+    assert.equal(UTILITY.sanitizeEvolvedPersona(''), null);
+    assert.equal(UTILITY.sanitizeEvolvedPersona('  '), null);
+    assert.equal(UTILITY.sanitizeEvolvedPersona('Short'), null); // too short
+    assert.equal(UTILITY.sanitizeEvolvedPersona('No major changes.'), null);
+    assert.equal(UTILITY.sanitizeEvolvedPersona('Original persona unchanged.'), null);
+    assert.equal(UTILITY.sanitizeEvolvedPersona('No changes detected.'), null);
+    assert.equal(UTILITY.sanitizeEvolvedPersona('null'), null);
+});
+
+test('sanitizeEvolvedPersona: returns clean persona unmodified when no preambles exist', () => {
+    const validPersona = 'Pac is a middle-aged man with brown hair and brown eyes. He is kind, smart, and has a witty sense of humor.';
+    assert.equal(UTILITY.sanitizeEvolvedPersona(validPersona), validPersona);
+});
+
+test('sanitizeEvolvedPersona: strips intro preambles and ends with colon', () => {
+    const rawInput = 'Here is the updated persona:\nPac is a middle-aged man with brown hair. He is smart.';
+    const expected = 'Pac is a middle-aged man with brown hair. He is smart.';
+    assert.equal(UTILITY.sanitizeEvolvedPersona(rawInput), expected);
+});
+
+test('sanitizeEvolvedPersona: strips outro postambles', () => {
+    const rawInput = 'Pac is a middle-aged man with brown hair. He is smart.\nHope this updated persona helps let me know!';
+    const expected = 'Pac is a middle-aged man with brown hair. He is smart.';
+    assert.equal(UTILITY.sanitizeEvolvedPersona(rawInput), expected);
+});
+
+test('sanitizeEvolvedPersona: discards persona if length exceeds 2000 characters', () => {
+    const longPersona = 'Pac is a dad. '.repeat(200); // 2800 characters
+    assert.equal(UTILITY.sanitizeEvolvedPersona(longPersona), null);
+});
+
+test('sanitizeEvolvedPersona: discards persona if it contains multiple dialogue transcript lines', () => {
+    const transcriptPersona = 'Pac: "Hello there."\nUser: "Hi, Pac."\nPac is a middle-aged man with brown hair.';
+    assert.equal(UTILITY.sanitizeEvolvedPersona(transcriptPersona, ['Pac']), null);
+});
+
+// ─── parseLorebook & exportLorebook ──────────────────────────────────────────
+
+test('parseLorebook: nullish/invalid input returns empty entries', () => {
+    deepEq(UTILITY.parseLorebook(null), { static_entries: [], dynamic_entries: [] });
+    deepEq(UTILITY.parseLorebook(''), { static_entries: [], dynamic_entries: [] });
+    deepEq(UTILITY.parseLorebook('invalid json'), { static_entries: [], dynamic_entries: [] });
+    deepEq(UTILITY.parseLorebook('{}'), { static_entries: [], dynamic_entries: [] });
+});
+
+test('parseLorebook: parses flat array of entries', () => {
+    const json = JSON.stringify([
+        { comment: "Static 1", content: "Static content", constant: true, order: 10 },
+        { comment: "Dynamic 1", content: "Dynamic content", constant: false, key: ["dwarf", "gimli"], order: 5 }
+    ]);
+    const res = UTILITY.parseLorebook(json);
+    assert.equal(res.static_entries.length, 1);
+    assert.equal(res.dynamic_entries.length, 1);
+    
+    // Dynamic 1 has lower order (5) than Static 1 (10)
+    // Wait, let's verify if they are processed in order.
+    assert.equal(res.dynamic_entries[0].title, "Dynamic 1");
+    assert.equal(res.dynamic_entries[0].triggers, "dwarf, gimli");
+    deepEq(res.dynamic_entries[0].content_fields, ["Dynamic content"]);
+    
+    assert.equal(res.static_entries[0].title, "Static 1");
+    assert.equal(res.static_entries[0].content, "Static content");
+});
+
+test('parseLorebook: parses SillyTavern schema and maps probability', () => {
+    const json = JSON.stringify({
+        entries: {
+            "0": { comment: "Elves", content: "Elf lore", constant: false, keys: "elf, legolas", probability: 50, order: 1 },
+            "1": { comment: "Dwarves", content: "Dwarf lore", constant: false, key: ["dwarf"], chance: 25, order: 2 },
+            "2": { comment: "World", content: "World lore", constant: true, order: 0 }
+        }
+    });
+    const res = UTILITY.parseLorebook(json);
+    assert.equal(res.static_entries.length, 1);
+    assert.equal(res.dynamic_entries.length, 2);
+
+    assert.equal(res.static_entries[0].title, "World");
+    assert.equal(res.static_entries[0].content, "World lore");
+
+    // Dynamic entries are sorted by order: Elves (1) then Dwarves (2)
+    assert.equal(res.dynamic_entries[0].title, "Elves");
+    assert.equal(res.dynamic_entries[0].triggers, "elf, legolas, AND 50%");
+    
+    assert.equal(res.dynamic_entries[1].title, "Dwarves");
+    assert.equal(res.dynamic_entries[1].triggers, "dwarf, AND 25%");
+});
+
+test('parseLorebook: parses Chub.ai character_book schema', () => {
+    const json = JSON.stringify({
+        character_book: {
+            entries: [
+                { displayName: "Gimli", content: "A dwarf warrior", constant: false, key: "gimli", order: 1 }
+            ]
+        }
+    });
+    const res = UTILITY.parseLorebook(json);
+    assert.equal(res.dynamic_entries.length, 1);
+    assert.equal(res.dynamic_entries[0].title, "Gimli");
+    assert.equal(res.dynamic_entries[0].triggers, "gimli");
+    deepEq(res.dynamic_entries[0].content_fields, ["A dwarf warrior"]);
+});
+
+test('exportLorebook: exports static and dynamic entries to SillyTavern format', () => {
+    const statics = [
+        { title: "Static Lore", content: "Always active info" }
+    ];
+    const dynamics = [
+        { title: "Dynamic Lore", triggers: "dwarf, AND 75%", content_fields: ["Triggered info"] }
+    ];
+
+    const jsonStr = UTILITY.exportLorebook(statics, dynamics);
+    const parsed = JSON.parse(jsonStr);
+
+    assert.ok(parsed.entries);
+    const entries = Object.values(parsed.entries);
+    assert.equal(entries.length, 2);
+
+    // Static Entry
+    const stEntry = entries.find(e => e.constant === true);
+    assert.ok(stEntry);
+    assert.equal(stEntry.comment, "Static Lore");
+    assert.equal(stEntry.content, "Always active info");
+    assert.equal(stEntry.probability, 100);
+
+    // Dynamic Entry
+    const dyEntry = entries.find(e => e.constant === false);
+    assert.ok(dyEntry);
+    assert.equal(dyEntry.comment, "Dynamic Lore");
+    assert.equal(dyEntry.content, "Triggered info");
+    assert.deepEqual(dyEntry.key, ["dwarf"]);
+    assert.equal(dyEntry.probability, 75);
+});
+
+// ─── tokenizeHtml ───────────────────────────────────────────────────────────
+
+test('tokenizeHtml: correctly splits tags, entities, and characters', () => {
+    const html = 'Hello <b>world!</b> &amp; standard';
+    const tokens = UTILITY.tokenizeHtml(html);
+    const expected = [
+        { type: 'text', value: 'H' },
+        { type: 'text', value: 'e' },
+        { type: 'text', value: 'l' },
+        { type: 'text', value: 'l' },
+        { type: 'text', value: 'o' },
+        { type: 'text', value: ' ' },
+        { type: 'tag', value: '<b>' },
+        { type: 'text', value: 'w' },
+        { type: 'text', value: 'o' },
+        { type: 'text', value: 'r' },
+        { type: 'text', value: 'l' },
+        { type: 'text', value: 'd' },
+        { type: 'text', value: '!' },
+        { type: 'tag', value: '</b>' },
+        { type: 'text', value: ' ' },
+        { type: 'entity', value: '&amp;' },
+        { type: 'text', value: ' ' },
+        { type: 'text', value: 's' },
+        { type: 'text', value: 't' },
+        { type: 'text', value: 'a' },
+        { type: 'text', value: 'n' },
+        { type: 'text', value: 'd' },
+        { type: 'text', value: 'a' },
+        { type: 'text', value: 'r' },
+        { type: 'text', value: 'd' }
+    ];
+    deepEq(tokens, expected);
+});
+
+test('tokenizeHtml: handles empty/nullish input', () => {
+    deepEq(UTILITY.tokenizeHtml(null), []);
+    deepEq(UTILITY.tokenizeHtml(''), []);
+});
+
+test('tokenizeHtml: handles malformed tags and entities', () => {
+    deepEq(UTILITY.tokenizeHtml('<b text'), [{ type: 'text', value: '<' }, { type: 'text', value: 'b' }, { type: 'text', value: ' ' }, { type: 'text', value: 't' }, { type: 'text', value: 'e' }, { type: 'text', value: 'x' }, { type: 'text', value: 't' }]);
+    deepEq(UTILITY.tokenizeHtml('&amp text'), [{ type: 'text', value: '&' }, { type: 'text', value: 'a' }, { type: 'text', value: 'm' }, { type: 'text', value: 'p' }, { type: 'text', value: ' ' }, { type: 'text', value: 't' }, { type: 'text', value: 'e' }, { type: 'text', value: 'x' }, { type: 'text', value: 't' }]);
+});
+
+// ─── parseStateUpdateString & parseAndStripStateIndicators ───────────────────
+
+test('parseStateUpdateString: parses resource changes', () => {
+    deepEq(UTILITY.parseStateUpdateString('+Rusted Key'), { type: 'resource', name: 'Rusted Key', change: 1 });
+    deepEq(UTILITY.parseStateUpdateString('+10 Gold'), { type: 'resource', name: 'Gold', change: 10 });
+    deepEq(UTILITY.parseStateUpdateString('-5 Iron Ore'), { type: 'resource', name: 'Iron Ore', change: -5 });
+    deepEq(UTILITY.parseStateUpdateString('-Silver'), { type: 'resource', name: 'Silver', change: -1 });
+});
+
+test('parseStateUpdateString: parses quest actions', () => {
+    deepEq(UTILITY.parseStateUpdateString('Quest Complete: Escape the Dungeon'), { type: 'quest', title: 'Escape the Dungeon', status: 'completed', objective: '', isUpdate: false });
+    deepEq(UTILITY.parseStateUpdateString('Quest Update: Escape the Dungeon (Objective: Find exit)'), { type: 'quest', title: 'Escape the Dungeon', status: 'active', objective: 'Find exit', isUpdate: true });
+    deepEq(UTILITY.parseStateUpdateString('Quest fail: Escape the Dungeon'), { type: 'quest', title: 'Escape the Dungeon', status: 'failed', objective: '', isUpdate: false });
+});
+
+test('parseStateUpdateString: parses relationship changes', () => {
+    deepEq(UTILITY.parseStateUpdateString('Relationship: Alice +5'), { type: 'relationship', charName: 'Alice', track: 'Affection', changeVal: 5, isRelative: true });
+    deepEq(UTILITY.parseStateUpdateString('Relationship: Alice Affection +10%'), { type: 'relationship', charName: 'Alice', track: 'Affection', changeVal: 10, isRelative: true });
+    deepEq(UTILITY.parseStateUpdateString('Relationship: Alice attraction 75'), { type: 'relationship', charName: 'Alice', track: 'attraction', changeVal: 75, isRelative: false });
+});
+
+test('parseAndStripStateIndicators: strips tags and returns clean text and changes', () => {
+    const text = 'You found a key! [STATE: +Rusted Key] Good job.';
+    const result = UTILITY.parseAndStripStateIndicators(text);
+    assert.equal(result.cleanedText, 'You found a key!  Good job.');
+    assert.equal(result.changes.length, 1);
+    deepEq(result.changes[0], { type: 'resource', name: 'Rusted Key', change: 1 });
+});
+
+
+
+
