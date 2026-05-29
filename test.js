@@ -453,6 +453,16 @@ test('testLoreEntries: AND group requires all keywords present', () => {
     assert.equal(r && r.id, 'e1');
 });
 
+test('testLoreEntries: triggers GM-style rule mapping with probability and keyword expressions', () => {
+    const rule1 = { id: 'r1', triggers: 'stolen, 100%' };
+    const r1 = UTILITY.testLoreEntries('I have stolen the key.', [rule1]);
+    assert.equal(r1 && r1.id, 'r1');
+
+    const rule2 = { id: 'r2', triggers: '100%' };
+    const r2 = UTILITY.testLoreEntries('Any message', [rule2]);
+    assert.equal(r2 && r2.id, 'r2');
+});
+
 // ─── createDefaultMapGrid ─────────────────────────────────────────────────
 
 test('createDefaultMapGrid: returns an 8x8 grid with empty content', () => {
@@ -882,6 +892,47 @@ test('parseAndStripStateIndicators: strips tags and returns clean text and chang
     assert.equal(result.changes.length, 1);
     deepEq(result.changes[0], { type: 'resource', name: 'Rusted Key', change: 1 });
 });
+
+// ─── parseGMEvaluationsXML ───────────────────────────────────────────────────
+
+test('parseGMEvaluationsXML: parses valid rule evaluations and proposals from XML', () => {
+    const xml = `
+    <evaluation>
+        <rule_id>rule-123</rule_id>
+        <rule_name>Weight Limit Check</rule_name>
+        <status>triggered</status>
+        <description>The character is carrying too many heavy metal bars, exceeding the 50kg limit.</description>
+        <consequence>The character becomes encumbered, slowing their movement speed.</consequence>
+        <proposals>
+            <resource name="Gold" delta="-10" />
+            <character_stat character_name="Pac" stat="speed" value="slow" />
+            <relationship character_a="Pac" character_b="Gimli" delta="-5" />
+            <narration>Pac groans under the heavy load as the gold slips from his pack.</narration>
+        </proposals>
+    </evaluation>
+    `;
+    const res = UTILITY.parseGMEvaluationsXML(xml);
+    assert.equal(res.length, 1);
+    assert.equal(res[0].rule_id, 'rule-123');
+    assert.equal(res[0].rule_name, 'Weight Limit Check');
+    assert.equal(res[0].status, 'triggered');
+    assert.equal(res[0].description, 'The character is carrying too many heavy metal bars, exceeding the 50kg limit.');
+    assert.equal(res[0].consequence, 'The character becomes encumbered, slowing their movement speed.');
+    
+    const prop = res[0].proposals;
+    assert.ok(prop);
+    deepEq(prop.resources, [{ name: 'Gold', delta: -10 }]);
+    deepEq(prop.character_stats, [{ character_name: 'Pac', stat: 'speed', value: 'slow' }]);
+    deepEq(prop.relationships, [{ character_a: 'Pac', character_b: 'Gimli', delta: -5 }]);
+    assert.equal(prop.narration, 'Pac groans under the heavy load as the gold slips from his pack.');
+});
+
+test('parseGMEvaluationsXML: returns empty array for null/empty/invalid input', () => {
+    deepEq(UTILITY.parseGMEvaluationsXML(null), []);
+    deepEq(UTILITY.parseGMEvaluationsXML(''), []);
+    deepEq(UTILITY.parseGMEvaluationsXML('not xml at all'), []);
+});
+
 
 
 

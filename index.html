@@ -48,7 +48,7 @@
 
 <head>
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://esm.run https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*; connect-src 'self' https://* http://localhost:* http://127.0.0.1:*;">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://esm.run https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*; connect-src 'self' https://* http://localhost:* http://127.0.0.1:* http: ws: wss:;">
     <meta charset="UTF-8">
     <!-- Updated Viewport for Notch Support -->
     <meta name="viewport"
@@ -3638,6 +3638,8 @@
                         class="py-2 px-2 font-semibold text-lg border-b-2 border-indigo-500 text-white">Static</button>
                     <button id="knowledge-tab-dynamic" onclick="UIManager.switchKnowledgeTab('dynamic')"
                         class="py-2 px-2 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">Dynamic</button>
+                    <button id="knowledge-tab-gm" onclick="UIManager.switchKnowledgeTab('gm')"
+                        class="py-2 px-2 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">GM Agent</button>
                 </div>
                 <div class="flex items-center space-x-2">
                     <button data-action="close-modal" data-id="knowledge-modal"
@@ -3674,6 +3676,18 @@
                         <div id="dynamic-entry-details-content" class="h-full">
                             <div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.
                             </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="knowledge-gm-content" class="hidden h-full flex flex-col md:flex-row gap-4">
+                    <div class="w-full md:w-1/3 flex flex-col h-1/3 md:h-full">
+                        <div id="gm-rules-list" class="bg-black/30 rounded-t-lg p-2 overflow-y-auto flex-grow">
+                        </div>
+                    </div>
+                    <div id="gm-rule-details"
+                        class="w-full md:w-2/3 bg-black/30 rounded-lg p-4 overflow-y-auto flex-1 md:flex-none md:h-full border border-gray-700">
+                        <div id="gm-rule-details-content" class="h-full">
+                            <div class="text-gray-400 flex items-center justify-center h-full">Select a GM Rule or create one to configure.</div>
                         </div>
                     </div>
                 </div>
@@ -7951,6 +7965,8 @@
                         },
                         livingPersonaCounters: {},
                         evolved_characters: {},
+                        gm_rules: [],
+                        gm_ledger: [],
                         swarmMode: true,
                         swarmNarrativeCapital: {},
                         swarmSecrets: {},
@@ -8081,6 +8097,8 @@
                             journal: []
                         },
                         livingPersonaCounters: {}, evolved_characters: {},
+                        gm_rules: [],
+                        gm_ledger: [],
                         swarmMode: false, swarmNarrativeCapital: {}, swarmSecrets: {}, swarmLastIntents: {}
                     }
                 };
@@ -8469,6 +8487,14 @@
                             };
                         }
 
+                        if (!this.data.activeNarrativeState.gm_rules) {
+                            this.data.activeNarrativeState.gm_rules = [];
+                        }
+
+                        if (!this.data.activeNarrativeState.gm_ledger) {
+                            this.data.activeNarrativeState.gm_ledger = [];
+                        }
+
                         if (!this.data.activeNarrativeState.static_entries || this.data.activeNarrativeState.static_entries.length === 0) {
                             this.data.activeNarrativeState.static_entries = [{ id: UTILITY.uuid(), title: "World Overview", content: "The world." }];
                         }
@@ -8813,18 +8839,27 @@
                     text += "\n\n[SYSTEM NOTE: The user has provided an image, but your current model configuration does not support image analysis. Please acknowledge the user's intent if necessary, but inform them you cannot see the image.]";
                 }
 
+                // Apply a default 12-second timeout to prevent background/un-signaled tasks from hanging the UI
+                let activeSignal = signal;
+                let timeoutId = null;
+                if (!activeSignal) {
+                    const controller = new AbortController();
+                    activeSignal = controller.signal;
+                    timeoutId = setTimeout(() => controller.abort(), 12000);
+                }
+
                 let responseText = "";
                 try {
                     if (provider === 'gemini') {
-                        responseText = await this.callGemini({ text, images }, signal);
+                        responseText = await this.callGemini({ text, images }, activeSignal);
                     } else if (provider === 'openrouter') {
-                        responseText = await this.callOpenRouter({ text, images }, signal);
+                        responseText = await this.callOpenRouter({ text, images }, activeSignal);
                     } else if (provider === 'webllm') {
-                        responseText = await this.callWebLLM(text, signal);
+                        responseText = await this.callWebLLM(text, activeSignal);
                     } else if (provider === 'koboldcpp') {
-                        responseText = await this.callKoboldCPP({ text, images }, signal, isJson);
+                        responseText = await this.callKoboldCPP({ text, images }, activeSignal, isJson);
                     } else if (provider === 'lmstudio') {
-                        responseText = await this.callLMStudio({ text, images }, signal, isJson);
+                        responseText = await this.callLMStudio({ text, images }, activeSignal, isJson);
                     }
 
                     // Defend against providers that return null/undefined or non-strings.
@@ -8844,9 +8879,40 @@
                     return responseText.trim();
 
                 } catch (error) {
-                    if (error.name === 'AbortError') throw error;
-                    console.error(`AI call failed (${state.apiProvider}):`, error);
+                    if (error.name === 'AbortError') {
+                        if (timeoutId && !signal) {
+                            const timeoutError = new Error("Request timed out after 12 seconds.");
+                            if (typeof UIManager !== 'undefined' && UIManager.showToast) {
+                                UIManager.showToast("Connection timed out. Please check if your AI backend is running.", true);
+                            }
+                            throw timeoutError;
+                        }
+                        throw error;
+                    }
+                    const isNetworkError = error instanceof TypeError || 
+                                          (error.message && (
+                                              error.message.toLowerCase().includes('failed to fetch') ||
+                                              error.message.toLowerCase().includes('networkerror') ||
+                                              error.message.toLowerCase().includes('net::err')
+                                          ));
+                    if (isNetworkError) {
+                        let friendlyProvider = state.apiProvider;
+                        if (friendlyProvider === 'koboldcpp') friendlyProvider = 'KoboldCPP';
+                        else if (friendlyProvider === 'lmstudio') friendlyProvider = 'LM Studio';
+                        else if (friendlyProvider === 'gemini') friendlyProvider = 'Gemini API';
+                        else if (friendlyProvider === 'openrouter') friendlyProvider = 'OpenRouter';
+                        
+                        const msg = `Connection failed: ${friendlyProvider} is offline or unreachable.`;
+                        console.warn(`[APIService] ${msg}`, error);
+                        if (typeof UIManager !== 'undefined' && UIManager.showToast) {
+                            UIManager.showToast(msg, true);
+                        }
+                    } else {
+                        console.error(`AI call failed (${state.apiProvider}):`, error);
+                    }
                     throw error;
+                } finally {
+                    if (timeoutId) clearTimeout(timeoutId);
                 }
             },
 
@@ -11565,6 +11631,85 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 return tokens;
             },
 
+            /**
+             * Parses GM Rule evaluation XML block from LLM output.
+             * @param {string} xmlText - The raw XML text from LLM.
+             * @returns {Array} - List of parsed rule evaluation objects.
+             */
+            parseGMEvaluationsXML(xmlText) {
+                const evaluations = [];
+                if (!xmlText || typeof xmlText !== 'string') return evaluations;
+                let cleanXml = xmlText.replace(/```xml/g, '').replace(/```/g, '').trim();
+                
+                const evalRegex = /<evaluation>([\s\S]*?)<\/evaluation>/g;
+                let match;
+                while ((match = evalRegex.exec(cleanXml)) !== null) {
+                    const content = match[1];
+                    
+                    const ruleId = (content.match(/<rule_id>([\s\S]*?)<\/rule_id>/) || [])[1]?.trim() || '';
+                    const ruleName = (content.match(/<rule_name>([\s\S]*?)<\/rule_name>/) || [])[1]?.trim() || '';
+                    const status = (content.match(/<status>([\s\S]*?)<\/status>/) || [])[1]?.trim() || 'passed';
+                    const description = (content.match(/<description>([\s\S]*?)<\/description>/) || [])[1]?.trim() || '';
+                    const consequence = (content.match(/<consequence>([\s\S]*?)<\/consequence>/) || [])[1]?.trim() || '';
+                    
+                    const proposals = {
+                        resources: [],
+                        character_stats: [],
+                        relationships: [],
+                        narration: null
+                    };
+
+                    const proposalsMatch = content.match(/<proposals>([\s\S]*?)<\/proposals>/);
+                    if (proposalsMatch) {
+                        const proposalsContent = proposalsMatch[1];
+                        
+                        const resRegex = /<resource\s+name="([^"]+)"\s+delta="([^"]+)"\s*\/?>/g;
+                        let resMatch;
+                        while ((resMatch = resRegex.exec(proposalsContent)) !== null) {
+                            proposals.resources.push({
+                                name: resMatch[1],
+                                delta: parseFloat(resMatch[2]) || 0
+                            });
+                        }
+
+                        const statRegex = /<character_stat\s+character_name="([^"]+)"\s+stat="([^"]+)"\s+value="([^"]+)"\s*\/?>/g;
+                        let statMatch;
+                        while ((statMatch = statRegex.exec(proposalsContent)) !== null) {
+                            proposals.character_stats.push({
+                                character_name: statMatch[1],
+                                stat: statMatch[2],
+                                value: statMatch[3]
+                            });
+                        }
+
+                        const relRegex = /<relationship\s+character_a="([^"]+)"\s+character_b="([^"]+)"\s+delta="([^"]+)"\s*\/?>/g;
+                        let relMatch;
+                        while ((relMatch = relRegex.exec(proposalsContent)) !== null) {
+                            proposals.relationships.push({
+                                character_a: relMatch[1],
+                                character_b: relMatch[2],
+                                delta: parseFloat(relMatch[3]) || 0
+                            });
+                        }
+
+                        const narrMatch = proposalsContent.match(/<narration>([\s\S]*?)<\/narration>/);
+                        if (narrMatch) {
+                            proposals.narration = narrMatch[1].trim();
+                        }
+                    }
+
+                    evaluations.push({
+                        rule_id: ruleId,
+                        rule_name: ruleName,
+                        status: status.toLowerCase(),
+                        description: description,
+                        consequence: consequence,
+                        proposals: proposals
+                    });
+                }
+                return evaluations;
+            },
+
             parseStateUpdateString(str) {
                 if (typeof str !== 'string') return null;
                 const trimmed = str.trim();
@@ -12531,6 +12676,64 @@ ${entries.map(e => `Title: ${e.title}\nContent: ${e.content}`).join('\n\n')}
 Respond with a delimited list using a pipe character '|' in this exact format:
 Exact Title | Condensed Content
 Each entry on a new line.`;
+            },
+
+            /**
+             * Builds the prompt for the GM Agent to evaluate active rules against history.
+             * @param {Array} activeRules - List of active GM rules.
+             * @returns {string} - The constructed prompt.
+             */
+            buildGMRulePrompt(activeRules) {
+                const state = StateManager.getState();
+                
+                // Get last 15 messages, keeping it concise
+                const recentHistory = (state.chat_history || [])
+                    .slice(-15)
+                    .filter(m => m && m.type === 'chat' && !m.isHidden)
+                    .map(m => {
+                        const char = (state.characters || []).find(c => c.id === m.character_id);
+                        const name = char ? char.name : (m.is_user ? 'Player' : 'Unknown');
+                        return `${name}: ${m.content}`;
+                    })
+                    .join('\n');
+
+                const rulesDescription = activeRules.map(rule => `
+Rule ID: ${rule.id}
+Rule Name: ${rule.name}
+Criteria: ${rule.criteria}
+Resolution Mode: ${rule.mode}
+Consequences: ${rule.consequence}
+Severity: ${rule.severity}
+----------------------------------------`).join('\n');
+
+                return `You are the Game Master (GM) Agent for a text-based roleplay game. Your task is to objectively evaluate the active game rules against the recent chat history and determine if any rules have been triggered or violated.
+
+Here are the active rules to evaluate:
+${rulesDescription}
+
+### Recent Chat History:
+${recentHistory}
+
+Analyze the history and evaluate each rule. You must output a valid XML block inside <evaluations> tags.
+For each rule, output an <evaluation> node containing:
+- <rule_id>: The exact Rule ID.
+- <rule_name>: The exact Rule Name.
+- <status>: "triggered" if the rule's criteria was met/violated in the recent turns, or "passed" if it was not triggered.
+- <description>: A brief, objective explanation of why the rule triggered or passed based on the chat history.
+- <consequence>: The consequences if triggered.
+- <proposals>: (Only if status is "triggered") List any state/inventory/health changes or narrative interventions.
+  Supported proposal tags inside <proposals>:
+  * <resource name="Resource Name" delta="-10" /> (For adding/subtracting from game resources/inventory)
+  * <character_stat character_name="Character Name" stat="Health" value="80" /> (For setting character stats)
+  * <relationship character_a="Char A Name" character_b="Char B" delta="-5" /> (For changing relationships)
+  * <narration>A short GM narrative message to inject into the story.</narration> (Optional narration to enforce active rules. Keep it short, atmospheric, and focus on the rule violation.)
+
+If no rules are triggered, output:
+<evaluations>
+    <!-- No rules triggered -->
+</evaluations>
+
+Output ONLY the XML block. Do not write any conversational text or markdown code block wrapper. Begin directly with <evaluations>.`;
             },
 
             /**
@@ -14466,6 +14669,8 @@ Write only the character's message.`;
                             journal: []
                         },
                         livingPersonaCounters: {}, evolved_characters: {},
+                        gm_rules: [],
+                        gm_ledger: [],
                         swarmMode: false, swarmNarrativeCapital: {}, swarmSecrets: {}, swarmLastIntents: {}
                     }
                 };
@@ -17406,32 +17611,51 @@ Write only the character's message.`;
             },
 
             /**
-             * Renders the tabs for the Knowledge Modal (Static vs Dynamic).
+             * Renders the tabs for the Knowledge Modal (Static vs Dynamic vs GM).
              */
             renderKnowledgeModalTabs() {
                 const tabName = (typeof AppController !== 'undefined' && AppController.activeKnowledgeTab) ? AppController.activeKnowledgeTab : 'static';
 
                 const staticTab = document.getElementById('knowledge-tab-static');
                 const dynamicTab = document.getElementById('knowledge-tab-dynamic');
+                const gmTab = document.getElementById('knowledge-tab-gm');
                 const staticContent = document.getElementById('knowledge-static-content');
                 const dynamicContent = document.getElementById('knowledge-dynamic-content');
+                const gmContent = document.getElementById('knowledge-gm-content');
+
+                // Helper to toggle active classes
+                const setActiveTab = (activeTabEl, activeContentEl) => {
+                    [staticTab, dynamicTab, gmTab].forEach(tab => {
+                        if (tab) {
+                            if (tab === activeTabEl) {
+                                tab.classList.add('border-indigo-500', 'text-white');
+                                tab.classList.remove('border-transparent', 'text-gray-400');
+                            } else {
+                                tab.classList.add('border-transparent', 'text-gray-400');
+                                tab.classList.remove('border-indigo-500', 'text-white');
+                            }
+                        }
+                    });
+                    [staticContent, dynamicContent, gmContent].forEach(content => {
+                        if (content) {
+                            if (content === activeContentEl) {
+                                content.classList.remove('hidden');
+                            } else {
+                                content.classList.add('hidden');
+                            }
+                        }
+                    });
+                };
 
                 if (tabName === 'static') {
-                    staticContent.classList.remove('hidden');
-                    dynamicContent.classList.add('hidden');
-                    staticTab.classList.add('border-indigo-500', 'text-white');
-                    staticTab.classList.remove('border-transparent', 'text-gray-400');
-                    dynamicTab.classList.add('border-transparent', 'text-gray-400');
-                    dynamicTab.classList.remove('border-indigo-500', 'text-white');
+                    setActiveTab(staticTab, staticContent);
                     this.renderStaticEntries();
-                } else {
-                    dynamicContent.classList.remove('hidden');
-                    staticContent.classList.add('hidden');
-                    dynamicTab.classList.add('border-indigo-500', 'text-white');
-                    dynamicTab.classList.remove('border-transparent', 'text-gray-400');
-                    staticTab.classList.add('border-transparent', 'text-gray-400');
-                    staticTab.classList.remove('border-indigo-500', 'text-white');
+                } else if (tabName === 'dynamic') {
+                    setActiveTab(dynamicTab, dynamicContent);
                     this.renderDynamicEntries();
+                } else if (tabName === 'gm') {
+                    setActiveTab(gmTab, gmContent);
+                    this.renderGMRules();
                 }
             },
 
@@ -17674,6 +17898,211 @@ Write only the character's message.`;
             </div>`.toString();
                 } else {
                     container.innerHTML = `<div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.</div>`;
+                }
+            },
+
+            /**
+             * Renders the list of GM Rules and the Ledger option.
+             */
+            renderGMRules() {
+                const state = StateManager.getState();
+                if (!state.selectedGMRuleId) {
+                    state.selectedGMRuleId = 'ledger';
+                }
+
+                const isLedgerSelected = state.selectedGMRuleId === 'ledger';
+                let listHtml = `
+                <div data-action="select-gm-rule" data-id="ledger" 
+                     class="p-3 rounded-lg cursor-pointer ${isLedgerSelected ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'} flex justify-between items-center mb-4 border border-indigo-500/30 shadow-sm">
+                    <h4 class="font-bold text-sm flex items-center gap-2">
+                        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span>GM Ledger Log</span>
+                    </h4> 
+                    <span class="text-xs px-2 py-0.5 bg-black/40 rounded-full text-amber-300 font-mono font-semibold">${(state.gm_ledger || []).length}</span>
+                </div>
+                <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2 px-1">Active Rules & Criteria</div>
+                `;
+
+                listHtml += (state.gm_rules || []).map(rule => {
+                    const isSelected = String(state.selectedGMRuleId) === String(rule.id);
+                    return DOM.html`
+                <div data-action="select-gm-rule" data-id="${rule.id}" 
+                     class="p-3 rounded-lg cursor-pointer ${isSelected ? 'bg-indigo-600' : 'hover:bg-indigo-600/50'} flex justify-between items-center mb-1">
+                    <div class="flex items-center gap-2 overflow-hidden flex-grow mr-2">
+                        <input type="checkbox" ${rule.is_active ? 'checked' : ''} 
+                               onchange="WorldController.toggleGMRule('${rule.id}', this.checked)"
+                               class="rounded border-gray-700 bg-black/30 text-indigo-600 focus:ring-indigo-500 h-4 w-4 flex-shrink-0 cursor-pointer"
+                               onclick="event.stopPropagation()">
+                        <h4 class="font-semibold text-sm truncate ${rule.is_active ? 'text-white' : 'text-gray-400 line-through'}">${rule.name}</h4> 
+                    </div>
+                    <span class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded flex-shrink-0 ${rule.is_active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}">
+                        ${rule.is_active ? 'ON' : 'OFF'}
+                    </span>
+                </div>`;
+                }).join('');
+
+                const container = document.getElementById('gm-rules-list');
+                if (container) {
+                    container.innerHTML = listHtml;
+
+                    let parent = container.parentElement;
+                    let existingBtn = parent.querySelector('.gm-add-btn-container');
+                    if (existingBtn) existingBtn.remove();
+
+                    const btnDiv = document.createElement('div');
+                    btnDiv.className = 'gm-add-btn-container flex-shrink-0 bg-black/30 rounded-b-lg p-2';
+                    btnDiv.innerHTML = `
+                    <button data-action="add-gm-rule" class="w-full py-2 bg-gray-700 hover:bg-indigo-600 text-white text-xs font-semibold rounded flex justify-center items-center gap-1 transition-colors" title="Create New GM Rule">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        <span>Add New GM Rule</span>
+                    </button>
+                    `;
+                    parent.appendChild(btnDiv);
+                }
+
+                this.renderGMRuleDetails();
+            },
+
+            /**
+             * Renders the details view for the selected GM rule or Ledger.
+             */
+            renderGMRuleDetails() {
+                const state = StateManager.getState();
+                const container = document.getElementById('gm-rule-details-content');
+                if (!container) return;
+
+                if (state.selectedGMRuleId === 'ledger') {
+                    const ledger = state.gm_ledger || [];
+                    const ledgerItemsHTML = ledger.length === 0 
+                        ? `<div class="text-gray-400 flex items-center justify-center h-full min-h-[200px]">No ledger events logged yet. Interacting in chat will trigger GM evaluations.</div>`
+                        : ledger.slice().reverse().map(item => {
+                            const badgeColor = item.status === 'triggered' || item.status === 'failed'
+                                ? 'bg-red-500/20 text-red-300 border-red-500/30' 
+                                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+                            
+                            const severityBadge = item.severity
+                                ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded border border-gray-700 bg-gray-800 text-gray-300 ml-2">${item.severity.toUpperCase()}</span>`
+                                : '';
+
+                            return DOM.html`
+                            <div class="p-3 bg-black/45 rounded-lg border border-gray-800/80 mb-2 flex flex-col gap-1.5">
+                                <div class="flex justify-between items-start gap-2">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${badgeColor}">
+                                            ${item.status.toUpperCase()}
+                                        </span>
+                                        <span class="text-xs font-semibold text-indigo-300 font-mono">Turn ${item.turn}</span>
+                                        ${severityBadge}
+                                        <span class="text-xs font-semibold text-gray-300">${item.rule_name}</span>
+                                    </div>
+                                    <span class="text-[10px] text-gray-500 font-mono">${new Date(item.timestamp).toLocaleTimeString()}</span>
+                                </div>
+                                <div class="text-sm text-gray-200">${item.description}</div>
+                                ${item.consequence ? DOM.html`<div class="text-xs text-amber-400 bg-amber-950/20 border border-amber-900/30 p-2 rounded mt-1 font-mono">Consequence: ${item.consequence}</div>` : ''}
+                            </div>
+                            `;
+                        }).join('');
+
+                    container.innerHTML = DOM.html`
+                    <div class="flex flex-col h-full">
+                        <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4 flex-shrink-0">
+                            <div>
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <span>GM Ledger & Evaluation Log</span>
+                                </h3>
+                                <p class="text-xs text-gray-400">Chronological history of rules evaluated during narrative progression.</p>
+                            </div>
+                            <button data-action="clear-gm-ledger" class="text-xs bg-red-900/50 hover:bg-red-700/80 text-red-200 font-semibold py-1.5 px-3 rounded transition-colors">
+                                Clear Ledger
+                            </button>
+                        </div>
+                        <div class="flex-grow overflow-y-auto pr-1 space-y-2">
+                            ${DOM.unsafe(ledgerItemsHTML)}
+                        </div>
+                    </div>
+                    `.toString();
+                    return;
+                }
+
+                const rule = (state.gm_rules || []).find(r => String(r.id) === String(state.selectedGMRuleId));
+                if (rule) {
+                    container.innerHTML = DOM.html`
+                    <div class="flex flex-col h-full">
+                        <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4 flex-shrink-0">
+                            <div>
+                                <h3 class="text-lg font-bold text-white">Edit GM Rule</h3>
+                                <p class="text-xs text-gray-400">Configure how the GM Agent checks and enforces this rule.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-400">Active Status</span>
+                                <input type="checkbox" ${rule.is_active ? 'checked' : ''} 
+                                       onchange="WorldController.toggleGMRule('${rule.id}', this.checked)"
+                                       class="rounded border-gray-700 bg-black/30 text-indigo-600 focus:ring-indigo-500 h-5 w-5 cursor-pointer">
+                            </div>
+                        </div>
+
+                        <div class="flex-grow overflow-y-auto pr-1 space-y-4">
+                            <div>
+                                <label class="block font-bold text-xs text-gray-400 mb-1">Rule Name</label>
+                                <input type="text" value="${rule.name}" 
+                                       oninput="WorldController.updateGMRuleField('${rule.id}', 'name', this.value)" 
+                                       onblur="UIManager.renderGMRules()"
+                                       placeholder="e.g. Encumbrance, Sleep Deprivation..." 
+                                       class="text-sm font-semibold bg-black/30 p-2.5 w-full rounded border border-gray-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white">
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block font-bold text-xs text-gray-400 mb-1">Enforcement Mode</label>
+                                    <select onchange="WorldController.updateGMRuleField('${rule.id}', 'mode', this.value)" 
+                                            class="bg-black/30 p-2.5 w-full rounded border border-gray-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm text-gray-200">
+                                        <option value="standard" ${rule.mode === 'standard' ? 'selected' : ''}>Standard (Audit & Enforce)</option>
+                                        <option value="active" ${rule.mode === 'active' ? 'selected' : ''}>Active (Inject GM Narration)</option>
+                                        <option value="passive" ${rule.mode === 'passive' ? 'selected' : ''}>Passive (Silent Log Only)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-xs text-gray-400 mb-1">Severity / Threat Level</label>
+                                    <select onchange="WorldController.updateGMRuleField('${rule.id}', 'severity', this.value)" 
+                                            class="bg-black/30 p-2.5 w-full rounded border border-gray-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm text-gray-200">
+                                        <option value="negligible" ${rule.severity === 'negligible' ? 'selected' : ''}>Negligible</option>
+                                        <option value="low" ${rule.severity === 'low' ? 'selected' : ''}>Low</option>
+                                        <option value="medium" ${rule.severity === 'medium' ? 'selected' : ''}>Medium</option>
+                                        <option value="high" ${rule.severity === 'high' ? 'selected' : ''}>High</option>
+                                        <option value="critical" ${rule.severity === 'critical' ? 'selected' : ''}>Critical</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                             <div>
+                                 <label class="block font-bold text-xs text-gray-400 mb-1">Triggers (Comma-separated keywords, logical AND/XOR, or chance)</label>
+                                 <textarea oninput="WorldController.updateGMRuleField('${rule.id}', 'triggers', this.value)" 
+                                           placeholder="e.g. 'stolen, 50%' or 'cave AND dark' or '30%'"
+                                           class="w-full h-24 bg-black/30 p-3 resize-none rounded-md border border-gray-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm text-gray-200">${rule.triggers || rule.criteria || ''}</textarea>
+                             </div>
+
+                            <div>
+                                <label class="block font-bold text-xs text-gray-400 mb-1">Consequences (What happens on trigger?)</label>
+                                <textarea oninput="WorldController.updateGMRuleField('${rule.id}', 'consequence', this.value)" 
+                                          placeholder="Describe exact impact. E.g. 'Deduct 1 torch from inventory.' or 'Inflict minor burns on the caster and set surroundings on fire.'"
+                                          class="w-full h-24 bg-black/30 p-3 resize-none rounded-md border border-gray-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm text-gray-200">${rule.consequence}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end mt-4 border-t border-gray-800 pt-3 flex-shrink-0">
+                            <button data-action="delete-gm-rule" data-id="${rule.id}" class="text-xs bg-red-900/50 hover:bg-red-700/80 text-red-200 font-semibold py-2.5 px-4 rounded transition-colors">
+                                Delete Rule
+                            </button>
+                        </div>
+                    </div>
+                    `.toString();
+                } else {
+                    container.innerHTML = `<div class="text-gray-400 flex items-center justify-center h-full">Select a GM Rule or create one to configure.</div>`;
                 }
             },
 
@@ -30087,6 +30516,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
             async generateResponseOptions() {
                 const state = ReactiveStore.state;
                 if (!state.enableResponseOptions) return;
+                if (!this._isModelConfigured(state)) return;
 
                 // Find the absolute LAST CHAT message by traversing backwards
                 let lastMsg = null;
@@ -31164,6 +31594,15 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
 
                         if (textToSpeak && textToSpeak.trim().length > 0) {
                             TTSService.speak(textToSpeak, voice);
+                        }
+                    }
+
+                    // 10. Run GM Rule Evaluation (programmatically)
+                    if (typeof WorldController !== 'undefined' && typeof WorldController.checkGMRulesProgrammatic === 'function') {
+                        try {
+                            WorldController.checkGMRulesProgrammatic();
+                        } catch (err) {
+                            console.error("GM Rule evaluation failed:", err);
                         }
                     }
                 } catch (error) {
@@ -35569,6 +36008,172 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 }
             },
 
+            /**
+             * Updates a field of a GM Rule (debounced).
+             * @param {string} id - The rule ID.
+             * @param {string} field - The field to update.
+             * @param {string} value - The new value.
+             */
+            updateGMRuleField: debounce(function (id, field, value) {
+                const state = ReactiveStore.state;
+                if (!state.gm_rules) state.gm_rules = [];
+                const rule = state.gm_rules.find(r => String(r.id) === String(id));
+                if (rule) {
+                    rule[field] = value;
+                }
+            }, 300),
+
+            /**
+             * Toggles a GM Rule active state.
+             * @param {string} id - The rule ID.
+             * @param {boolean} isActive - The active state.
+             */
+            toggleGMRule(id, isActive) {
+                const state = ReactiveStore.state;
+                if (!state.gm_rules) state.gm_rules = [];
+                const rule = state.gm_rules.find(r => String(r.id) === String(id));
+                if (rule) {
+                    rule.is_active = isActive;
+                    UIManager.renderGMRules();
+                }
+            },
+
+            /**
+             * Adds a new default GM Rule.
+             */
+            addGMRule() {
+                const state = ReactiveStore.state;
+                if (!state.gm_rules) state.gm_rules = [];
+                const newRule = {
+                    id: UTILITY.uuid(),
+                    name: "New GM Rule",
+                    triggers: "stolen, 100%",
+                    consequence: "Describe the consequences here...",
+                    mode: "standard",
+                    severity: "medium",
+                    is_active: true
+                };
+                state.gm_rules.push(newRule);
+                state.selectedGMRuleId = newRule.id;
+                UIManager.renderGMRules();
+            },
+
+            /**
+             * Deletes a GM Rule.
+             * @param {string} id - The rule ID.
+             */
+            deleteGMRule(id) {
+                const state = ReactiveStore.state;
+                if (!state.gm_rules) return;
+                if (confirm("Are you sure you want to delete this GM Rule?")) {
+                    state.gm_rules = state.gm_rules.filter(r => String(r.id) !== String(id));
+                    state.selectedGMRuleId = 'ledger';
+                    UIManager.renderGMRules();
+                }
+            },
+
+            /**
+             * Clears the GM evaluation ledger.
+             */
+            clearGMLedger() {
+                const state = ReactiveStore.state;
+                if (confirm("Are you sure you want to clear the GM Ledger log?")) {
+                    state.gm_ledger = [];
+                    UIManager.renderGMRules();
+                }
+            },
+
+            /**
+             * Parses GM Rule evaluation XML block from LLM output.
+             * @param {string} xmlText - The raw XML text from LLM.
+             * @returns {Array} - List of parsed rule evaluation objects.
+             */
+            parseGMEvaluationsXML(xmlText) {
+                return UTILITY.parseGMEvaluationsXML(xmlText);
+            },
+
+            /**
+             * Checks active GM rules programmatically using keyword and probability matching.
+             * Excludes any background LLM calls.
+             */
+            checkGMRulesProgrammatic() {
+                const state = ReactiveStore.state;
+                if (!state.gm_rules || state.gm_rules.length === 0) return;
+
+                const activeRules = state.gm_rules.filter(r => r.is_active);
+                if (activeRules.length === 0) return;
+
+                // Get the last chat message content
+                const lastMsg = state.chat_history.slice().reverse().find(m => m && m.type === 'chat' && !m.isHidden);
+                if (!lastMsg) return;
+
+                const content = lastMsg.content || '';
+                const turn = (state.chat_history || []).filter(m => m.type === 'chat' && !m.isHidden).length;
+
+                let triggeredAny = false;
+
+                activeRules.forEach(rule => {
+                    // Adapt rule triggers to match the format UTILITY.testLoreEntries expects: { triggers: String }
+                    const ruleEntry = { id: rule.id, triggers: rule.triggers || rule.criteria || '' };
+                    const triggered = UTILITY.testLoreEntries(content, [ruleEntry]);
+
+                    if (triggered) {
+                        console.log(`[GM Agent] Programmatic trigger matched for rule: ${rule.name}`);
+                        triggeredAny = true;
+
+                        // 1. Log to ledger
+                        if (!state.gm_ledger) state.gm_ledger = [];
+                        state.gm_ledger.push({
+                            id: UTILITY.uuid(),
+                            rule_id: rule.id,
+                            rule_name: rule.name,
+                            status: 'triggered',
+                            description: `Keyword trigger matched: "${ruleEntry.triggers}"`,
+                            consequence: rule.consequence,
+                            severity: rule.severity,
+                            turn: turn,
+                            timestamp: Date.now()
+                        });
+
+                        // 2. Parse state updates and narration from consequence
+                        const parseResult = UTILITY.parseAndStripStateIndicators(rule.consequence);
+                        
+                        // Apply state changes to inventory/game state
+                        if (parseResult.changes && parseResult.changes.length > 0) {
+                            if (typeof InventoryController !== 'undefined' && typeof InventoryController.processStateUpdates === 'function') {
+                                // Create a dummy message object to pass to InventoryController
+                                const dummyMsg = { content: rule.consequence };
+                                InventoryController.processStateUpdates(dummyMsg);
+                            }
+                        }
+
+                        // 3. Inject narration if mode is active and has narration text (stripped of state tags)
+                        if (rule.mode === 'active' && parseResult.cleanedText.trim()) {
+                            const narratorMsg = {
+                                id: UTILITY.uuid(),
+                                type: 'chat',
+                                character_id: 'narrator',
+                                content: `*[GM Intercession]*\n${parseResult.cleanedText.trim()}`,
+                                timestamp: Date.now(),
+                                tokens: 0,
+                                isHidden: false
+                            };
+                            state.chat_history.push(narratorMsg);
+                            UIManager.renderChat();
+                        }
+
+                        UIManager.showToast(`GM Rule Triggered: ${rule.name}`, false);
+                    }
+                });
+
+                if (triggeredAny) {
+                    // Update ledger UI if open
+                    if (document.getElementById('knowledge-modal') && document.getElementById('knowledge-modal').style.display !== 'none' && state.selectedGMRuleId === 'ledger') {
+                        UIManager.renderGMRules();
+                    }
+                }
+            },
+
         };
 
 
@@ -35953,6 +36558,14 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 ActionHandler.register('import-lorebook-file', (ds, val, e) => WorldController.importLorebook(e));
                 ActionHandler.register('export-lorebook', () => WorldController.exportLorebook());
 
+                ActionHandler.register('select-gm-rule', (ds) => {
+                    ReactiveStore.state.selectedGMRuleId = ds.id;
+                    UIManager.renderGMRules();
+                });
+                ActionHandler.register('add-gm-rule', () => WorldController.addGMRule());
+                ActionHandler.register('delete-gm-rule', (ds) => WorldController.deleteGMRule(ds.id));
+                ActionHandler.register('clear-gm-ledger', () => WorldController.clearGMLedger());
+
                 ActionHandler.register('add-local-static-entry', () => WorldController.addLocalStaticEntry());
                 ActionHandler.register('select-local-static-entry', (ds) => WorldController.selectLocalStaticEntry(ds.id));
                 ActionHandler.register('delete-local-static-entry', (ds) => WorldController.deleteLocalStaticEntry(ds.id));
@@ -36237,6 +36850,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
 
                     ReactiveStore.subscribe('selectedStaticEntryId', () => { UIManager.renderStaticEntries(); UIManager.renderStaticEntryDetails(); });
                     ReactiveStore.subscribe('selectedDynamicEntryId', () => { UIManager.renderDynamicEntries(); UIManager.renderDynamicEntryDetails(); });
+                    ReactiveStore.subscribe('selectedGMRuleId', () => { UIManager.renderGMRules(); UIManager.renderGMRuleDetails(); });
 
                     // Vision Warning Sync
                     const visionSync = () => UIManager.updateVisionWarning();
