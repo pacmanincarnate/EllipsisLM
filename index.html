@@ -8821,7 +8821,7 @@
                 }
             },
 
-            async callAI(prompt, isJson = false, signal = null) {
+            async callAI(prompt, isJson = false, signal = null, silent = false) {
                 const state = StateManager.getState();
 
                 // Resolve prompt structure
@@ -8904,7 +8904,7 @@
                         
                         const msg = `Connection failed: ${friendlyProvider} is offline or unreachable.`;
                         console.warn(`[APIService] ${msg}`, error);
-                        if (typeof UIManager !== 'undefined' && UIManager.showToast) {
+                        if (!silent && typeof UIManager !== 'undefined' && UIManager.showToast) {
                             UIManager.showToast(msg, true);
                         }
                     } else {
@@ -30571,7 +30571,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     prompt += `\n\nCRITICAL INSTRUCTION: You MUST generate these 4 options strictly from the perspective of the user's character (${userName}). The options MUST describe their direct actions or dialogue, written from their perspective. Generate options for this specific character **only**. Furthermore, each option MUST be a completely unique direction for the character to take and lead to a completely different consequence, emotion, or narrative direction.`;
 
                     // Call AI
-                    const response = await APIService.callAI(prompt);
+                    const response = await APIService.callAI(prompt, false, null, true);
                     const options = UTILITY.extractAndParseJSON(response);
 
                     if (Array.isArray(options) && options.length > 0) {
@@ -30585,7 +30585,12 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         this.updateChatInputShrinkState();
                     }
                 } catch (e) {
-                    console.error("Response Options Generation Failed:", e);
+                    const isNetworkError = e instanceof TypeError || (e.message && e.message.toLowerCase().includes('failed to fetch'));
+                    if (isNetworkError) {
+                        console.warn("[Response Options] Generation skipped: AI provider is offline/unreachable.");
+                    } else {
+                        console.error("Response Options Generation Failed:", e);
+                    }
                     container.classList.add('hidden');
                     this.updateChatInputShrinkState();
                 }
@@ -32097,7 +32102,7 @@ ${formatRequirements.join('\n\n')}
                     let promptTemplate = state.prompt_stats_init || UTILITY.getDefaultSystemPrompts().prompt_stats_init;
                     let prompt = promptTemplate.replace('{context}', context).replace('{characters}', charDescriptions);
 
-                    const response = await APIService.callAI(prompt, true);
+                    const response = await APIService.callAI(prompt, true, null, true);
                     const data = UTILITY.extractAndParseJSON(response);
 
                     // Support both new format (stats: [{name, description}]) and legacy (stat_names: [])
@@ -32137,7 +32142,12 @@ ${formatRequirements.join('\n\n')}
                     this.renderStatsPanel();
                     console.log('[Stats] Initialized successfully:', characterStats);
                 } catch (e) {
-                    console.error('[Stats] Initialization failed:', e);
+                    const isNetworkError = e instanceof TypeError || (e.message && e.message.toLowerCase().includes('failed to fetch'));
+                    if (isNetworkError) {
+                        console.warn('[Stats] Initialization skipped: AI provider is offline/unreachable.');
+                    } else {
+                        console.error('[Stats] Initialization failed:', e);
+                    }
                 }
             },
 
