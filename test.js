@@ -933,6 +933,22 @@ test('parseGMEvaluationsXML: returns empty array for null/empty/invalid input', 
     deepEq(UTILITY.parseGMEvaluationsXML('not xml at all'), []);
 });
 
+test('index.html lookbehind assertions check: ensures no (?<= or (?<! exist in index.html', () => {
+    const htmlText = fs.readFileSync(HTML_PATH, 'utf8');
+    const lookbehindRegex = /\(\?<=|\(\?<!/g;
+    const matches = [];
+    let match;
+    while ((match = lookbehindRegex.exec(htmlText)) !== null) {
+        const charIndex = match.index;
+        const linesBefore = htmlText.substring(0, charIndex).split('\n');
+        const lineNum = linesBefore.length;
+        const lineContent = htmlText.split('\n')[lineNum - 1].trim();
+        matches.push(`Line ${lineNum}: ${lineContent}`);
+    }
+    assert.deepEqual(matches, [], `Found lookbehind assertions in index.html:\n${matches.join('\n')}`);
+});
+
+
 
 
 

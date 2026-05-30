@@ -7411,7 +7411,7 @@
                     // Apply Smart Quotes
                     const smartContent = (msg.content || '')
                         .replace(/(["“][^"”]*["”])/g, '<span class="dialogue-quote">$1</span>')
-                        .replace(/(^|(?<=\s))'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, '$1<span class="dialogue-quote">\'$2\'</span>');
+                        .replace(/(^|\s)'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, '$1<span class="dialogue-quote">\'$2\'</span>');
 
                     chatHTML += `
             <div class="message ${isUser ? 'user-message' : 'ai-message'}" style="background-color: ${bubbleBg};">
@@ -13793,7 +13793,7 @@ Write only the character's message.`;
                     // Smart Quotes
                     const smartContent = (msg.content || '')
                         .replace(/(["“][^"”]*["”])/g, '<span class="dialogue-quote">$1</span>')
-                        .replace(/(^|(?<=\s))'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, '$1<span class="dialogue-quote">\'$2\'</span>');
+                        .replace(/(^|\s)'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, '$1<span class="dialogue-quote">\'$2\'</span>');
 
                     chatHTML += `
                     <div class="message ${isUser ? 'user-message' : 'ai-message'}" style="background-color: ${bubbleBg}; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; overflow: hidden; color: var(--chat-text-color);">
@@ -15828,7 +15828,7 @@ Write only the character's message.`;
 
                 const styledContent = processedContent
                     .replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`)
-                    .replace(/(^|(?<=\s))'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, `$1<span class="dialogue-quote">'$2'</span>`);
+                    .replace(/(^|\s)'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, `$1<span class="dialogue-quote">'$2'</span>`);
 
                 // 3. Trim output HTML to remove the trailing newline that 'marked' adds
                 let contentHTML = DOM.unsafe(marked.parse(styledContent || '').trim());
@@ -18843,7 +18843,7 @@ Write only the character's message.`;
                 // Apply standard smart quote formatting (uses dialogue-quote style)
                 const styledContent = processedContent
                     .replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`)
-                    .replace(/(^|(?<=\s))'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, `$1<span class="dialogue-quote">'$2'</span>`);
+                    .replace(/(^|\s)'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, `$1<span class="dialogue-quote">'$2'</span>`);
 
                 // Parse content to HTML via marked, then trim it
                 const html = (typeof marked !== 'undefined')
@@ -30817,7 +30817,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         // Basic Markdown + Quote Styling
                         const styledContent = rawContent
                             .replace(/(["“][^"”]*["”])/g, `<span class="dialogue-quote">$1</span>`)
-                            .replace(/(^|(?<=\s))'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, `$1<span class="dialogue-quote">'$2'</span>`);
+                            .replace(/(^|\s)'((?:[^']|'(?=\w)){2,})'(?=\s|[.,!?;:]|$)/gm, `$1<span class="dialogue-quote">'$2'</span>`);
                         let finalHTML = DOM.unsafe(marked.parse(styledContent || ''));
 
                         // Re-apply character image if in bubble mode
@@ -37307,9 +37307,14 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
              */
             updateLayout() {
                 const isVertical = window.innerHeight > window.innerWidth;
-                if (isVertical && ReactiveStore.state.characterImageMode === 'visual_novel') {
+                const activeState = (typeof ReactiveStore !== 'undefined' && ReactiveStore.state) || StateManager.getState();
+                if (isVertical && activeState && activeState.characterImageMode === 'visual_novel') {
                     UIManager.showNotification('Visual Novel mode is designed for landscape layouts. Falling back to Cinematic.', 'warning');
-                    ReactiveStore.state.characterImageMode = 'cinematic_overlay';
+                    if (typeof ReactiveStore !== 'undefined' && ReactiveStore.state) {
+                        ReactiveStore.state.characterImageMode = 'cinematic_overlay';
+                    } else if (activeState) {
+                        activeState.characterImageMode = 'cinematic_overlay';
+                    }
                 }
                 const wasVertical = document.body.classList.contains('layout-vertical');
                 const layoutChanged = isVertical !== wasVertical;
