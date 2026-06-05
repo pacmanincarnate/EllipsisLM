@@ -2917,7 +2917,7 @@
             <div id="response-options-container" class="relative z-20 hidden"></div>
             <!-- Chat Input & Controls -->
             <div id="chat-input-container"
-                class="glass-panel flex items-end gap-2 p-2 rounded-2xl focus-within:bg-white/[0.05] transition-all relative z-30 flex-shrink-0"
+                class="glass-panel flex items-stretch gap-2 p-2 rounded-2xl focus-within:bg-white/[0.05] transition-all relative z-30 flex-shrink-0"
                 style="border-top: 1px solid; border-top-color: color-mix(in srgb, var(--chat-text-color) 20%, transparent); padding: 0.5rem;">
 
                 <!-- Resizer Handle -->
@@ -2926,7 +2926,7 @@
                     title="Drag to resize / Double-click to reset"></div>
 
                 <!-- The "Unboxed" Input Area -->
-                <div class="flex-1 relative">
+                <div class="flex-1 relative flex flex-col">
                     <!-- Image Preview Container -->
                     <div id="image-preview-container">
                         <div class="flex items-start gap-3">
@@ -2960,10 +2960,10 @@
                     </div>
 
                     <textarea id="chat-input"
-                        class="w-full bg-transparent outline-none resize-none p-3 focus:ring-0 border-0"
+                        class="w-full bg-transparent outline-none resize-none p-3 focus:ring-0 border-0 grow"
                         placeholder="Message..." rows="4"
                         enterkeyhint="enter"
-                        style="color: var(--chat-text-color); font-family: var(--chat-font-family);"></textarea>
+                        style="color: var(--chat-text-color); font-family: var(--chat-font-family); flex-grow: 1;"></textarea>
 
                     <!-- Bolt "Continue" Button -->
                     <button id="bolt-btn" onclick="NarrativeController.handleBoltAction()"
@@ -16467,7 +16467,7 @@ Write only the character's message.`;
                 const value = Math.max(0, Math.min(100, parseInt(valStr) || 50));
                 
                 // Try to find matching character ID in roster
-                const characters = StateManager.getStoryCharacters();
+                const characters = (ReactiveStore.state.characters || []);
                 const character = characters.find(c => c.name.toLowerCase().includes(charName.toLowerCase()));
                 const charId = character ? character.id : null;
                 const actualName = character ? character.name : charName;
@@ -30427,6 +30427,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                                     this.updateMessagePortrait(lastIndex, lastCharId, aiAnalysis.emotion);
                                 }
                             }
+                            this.applyAnalysisResults(lastCharId, aiAnalysis);
                         }).catch(err => console.warn('[Swarm] Post-turn analysis failed:', err));
                     }
 
@@ -31666,15 +31667,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     if (userMessage) {
                         const userChar = state.characters.find(c => c.is_user);
                         this.analyzeTurn(userMessage, userChar ? userChar.id : null).then(analysis => {
-                            if (analysis.locationName && typeof WorldController !== 'undefined') {
-                                const grid = state.worldMap.grid;
-                                const target = grid.find(l => l.name.toLowerCase() === analysis.locationName.toLowerCase());
-                                const current = grid.find(l => l.coords.x === state.worldMap.currentLocation.x && l.coords.y === state.worldMap.currentLocation.y);
-
-                                if (target && target.name !== current?.name) {
-                                    setTimeout(() => WorldController.moveToLocation(target.coords.x, target.coords.y), 1500);
-                                }
-                            }
+                            this.applyAnalysisResults(userChar ? userChar.id : null, analysis);
                         });
                     }
 
@@ -31716,10 +31709,8 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                                 this.updateMessagePortrait(targetIndex, targetId, aiAnalysis.emotion);
                             }
                         }
-                        // Apply stat changes from analysis
-                        if (aiAnalysis.stat_changes && aiAnalysis.stat_changes.length > 0) {
-                            this.applyStatChanges(targetId, aiAnalysis.stat_changes);
-                        }
+                        // Apply all analysis results (stats, location, journal updates)
+                        this.applyAnalysisResults(targetId, aiAnalysis);
                     }).catch(err => console.warn("Background sentiment analysis failed:", err));
 
                     // 8. Visual Master Synchronization (Non-blocking)
@@ -32125,13 +32116,22 @@ Rules:
              * entirely when the world map has no named locations, preventing noise.
              * @param {string} text - The text to analyze.
              * @param {string} [charId] - Optional character ID to constrain emotions.
-             * @returns {Promise<Object>} - { emotion, locationName, stat_changes }
+             * @returns {Promise<Object>} - { emotion, locationName, stat_changes, inventory_changes, quest_changes, relationship_changes }
              */
             async analyzeTurn(text, charId = null) {
                 const state = ReactiveStore.state;
 
                 // 1. Check Toggle
-                if (state.enableAnalysis === false) return { emotion: 'neutral', locationName: null, stat_changes: [] };
+                if (state.enableAnalysis === false) {
+                    return {
+                        emotion: 'neutral',
+                        locationName: null,
+                        stat_changes: [],
+                        inventory_changes: [],
+                        quest_changes: [],
+                        relationship_changes: []
+                    };
+                }
 
                 // 2. Context-Aware Location List (Current cell + adjacent cells)
                 const grid = state.worldMap?.grid || [];
@@ -32183,6 +32183,9 @@ Rules:
                     }
                 }
 
+                // Build character names context for relationships
+                const validCharNames = state.characters ? state.characters.map(c => c.name).join(', ') : '';
+
                 try {
                     let taskNum = 1;
                     const formatRequirements = [
@@ -32200,6 +32203,18 @@ Rules:
                         taskLines.push(`${taskNum++}. Output any stats that changed due to the speaker's actions (e.g. Health|-5). Stat context: ${statsContext}. If none changed, leave it blank.`);
                     }
 
+                    // Inventory Task
+                    formatRequirements.push(`### Inventory\n<item_name>|<delta>\n<item_name>|<delta>`);
+                    taskLines.push(`${taskNum++}. Identify any items obtained or lost in the TEXT. Format as item name and integer change (e.g., Gold|10 or Key|-1). Leave blank if no inventory changes.`);
+
+                    // Quests Task
+                    formatRequirements.push(`### Quests\n<action>|<quest_title>|<objective>\n<action>|<quest_title>|<objective>`);
+                    taskLines.push(`${taskNum++}. Identify any quest events. Action must be 'start', 'update', 'complete', or 'fail'. If starting or updating, specify the objective. If completing or failing, objective is optional. Format as action|title|objective. Leave blank if no quest changes.`);
+
+                    // Relationships Task
+                    formatRequirements.push(`### Relationships\n<character_name>|<track>|<change_value>\n<character_name>|<track>|<change_value>`);
+                    taskLines.push(`${taskNum++}. Identify any changes in character relationships (feelings, trust, affection, etc.). Track defaults to 'Affection' if unspecified. Change value should be a signed integer (e.g. +5 or -10). Story characters: ${validCharNames}. Format as character_name|track|change_value. Leave blank if no relationship changes.`);
+
                     const prompt = `You are an analysis engine. Analyze the TEXT.
 
 ### Tasks
@@ -32216,7 +32231,7 @@ ${formatRequirements.join('\n\n')}
                     const res = await APIService.callAI(prompt, false);
                     console.log('[AnalyzeTurn Response]:', res);
 
-                    const data = UTILITY.extractStructuredHeadings(res, ['Emotion', 'Location', 'Stats']);
+                    const data = UTILITY.extractStructuredHeadings(res, ['Emotion', 'Location', 'Stats', 'Inventory', 'Quests', 'Relationships']);
                     let emotionRaw = typeof data['Emotion'] === 'string' ? data['Emotion'].toLowerCase().trim() : 'neutral';
                     const emotion = validEmotions.includes(emotionRaw) ? emotionRaw : 'neutral';
 
@@ -32228,17 +32243,96 @@ ${formatRequirements.join('\n\n')}
                         })).filter(s => s.name && s.delta !== 0);
                     }
 
+                    let inventoryChanges = [];
+                    if (data['Inventory'] && typeof data['Inventory'] === 'string') {
+                        inventoryChanges = UTILITY.extractDelimitedList(data['Inventory'], '|', ['name', 'delta']).map(i => ({
+                            name: i.name.trim(),
+                            delta: parseInt(i.delta, 10) || 0
+                        })).filter(i => i.name && i.delta !== 0);
+                    }
+
+                    let questChanges = [];
+                    if (data['Quests'] && typeof data['Quests'] === 'string') {
+                        questChanges = UTILITY.extractDelimitedList(data['Quests'], '|', ['action', 'title', 'objective']).map(q => {
+                            const rawAction = q.action.trim().toLowerCase();
+                            let action = 'update';
+                            if (rawAction.includes('start') || rawAction.includes('active')) action = 'start';
+                            else if (rawAction.includes('complete')) action = 'complete';
+                            else if (rawAction.includes('fail')) action = 'fail';
+
+                            return {
+                                action,
+                                title: q.title.trim(),
+                                objective: q.objective ? q.objective.trim() : ''
+                            };
+                        }).filter(q => q.title);
+                    }
+
+                    let relationshipChanges = [];
+                    if (data['Relationships'] && typeof data['Relationships'] === 'string') {
+                        relationshipChanges = UTILITY.extractDelimitedList(data['Relationships'], '|', ['charName', 'track', 'changeVal']).map(r => ({
+                            charName: r.charName.trim(),
+                            track: r.track ? r.track.trim() : 'Affection',
+                            changeVal: parseInt(r.changeVal, 10) || 0
+                        })).filter(r => r.charName && r.changeVal !== 0);
+                    }
+
                     let locationNameRaw = typeof data['Location'] === 'string' ? data['Location'].trim() : null;
                     if (locationNameRaw && locationNameRaw.toLowerCase() === 'null') locationNameRaw = null;
 
                     return {
                         emotion,
                         locationName: hasLocations ? locationNameRaw : null,
-                        stat_changes: statChanges
+                        stat_changes: statChanges,
+                        inventory_changes: inventoryChanges,
+                        quest_changes: questChanges,
+                        relationship_changes: relationshipChanges
                     };
                 } catch (e) {
                     console.warn('[AnalyzeTurn] Failed:', e);
-                    return { emotion: 'neutral', locationName: null, stat_changes: [] };
+                    return {
+                        emotion: 'neutral',
+                        locationName: null,
+                        stat_changes: [],
+                        inventory_changes: [],
+                        quest_changes: [],
+                        relationship_changes: []
+                    };
+                }
+            },
+
+            /**
+             * Applies all results from a turn analysis (location changes, stat changes, and journal updates).
+             * @param {string|null} charId - The character ID associated with the turn.
+             * @param {Object} analysis - The parsed analysis object.
+             */
+            applyAnalysisResults(charId, analysis) {
+                if (!analysis) return;
+                const state = ReactiveStore.state;
+
+                // 1. Apply location changes
+                if (analysis.locationName && typeof WorldController !== 'undefined') {
+                    const grid = state.worldMap?.grid || [];
+                    const target = grid.find(l => l.name.toLowerCase() === analysis.locationName.toLowerCase());
+                    const current = grid.find(l => l.coords.x === state.worldMap.currentLocation.x && l.coords.y === state.worldMap.currentLocation.y);
+
+                    if (target && target.name !== current?.name) {
+                        setTimeout(() => WorldController.moveToLocation(target.coords.x, target.coords.y), 1500);
+                    }
+                }
+
+                // 2. Apply stat changes
+                if (charId && analysis.stat_changes && analysis.stat_changes.length > 0) {
+                    this.applyStatChanges(charId, analysis.stat_changes);
+                }
+
+                // 3. Apply journal changes (inventory, quests, relationships) via InventoryController
+                if (typeof InventoryController !== 'undefined' && typeof InventoryController.applyJournalChanges === 'function') {
+                    InventoryController.applyJournalChanges(
+                        analysis.inventory_changes,
+                        analysis.quest_changes,
+                        analysis.relationship_changes
+                    );
                 }
             },
 
@@ -36439,7 +36533,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         }
                     } else if (change.type === 'relationship') {
                         // Try to find character ID by matching name
-                        const characters = StateManager.getStoryCharacters();
+                        const characters = (ReactiveStore.state.characters || []);
                         const character = characters.find(c => c.name.toLowerCase().includes(change.charName.toLowerCase()));
                         const charId = character ? character.id : null;
                         const actualName = character ? character.name : change.charName;
@@ -36564,6 +36658,147 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 const state = ReactiveStore.state;
                 if (!state.gameState) return;
                 state.gameState.relationships = state.gameState.relationships.filter(r => r.id !== id);
+            },
+
+            /**
+             * Processes lists of journal updates (inventory, quests, relationships) parsed from analysis,
+             * modifies narrative state, and triggers toast notifications.
+             * @param {Array} inventoryChanges - [{name, delta}]
+             * @param {Array} questChanges - [{action, title, objective}]
+             * @param {Array} relationshipChanges - [{charName, track, changeVal}]
+             */
+            applyJournalChanges(inventoryChanges, questChanges, relationshipChanges) {
+                const state = StateManager.getState();
+                if (!state) return;
+
+                if (!state.gameState) {
+                    state.gameState = { resources: [], relationships: [], journal: [] };
+                }
+
+                const notifications = [];
+
+                // 1. Inventory changes
+                if (Array.isArray(inventoryChanges)) {
+                    inventoryChanges.forEach(change => {
+                        const name = change.name;
+                        const delta = change.delta;
+                        if (!name || delta === 0) return;
+
+                        let res = state.resources ? state.resources.find(r => r.name.toLowerCase() === name.toLowerCase()) : null;
+                        if (!res) {
+                            res = state.gameState.resources.find(r => r.name.toLowerCase() === name.toLowerCase());
+                        }
+
+                        if (res) {
+                            res.value = Math.max(0, res.value + delta);
+                            if (res.value === 0) {
+                                state.gameState.resources = state.gameState.resources.filter(r => r !== res);
+                                if (state.resources) {
+                                    state.resources = state.resources.filter(r => r !== res);
+                                }
+                                notifications.push(`Lost item: ${res.name}`);
+                            } else {
+                                notifications.push(`Item updated: ${res.name} (Qty: ${res.value})`);
+                            }
+                        } else if (delta > 0) {
+                            const newRes = { id: UTILITY.uuid(), name: name, value: delta };
+                            state.gameState.resources.push(newRes);
+                            notifications.push(`Acquired item: ${name} (Qty: ${delta})`);
+                        }
+                    });
+                }
+
+                // 2. Quest changes
+                if (Array.isArray(questChanges)) {
+                    questChanges.forEach(change => {
+                        const title = change.title;
+                        const action = change.action;
+                        const objective = change.objective;
+                        if (!title) return;
+
+                        let quest = state.gameState.journal.find(q => q.title.toLowerCase() === title.toLowerCase());
+                        if (quest) {
+                            if (action === 'update') {
+                                quest.objective = objective;
+                                if (!quest.log) quest.log = [];
+                                quest.log.push(objective);
+                                notifications.push(`Quest updated: ${quest.title} - ${objective}`);
+                            } else {
+                                let status = 'active';
+                                if (action === 'complete') status = 'completed';
+                                else if (action === 'fail') status = 'failed';
+
+                                quest.status = status;
+                                notifications.push(`Quest ${status}: ${quest.title}`);
+                            }
+                        } else {
+                            let status = 'active';
+                            if (action === 'complete') status = 'completed';
+                            else if (action === 'fail') status = 'failed';
+
+                            const newQuest = {
+                                id: UTILITY.uuid(),
+                                title: title,
+                                status: status,
+                                objective: objective,
+                                log: objective ? [objective] : []
+                            };
+                            state.gameState.journal.push(newQuest);
+                            notifications.push(`New Quest active: ${title}`);
+                        }
+                    });
+                }
+
+                // 3. Relationship changes
+                if (Array.isArray(relationshipChanges)) {
+                    relationshipChanges.forEach(change => {
+                        const charName = change.charName;
+                        const track = change.track || 'Affection';
+                        const changeVal = change.changeVal;
+                        if (!charName || changeVal === 0) return;
+
+                        const characters = (ReactiveStore.state.characters || []);
+                        const character = characters.find(c => c.name.toLowerCase().includes(charName.toLowerCase()));
+                        const charId = character ? character.id : null;
+                        const actualName = character ? character.name : charName;
+
+                        let rel = state.gameState.relationships.find(r => r.characterId === charId || r.characterName.toLowerCase() === charName.toLowerCase());
+                        if (!rel) {
+                            rel = {
+                                id: UTILITY.uuid(),
+                                characterId: charId,
+                                characterName: actualName,
+                                track: track,
+                                value: 50
+                            };
+                            state.gameState.relationships.push(rel);
+                        }
+
+                        const oldValue = rel.value;
+                        rel.value = Math.max(0, Math.min(100, rel.value + changeVal));
+
+                        const diff = rel.value - oldValue;
+                        if (diff !== 0) {
+                            const sign = diff > 0 ? '+' : '';
+                            notifications.push(`${actualName} ${rel.track}: ${rel.value}% (${sign}${diff}%)`);
+                        }
+                    });
+                }
+
+                if (notifications.length > 0) {
+                    notifications.forEach((note, index) => {
+                        setTimeout(() => {
+                            if (typeof UIManager !== 'undefined' && UIManager.showToast) {
+                                UIManager.showToast(note, false);
+                            } else {
+                                console.log("[STATE UPDATE]:", note);
+                            }
+                        }, index * 800);
+                    });
+
+                    ReactiveStore.forceSave();
+                    UIManager.renderInventoryPanel();
+                }
             }
         };
 
@@ -37296,7 +37531,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         }
 
                         // On desktop, Enter sends without Shift. On mobile, Enter adds a newline.
-                        const isMobile = document.body.classList.contains('layout-vertical');
+                        const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
                         if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
                             // Prevent the default new line insertion
                             e.preventDefault();
