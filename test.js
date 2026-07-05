@@ -933,6 +933,53 @@ test('parseGMEvaluationsXML: returns empty array for null/empty/invalid input', 
     deepEq(UTILITY.parseGMEvaluationsXML('not xml at all'), []);
 });
 
+test('parseInventoryLine: parses various formats', () => {
+    deepEq(UTILITY.parseInventoryLine('Gold|10'), { name: 'Gold', delta: 10 });
+    deepEq(UTILITY.parseInventoryLine('-1 Key'), { name: 'Key', delta: -1 });
+    deepEq(UTILITY.parseInventoryLine('+Potion of Healing'), { name: 'Potion of Healing', delta: 1 });
+    deepEq(UTILITY.parseInventoryLine('Iron Sword -1'), { name: 'Iron Sword', delta: -1 });
+    assert.equal(UTILITY.parseInventoryLine('none'), null);
+});
+
+test('parseQuestLine: parses various formats', () => {
+    deepEq(UTILITY.parseQuestLine('start|Find Thorne|Go to the inn'), { action: 'start', title: 'Find Thorne', objective: 'Go to the inn' });
+    deepEq(UTILITY.parseQuestLine('complete|Find Thorne'), { action: 'complete', title: 'Find Thorne', objective: '' });
+    deepEq(UTILITY.parseQuestLine('update: Escape the Dungeon (Objective: Find the cell key)'), { action: 'update', title: 'Escape the Dungeon', objective: 'Find the cell key' });
+    deepEq(UTILITY.parseQuestLine('complete: Escape the Dungeon'), { action: 'complete', title: 'Escape the Dungeon', objective: '' });
+});
+
+test('parseRelationshipLine: parses various formats', () => {
+    deepEq(UTILITY.parseRelationshipLine('Thorne|Affection|+5'), { charName: 'Thorne', track: 'Affection', changeVal: 5 });
+    deepEq(UTILITY.parseRelationshipLine('Thorne standing +10%'), { charName: 'Thorne', track: 'standing', changeVal: 10 });
+    deepEq(UTILITY.parseRelationshipLine('Thorne: +5'), { charName: 'Thorne', track: 'Affection', changeVal: 5 });
+});
+
+test('parseStatLine: parses various formats', () => {
+    deepEq(UTILITY.parseStatLine('Thorne|Health|-5'), { charName: 'Thorne', name: 'Health', delta: -5 });
+    deepEq(UTILITY.parseStatLine('Thorne: Health -5'), { charName: 'Thorne', name: 'Health', delta: -5 });
+    deepEq(UTILITY.parseStatLine('Health -5'), { charName: '', name: 'Health', delta: -5 });
+});
+
+// ─── getEntryCategory & cleanFactContent ─────────────────────────────────────
+
+test('getEntryCategory: classifies titles correctly', () => {
+    assert.equal(UTILITY.getEntryCategory('[Event] Arrival in Town'), 'event');
+    assert.equal(UTILITY.getEntryCategory('Character: Alistair'), 'character');
+    assert.equal(UTILITY.getEntryCategory('Item: Healing Potion'), 'item');
+    assert.equal(UTILITY.getEntryCategory('World: Whispering Woods'), 'world');
+    assert.equal(UTILITY.getEntryCategory('Relationship: Alistair & Elara'), 'relationship');
+    assert.equal(UTILITY.getEntryCategory('The Whispering Woods (World)'), 'world');
+    assert.equal(UTILITY.getEntryCategory('Alistair\'s Sword'), 'other');
+});
+
+test('cleanFactContent: strips category prefixes and trailing annotations', () => {
+    assert.equal(UTILITY.cleanFactContent('Character: Pac is a wizard.'), 'Pac is a wizard.');
+    assert.equal(UTILITY.cleanFactContent('Event details: Arrival in town.'), 'Arrival in town.');
+    assert.equal(UTILITY.cleanFactContent('He is nice. (Character Details)'), 'He is nice.');
+    assert.equal(UTILITY.cleanFactContent('She is happy (Relationship Update)'), 'She is happy');
+    assert.equal(UTILITY.cleanFactContent('- Pac is a wizard. -'), 'Pac is a wizard.');
+});
+
 test('index.html lookbehind assertions check: ensures no (?<= or (?<! exist in index.html', () => {
     const htmlText = fs.readFileSync(HTML_PATH, 'utf8');
     const lookbehindRegex = /\(\?<=|\(\?<!/g;
