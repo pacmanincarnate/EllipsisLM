@@ -1,0 +1,17 @@
+{
+  "name": "EllipsisLM",
+  "short_name": "Ellipsis",
+  "description": "Private AI roleplay engine",
+  "id": "/EllipsisLM/",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "categories": ["entertainment", "games"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
