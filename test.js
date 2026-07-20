@@ -980,6 +980,68 @@ test('cleanFactContent: strips category prefixes and trailing annotations', () =
     assert.equal(UTILITY.cleanFactContent('- Pac is a wizard. -'), 'Pac is a wizard.');
 });
 
+// ─── migrateGameState ────────────────────────────────────────────────────────
+test('migrateGameState: handles nullish/empty/invalid input gracefully', () => {
+    const emptyGs = UTILITY.migrateGameState(null);
+    deepEq(emptyGs.resources, []);
+    deepEq(emptyGs.relationships, []);
+    deepEq(emptyGs.journal, []);
+
+    const emptyObj = UTILITY.migrateGameState({});
+    deepEq(emptyObj.resources, []);
+    deepEq(emptyObj.relationships, []);
+    deepEq(emptyObj.journal, []);
+});
+
+test('migrateGameState: migrates legacy simple string resources and journal entries', () => {
+    const legacyGs = {
+        resources: ['Rusted Key', 'Gold Coin'],
+        journal: ['Escape the dungeon', 'Find Thorne'],
+        relationships: []
+    };
+    const migrated = UTILITY.migrateGameState(legacyGs);
+    assert.equal(migrated.resources.length, 2);
+    assert.equal(migrated.resources[0].name, 'Rusted Key');
+    assert.equal(migrated.resources[0].value, 1);
+    assert.equal(migrated.resources[0].type, 'Misc');
+    assert.equal(migrated.resources[0].rarity, 'Common');
+
+    assert.equal(migrated.journal.length, 2);
+    assert.equal(migrated.journal[0].title, 'Escape the dungeon');
+    assert.equal(migrated.journal[0].objective, 'Escape the dungeon');
+    assert.equal(migrated.journal[0].status, 'active');
+});
+
+test('migrateGameState: migrates/retains existing rich fields, setting default values', () => {
+    const rawGs = {
+        resources: [
+            { name: 'Excalibur', value: 1, description: 'Legendary sword', type: 'Weapon', rarity: 'Legendary' }
+        ],
+        journal: [
+            { title: 'Slay the Dragon', status: 'completed', objective: 'Strike down the beast', objectives: [{ text: 'Locate lair', status: 'completed' }] }
+        ],
+        relationships: [
+            { characterName: 'Gimli', value: 75, track: 'Trust', stance: 'Loyal companion' }
+        ]
+    };
+    const migrated = UTILITY.migrateGameState(rawGs);
+    
+    // Check Excalibur
+    assert.equal(migrated.resources[0].name, 'Excalibur');
+    assert.equal(migrated.resources[0].rarity, 'Legendary');
+    assert.ok(migrated.resources[0].id);
+
+    // Check Slay the Dragon
+    assert.equal(migrated.journal[0].status, 'completed');
+    assert.equal(migrated.journal[0].objectives[0].text, 'Locate lair');
+
+    // Check Gimli
+    assert.equal(migrated.relationships[0].characterName, 'Gimli');
+    assert.equal(migrated.relationships[0].track, 'Trust');
+    assert.equal(migrated.relationships[0].stance, 'Loyal companion');
+    deepEq(migrated.relationships[0].history, []);
+});
+
 test('index.html lookbehind assertions check: ensures no (?<= or (?<! exist in index.html', () => {
     const htmlText = fs.readFileSync(HTML_PATH, 'utf8');
     const lookbehindRegex = /\(\?<=|\(\?<!/g;
