@@ -64,8 +64,15 @@
     <meta name="theme-color" content="#111827">
 
     <title>EllipsisLM</title>
+    <!-- Installable Web App: manifest + service worker (enables Add to Home Screen on Android/iOS) -->
+    <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="https://github.com/pacmanincarnate/EllipsisLM/blob/main/logo.jpg?raw=true">
     <link rel="icon" type="image/png" href="https://github.com/pacmanincarnate/EllipsisLM/blob/main/logo.jpg?raw=true">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+      }
+    </script>
 
     <!-- External Libraries -->
     <link rel="stylesheet" href="electron/tailwind.css"
