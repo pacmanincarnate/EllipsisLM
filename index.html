@@ -69,7 +69,7 @@
     <link rel="apple-touch-icon" href="https://github.com/pacmanincarnate/EllipsisLM/blob/main/logo.jpg?raw=true">
     <link rel="icon" type="image/png" href="https://github.com/pacmanincarnate/EllipsisLM/blob/main/logo.jpg?raw=true">
     <script>
-      if ('serviceWorker' in navigator) {
+      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
         window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
       }
     </script>
@@ -3925,7 +3925,7 @@
     <div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center hidden p-4">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="settings-modal"></div>
         <div
-            class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-full max-w-4xl max-h-[85vh] relative flex flex-col md:flex-row overflow-hidden border border-white/5">
+            class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-full max-w-4xl h-[85vh] max-h-[85vh] relative flex flex-col md:flex-row overflow-hidden border border-white/5">
             
             <!-- Left Sidebar Navigation (Only visible in horizontal layout) -->
             <aside id="settings-sidebar-nav" class="flex-shrink-0">
@@ -3950,7 +3950,7 @@
             </aside>
 
             <!-- Main Content Container (Contains Header for Mobile, Close Button, and Settings View) -->
-            <div class="flex-grow flex flex-col overflow-hidden h-full">
+            <div class="flex-grow flex flex-col overflow-hidden h-full min-h-0">
                 <!-- Mobile Header Tabs (Only visible in vertical layout) -->
                 <div id="settings-modal-header-tabs" class="p-6 flex-shrink-0 border-b border-gray-700 flex justify-between items-start"
                     style="padding-bottom: .1rem;">
@@ -4250,6 +4250,36 @@
                     placeholder="Search models by name or provider...">
             </div>
             <div id="openrouter-model-list" class="flex-1 overflow-y-auto p-2 min-h-[300px]">
+                <div class="flex items-center justify-center h-full text-gray-400">
+                    <span>Loading models...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Backend Browser: Search and select models from NanoGPT -->
+    <div id="nanogpt-model-modal" class="fixed inset-0 z-[100] items-center justify-center hidden">
+        <div class="modal-overlay absolute inset-0 bg-black/60" data-action="close-modal"
+            data-id="nanogpt-model-modal"></div>
+        <div
+            class="bg-gray-800/95 backdrop-blur-md rounded-lg shadow-xl w-11/12 max-w-2xl relative flex flex-col max-h-[85vh]">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-bold">Browse NanoGPT Models</h3>
+                <button data-action="close-modal" data-id="nanogpt-model-modal"
+                    class="bg-black/40 hover:bg-gray-700 text-gray-300 hover:text-white p-2 rounded-full backdrop-blur-sm transition-colors shadow-lg"
+                    title="Close">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-4 border-b border-gray-700">
+                <input type="text" id="nanogpt-model-search"
+                    class="w-full rounded-lg p-3 bg-gray-900/50 border border-gray-600 focus:border-violet-500 focus:outline-none"
+                    placeholder="Search models by name or provider...">
+            </div>
+            <div id="nanogpt-model-list" class="flex-1 overflow-y-auto p-2 min-h-[300px]">
                 <div class="flex items-center justify-center h-full text-gray-400">
                     <span>Loading models...</span>
                 </div>
@@ -4990,6 +5020,21 @@
                         </label>
                     </div>
 
+                    <!-- Journal & Inventory Toggle -->
+                    <div
+                        class="flex items-center justify-between bg-gray-900/30 p-4 rounded-lg border border-gray-700/50 hover:bg-gray-900/40 transition-colors">
+                        <div>
+                            <span class="text-gray-200 font-medium block">Enable Journal & Inventory</span>
+                            <span class="text-xs text-gray-500">Appends active quests and inventory items to the AI context.</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="enable-journal-toggle" class="sr-only peer">
+                            <div
+                                class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                            </div>
+                        </label>
+                    </div>
+
                 </div>
             </div>
 
@@ -5210,6 +5255,22 @@
                                 </div>
                             </label>
                         </div>
+
+                        <!-- Journal & Inventory Toggle -->
+                        <div
+                            class="flex items-center justify-between bg-gray-900/30 p-4 rounded-lg border border-gray-700/50 hover:bg-gray-900/40 transition-colors">
+                            <div>
+                                <span class="text-gray-200 font-medium block">Enable Journal & Inventory</span>
+                                <span class="text-xs text-gray-500">Appends active quests and inventory items to the AI context.</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="global-default-enable-journal-toggle"
+                                    class="sr-only peer">
+                                <div
+                                    class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                                </div>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -5352,6 +5413,7 @@
                     onchange="AppController.setApiProvider(this.value)">
                     <option value="gemini">Gemini</option>
                     <option value="openrouter">OpenRouter</option>
+                    <option value="nanogpt">NanoGPT</option>
                     <option value="koboldcpp">KoboldCPP</option>
                     <option value="lmstudio">LM Studio</option>
                     <option value="webllm">WebLLM (Browser WebGPU)</option>
@@ -5432,6 +5494,57 @@
                 </div>
 
                 <div id="openrouter-saved-models-list" class="mt-3 flex flex-wrap gap-2"></div>
+            </div>
+            <div id="nanogpt-settings">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-medium">NanoGPT API Settings</h3>
+                    <div class="flex space-x-3">
+                        <a href="https://nano-gpt.com/account" target="_blank"
+                            class="text-xs text-violet-400 hover:text-violet-300 flex items-center">
+                            Get Key
+                            <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14">
+                                </path>
+                            </svg>
+                        </a>
+                        <a href="https://nano-gpt.com/models/text" target="_blank"
+                            class="text-xs text-violet-400 hover:text-violet-300 flex items-center">
+                            Browse Models
+                            <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14">
+                                </path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <p class="text-gray-400 text-sm mb-2">Pay-per-use access to 1,000+ AI models. No subscription.</p>
+                <input type="password" id="nanogpt-api-key-input" data-setting-key="nanoGPTKey" class="w-full rounded-lg p-2 bg-black/20 border border-gray-600 text-white"
+                    placeholder="Enter NanoGPT API key">
+
+                <div class="mt-2 flex space-x-2">
+                    <input type="text" id="nanogpt-model-input" data-setting-key="nanoGPTModel" class="flex-grow rounded-lg p-2 bg-black/20 border border-gray-600 text-white"
+                        placeholder="Enter model name (e.g. openai/gpt-4o)">
+                    <button onclick="AppController.openNanoGPTModelBrowser()"
+                        class="bg-gray-700 hover:bg-violet-600 text-white font-bold py-2 px-3 rounded-lg transition-colors"
+                        title="Browse models">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </button>
+                    <button onclick="AppController.saveNanoGPTModel()"
+                        class="bg-gray-700 hover:bg-violet-600 text-white font-bold py-2 px-3 rounded-lg transition-colors"
+                        title="Save to list">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div id="nanogpt-saved-models-list" class="mt-3 flex flex-wrap gap-2"></div>
             </div>
             <div id="koboldcpp-settings">
                 <div class="flex justify-between items-center mb-2">
@@ -5836,33 +5949,73 @@
                         </svg>
                         Text-to-Speech (TTS)
                     </h3>
-                    <span class="text-xs text-indigo-400 bg-indigo-900/30 px-2 py-1 rounded">Gemini / Cloud TTS</span>
+                    <span id="tts-backend-badge" class="text-xs text-indigo-400 bg-indigo-900/30 px-2 py-1 rounded">Gemini / Cloud TTS</span>
                 </div>
                 <div class="bg-black/20 p-4 rounded-lg border border-gray-700 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <span class="text-gray-200 font-medium block">Enable TTS</span>
-                            <span class="text-xs text-gray-500">Read AI responses aloud.</span>
-                            <!-- TTS Mode -->
-                            <div>
-                                <label class="text-sm font-semibold text-gray-400 block mb-1">TTS Mode</label>
-                                <select id="tts-mode-select"
-                                    class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-gray-200 focus:border-indigo-500 focus:outline-none">
-                                    <option value="off">Off</option>
-                                    <option value="all">Read Everything</option>
-                                    <option value="dialogue">Dialogue Only</option>
-                                </select>
-                                <p class="text-xs text-gray-500 mt-1">Controls when the AI speaks. "Dialogue Only" reads
-                                    spoken text in quotes.</p>
-                            </div>
+                    <!-- TTS Mode -->
+                    <div>
+                        <label class="text-sm font-semibold text-gray-400 block mb-1">TTS Mode</label>
+                        <select id="tts-mode-select"
+                            class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-gray-200 focus:border-indigo-500 focus:outline-none">
+                            <option value="off">Off</option>
+                            <option value="all">Read Everything</option>
+                            <option value="dialogue">Dialogue Only</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Controls when the AI speaks. "Dialogue Only" reads spoken text in quotes.</p>
+                    </div>
 
-                            <div>
-                                <label class="text-gray-400 text-sm block mb-1">Voice Selection</label>
-                                <select id="tts-voice-selector"
-                                    class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white focus:border-indigo-500">
-                                    <!-- Populated by AppController -->
-                                </select>
+                    <!-- TTS Backend Selector -->
+                    <div>
+                        <label class="text-sm font-semibold text-gray-400 block mb-2">TTS Backend</label>
+                        <div id="tts-backend-selector" class="grid grid-cols-2 gap-2">
+                            <button data-action="select-tts-backend" data-action-val="gemini"
+                                class="tts-backend-option active px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 text-center">
+                                Gemini</button>
+                            <button data-action="select-tts-backend" data-action-val="nanogpt"
+                                class="tts-backend-option px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 text-center">
+                                NanoGPT</button>
+                        </div>
+                    </div>
+
+                    <!-- Gemini TTS Panel -->
+                    <div id="tts-gemini-panel">
+                        <label class="text-gray-400 text-sm block mb-1">Voice Selection</label>
+                        <select id="tts-voice-selector"
+                            class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white focus:border-indigo-500">
+                            <!-- Populated by AppController -->
+                        </select>
+                    </div>
+
+                    <!-- NanoGPT TTS Panel -->
+                    <div id="tts-nanogpt-panel" class="hidden space-y-3">
+                        <div class="rounded-lg border border-violet-500/20 bg-violet-950/20 p-3 space-y-1">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-violet-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="text-sm font-medium text-violet-300">NanoGPT TTS</span>
                             </div>
+                            <p class="text-xs text-gray-400 leading-relaxed">Uses NanoGPT's TTS API. Requires your NanoGPT API key configured in the AI Backend tab.</p>
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-sm block mb-1">TTS Model</label>
+                            <select id="nanogpt-tts-model-select"
+                                class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white focus:border-violet-500">
+                                <option value="tts-1">TTS-1 (Fast)</option>
+                                <option value="tts-1-hd">TTS-1 HD (High Quality)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-sm block mb-1">Voice</label>
+                            <select id="nanogpt-tts-voice-select"
+                                class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white focus:border-violet-500">
+                                <option value="alloy">Alloy</option>
+                                <option value="echo">Echo</option>
+                                <option value="fable">Fable</option>
+                                <option value="onyx">Onyx</option>
+                                <option value="nova">Nova</option>
+                                <option value="shimmer">Shimmer</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -5885,7 +6038,7 @@
                     <!-- Music Backend Selector -->
                     <div>
                         <label class="text-sm font-semibold text-gray-400 block mb-2">Music Backend</label>
-                        <div id="music-backend-selector" class="grid grid-cols-3 gap-2">
+                        <div id="music-backend-selector" class="grid grid-cols-4 gap-2">
                             <button data-action="select-music-backend" data-action-val="off"
                                 class="music-backend-option active px-3 py-2.5 rounded-lg border text-sm font-medium transition-all duration-200 text-center"
                                 >Off</button>
@@ -5895,6 +6048,9 @@
                             <button data-action="select-music-backend" data-action-val="openrouter"
                                 class="music-backend-option px-3 py-2.5 rounded-lg border text-sm font-medium transition-all duration-200 text-center"
                                 >OpenRouter</button>
+                            <button data-action="select-music-backend" data-action-val="nanogpt"
+                                class="music-backend-option px-3 py-2.5 rounded-lg border text-sm font-medium transition-all duration-200 text-center"
+                                >NanoGPT</button>
                         </div>
                         <p class="text-xs text-gray-500 mt-2">AI-generated instrumental music that adapts to the current scene.</p>
                     </div>
@@ -5947,6 +6103,36 @@
                         </div>
                     </div>
 
+                    <!-- NanoGPT Provider Info + Model Picker -->
+                    <div id="music-nanogpt-info" class="hidden space-y-3">
+                        <div class="rounded-lg border border-violet-500/20 bg-violet-950/20 p-3 space-y-1">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-violet-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="text-sm font-medium text-violet-300">NanoGPT</span>
+                            </div>
+                            <p class="text-xs text-gray-400 leading-relaxed">Route music generation through NanoGPT using your existing API key. Access audio generation models at list prices with no markup.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-400 mb-1">Music Model</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="music-nanogpt-model-input"
+                                    class="flex-grow rounded-lg p-2 bg-black/20 border border-gray-600 text-white text-sm focus:border-violet-500 focus:outline-none"
+                                    placeholder="google/lyria-3-clip-preview">
+                                <button onclick="AppController.openNanoGPTMusicModelBrowser()"
+                                    class="bg-gray-700 hover:bg-violet-600 text-white font-bold py-2 px-3 rounded-lg transition-colors"
+                                    title="Browse audio models">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Uses your main NanoGPT API key.</p>
+                        </div>
+                    </div>
+
                     <!-- Shared Playback Controls (visible when not Off) -->
                     <div id="music-playback-controls" class="hidden space-y-4 pt-2 border-t border-gray-700/50">
                         <div>
@@ -5987,6 +6173,7 @@
                     <option value="disabled">Disabled</option>
                     <option value="koboldcpp">Local (Stable Diffusion / KoboldCPP)</option>
                     <option value="openrouter">Cloud (OpenRouter / DALL-E)</option>
+                    <option value="nanogpt">NanoGPT Images</option>
                 </select>
             </div>
 
@@ -6095,6 +6282,42 @@
                 </div>
 
                 <div id="image-gen-openrouter-saved-models-list" class="mt-3 flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- NanoGPT Image Settings -->
+            <div id="image-gen-nanogpt-settings" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-sm font-bold text-gray-400 mb-1">NanoGPT API Key</label>
+                    <input type="password" id="image-gen-nanogpt-key-input" data-setting-key="imageGenNanoGPTKey"
+                        class="w-full rounded-lg p-2 bg-black/20 border border-gray-600 text-white"
+                        placeholder="Leave blank to use main NanoGPT key">
+                    <p class="text-xs text-gray-500 mt-1">Leave blank to use the main NanoGPT key.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-400 mb-1">Image Model ID</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="image-gen-nanogpt-model-input" data-setting-key="imageGenNanoGPTModel"
+                            class="flex-grow rounded-lg p-2 bg-black/20 border border-gray-600 text-white"
+                            placeholder="black-forest-labs/flux-1-schnell">
+                        <button onclick="AppController.openNanoGPTImageModelBrowser()"
+                            class="bg-gray-700 hover:bg-violet-600 text-white font-bold py-2 px-3 rounded-lg transition-colors"
+                            title="Browse models">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="AppController.saveNanoGPTImageModel()"
+                            class="bg-gray-700 hover:bg-violet-600 text-white font-bold py-2 px-3 rounded-lg transition-colors"
+                            title="Save to list">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="image-gen-nanogpt-saved-models-list" class="mt-3 flex flex-wrap gap-2"></div>
             </div>
 
 
@@ -6412,7 +6635,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 1.0.12 (2026.05.29 - 11:26)";
+        const APP_BUILD_TIMESTAMP = "Version: 1.0.13 (2026.07.20 - 22:45)";
 
 
         /**
@@ -7259,6 +7482,8 @@
                     return this._generateKoboldCPP(prompt, negativePrompt, options, initImage);
                 } else if (backend === 'openrouter') {
                     return this._generateOpenRouter(prompt, options, initImage);
+                } else if (backend === 'nanogpt') {
+                    return this._generateNanoGPT(prompt, options, initImage);
                 } else {
                     throw new Error(`Unknown image generation backend: ${backend}`);
                 }
@@ -7282,6 +7507,13 @@
                         const key = globalSettings.imageGenOpenRouterKey || globalSettings.openRouterKey;
                         if (!key) return false;
                         const res = await fetch("https://openrouter.ai/api/v1/models", {
+                            headers: { "Authorization": `Bearer ${key}` }
+                        });
+                        return res.ok;
+                    } else if (backend === 'nanogpt') {
+                        const key = globalSettings.imageGenNanoGPTKey || globalSettings.nanoGPTKey;
+                        if (!key) return false;
+                        const res = await fetch("https://nano-gpt.com/api/v1/images/models", {
                             headers: { "Authorization": `Bearer ${key}` }
                         });
                         return res.ok;
@@ -7491,13 +7723,121 @@
                         }
 
                         console.warn("OpenRouter Content (No Image Found):", content);
-                        throw new Error(`OpenRouter response content did not contain a recognizable image. Content start: "${content.substring(0, 100)}..."`);
+                        throw new Error("Could not extract image URL from OpenRouter response: " + content.substring(0, 100));
+                    } else {
+                        throw new Error("OpenRouter returned an empty choices array.");
                     }
-
-                    throw new Error("OpenRouter response was empty (no choices).");
-
                 } catch (e) {
                     console.error("OpenRouter Image Gen Failed:", e);
+                    throw e;
+                }
+            },
+
+            /**
+             * NanoGPT Image Generation Adapter
+             */
+            async _generateNanoGPT(prompt, options, initImage = null) {
+                const globalSettings = StateManager.data.globalSettings;
+                const key = globalSettings.imageGenNanoGPTKey || globalSettings.nanoGPTKey;
+
+                if (!key) throw new Error("NanoGPT API Key is missing. Please set your API key in settings.");
+
+                const model = globalSettings.imageGenNanoGPTModel || "black-forest-labs/flux-1-schnell";
+                const width = options.width || globalSettings.imageGenWidth || 1024;
+                const height = options.height || globalSettings.imageGenHeight || 1024;
+                const size = `${width}x${height}`;
+
+                // NanoGPT supports standard OpenAI /v1/images endpoint as well as chat completions
+                // First attempt: Standard OpenAI DALL-E / /v1/images payload
+                const imagePayload = {
+                    model: model,
+                    prompt: prompt,
+                    n: 1,
+                    size: size
+                };
+
+                console.log("NanoGPT Image Req:", imagePayload);
+
+                try {
+                    const response = await fetch("https://nano-gpt.com/api/v1/images", {
+                        method: 'POST',
+                        headers: {
+                            "Authorization": `Bearer ${key}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(imagePayload)
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log("NanoGPT Image Res:", data);
+
+                        if (data.data && data.data.length > 0) {
+                            const item = data.data[0];
+                            if (item.url) {
+                                if (item.url.startsWith('data:')) {
+                                    const [header, b64] = item.url.split(',');
+                                    const mime = header.split(':')[1].split(';')[0];
+                                    return UTILITY.base64ToBlob(b64, mime);
+                                }
+                                return await (await fetch(item.url)).blob();
+                            }
+                            if (item.b64_json) {
+                                return UTILITY.base64ToBlob(item.b64_json, 'image/png');
+                            }
+                        }
+                    }
+
+                    // Fallback to OpenAI chat completions endpoint format for NanoGPT image models
+                    const chatPayload = {
+                        model: model,
+                        messages: [
+                            {
+                                role: "system",
+                                content: "You are an image generation tool. Generate the image requested by the user and output ONLY the image URL. Do not add any conversational text."
+                            },
+                            { role: "user", content: prompt }
+                        ]
+                    };
+
+                    const chatRes = await fetch("https://nano-gpt.com/api/v1/chat/completions", {
+                        method: 'POST',
+                        headers: {
+                            "Authorization": `Bearer ${key}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(chatPayload)
+                    });
+
+                    if (!chatRes.ok) {
+                        const errText = await chatRes.text();
+                        throw new Error(`NanoGPT Image Error (${chatRes.status}): ${errText.substring(0, 200)}`);
+                    }
+
+                    const chatData = await chatRes.json();
+                    if (chatData.choices && chatData.choices.length > 0) {
+                        const msg = chatData.choices[0].message;
+                        if (msg.images && msg.images.length > 0) {
+                            const imgUrl = msg.images[0].url || msg.images[0];
+                            if (typeof imgUrl === 'string') {
+                                if (imgUrl.startsWith('data:')) {
+                                    const [header, b64] = imgUrl.split(',');
+                                    const mime = header.split(':')[1].split(';')[0];
+                                    return UTILITY.base64ToBlob(b64, mime);
+                                }
+                                return await (await fetch(imgUrl)).blob();
+                            }
+                        }
+                        const content = msg.content || "";
+                        const urlMatch = content.match(/https?:\/\/[^\s<>)\]}]+/);
+                        if (urlMatch) {
+                            return await (await fetch(urlMatch[0])).blob();
+                        }
+                    }
+
+                    throw new Error("Could not extract image from NanoGPT response.");
+                } catch (e) {
+                    console.error("NanoGPT Image Gen Failed:", e);
                     throw e;
                 }
             },
@@ -7866,11 +8206,13 @@
 
                             // Generation Prompts
                             'prompt_persona_gen', 'prompt_living_persona_gen', 'prompt_world_map_gen', 'prompt_location_gen',
+                            'prompt_adjacent_locations_gen',
                             'prompt_entry_gen', 'prompt_location_memory_gen', 'prompt_story_notes_gen', 'prompt_story_tags_gen',
                             'prompt_auto_static_knowledge', 'prompt_stats_init',
 
                             // AI Logic Toggles
-                            'enableAutoStaticKnowledge', 'enableAnalysis', 'enableResponseOptions', 'enableStats', 'enableLivingPersona',
+                            'enableAutoStaticKnowledge', 'enableAnalysis', 'enableResponseOptions', 'enableStats', 'enableLivingPersona', 'enableJournal',
+                            'enableAutoBuildLocations', 'enableAutoGenerateLocationImages',
 
                             // Visual
                             'imageGenArtStyle',
@@ -7941,6 +8283,7 @@
                     enableResponseOptions: true,
                     enableStats: true,
                     enableLivingPersona: true,
+                    enableJournal: true,
                     event_master_probability: 20,
                     visual_master_probability: 25,
                     responseLength: 'long',
@@ -8182,6 +8525,7 @@
                         evolved_characters: {},
                         gm_rules: [],
                         gm_ledger: [],
+                        knowledge_revisions: [],
                         swarmMode: true,
                         swarmNarrativeCapital: {},
                         swarmSecrets: {},
@@ -8710,6 +9054,10 @@
                             this.data.activeNarrativeState.gm_ledger = [];
                         }
 
+                        if (!this.data.activeNarrativeState.knowledge_revisions) {
+                            this.data.activeNarrativeState.knowledge_revisions = [];
+                        }
+
                         if (!this.data.activeNarrativeState.static_entries || this.data.activeNarrativeState.static_entries.length === 0) {
                             this.data.activeNarrativeState.static_entries = [{ id: UTILITY.uuid(), title: "World Overview", content: "The world." }];
                         }
@@ -8854,6 +9202,18 @@
                             }
                         });
                         if (!res.ok) throw new Error("Invalid OpenRouter API Key.");
+                        return true;
+                    } else if (provider === 'nanogpt') {
+                        const apiKey = config.nanoGPTKey;
+                        if (!apiKey) throw new Error("API Key is required.");
+                        const res = await fetch('https://nano-gpt.com/api/v1/models', {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${apiKey}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        if (!res.ok) throw new Error("Invalid NanoGPT API Key.");
                         return true;
                     }
                     return false;
@@ -9006,6 +9366,12 @@
                     const visionKeywords = ['vision', 'vl', 'claude-3', 'gpt-4o', 'gpt-4-turbo', 'gemini-1.5', 'pixtral', 'llama-3.2'];
                     return visionKeywords.some(kw => model.toLowerCase().includes(kw));
                 }
+                if (provider === 'nanogpt') {
+                    if (!model) return false;
+                    // NanoGPT is OpenAI-compatible; check model name for known vision models
+                    const visionKeywords = ['vision', 'vl', 'gpt-4o', 'gpt-4-turbo', 'claude-3', 'pixtral', 'llama-3.2', 'gemini'];
+                    return visionKeywords.some(kw => model.toLowerCase().includes(kw));
+                }
                 if (provider === 'koboldcpp') return true; // Kobold handles it gracefully if Llava is loaded
                 if (provider === 'lmstudio') {
                     // LM Studio usually supports vision if the model name implies it
@@ -9025,6 +9391,8 @@
                         return "Most Gemini models (Pro/Flash) support vision. If analysis fails, ensure you are using a 1.5+ model.";
                     case 'openrouter':
                         return "Use models with 'Vision' in their name, such as GPT-4o, Claude 3.5 Sonnet, or Pixtral.";
+                    case 'nanogpt':
+                        return "Use vision-capable models such as gpt-4o or claude-3-5-sonnet. Check nano-gpt.com/models for the full list.";
                     case 'koboldcpp':
                         return "Ensure you have a Multimodal (Llava) projector file loaded alongside your model in KoboldCPP.";
                     case 'lmstudio':
@@ -9069,6 +9437,8 @@
                         responseText = await this.callGemini({ text, images }, activeSignal);
                     } else if (provider === 'openrouter') {
                         responseText = await this.callOpenRouter({ text, images }, activeSignal);
+                    } else if (provider === 'nanogpt') {
+                        responseText = await this.callNanoGPT({ text, images }, activeSignal);
                     } else if (provider === 'webllm') {
                         responseText = await this.callWebLLM(text, activeSignal);
                     } else if (provider === 'koboldcpp') {
@@ -9116,6 +9486,7 @@
                         else if (friendlyProvider === 'lmstudio') friendlyProvider = 'LM Studio';
                         else if (friendlyProvider === 'gemini') friendlyProvider = 'Gemini API';
                         else if (friendlyProvider === 'openrouter') friendlyProvider = 'OpenRouter';
+                        else if (friendlyProvider === 'nanogpt') friendlyProvider = 'NanoGPT';
                         
                         const msg = `Connection failed: ${friendlyProvider} is offline or unreachable.`;
                         console.warn(`[APIService] ${msg}`, error);
@@ -9341,6 +9712,65 @@
             },
 
             /**
+             * Calls the NanoGPT API (OpenAI-compatible).
+             * @param {string|Object} prompt - The prompt or {text, images}.
+             * @param {AbortSignal} signal - AbortSignal.
+             * @returns {Promise<string>}
+             */
+            async callNanoGPT(prompt, signal) {
+                const state = StateManager.getState();
+                const global = StateManager.data.globalSettings;
+                const apiKey = global.nanoGPTKey || state.nanoGPTKey;
+                const model = state.nanoGPTModel || global.nanoGPTModel;
+                if (!apiKey || !model) throw new Error("NanoGPT API key or model not set.");
+
+                let cleanPrompt = typeof prompt === 'string' ? prompt : prompt.text;
+                const images = typeof prompt === 'string' ? [] : (prompt.images || []);
+
+                // Strip cache-break delimiter (NanoGPT doesn't use prompt caching)
+                if (typeof cleanPrompt === 'string') {
+                    cleanPrompt = cleanPrompt.replace(/<\|ELLIPSIS_CACHE_BREAK\|>\n?/g, '');
+                }
+
+                let messagesPayload = [{ role: 'user', content: [{ type: 'text', text: cleanPrompt }] }];
+
+                // Append images if the model supports vision
+                if (images.length > 0 && this._supportsVision('nanogpt', model)) {
+                    images.forEach(img => {
+                        messagesPayload[0].content.push({
+                            type: 'image_url',
+                            image_url: { url: `data:${img.mimeType};base64,${img.data}` }
+                        });
+                    });
+                }
+
+                const res = await fetch('https://nano-gpt.com/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({ model, messages: messagesPayload }),
+                    signal
+                });
+
+                if (!res.ok) {
+                    let errorDetails = `Status: ${res.status} ${res.statusText}.`;
+                    try {
+                        const errorJson = await res.json();
+                        errorDetails += ` Message: ${errorJson.error?.message || JSON.stringify(errorJson.error)}`;
+                    } catch (e) {
+                        errorDetails += ` Response body: ${await res.text()}`;
+                    }
+                    throw new Error(`NanoGPT API Error: ${errorDetails}`);
+                }
+                const data = await res.json();
+                const msg = data.choices?.[0]?.message || {};
+                const content = msg.content ?? msg.reasoning_content ?? msg.reasoning ?? "";
+                return typeof content === 'string' ? content : String(content ?? "");
+            },
+
+            /**
              * Fetches available models from OpenRouter API.
              * @param {string} [mode='text'] - 'text', 'image', or 'audio'. When 'image', uses the
              *   ?output_modalities=image query param so the API returns all image-capable
@@ -9391,6 +9821,57 @@
                     this.openRouterModelCache = models;
                 }
                 return models;
+            },
+
+            /**
+             * Fetches available models from NanoGPT API.
+             * @param {string} [mode='text'] - 'text' or 'image'. 'image' uses the images/models endpoint.
+             * @returns {Promise<Array>} Array of model objects normalized for the shared browser UI.
+             */
+            async fetchNanoGPTModels(mode = 'text') {
+                const global = StateManager.data.globalSettings;
+                const apiKey = global.nanoGPTKey;
+                const headers = { 'Content-Type': 'application/json' };
+                if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+                // NanoGPT exposes a dedicated image-model list vs the general models list
+                const url = mode === 'image'
+                    ? 'https://nano-gpt.com/api/v1/images/models'
+                    : 'https://nano-gpt.com/api/v1/models';
+
+                const res = await fetch(url, { method: 'GET', headers });
+                if (!res.ok) {
+                    let errorDetails = `Status: ${res.status} ${res.statusText}.`;
+                    try {
+                        const errorJson = await res.json();
+                        errorDetails += ` Message: ${errorJson.error?.message || JSON.stringify(errorJson.error)}`;
+                    } catch (e) {
+                        errorDetails += ` Response body: ${await res.text()}`;
+                    }
+                    throw new Error(`Failed to fetch NanoGPT models: ${errorDetails}`);
+                }
+                const data = await res.json();
+
+                // NanoGPT returns { data: [...] } for /api/v1/models (OpenAI-compat)
+                // and may return a bare array or { models: [...] } for image models.
+                let rawModels = [];
+                if (Array.isArray(data)) {
+                    rawModels = data;
+                } else if (Array.isArray(data.data)) {
+                    rawModels = data.data;
+                } else if (Array.isArray(data.models)) {
+                    rawModels = data.models;
+                }
+
+                // Normalize to the same shape as OpenRouter model objects so the
+                // shared _renderNanoGPTModelList can display pricing and context info.
+                return rawModels.map(m => ({
+                    id: m.id || m.name || '',
+                    name: m.name || m.id || '',
+                    context_length: m.context_length || m.context_window || null,
+                    pricing: m.pricing || null,
+                    architecture: m.architecture || null,
+                }));
             },
 
             /**
@@ -9695,8 +10176,13 @@
             async speak(text, voiceName = 'Puck') {
                 const state = StateManager.getState();
                 const global = StateManager.data.globalSettings;
+                const backend = global.ttsBackend || 'gemini';
 
-                // Allow global override for key, but rely on user preference for enabling
+                if (backend === 'nanogpt') {
+                    return this.speakNanoGPT(text, voiceName);
+                }
+
+                // Default: Gemini TTS
                 const apiKey = global.geminiApiKey || state.geminiApiKey;
 
                 if (!apiKey) {
@@ -9761,6 +10247,117 @@
                     console.error("TTS Failure:", e);
                     UIManager.showNotification("TTS Error: " + e.message, "error");
                 }
+            },
+
+            /**
+             * Generates and plays speech using NanoGPT TTS API.
+             */
+            async speakNanoGPT(text, voiceName = 'nova') {
+                const global = StateManager.data.globalSettings;
+                const apiKey = global.nanoGPTKey;
+                if (!apiKey) {
+                    UIManager.showNotification("TTS Error: NanoGPT API Key missing in Settings.", "error");
+                    return;
+                }
+                if (!text || text.trim() === '') return;
+
+                try {
+                    this.stop();
+                    const model = global.nanoGPTTTSModel || 'tts-1';
+                    const voice = global.nanoGPTTTSVoice || voiceName || 'nova';
+
+                    const res = await fetch('https://nano-gpt.com/api/v1/audio/speech', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ model, input: text, voice })
+                    });
+
+                    if (!res.ok) {
+                        const errText = await res.text();
+                        throw new Error(`NanoGPT TTS API Error (${res.status}): ${errText.substring(0, 200)}`);
+                    }
+
+                    const contentType = res.headers.get('content-type') || '';
+                    if (contentType.includes('application/json')) {
+                        const data = await res.json();
+                        if (data.id && (data.status === 'processing' || data.status === 'pending')) {
+                            const audioUrl = await this._pollNanoGPTTTS(data.id, apiKey);
+                            await this.playAudioFromUrl(audioUrl);
+                            return;
+                        }
+                        if (data.audio) {
+                            this.playAudioFromBase64(data.audio);
+                            return;
+                        }
+                        if (data.url) {
+                            await this.playAudioFromUrl(data.url);
+                            return;
+                        }
+                    }
+
+                    // Direct binary audio stream
+                    const arrayBuffer = await res.arrayBuffer();
+                    await this.playAudioBuffer(arrayBuffer);
+                } catch (e) {
+                    console.error("NanoGPT TTS Error:", e);
+                    UIManager.showNotification("NanoGPT TTS Error: " + e.message, "error");
+                }
+            },
+
+            /**
+             * Polls NanoGPT async TTS job status until completed.
+             */
+            async _pollNanoGPTTTS(jobId, apiKey, maxAttempts = 30) {
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                    await new Promise(r => setTimeout(r, 1000));
+                    const res = await fetch(`https://nano-gpt.com/api/v1/audio/speech/${jobId}`, {
+                        headers: { 'Authorization': `Bearer ${apiKey}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status === 'completed' && data.url) return data.url;
+                        if (data.status === 'failed') throw new Error(data.error || "Async TTS job failed.");
+                    }
+                }
+                throw new Error("NanoGPT TTS generation timed out.");
+            },
+
+            /**
+             * Plays audio directly from an ArrayBuffer (MP3/WAV/OGG).
+             */
+            async playAudioBuffer(arrayBuffer) {
+                try {
+                    if (!this.RUNTIME.audioContext) {
+                        this.RUNTIME.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    const audioBuffer = await this.RUNTIME.audioContext.decodeAudioData(arrayBuffer);
+                    const source = this.RUNTIME.audioContext.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(this.RUNTIME.audioContext.destination);
+                    source.onended = () => {
+                        this.RUNTIME.isPlaying = false;
+                        this.RUNTIME.currentSource = null;
+                        this.updateIndicator(false);
+                    };
+                    this.RUNTIME.currentSource = source;
+                    source.start(0);
+                    this.RUNTIME.isPlaying = true;
+                    this.updateIndicator(true);
+                } catch (e) {
+                    console.error("AudioBuffer Playback Error:", e);
+                }
+            },
+
+            /**
+             * Plays audio from a URL string.
+             */
+            async playAudioFromUrl(url) {
+                const res = await fetch(url);
+                const arrayBuffer = await res.arrayBuffer();
+                await this.playAudioBuffer(arrayBuffer);
             },
 
             /**
@@ -9939,6 +10536,8 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     if (!globalSettings.geminiApiKey) return;
                 } else if (backend === 'openrouter') {
                     if (!globalSettings.openRouterKey) return;
+                } else if (backend === 'nanogpt') {
+                    if (!globalSettings.nanoGPTKey) return;
                 } else {
                     return; // Unknown backend
                 }
@@ -9997,6 +10596,9 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     if (backend === 'openrouter') {
                         console.log('🎵 MusicService: Generating music via OpenRouter...', musicPrompt.substring(0, 100));
                         audioBuffer = await this.callOpenRouterAudio(musicPrompt);
+                    } else if (backend === 'nanogpt') {
+                        console.log('🎵 MusicService: Generating music via NanoGPT...', musicPrompt.substring(0, 100));
+                        audioBuffer = await this.callNanoGPTAudio(musicPrompt);
                     } else {
                         console.log('🎵 MusicService: Generating music via Lyria (Direct)...', musicPrompt.substring(0, 100));
                         audioBuffer = await this.callLyria(musicPrompt);
@@ -10665,6 +11267,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                         prompt_living_persona_gen: story.prompt_living_persona_gen || sysDefaults.prompt_living_persona_gen,
                         prompt_world_map_gen: story.prompt_world_map_gen || sysDefaults.prompt_world_map_gen,
                         prompt_location_gen: story.prompt_location_gen || sysDefaults.prompt_location_gen,
+                        prompt_adjacent_locations_gen: story.prompt_adjacent_locations_gen || sysDefaults.prompt_adjacent_locations_gen,
                         prompt_entry_gen: story.prompt_entry_gen || sysDefaults.prompt_entry_gen,
                         prompt_location_memory_gen: story.prompt_location_memory_gen || sysDefaults.prompt_location_memory_gen,
                         font: story.font || uiDefaults.font,
@@ -11176,6 +11779,42 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 return userChar;
             },
             /**
+             * Parses structured journal lines into plot and reflection objects.
+             * @param {string} text
+             * @returns {Array<Object>}
+             */
+            parseJournalExtractions(text) {
+                const entries = [];
+                if (!text) return entries;
+                const lines = text.split('\n');
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line.startsWith('[PLOT]')) {
+                        const content = line.substring('[PLOT]'.length).trim();
+                        if (content) {
+                            entries.push({
+                                type: 'plot',
+                                content: content
+                            });
+                        }
+                    } else if (line.startsWith('[REFLECTION:')) {
+                        const closeBracketIdx = line.indexOf(']');
+                        if (closeBracketIdx > 12) {
+                            const charName = line.substring('[REFLECTION:'.length, closeBracketIdx).trim();
+                            const content = line.substring(closeBracketIdx + 1).trim();
+                            if (content) {
+                                entries.push({
+                                    type: 'reflection',
+                                    character_name: charName,
+                                    content: content
+                                });
+                            }
+                        }
+                    }
+                }
+                return entries;
+            },
+            /**
              * Returns default API settings.
              * @returns {Object}
              */
@@ -11199,6 +11838,17 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     musicOpenRouterModel: 'google/lyria-3-clip-preview',
                     musicVolume: 30,
                     musicInterval: 10,
+                    // NanoGPT keys
+                    nanoGPTKey: '',
+                    nanoGPTModel: 'openai/gpt-4o-mini',
+                    savedNanoGPTModels: [],
+                    imageGenNanoGPTKey: '',
+                    imageGenNanoGPTModel: 'black-forest-labs/flux-1-schnell',
+                    savedNanoGPTImageModels: [],
+                    ttsBackend: 'gemini',
+                    nanoGPTTTSModel: 'tts-1',
+                    nanoGPTTTSVoice: 'nova',
+                    musicNanoGPTModel: 'google/lyria-3-clip-preview',
                     pendingImage: null
                 };
             },
@@ -11218,10 +11868,6 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     md_h1_font: '', md_h2_font: '', md_h3_font: '', md_bold_font: '', md_italic_font: '', md_quote_font: ''
                 };
             },
-            /**
-             * Returns default story settings.
-             * @returns {Object}
-             */
             getDefaultStorySettings() {
                 const globals = (typeof StateManager !== 'undefined' && StateManager.data && StateManager.data.globalSettings) ? StateManager.data.globalSettings : {};
                 return {
@@ -11234,8 +11880,11 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     enableResponseOptions: globals.default_enableResponseOptions !== undefined ? globals.default_enableResponseOptions : false,
                     enableStats: globals.default_enableStats !== undefined ? globals.default_enableStats : false,
                     enableLivingPersona: globals.default_enableLivingPersona !== undefined ? globals.default_enableLivingPersona : false,
+                    enableJournal: globals.default_enableJournal !== undefined ? globals.default_enableJournal : true,
                     responseLength: globals.default_responseLength || 'normal',
-                    useAlphaMask: false
+                    useAlphaMask: false,
+                    enableAutoBuildLocations: false,
+                    enableAutoGenerateLocationImages: false
                 };
             },
             /**
@@ -11251,6 +11900,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     prompt_living_persona_gen: "You are a character evolution analyzer. Review the following roleplay transcript and the character's base persona. If the events logically necessitate a permanent change in their worldview, relationships, goals, or personality, rewrite the persona to incorporate those changes. Maintain the immersive interview style: use double quotes for dialogue and plain text for actions. Review your work to ensure it follows this style strictly before responding.\n\nIMPORTANT: Output ONLY the updated persona text block itself. Do NOT include any introductory comments, conversational preambles, explanations, postambles, formatting structures, or any part of the roleplay transcript itself. Your entire response must be the rewritten persona block, nothing else.\n\n### Base Persona\n{base_persona}\n\n### Recent Transcript\n{transcript}",
                     prompt_world_map_gen: "Based on the following story context, generate a genre-appropriate 8x8 grid of interconnected locations. The central location (4,4) should be a neutral starting point. Attempt to include locations mentioned in the context.\n\n### Story Context\n\n### Characters\n{characters}\n\n### Static Lore\n{static}\n\n### Recent Events\n{recent}\n\nRespond with a valid JSON object: { \"grid\": [ { \"coords\": {\"x\":int, \"y\":int}, \"name\": \"string\", \"description\": \"string (one-line summary)\", \"prompt\": \"string (a rich, detailed paragraph description of the location and its appearance)\", \"imageUrl\": \"\" } ] }. The grid must contain exactly 64 locations.",
                     prompt_location_gen: "Generate a rich, detailed, and evocative paragraph-long prompt for a location named '{name}' which is briefly described as '{description}'.",
+                    prompt_adjacent_locations_gen: "Based on the story context and current map data, generate logical and genre-appropriate location details for the specified blank coordinates adjacent to the player's current location. Keep them coherent and interconnected with the existing surrounding locations.\n\n### Story Context\nCharacters:\n{characters}\n\nStatic Lore:\n{static}\n\nRecent Events:\n{recent}\n\n### Map Geography\nCurrent Coordinates: {current_coords}\nExisting Surrounding Locations:\n{surrounding_locations}\n\n### Target Coordinates to Generate:\n{target_coords}\n\nRespond with a valid JSON object matching this structure:\n{ \"locations\": [ { \"coords\": {\"x\":int, \"y\":int}, \"name\": \"string\", \"description\": \"string (one-line summary)\", \"prompt\": \"string (a rich, detailed paragraph description of the location and its appearance)\", \"imageUrl\": \"\" } ] }",
                     prompt_entry_gen: "Generate a detailed and informative encyclopedia-style entry for a lore topic titled '{title}'. If relevant, use the following triggers as context: '{triggers}'.",
                     prompt_location_memory_gen: "You are an archivist. Read the following chat transcript that occurred at a specific location. Summarize the key events, character developments, and important facts into a concise, single paragraph. This will serve as a memory for what happened at that location.\n\n### Transcript\n{transcript}",
                     prompt_timeline_extractor: "Summarize the following core narrative events into a single, punchy chronological bullet point. Do not list mechanics, character stats, or generic dialogue. Focus purely on major PLOT progression (e.g. discoveries, battles, changes in objective). Output ONLY the single bullet point text. Avoid using dashes or asterisks, just write the sentence.\n\n### Transcript\n{transcript}",
@@ -11985,26 +12635,43 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     const action = questMatch[1].toLowerCase();
                     const content = questMatch[2].trim();
                     
-                    // Check for parenthesis details
-                    const parenMatch = content.match(/^(.+?)\s*\((?:objective:\s*)?([^)]+)\)$/i);
                     let title = content;
                     let objective = "";
-                    if (parenMatch) {
-                        title = parenMatch[1].trim();
-                        objective = parenMatch[2].trim();
+                    let characterName = "";
+
+                    // Extract options inside parentheses like (assigned: Marcus) or (objective: Find exit)
+                    const optionRegex = /\(([^)]+):([^)]+)\)/g;
+                    let match;
+                    const options = {};
+                    while ((match = optionRegex.exec(content)) !== null) {
+                        options[match[1].trim().toLowerCase()] = match[2].trim();
                     }
+
+                    // Also support simple objective (no colon) like (Find exit)
+                    const simpleParenMatch = content.match(/\(([^:]+?)\)/);
+                    if (simpleParenMatch && !simpleParenMatch[1].includes(':')) {
+                        objective = simpleParenMatch[1].trim();
+                    }
+
+                    title = content.replace(/\s*\([^)]+\)/g, '').trim();
+
+                    if (options.assigned) characterName = options.assigned;
+                    if (options.character) characterName = options.character;
+                    if (options.objective) objective = options.objective;
 
                     let status = 'active';
                     if (action === 'complete') status = 'completed';
                     else if (action === 'failed' || action === 'fail') status = 'failed';
 
-                    return {
+                    const resObj = {
                         type: 'quest',
                         title,
                         status,
                         objective,
                         isUpdate: action === 'update'
                     };
+                    if (characterName) resObj.characterName = characterName;
+                    return resObj;
                 }
 
                 // 3. Relationship: e.g., "Relationship: Alice +5", "Relationship: Alice Affection +5"
@@ -12112,17 +12779,40 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 let action = 'update';
                 let title = '';
                 let objective = '';
+                let characterName = '';
 
                 if (stripped.includes('|')) {
                     const parts = stripped.split('|').map(p => p.trim());
-                    if (parts.length >= 2) {
+                    if (parts.length >= 4) {
+                        const rawAction = parts[0].toLowerCase();
+                        if (rawAction.includes('start') || rawAction.includes('active')) action = 'start';
+                        else if (rawAction.includes('complete')) action = 'complete';
+                        else if (rawAction.includes('fail')) action = 'fail';
+
+                        characterName = parts[1];
+                        title = parts[2];
+                        objective = parts[3] || '';
+                    } else if (parts.length === 3) {
+                        const rawAction = parts[0].toLowerCase();
+                        if (rawAction.includes('start') || rawAction.includes('active')) action = 'start';
+                        else if (rawAction.includes('complete')) action = 'complete';
+                        else if (rawAction.includes('fail')) action = 'fail';
+
+                        // Disambiguate based on action type
+                        if (action === 'complete' || action === 'fail') {
+                            characterName = parts[1];
+                            title = parts[2];
+                        } else {
+                            title = parts[1];
+                            objective = parts[2];
+                        }
+                    } else if (parts.length === 2) {
                         const rawAction = parts[0].toLowerCase();
                         if (rawAction.includes('start') || rawAction.includes('active')) action = 'start';
                         else if (rawAction.includes('complete')) action = 'complete';
                         else if (rawAction.includes('fail')) action = 'fail';
 
                         title = parts[1];
-                        objective = parts[2] || '';
                     }
                 } else {
                     const matchQuest = stripped.match(/^(start|update|complete|fail|failed|active)\s*:\s*(.+)$/i);
@@ -12133,18 +12823,31 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                         else if (rawAction.includes('fail')) action = 'fail';
 
                         const rest = matchQuest[2].trim();
-                        const parenMatch = rest.match(/^(.+?)\s*\((?:objective:\s*)?([^)]+)\)$/i);
-                        if (parenMatch) {
-                            title = parenMatch[1].trim();
-                            objective = parenMatch[2].trim();
-                        } else {
-                            title = rest;
+                        // Parse options like (assigned: Marcus) or (objective: Find cell key)
+                        const optionRegex = /\(([^)]+):([^)]+)\)/g;
+                        let match;
+                        const options = {};
+                        while ((match = optionRegex.exec(rest)) !== null) {
+                            options[match[1].trim().toLowerCase()] = match[2].trim();
                         }
+                        
+                        const simpleParenMatch = rest.match(/\(([^:]+?)\)/);
+                        if (simpleParenMatch && !simpleParenMatch[1].includes(':')) {
+                            objective = simpleParenMatch[1].trim();
+                        }
+                        
+                        title = rest.replace(/\s*\([^)]+\)/g, '').trim();
+                        
+                        if (options.assigned) characterName = options.assigned;
+                        if (options.character) characterName = options.character;
+                        if (options.objective) objective = options.objective;
                     }
                 }
 
                 if (title) {
-                    return { action, title, objective };
+                    const result = { action, title, objective };
+                    if (characterName) result.characterName = characterName;
+                    return result;
                 }
                 return null;
             },
@@ -12232,6 +12935,81 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 }
 
                 return null;
+            },
+
+            migrateGameState(rawGs) {
+                const result = { resources: [], relationships: [], journal: [] };
+                if (!rawGs || typeof rawGs !== 'object') return result;
+
+                if (Array.isArray(rawGs.resources)) {
+                    result.resources = rawGs.resources.map(r => {
+                        if (typeof r === 'string') {
+                            return {
+                                id: this.uuid(),
+                                name: r,
+                                value: 1,
+                                type: 'Misc',
+                                rarity: 'Common',
+                                description: ''
+                            };
+                        } else if (r && typeof r === 'object') {
+                            return {
+                                id: r.id || this.uuid(),
+                                name: r.name || 'Unknown Item',
+                                value: typeof r.value === 'number' ? r.value : 1,
+                                type: r.type || 'Misc',
+                                rarity: r.rarity || 'Common',
+                                description: r.description || ''
+                            };
+                        }
+                        return null;
+                    }).filter(Boolean);
+                }
+
+                if (Array.isArray(rawGs.journal)) {
+                    result.journal = rawGs.journal.map(q => {
+                        if (typeof q === 'string') {
+                            return {
+                                id: this.uuid(),
+                                title: q,
+                                objective: q,
+                                status: 'active',
+                                log: [q],
+                                objectives: []
+                            };
+                        } else if (q && typeof q === 'object') {
+                            return {
+                                id: q.id || this.uuid(),
+                                title: q.title || 'Untitled Quest',
+                                status: q.status || 'active',
+                                objective: q.objective || q.title || '',
+                                log: q.log || (q.objective ? [q.objective] : []),
+                                objectives: Array.isArray(q.objectives) ? q.objectives : [],
+                                characterId: q.characterId || null
+                            };
+                        }
+                        return null;
+                    }).filter(Boolean);
+                }
+
+                if (Array.isArray(rawGs.relationships)) {
+                    result.relationships = rawGs.relationships.map(r => {
+                        if (r && typeof r === 'object') {
+                            return {
+                                id: r.id || this.uuid(),
+                                characterId: r.characterId || null,
+                                characterName: r.characterName || 'Unknown',
+                                track: r.track || 'Affection',
+                                value: typeof r.value === 'number' ? r.value : 50,
+                                stance: r.stance || '',
+                                history: Array.isArray(r.history) ? r.history : []
+                            };
+                        }
+                        return null;
+                    }).filter(Boolean);
+                }
+
+                return result;
             }
         };
 
@@ -12316,6 +13094,85 @@ You must respond with a raw JSON object containing a "characters" array with exa
     }
   ]
 }`;
+            },
+
+            /**
+             * Builds the prompt for generating blank/adjacent locations on the fly.
+             * @param {Object} story - The story object containing the custom prompt template.
+             * @param {Array<Object>} emptyCoords - Coordinates to generate locations for.
+             * @param {Object} state - The current state.
+             * @returns {string} The formatted prompt.
+             */
+            buildAdjacentLocationsPrompt(story, emptyCoords, state) {
+                const promptTemplate = story.prompt_adjacent_locations_gen || "";
+                
+                // Formulate variables
+                const count = emptyCoords.length;
+                
+                // Characters list
+                const characters = (state.characters || [])
+                    .filter(c => c && !c.is_user && c.is_active !== false)
+                    .map(c => `- ${c.name}: ${c.short_description || 'NPC'}`)
+                    .join('\n');
+                
+                // World Lore Summary: World-level static knowledge
+                const staticKnowledge = (state.static_knowledge || [])
+                    .map(e => `### ${e.title}\n${e.content}`)
+                    .join('\n\n');
+                
+                // Recent History
+                const recentHistory = (state.chat_history || [])
+                    .filter(m => m && m.type === 'chat' && !m.isHidden)
+                    .slice(-15)
+                    .map(m => `${m.sender_name || 'Narrator'}: ${m.content}`)
+                    .join('\n');
+                
+                // Current player coordinates
+                const currentCoords = state.worldMap && state.worldMap.currentLocation 
+                    ? `x: ${state.worldMap.currentLocation.x}, y: ${state.worldMap.currentLocation.y}`
+                    : "Unknown";
+                
+                // Target coordinates we are generating for
+                const targetCoordsJson = JSON.stringify(emptyCoords);
+                
+                // Surrounding/known locations
+                // Only pass coordinates, name, and short description to save tokens
+                const surrounding = (state.worldMap && state.worldMap.grid || [])
+                    .filter(loc => loc.name && loc.name.trim() !== "" && loc.name !== "Undefined")
+                    .map(loc => ({
+                        coords: loc.coords,
+                        name: loc.name,
+                        description: loc.description
+                    }));
+                const surroundingJson = JSON.stringify(surrounding);
+
+                let prompt = promptTemplate
+                    .replace(/{count}/g, count)
+                    .replace(/{characters}/g, characters)
+                    .replace(/{static}/g, staticKnowledge)
+                    .replace(/{recent}/g, recentHistory)
+                    .replace(/{current_coords}/g, currentCoords)
+                    .replace(/{surrounding_locations}/g, surroundingJson)
+                    .replace(/{target_coords}/g, targetCoordsJson);
+                
+                // Append requirements to guarantee robust JSON response
+                prompt += `\n\n### IMPORTANT OUTPUT FORMAT REQUIREMENT
+You MUST return a raw JSON object containing a "locations" array. The array must contain exactly ${count} objects, each representing one of the requested target coordinates. Provide ONLY the JSON response without markdown code blocks, text prefix/suffix, or commentary.
+
+Target Coordinates requested: ${targetCoordsJson}
+
+JSON Schema:
+{
+  "locations": [
+    {
+      "coords": { "x": number, "y": number },
+      "name": "Distinct Location Name",
+      "description": "Short, immersive description of the location (1-2 sentences).",
+      "prompt": "Detailed prompt describing the visual design and sensory details of the location."
+    }
+  ]
+}`;
+                return prompt;
             },
 
             /**
@@ -13076,6 +13933,30 @@ Generate the instrumental music prompt now.`;
                 const state = StateManager.getState();
                 let prompt = state.prompt_timeline_extractor || UTILITY.getDefaultSystemPrompts().prompt_timeline_extractor;
                 return prompt.replace('{transcript}', transcript);
+            },
+
+            buildJournalExtractorPrompt(transcript, characterNames) {
+                return `You are a narrative chronicler. Review the following recent chat transcript from a roleplay session:
+
+### Recent Transcript
+${transcript}
+
+### Active Characters in Play
+${characterNames}
+
+Your task is to extract:
+1. Significant PLOT events (discoveries, major actions, battles, objective updates, or movements).
+2. Deep CHARACTER reflections (how specific characters reacted emotionally, what they realized, or how their feelings changed).
+
+You must format each point on a new line using the following prefix tags. Do not output anything else.
+Use "[PLOT] <event description>" for plot events.
+Use "[REFLECTION: <Character Name>] <reflection description>" for character reflections.
+
+Example Output:
+[PLOT] The group decided to explore the dark dungeon.
+[REFLECTION: Arthur] Arthur felt a deep sense of dread, recalling his past trauma in similar caves.
+
+Please generate the entries for the recent transcript now:`;
             },
 
             buildRelationshipMatrixPrompt(transcript) {
@@ -14974,6 +15855,7 @@ Write only the character's message.`;
                     prompt_living_persona_gen: story.prompt_living_persona_gen,
                     prompt_world_map_gen: story.prompt_world_map_gen,
                     prompt_location_gen: story.prompt_location_gen,
+                    prompt_adjacent_locations_gen: story.prompt_adjacent_locations_gen,
                     prompt_entry_gen: story.prompt_entry_gen,
                     prompt_location_memory_gen: story.prompt_location_memory_gen,
                     font: story.font,
@@ -15246,7 +16128,7 @@ Write only the character's message.`;
                     id: UTILITY.uuid(), name: name, last_modified: new Date().toISOString(),
                     state: {
                         chat_history: [], messageCounter: 0, static_entries: [],
-                        narrative_timeline: [], relationship_matrix: [],
+                        narrative_timeline: [], relationship_matrix: [], journal_entries: [],
                         worldMap: { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] },
                         gameState: {
                             resources: [],
@@ -15256,6 +16138,7 @@ Write only the character's message.`;
                         livingPersonaCounters: {}, evolved_characters: {},
                         gm_rules: [],
                         gm_ledger: [],
+                        knowledge_revisions: [],
                         swarmMode: false, swarmNarrativeCapital: {}, swarmSecrets: {}, swarmLastIntents: {}
                     }
                 };
@@ -18757,7 +19640,17 @@ Write only the character's message.`;
                 }
 
                 const invBtn = document.getElementById('inventory-toggle-btn');
-                if (invBtn) invBtn.classList.remove('hidden');
+                if (invBtn) {
+                    if (state.enableJournal !== false) {
+                        invBtn.classList.remove('hidden');
+                    } else {
+                        invBtn.classList.add('hidden');
+                        const container = document.getElementById('inventory-panel-container');
+                        if (container && !container.classList.contains('hidden')) {
+                            container.classList.add('hidden');
+                        }
+                    }
+                }
 
                 // 2. Optimization: Don't full-render if actively streaming text
                 if (this.RUNTIME.streamingInterval) return;
@@ -19860,9 +20753,14 @@ Write only the character's message.`;
                                 else if (location.imageUrl && !location.imageUrl.startsWith('local_idb_location')) imageSrc = location.imageUrl;
                             }
                             const bgImage = imageSrc ? `background-image: url('${UTILITY.safeStyleUrl(imageSrc)}');` : '';
+                            const isGenerating = (typeof WorldController !== 'undefined' && WorldController.RUNTIME.generatingTiles && WorldController.RUNTIME.generatingTiles.has(`${x},${y}`));
+                            const isPainting = (typeof WorldController !== 'undefined' && WorldController.RUNTIME.generatingImages && WorldController.RUNTIME.generatingImages.has(`location::${x},${y}`));
                             let classList = ['aspect-square', 'rounded-lg', 'flex', 'items-center', 'justify-center', 'text-center', 'p-2', 'text-white', 'relative', 'overflow-hidden', 'bg-cover', 'bg-center', 'transition-all'];
 
                             if (isCenter) classList.push('bg-teal-800/80', 'ring-2', 'ring-teal-300');
+                            else if (isGenerating) {
+                                classList.push('animate-pulse', 'bg-sky-950/60', 'border', 'border-sky-500/50', 'text-sky-300', 'cursor-not-allowed');
+                            }
                             else if (location) {
                                 // If we have a background image, don't use the opaque gray background.
                                 // Use a transparent black overlay to ensure text contrast if needed, but let the image shine.
@@ -19873,9 +20771,21 @@ Write only the character's message.`;
 
                             if (pendingMove && pendingMove.x === x && pendingMove.y === y && !isCenter) classList.push('ring-4', 'ring-yellow-400');
 
-                            if (location) {
+                            if (isGenerating) {
+                                moveGridHTML += DOM.html`
+                                    <div class="${classList.join(' ')}">
+                                        <div class="flex flex-col items-center justify-center gap-1 relative z-10">
+                                            <svg class="animate-spin w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="none">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span class="text-[9px] uppercase font-bold tracking-wider">Building...</span>
+                                        </div>
+                                    </div>`.toString();
+                            } else if (location) {
                                 const displayName = (location.name && location.name !== 'Undefined') ? location.name : '';
-                                moveGridHTML += DOM.html`<div class="${classList.join(' ')}" style="${DOM.unsafe(bgImage)}" ${!isCenter ? DOM.unsafe(`data-action="select-pending-move" data-x="${x}" data-y="${y}"`) : ''}><div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>${displayName ? DOM.html`<span class="relative z-10 text-sm font-bold">${displayName}</span>` : ''}</div>`.toString();
+                                const paintingOverlay = isPainting ? `<div class="absolute inset-0 bg-amber-950/70 flex flex-col items-center justify-center gap-1 z-20"><svg class="animate-spin w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-[9px] text-amber-300 uppercase font-bold tracking-wider">Painting...</span></div>` : '';
+                                moveGridHTML += DOM.html`<div class="${classList.join(' ')}" style="${DOM.unsafe(bgImage)}" ${!isCenter ? DOM.unsafe(`data-action="select-pending-move" data-x="${x}" data-y="${y}"`) : ''}>${DOM.unsafe(paintingOverlay)}<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>${displayName ? DOM.html`<span class="relative z-10 text-sm font-bold">${displayName}</span>` : ''}</div>`.toString();
                             } else {
                                 moveGridHTML += DOM.html`<div class="${classList.join(' ')}"></div>`.toString();
                             }
@@ -19909,6 +20819,8 @@ Write only the character's message.`;
                                 else if (location.imageUrl && !location.imageUrl.startsWith('local_idb_location')) imageSrc = location.imageUrl;
                             }
 
+                            const isGenerating = (typeof WorldController !== 'undefined' && WorldController.RUNTIME.generatingTiles && WorldController.RUNTIME.generatingTiles.has(`${x},${y}`));
+                            const isPainting = (typeof WorldController !== 'undefined' && WorldController.RUNTIME.generatingImages && WorldController.RUNTIME.generatingImages.has(`location::${x},${y}`));
                             let classList = [
                                 'aspect-square', 'rounded', 'cursor-pointer', 'text-xs', 'p-1', 'overflow-hidden', 'leading-tight',
                                 'flex', 'items-center', 'justify-center', 'text-center', 'transition-all', 'duration-200',
@@ -19916,7 +20828,9 @@ Write only the character's message.`;
                             ];
 
                             // Subtle gradients for visibility
-                            if (location) {
+                            if (isGenerating) {
+                                classList.push('animate-pulse', 'bg-sky-950/60', 'border', 'border-sky-500/50', 'text-sky-300', 'cursor-not-allowed');
+                            } else if (location) {
                                 if (imageSrc) {
                                     classList.push('bg-black/20', 'text-white', 'shadow-sm', 'text-shadow-sm');
                                 } else {
@@ -19930,14 +20844,21 @@ Write only the character's message.`;
                             if (destination && destination.x === x && destination.y === y) classList.push('ring-2', 'ring-red-500', 'z-10');
                             if (path && path.some(p => p.x === x && p.y === y)) classList.push('bg-sky-900/50');
 
-                            // Removed selectedMapTile ring logic from here as it opens a modal now
-
                             const bgStyle = imageSrc ? `background-image: url('${UTILITY.safeStyleUrl(imageSrc)}');` : '';
                             // Add overlay for text readability if image exists
                             const displayName = (location && location.name && location.name !== 'Undefined') ? location.name : '';
-                            const content = location ? (imageSrc ? `<div class="absolute inset-0 bg-black/40"></div>${displayName ? `<span class="relative z-10">${displayName}</span>` : ''}` : displayName) : '';
+                            const paintingOverlay = isPainting ? `<div class="absolute inset-0 bg-amber-950/70 flex flex-col items-center justify-center gap-1 z-20"><svg class="animate-spin w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-[9px] text-amber-300 uppercase font-bold tracking-wider hidden sm:inline">Painting...</span></div>` : '';
+                            const content = isGenerating ?
+                                `<div class="flex flex-col items-center justify-center gap-1 relative z-10">
+                                    <svg class="animate-spin w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="none">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span class="text-[9px] uppercase font-bold tracking-wider hidden sm:inline">Building...</span>
+                                </div>` :
+                                (location ? (paintingOverlay + (imageSrc ? `<div class="absolute inset-0 bg-black/40"></div>${displayName ? `<span class="relative z-10">${displayName}</span>` : ''}` : displayName)) : '');
 
-                            mapGridHTML += DOM.html`<div class="${classList.join(' ')}" style="${DOM.unsafe(bgStyle)}" data-action="select-map-tile" data-x="${x}" data-y="${y}">${DOM.unsafe(content)}</div>`.toString();
+                            mapGridHTML += DOM.html`<div class="${classList.join(' ')}" style="${DOM.unsafe(bgStyle)}" ${!isGenerating ? DOM.unsafe(`data-action="select-map-tile" data-x="${x}" data-y="${y}"`) : ''}>${DOM.unsafe(content)}</div>`.toString();
                         }
                     }
 
@@ -19964,6 +20885,20 @@ Write only the character's message.`;
                                  <div class="w-10 h-5 bg-gray-700 rounded-full toggle-bg border-2 border-gray-600"></div>
                              </label>
                              <span class="text-xs text-gray-400 font-bold ml-2 uppercase tracking-wide">NPCs</span>
+                        </div>
+                        <div class="flex items-center mr-4 border-r border-gray-600 pr-4">
+                             <label class="relative inline-flex items-center cursor-pointer" title="Automatically generate adjacent locations using AI when moving">
+                                 <input type="checkbox" onchange="WorldController.toggleAutoBuildLocations(this.checked)" class="sr-only" ${state.enableAutoBuildLocations ? 'checked' : ''}>
+                                 <div class="w-10 h-5 bg-gray-700 rounded-full toggle-bg border-2 border-gray-600"></div>
+                             </label>
+                             <span class="text-xs text-gray-400 font-bold ml-2 uppercase tracking-wide">Auto-Build</span>
+                        </div>
+                        <div class="flex items-center mr-4 border-r border-gray-600 pr-4">
+                             <label class="relative inline-flex items-center cursor-pointer" title="Automatically generate background images for locations as you visit them">
+                                 <input type="checkbox" onchange="WorldController.toggleAutoGenerateLocationImages(this.checked)" class="sr-only" ${state.enableAutoGenerateLocationImages ? 'checked' : ''}>
+                                 <div class="w-10 h-5 bg-gray-700 rounded-full toggle-bg border-2 border-gray-600"></div>
+                             </label>
+                             <span class="text-xs text-gray-400 font-bold ml-2 uppercase tracking-wide">Auto-Image</span>
                         </div>
                         <button data-action="clear-world-map" class="text-red-400 hover:text-red-300 transition-colors" title="Clear World Map">
                              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -21695,9 +22630,12 @@ Write only the character's message.`;
                     'imageGenWidth', 'imageGenHeight',
                     'koboldImageGenCfg', 'koboldImageGenSampler', 'koboldImageGenScheduler', 'koboldImageGenSteps',
                     // TTS Keys
-                    'ttsEnabled', 'ttsVoice', 'ttsAutoPlayback',
+                    'ttsEnabled', 'ttsVoice', 'ttsAutoPlayback', 'ttsBackend',
                     // Music Keys
-                    'musicMode', 'musicBackend', 'musicOpenRouterModel', 'musicVolume', 'musicInterval'
+                    'musicMode', 'musicBackend', 'musicOpenRouterModel', 'musicVolume', 'musicInterval',
+                    // NanoGPT Keys
+                    'nanoGPTKey', 'nanoGPTModel', 'imageGenNanoGPTKey', 'imageGenNanoGPTModel',
+                    'nanoGPTTTSModel', 'nanoGPTTTSVoice', 'musicNanoGPTModel'
                 ]
             },
 
@@ -22098,6 +23036,9 @@ Write only the character's message.`;
                 } else if (state.apiProvider === 'openrouter') {
                     limit = 32768;
                     providerName = 'OpenRouter';
+                } else if (state.apiProvider === 'nanogpt') {
+                    limit = 32768;
+                    providerName = 'NanoGPT';
                 }
 
                 const replacer = PromptBuilder._getReplacer(components.charToAct);
@@ -22500,6 +23441,7 @@ Write only the character's message.`;
                     this.renderTokenVisualizer();
                 } else if (tabName === 'model') {
                     this.renderSavedOpenRouterModels();
+                    this.renderSavedNanoGPTModels();
                     // NEW: Populate Gemini Models dynamically
                     this.populateGeminiModels();
                     // Render TTS Settings
@@ -22509,9 +23451,11 @@ Write only the character's message.`;
                     const backendSelect = document.getElementById('image-gen-backend');
                     const koboldSettings = document.getElementById('image-gen-kobold-settings');
                     const openRouterSettings = document.getElementById('image-gen-openrouter-settings');
+                    const nanoGPTSettings = document.getElementById('image-gen-nanogpt-settings');
 
                     // NEW: Render saved image models
                     this.renderSavedOpenRouterImageModels();
+                    this.renderSavedNanoGPTImageModels();
 
 
 
@@ -22720,22 +23664,29 @@ Write only the character's message.`;
                 // Show/hide provider panels + playback controls
                 const geminiInfo = document.getElementById('music-gemini-info');
                 const orInfo = document.getElementById('music-openrouter-info');
+                const nanoInfo = document.getElementById('music-nanogpt-info');
                 const playbackCtrl = document.getElementById('music-playback-controls');
                 const badge = document.getElementById('music-backend-badge');
 
                 if (geminiInfo) geminiInfo.classList.toggle('hidden', activeBackendValue !== 'gemini');
                 if (orInfo) orInfo.classList.toggle('hidden', activeBackendValue !== 'openrouter');
+                if (nanoInfo) nanoInfo.classList.toggle('hidden', activeBackendValue !== 'nanogpt');
                 if (playbackCtrl) playbackCtrl.classList.toggle('hidden', activeBackendValue === 'off');
                 if (badge) {
                     badge.textContent = activeBackendValue === 'off' ? 'AI Music'
                         : activeBackendValue === 'gemini' ? 'Gemini / Lyria'
+                        : activeBackendValue === 'nanogpt' ? 'NanoGPT'
                         : 'OpenRouter';
                 }
 
-                // Populate OpenRouter music model input
+                // Populate OpenRouter/NanoGPT music model inputs
                 const musicORModelInput = document.getElementById('music-openrouter-model-input');
                 if (musicORModelInput) {
                     musicORModelInput.value = globalSettings.musicOpenRouterModel || 'google/lyria-3-clip-preview';
+                }
+                const musicNanoModelInput = document.getElementById('music-nanogpt-model-input');
+                if (musicNanoModelInput) {
+                    musicNanoModelInput.value = globalSettings.musicNanoGPTModel || 'google/lyria-3-clip-preview';
                 }
 
                 const musicVolSlider = document.getElementById('music-volume-slider');
@@ -22884,6 +23835,8 @@ Write only the character's message.`;
                 if (document.getElementById('image-gen-height')) setListener('image-gen-height', 'imageGenHeight');
                 if (document.getElementById('image-gen-openrouter-key-input')) setListener('image-gen-openrouter-key-input', 'imageGenOpenRouterKey');
                 if (document.getElementById('image-gen-openrouter-model-input')) setListener('image-gen-openrouter-model-input', 'imageGenOpenRouterModel');
+                if (document.getElementById('image-gen-nanogpt-key-input')) setListener('image-gen-nanogpt-key-input', 'imageGenNanoGPTKey');
+                if (document.getElementById('image-gen-nanogpt-model-input')) setListener('image-gen-nanogpt-model-input', 'imageGenNanoGPTModel');
 
                 // Kobold Extended Settings
                 if (document.getElementById('kobold-cfg-scale')) setListener('kobold-cfg-scale', 'koboldImageGenCfg');
@@ -22895,6 +23848,8 @@ Write only the character's message.`;
                 if (document.getElementById('gemini-api-key-input')) setListener('gemini-api-key-input', 'geminiApiKey');
                 if (document.getElementById('openrouter-api-key-input')) setListener('openrouter-api-key-input', 'openRouterKey');
                 if (document.getElementById('openrouter-model-input')) setListener('openrouter-model-input', 'openRouterModel');
+                if (document.getElementById('nanogpt-api-key-input')) setListener('nanogpt-api-key-input', 'nanoGPTKey');
+                if (document.getElementById('nanogpt-model-input')) setListener('nanogpt-model-input', 'nanoGPTModel');
                 if (document.getElementById('koboldcpp-min-p-slider')) setupSlider('koboldcpp-min-p-slider', 'koboldcpp-min-p-value', 'koboldcpp_min_p');
                 if (document.getElementById('koboldcpp-dry-slider')) setupSlider('koboldcpp-dry-slider', 'koboldcpp-dry-value', 'koboldcpp_dry');
                 if (document.getElementById('koboldcpp-url-input')) setListener('koboldcpp-url-input', 'koboldcpp_url');
@@ -22983,15 +23938,18 @@ Write only the character's message.`;
                         // Toggle provider info panels + playback controls
                         const geminiInfo = document.getElementById('music-gemini-info');
                         const orInfo = document.getElementById('music-openrouter-info');
+                        const nanoInfo = document.getElementById('music-nanogpt-info');
                         const playbackCtrl = document.getElementById('music-playback-controls');
                         const badge = document.getElementById('music-backend-badge');
 
                         if (geminiInfo) geminiInfo.classList.toggle('hidden', val !== 'gemini');
                         if (orInfo) orInfo.classList.toggle('hidden', val !== 'openrouter');
+                        if (nanoInfo) nanoInfo.classList.toggle('hidden', val !== 'nanogpt');
                         if (playbackCtrl) playbackCtrl.classList.toggle('hidden', val === 'off');
                         if (badge) {
                             badge.textContent = val === 'off' ? 'AI Music'
                                 : val === 'gemini' ? 'Gemini / Lyria'
+                                : val === 'nanogpt' ? 'NanoGPT'
                                 : 'OpenRouter';
                         }
 
@@ -22999,13 +23957,13 @@ Write only the character's message.`;
                     });
                 }
 
-                // Save music OpenRouter model when manually typed
-                const musicORModelInput = document.getElementById('music-openrouter-model-input');
-                if (musicORModelInput) {
-                    musicORModelInput.addEventListener('change', (e) => {
+                // Save music NanoGPT model when manually typed
+                const musicNanoModelInput = document.getElementById('music-nanogpt-model-input');
+                if (musicNanoModelInput) {
+                    musicNanoModelInput.addEventListener('change', (e) => {
                         const val = e.target.value.trim();
                         if (val) {
-                            globalSettings.musicOpenRouterModel = val;
+                            globalSettings.musicNanoGPTModel = val;
                             StateManager.saveGlobalSettings();
                         }
                     });
@@ -23058,7 +24016,7 @@ Write only the character's message.`;
                 const promptGroups = {
                     'Core Narrative': ['system_prompt', 'prompt_response_options_gen', 'prompt_stats_init', 'prompt_story_notes_gen', 'prompt_story_tags_gen'],
                     'Agents': ['event_master_base_prompt', 'visual_master_base_prompt', 'prompt_persona_gen', 'prompt_living_persona_gen', 'prompt_timeline_extractor', 'prompt_relationship_matrix'],
-                    'Lore & Map': ['prompt_world_map_gen', 'prompt_location_gen', 'prompt_entry_gen', 'prompt_location_memory_gen', 'prompt_auto_static_knowledge'],
+                    'Lore & Map': ['prompt_world_map_gen', 'prompt_location_gen', 'prompt_adjacent_locations_gen', 'prompt_entry_gen', 'prompt_location_memory_gen', 'prompt_auto_static_knowledge'],
                     'Director Mode': ['swarm_scratchpad_prompt', 'swarm_director_prompt'],
                     'Objectivity': ['prompt_objectivity_description', 'prompt_objectivity_thoughts']
                 };
@@ -23072,6 +24030,7 @@ Write only the character's message.`;
                     'prompt_response_options_gen': 'Guide the AI as it generates 4 follow-up options for the user. Variables: {context}, {last_response}',
                     'prompt_world_map_gen': 'Generates the entire world map. Variables: {characters}, {static}, {recent}',
                     'prompt_location_gen': 'Generates a location\'s detailed prompt. Variables: {name}, {description}',
+                    'prompt_adjacent_locations_gen': 'Generates blank adjacent locations on the fly. Variables: {characters}, {static}, {recent}, {current_coords}, {surrounding_locations}, {target_coords}',
                     'prompt_entry_gen': 'Used for Static/Dynamic memory entries. Variables: {title}, {triggers}',
                     'prompt_location_memory_gen': 'Auto-summarizes events when leaving a location. Variable: {transcript}',
                     'prompt_timeline_extractor': 'Extracts a chronological timeline bullet from the narrative. Variable: {transcript}',
@@ -23232,6 +24191,7 @@ Write only the character's message.`;
                 bindGlobalToggle('global-default-enable-stats-toggle', 'default_enableStats');
                 bindGlobalToggle('global-default-living-persona', 'default_enableLivingPersona');
                 bindGlobalToggle('global-default-enable-response-options-toggle', 'default_enableResponseOptions');
+                bindGlobalToggle('global-default-enable-journal-toggle', 'default_enableJournal');
 
                 bindGlobalSelect('global-default-response-length-selector', 'default_responseLength');
                 bindGlobalSelect('global-default-response-style-selector', 'default_responseStyle');
@@ -23312,6 +24272,17 @@ Write only the character's message.`;
                     livingPersonaToggle.addEventListener('change', (e) => {
                         state.enableLivingPersona = e.target.checked;
                         if (typeof ReactiveStore.forceSave === 'function') ReactiveStore.forceSave();
+                    });
+                }
+
+                // Toggle for Journal
+                const journalToggle = document.getElementById('enable-journal-toggle');
+                if (journalToggle) {
+                    journalToggle.checked = state.enableJournal !== false; // Default true
+                    journalToggle.addEventListener('change', (e) => {
+                        state.enableJournal = e.target.checked;
+                        if (typeof ReactiveStore.forceSave === 'function') ReactiveStore.forceSave();
+                        UIManager.renderChat();
                     });
                 }
 
@@ -23432,6 +24403,7 @@ Write only the character's message.`;
                 // Settings Visibility Toggles
                 const geminiSettings = document.getElementById('gemini-settings');
                 const openrouterSettings = document.getElementById('openrouter-settings');
+                const nanogptSettings = document.getElementById('nanogpt-settings');
                 const koboldcppSettings = document.getElementById('koboldcpp-settings');
                 const lmstudioSettings = document.getElementById('lmstudio-settings');
                 const webllmSettings = document.getElementById('webllm-settings');
@@ -23440,6 +24412,7 @@ Write only the character's message.`;
 
                 if (geminiSettings) geminiSettings.style.display = currentProvider === 'gemini' ? 'block' : 'none';
                 if (openrouterSettings) openrouterSettings.style.display = currentProvider === 'openrouter' ? 'block' : 'none';
+                if (nanogptSettings) nanogptSettings.style.display = currentProvider === 'nanogpt' ? 'block' : 'none';
                 if (koboldcppSettings) koboldcppSettings.style.display = currentProvider === 'koboldcpp' ? 'block' : 'none';
                 if (lmstudioSettings) lmstudioSettings.style.display = currentProvider === 'lmstudio' ? 'block' : 'none';
                 if (webllmSettings) webllmSettings.style.display = currentProvider === 'webllm' ? 'block' : 'none';
@@ -23887,6 +24860,13 @@ Write only the character's message.`;
                     if (show) openRouterSettings.classList.remove('hidden');
                     else openRouterSettings.classList.add('hidden');
                 }
+                const nanoGPTSettings = document.getElementById('image-gen-nanogpt-settings');
+                if (nanoGPTSettings) {
+                    const show = val === 'nanogpt';
+                    nanoGPTSettings.style.display = show ? 'block' : 'none';
+                    if (show) nanoGPTSettings.classList.remove('hidden');
+                    else nanoGPTSettings.classList.add('hidden');
+                }
             },
 
             /**
@@ -24288,6 +25268,242 @@ Write only the character's message.`;
                 </button>
             </div>
         `;
+                }).join('');
+            },
+
+            // --- NanoGPT Model Browser & Saved Models Logic ---
+
+            /**
+             * Opens the NanoGPT Model Browser modal.
+             * @param {string} [mode='text'] - 'text', 'image', or 'audio'
+             */
+            async openNanoGPTModelBrowser(mode = 'text') {
+                this.RUNTIME.modelBrowserMode = mode;
+                const listContainer = document.getElementById('nanogpt-model-list');
+                const searchInput = document.getElementById('nanogpt-model-search');
+
+                if (searchInput) searchInput.value = '';
+
+                if (listContainer) {
+                    listContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-400"><span>Loading NanoGPT models...</span></div>';
+                }
+
+                this.openModal('nanogpt-model-modal');
+
+                try {
+                    let models = await APIService.fetchNanoGPTModels(mode);
+
+                    if (mode === 'text') {
+                        models = models.filter(m => {
+                            const id = m.id.toLowerCase();
+                            if (id.includes('dall-e') || id.includes('stable-diffusion')) return false;
+                            return true;
+                        });
+                    }
+
+                    this._nanoGPTModelsList = models;
+                    this._renderNanoGPTModelList(models);
+
+                    if (searchInput) {
+                        searchInput.oninput = debounce((e) => {
+                            const query = e.target.value.toLowerCase().trim();
+                            const filtered = query ? models.filter(m =>
+                                m.id.toLowerCase().includes(query) ||
+                                (m.name && m.name.toLowerCase().includes(query))
+                            ) : models;
+                            this._renderNanoGPTModelList(filtered);
+                        }, 200);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch NanoGPT models:', error);
+                    if (listContainer) {
+                        listContainer.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-red-400 p-4">
+                            <span class="text-center">Failed to load NanoGPT models.</span>
+                            <span class="text-center text-sm mt-1">${error.message}</span>
+                            <button onclick="AppController.openNanoGPTModelBrowser('${mode}')" class="mt-4 bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-white">Retry</button>
+                        </div>`;
+                    }
+                }
+            },
+
+            async openNanoGPTImageModelBrowser() {
+                await this.openNanoGPTModelBrowser('image');
+            },
+
+            async openNanoGPTMusicModelBrowser() {
+                await this.openNanoGPTModelBrowser('audio');
+            },
+
+            _renderNanoGPTModelList(models) {
+                const listContainer = document.getElementById('nanogpt-model-list');
+                if (!listContainer) return;
+
+                if (!models || models.length === 0) {
+                    listContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-400"><span>No models found</span></div>';
+                    return;
+                }
+
+                const global = StateManager.data.globalSettings;
+                const state = StateManager.getState();
+
+                let currentModel;
+                if (this.RUNTIME.modelBrowserMode === 'image') {
+                    currentModel = global.imageGenNanoGPTModel || state.imageGenNanoGPTModel;
+                } else if (this.RUNTIME.modelBrowserMode === 'audio') {
+                    currentModel = global.musicNanoGPTModel || 'google/lyria-3-clip-preview';
+                } else {
+                    currentModel = global.nanoGPTModel || state.nanoGPTModel;
+                }
+
+                const sortedModels = [...models].sort((a, b) => {
+                    if (a.id === currentModel) return -1;
+                    if (b.id === currentModel) return 1;
+                    return (a.name || a.id).localeCompare(b.name || b.id);
+                });
+
+                listContainer.innerHTML = sortedModels.map(model => {
+                    const isSelected = model.id === currentModel;
+                    const contextLength = model.context_length ? `${Math.round(model.context_length / 1024)}K ctx` : '';
+
+                    return `
+                        <div class="p-3 rounded-lg cursor-pointer transition-colors mb-1 ${isSelected ? 'bg-indigo-600/50 border border-indigo-500' : 'bg-gray-700/50 hover:bg-gray-600/50 border border-transparent'}" onclick="AppController._selectNanoGPTModelFromBrowser('${model.id}')">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-medium text-white truncate">${model.name || model.id}</div>
+                                    <div class="text-xs text-gray-400 truncate">${model.id}</div>
+                                </div>
+                                ${isSelected ? '<span class="ml-2 text-indigo-300 text-sm whitespace-nowrap">Current</span>' : ''}
+                            </div>
+                            ${contextLength ? `<div class="mt-2 text-xs text-gray-400"><span title="Context window">${contextLength}</span></div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            _selectNanoGPTModelFromBrowser(modelId) {
+                if (this.RUNTIME.modelBrowserMode === 'image') {
+                    const input = document.getElementById('image-gen-nanogpt-model-input');
+                    if (input) {
+                        input.value = modelId;
+                        input.dispatchEvent(new Event('input'));
+                    }
+                    ReactiveStore.state.imageGenNanoGPTModel = modelId;
+                } else if (this.RUNTIME.modelBrowserMode === 'audio') {
+                    const input = document.getElementById('music-nanogpt-model-input');
+                    if (input) input.value = modelId;
+                    const globalSettings = StateManager.data.globalSettings;
+                    globalSettings.musicNanoGPTModel = modelId;
+                    StateManager.saveGlobalSettings();
+                } else {
+                    const input = document.getElementById('nanogpt-model-input');
+                    if (input) {
+                        input.value = modelId;
+                        input.dispatchEvent(new Event('input'));
+                    }
+                    ReactiveStore.state.nanoGPTModel = modelId;
+                }
+                this.closeModal('nanogpt-model-modal');
+            },
+
+            saveNanoGPTModel() {
+                const input = document.getElementById('nanogpt-model-input');
+                if (!input) return;
+                const value = input.value.trim();
+                if (!value) return;
+                const globalSettings = StateManager.data.globalSettings;
+                if (!globalSettings.savedNanoGPTModels) globalSettings.savedNanoGPTModels = [];
+                if (!globalSettings.savedNanoGPTModels.includes(value)) {
+                    globalSettings.savedNanoGPTModels.push(value);
+                    StateManager.saveGlobalSettings();
+                    this.renderSavedNanoGPTModels();
+                }
+            },
+
+            deleteNanoGPTModel(modelName) {
+                const globalSettings = StateManager.data.globalSettings;
+                if (!globalSettings.savedNanoGPTModels) return;
+                if (confirm(`Remove "${modelName}" from saved models?`)) {
+                    globalSettings.savedNanoGPTModels = globalSettings.savedNanoGPTModels.filter(m => m !== modelName);
+                    StateManager.saveGlobalSettings();
+                    this.renderSavedNanoGPTModels();
+                }
+            },
+
+            selectNanoGPTModel(modelName) {
+                const input = document.getElementById('nanogpt-model-input');
+                if (input) {
+                    input.value = modelName;
+                    input.dispatchEvent(new Event('input'));
+                }
+            },
+
+            renderSavedNanoGPTModels() {
+                const container = document.getElementById('nanogpt-saved-models-list');
+                if (!container) return;
+                const globalSettings = StateManager.data.globalSettings;
+                const models = globalSettings.savedNanoGPTModels || [];
+                if (models.length === 0) {
+                    container.innerHTML = '<span class="text-xs text-gray-500 italic">No saved models.</span>';
+                    return;
+                }
+                container.innerHTML = models.map(model => {
+                    const shortName = model.includes('/') ? model.split('/').slice(1).join('/') : model;
+                    return `
+                        <div class="inline-flex items-center bg-black/30 border border-gray-600 rounded-lg overflow-hidden" title="${model}">
+                            <button onclick="AppController.selectNanoGPTModel('${model}')" class="px-3 py-1 text-xs text-gray-300 hover:text-white hover:bg-white/10 transition-colors truncate max-w-[200px]">${shortName}</button>
+                            <button onclick="AppController.deleteNanoGPTModel('${model}')" class="px-2 py-1 text-xs text-gray-500 hover:text-red-400 hover:bg-black/20 border-l border-gray-600 transition-colors" title="Remove"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                        </div>`;
+                }).join('');
+            },
+
+            saveNanoGPTImageModel() {
+                const input = document.getElementById('image-gen-nanogpt-model-input');
+                if (!input) return;
+                const value = input.value.trim();
+                if (!value) return;
+                const globalSettings = StateManager.data.globalSettings;
+                if (!globalSettings.savedNanoGPTImageModels) globalSettings.savedNanoGPTImageModels = [];
+                if (!globalSettings.savedNanoGPTImageModels.includes(value)) {
+                    globalSettings.savedNanoGPTImageModels.push(value);
+                    StateManager.saveGlobalSettings();
+                    this.renderSavedNanoGPTImageModels();
+                }
+            },
+
+            deleteNanoGPTImageModel(modelName) {
+                const globalSettings = StateManager.data.globalSettings;
+                if (!globalSettings.savedNanoGPTImageModels) return;
+                if (confirm(`Remove "${modelName}" from saved image models?`)) {
+                    globalSettings.savedNanoGPTImageModels = globalSettings.savedNanoGPTImageModels.filter(m => m !== modelName);
+                    StateManager.saveGlobalSettings();
+                    this.renderSavedNanoGPTImageModels();
+                }
+            },
+
+            selectNanoGPTImageModel(modelName) {
+                const input = document.getElementById('image-gen-nanogpt-model-input');
+                if (input) {
+                    input.value = modelName;
+                    input.dispatchEvent(new Event('input'));
+                }
+            },
+
+            renderSavedNanoGPTImageModels() {
+                const container = document.getElementById('image-gen-nanogpt-saved-models-list');
+                if (!container) return;
+                const globalSettings = StateManager.data.globalSettings;
+                const models = globalSettings.savedNanoGPTImageModels || [];
+                if (models.length === 0) {
+                    container.innerHTML = '<span class="text-xs text-gray-500 italic">No saved models.</span>';
+                    return;
+                }
+                container.innerHTML = models.map(model => {
+                    const shortName = model.includes('/') ? model.split('/').slice(1).join('/') : model;
+                    return `
+                        <div class="inline-flex items-center bg-black/30 border border-gray-600 rounded-lg overflow-hidden" title="${model}">
+                            <button onclick="AppController.selectNanoGPTImageModel('${model}')" class="px-3 py-1 text-xs text-gray-300 hover:text-white hover:bg-white/10 transition-colors truncate max-w-[200px]">${shortName}</button>
+                            <button onclick="AppController.deleteNanoGPTImageModel('${model}')" class="px-2 py-1 text-xs text-gray-500 hover:text-red-400 hover:bg-black/20 border-l border-gray-600 transition-colors" title="Remove"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                        </div>`;
                 }).join('');
             }
         };
@@ -28110,6 +29326,7 @@ Write only the descriptive paragraphs.`;
                             prompt_living_persona_gen: story.prompt_living_persona_gen,
                             prompt_world_map_gen: story.prompt_world_map_gen,
                             prompt_location_gen: story.prompt_location_gen,
+                            prompt_adjacent_locations_gen: story.prompt_adjacent_locations_gen,
                             prompt_entry_gen: story.prompt_entry_gen,
                             prompt_location_memory_gen: story.prompt_location_memory_gen,
                             font: story.font,
@@ -30880,13 +32097,74 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     }).join('\n');
 
                     // 1. Parallel Extractions (Timeline & Relationships)
-                    this._runBackgroundExtractions(transcript);
+                    await this._runBackgroundExtractions(transcript);
 
                     // 2. Global Lore (Wiki) Update
                     await this._updateGlobalLore(transcript);
 
                     // 3. Archivist Condensation (Check for bloat)
                     await this._checkAndCondenseLore();
+                }
+            },
+
+            getCurrentLocationName() {
+                const state = ReactiveStore.state;
+                if (state && state.worldMap && state.worldMap.grid && state.worldMap.currentLocation) {
+                    const currentLoc = state.worldMap.grid.find(loc => loc.coords.x === state.worldMap.currentLocation.x && loc.coords.y === state.worldMap.currentLocation.y);
+                    if (currentLoc) {
+                        return currentLoc.name;
+                    }
+                }
+                return 'Unknown Location';
+            },
+
+            async checkAutoJournal() {
+                const state = ReactiveStore.state;
+                if (state.enableJournal === false) return;
+
+                if (state.messageCounter > 0 && state.messageCounter % 6 === 0) {
+                    const history = state.chat_history;
+                    const chatMessages = history.filter(m => m.type === 'chat');
+                    const recent = chatMessages.slice(0, -1).slice(-6);
+
+                    if (recent.length === 0) return;
+
+                    const transcript = recent.map(m => {
+                        const char = ReactiveStore.getCharacter(m.character_id);
+                        return `${char ? char.name : 'Unknown'}: ${m.content}`;
+                    }).join('\n');
+
+                    const characterNames = (state.characters || []).map(c => c.name).join(', ');
+
+                    try {
+                        const promptText = PromptBuilder.buildJournalExtractorPrompt(transcript, characterNames);
+                        const aiResponse = await APIService.callAI(promptText, false);
+                        if (aiResponse) {
+                            const parsedEntries = UTILITY.parseJournalExtractions(aiResponse);
+                            if (parsedEntries && parsedEntries.length > 0) {
+                                if (!state.journal_entries) state.journal_entries = [];
+
+                                const location = this.getCurrentLocationName();
+                                const timestamp = new Date().toISOString();
+
+                                for (const entry of parsedEntries) {
+                                    state.journal_entries.push({
+                                        id: UTILITY.uuid(),
+                                        timestamp: timestamp,
+                                        location: location,
+                                        type: entry.type,
+                                        character_name: entry.character_name || '',
+                                        content: entry.content
+                                    });
+                                }
+
+                                UIManager.showToast("New journal entries extracted.");
+                                UIManager.renderInventoryPanel();
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Failed to auto-generate journal entries:", err);
+                    }
                 }
             },
 
@@ -31271,7 +32549,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 // 3. Post-Processing
                 // Check if it's time to generate static knowledge (every 6 messages)
                 if (targetMessageIndex === null && typeof NarrativeController !== 'undefined') {
-                    NarrativeController.checkAutoStaticKnowledge();
+                    NarrativeController.triggerAutoKnowledgeUpdates();
                 }
 
                 // Background Music Agent (Non-blocking, fire-and-forget)
@@ -31706,7 +32984,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
 
                 if (type === 'chat') {
                     ReactiveStore.state.messageCounter++;
-                    this.checkAutoStaticKnowledge();
+                    this.triggerAutoKnowledgeUpdates();
 
                     // Living Persona Check
                     if (state.enableLivingPersona) {
@@ -31915,13 +33193,23 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
 
                 if (mode === 'single') {
                     const msg = state.chat_history[index];
+                    const deletedIds = [];
+                    if (msg) {
+                        deletedIds.push(msg.id);
+                        const nextMsg = state.chat_history[index + 1];
+                        if (nextMsg && nextMsg.type === 'lore_reveal') {
+                            deletedIds.push(nextMsg.id);
+                        }
+                        this.rollbackKnowledgeForDeletedMessages(deletedIds);
+                    }
+
                     if (msg && msg.type === 'chat') state.messageCounter--;
                     state.chat_history.splice(index, 1);
 
                     // Fix: Check if the message that is now at 'index' (shifted from index+1) is a 'lore_reveal'
                     // If so, it was likely triggered by the message we just deleted, so we should clean it up.
-                    const nextMsg = state.chat_history[index];
-                    if (nextMsg && nextMsg.type === 'lore_reveal') {
+                    const shiftedMsg = state.chat_history[index];
+                    if (shiftedMsg && shiftedMsg.type === 'lore_reveal') {
                         state.chat_history.splice(index, 1);
                     }
                 }
@@ -31929,6 +33217,9 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     // Delete this index and everything after it
                     // Count how many chat messages we are removing to update counter
                     const removed = state.chat_history.slice(index);
+                    const deletedIds = removed.map(m => m.id);
+                    this.rollbackKnowledgeForDeletedMessages(deletedIds);
+
                     const chatCount = removed.filter(m => m.type === 'chat').length;
                     state.messageCounter = Math.max(0, state.messageCounter - chatCount);
 
@@ -31947,16 +33238,131 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 const history = ReactiveStore.state.chat_history;
                 if (history.length === 0) return;
 
+                const deletedIds = [];
                 let removedChatMessage = false;
                 let i = history.length - 1;
                 while (i >= 0 && !removedChatMessage) {
                     const msg = history[i];
+                    deletedIds.push(msg.id);
                     history.splice(i, 1); // Reactive splice
                     if (msg.type === 'chat') {
                         ReactiveStore.state.messageCounter--;
                         removedChatMessage = true;
                     }
                     i--;
+                }
+
+                if (deletedIds.length > 0) {
+                    this.rollbackKnowledgeForDeletedMessages(deletedIds);
+                }
+            },
+
+            /**
+             * Creates a snapshot of the knowledge and game states.
+             * @param {Array<string>} messageIds - The IDs of the related messages.
+             * @returns {Object} The snapshot revision.
+             */
+            createKnowledgeSnapshot(messageIds) {
+                const state = ReactiveStore.state;
+                return {
+                    id: UTILITY.uuid(),
+                    timestamp: new Date().toISOString(),
+                    messageIds: [...messageIds],
+                    snapshot: {
+                        static_entries: JSON.parse(JSON.stringify(state.static_entries || [])),
+                        narrative_timeline: JSON.parse(JSON.stringify(state.narrative_timeline || [])),
+                        relationship_matrix: JSON.parse(JSON.stringify(state.relationship_matrix || [])),
+                        journal_entries: JSON.parse(JSON.stringify(state.journal_entries || [])),
+                        gameState: state.gameState ? JSON.parse(JSON.stringify(state.gameState)) : null,
+                        worldMapGrid: state.worldMap && state.worldMap.grid 
+                            ? JSON.parse(JSON.stringify(state.worldMap.grid))
+                            : null
+                    }
+                };
+            },
+
+            /**
+             * Checks the knowledge revisions and rolls them back if they were triggered/generated
+             * using any of the deleted message IDs.
+             * @param {Array<string>} deletedMessageIds - The IDs of the deleted messages.
+             */
+            rollbackKnowledgeForDeletedMessages(deletedMessageIds) {
+                const state = ReactiveStore.state;
+                if (!state.knowledge_revisions || state.knowledge_revisions.length === 0) return;
+
+                let earliestAffectedIndex = -1;
+                for (let i = 0; i < state.knowledge_revisions.length; i++) {
+                    const rev = state.knowledge_revisions[i];
+                    const hasIntersection = rev.messageIds.some(id => deletedMessageIds.includes(id));
+                    if (hasIntersection) {
+                        earliestAffectedIndex = i;
+                        break;
+                    }
+                }
+
+                if (earliestAffectedIndex !== -1) {
+                    const rev = state.knowledge_revisions[earliestAffectedIndex];
+                    console.log(`[Revisions] Rolling back knowledge to snapshot from ${rev.timestamp} due to deletion of:`, deletedMessageIds);
+
+                    state.static_entries = JSON.parse(JSON.stringify(rev.snapshot.static_entries || []));
+                    state.narrative_timeline = JSON.parse(JSON.stringify(rev.snapshot.narrative_timeline || []));
+                    state.relationship_matrix = JSON.parse(JSON.stringify(rev.snapshot.relationship_matrix || []));
+                    state.journal_entries = JSON.parse(JSON.stringify(rev.snapshot.journal_entries || []));
+
+                    if (rev.snapshot.gameState) {
+                        state.gameState = JSON.parse(JSON.stringify(rev.snapshot.gameState));
+                    }
+                    if (rev.snapshot.worldMapGrid && state.worldMap) {
+                        state.worldMap.grid = JSON.parse(JSON.stringify(rev.snapshot.worldMapGrid));
+                    }
+
+                    // Remove this revision and all subsequent revisions from history
+                    state.knowledge_revisions.splice(earliestAffectedIndex);
+
+                    ReactiveStore.forceSave();
+
+                    if (typeof UIManager !== 'undefined') {
+                        UIManager.renderStaticEntries();
+                        UIManager.renderDynamicEntries();
+                        UIManager.renderInventoryPanel();
+                    }
+                }
+            },
+
+            /**
+             * Triggers background auto static knowledge and journal updates.
+             * Wraps them in a snapshot transaction to log revisions.
+             */
+            async triggerAutoKnowledgeUpdates() {
+                const state = ReactiveStore.state;
+                if (state.messageCounter > 0 && state.messageCounter % 6 === 0) {
+                    const history = state.chat_history;
+                    const chatMessages = history.filter(m => m.type === 'chat');
+                    const recent = chatMessages.slice(0, -1).slice(-6);
+
+                    if (recent.length === 0) return;
+
+                    const messageIds = recent.map(m => m.id);
+
+                    // Create snapshot BEFORE updates
+                    const snapshotObj = this.createKnowledgeSnapshot(messageIds);
+
+                    // Sequential updates
+                    await this.checkAutoStaticKnowledge();
+                    await this.checkAutoJournal();
+
+                    // Compare changes
+                    const changed = 
+                        JSON.stringify(state.static_entries || []) !== JSON.stringify(snapshotObj.snapshot.static_entries) ||
+                        JSON.stringify(state.narrative_timeline || []) !== JSON.stringify(snapshotObj.snapshot.narrative_timeline) ||
+                        JSON.stringify(state.relationship_matrix || []) !== JSON.stringify(snapshotObj.snapshot.relationship_matrix) ||
+                        JSON.stringify(state.journal_entries || []) !== JSON.stringify(snapshotObj.snapshot.journal_entries);
+
+                    if (changed) {
+                        state.knowledge_revisions = state.knowledge_revisions || [];
+                        state.knowledge_revisions.push(snapshotObj);
+                        ReactiveStore.forceSave();
+                    }
                 }
             },
 
@@ -34458,6 +35864,10 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     return (s.openRouterKey && s.openRouterKey.trim() !== '') ||
                         (global.openRouterKey && global.openRouterKey.trim() !== '');
                 }
+                if (s.apiProvider === 'nanogpt') {
+                    return (s.nanoGPTKey && s.nanoGPTKey.trim() !== '') ||
+                        (global.nanoGPTKey && global.nanoGPTKey.trim() !== '');
+                }
                 if (s.apiProvider === 'koboldcpp') return !!s.koboldcpp_url;
                 if (s.apiProvider === 'lmstudio') return !!s.lmstudio_url;
                 if (s.apiProvider === 'webllm') return !!s.webllmModel;
@@ -35690,7 +37100,9 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 pendingMove: null,
                 turnOfArrival: 0,
                 selectedLocalStaticEntryId: null,
-                activeStaticCategoryFilter: 'all'
+                activeStaticCategoryFilter: 'all',
+                generatingTiles: new Set(),
+                generatingImages: new Set()
             },
 
             // --- World Map Navigation ---
@@ -35721,6 +37133,334 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
              */
             toggleLocationCharacters(enabled) {
                 ReactiveStore.state.enableLocationCharacters = enabled;
+            },
+
+            toggleAutoBuildLocations(enabled) {
+                ReactiveStore.state.enableAutoBuildLocations = enabled;
+                if (enabled) {
+                    const state = ReactiveStore.state;
+                    if (state.worldMap && state.worldMap.currentLocation) {
+                        this.checkAndGenerateAdjacentLocations(state.worldMap.currentLocation.x, state.worldMap.currentLocation.y);
+                    }
+                }
+            },
+
+            /**
+             * Toggles automatic background image generation for visited locations.
+             * @param {boolean} enabled - True to enable, false to disable.
+             */
+            toggleAutoGenerateLocationImages(enabled) {
+                ReactiveStore.state.enableAutoGenerateLocationImages = enabled;
+                if (enabled) {
+                    const state = ReactiveStore.state;
+                    if (state.worldMap && state.worldMap.currentLocation) {
+                        const cur = state.worldMap.currentLocation;
+                        const location = state.worldMap.grid.find(l => l.coords.x === cur.x && l.coords.y === cur.y);
+                        if (location && !location.imageUrl) {
+                            this.generateLocationImage(location).catch(err => {
+                                console.error('[Auto-Image] Failed to generate image for current location:', err);
+                            });
+                        }
+                    }
+                }
+            },
+
+            /**
+             * Generates and saves a background image for a location using its prompt/description.
+             * Tracks the operation in RUNTIME.generatingImages and updates the map UI on completion.
+             * @param {Object} location - The location object from the world map grid.
+             */
+            async generateLocationImage(location) {
+                if (!location) return;
+                const imgKey = `location::${location.coords.x},${location.coords.y}`;
+
+                // Prevent duplicate concurrent requests for the same tile
+                if (this.RUNTIME.generatingImages.has(imgKey)) {
+                    console.log(`[Auto-Image] Already generating image for ${imgKey}. Skipping.`);
+                    return;
+                }
+
+                // Check Image Generation Service is available
+                if (typeof ImageGenerationService === 'undefined') {
+                    console.warn('[Auto-Image] ImageGenerationService is not available. Is an image endpoint configured?');
+                    return;
+                }
+
+                console.log(`[Auto-Image] Starting background image generation for: ${location.name || imgKey}`);
+                this.RUNTIME.generatingImages.add(imgKey);
+
+                // Trigger map re-render to show "Painting..." indicator immediately
+                if (typeof UIManager !== 'undefined') {
+                    UIManager.renderWorldMapModal();
+                }
+
+                try {
+                    // Build a descriptive image prompt from the location data
+                    const promptContent = (location.prompt || '').trim() || (location.description || '').trim();
+                    const imagePrompt = `Fantasy landscape, environment art. Location: ${location.name || 'Unnamed Area'}. ${promptContent}`.substring(0, 500);
+                    const negativePrompt = 'people, characters, faces, persons, figure, text, watermark, low quality, blurry, distorted, nsfw, nude';
+
+                    // Use landscape dimensions (wider than tall)
+                    const globalSettings = StateManager.data.globalSettings;
+                    const width = globalSettings.imageGenWidth || 768;
+                    const height = Math.round((globalSettings.imageGenHeight || 512) * 0.65) || 340;
+
+                    const blob = await ImageGenerationService.generateImage(imagePrompt, negativePrompt, { width, height });
+
+                    if (!blob) {
+                        console.warn(`[Auto-Image] No image blob returned for: ${location.name}`);
+                        return;
+                    }
+
+                    // Save to IndexedDB
+                    await DBService.saveImage(imgKey, blob);
+
+                    // Cache the Object URL in UIManager
+                    UIManager.RUNTIME.worldImageCache = UIManager.RUNTIME.worldImageCache || {};
+                    if (UIManager.RUNTIME.worldImageCache[imgKey]) URL.revokeObjectURL(UIManager.RUNTIME.worldImageCache[imgKey]);
+                    UIManager.RUNTIME.worldImageCache[imgKey] = URL.createObjectURL(blob);
+
+                    // Update the reactive grid entry
+                    const state = ReactiveStore.state;
+                    const reactiveLoc = state.worldMap.grid.find(l => l.coords.x === location.coords.x && l.coords.y === location.coords.y);
+                    if (reactiveLoc) {
+                        reactiveLoc.imageUrl = `local_idb_${imgKey}`;
+                    }
+
+                    // Persist to IndexedDB
+                    await ReactiveStore.forceSave();
+
+                    console.log(`[Auto-Image] Image saved for: ${location.name || imgKey}`);
+
+                    // Update the UI
+                    if (typeof UIManager !== 'undefined') {
+                        UIManager.applyStyling();
+                        UIManager.renderWorldMapModal();
+                    }
+
+                } catch (e) {
+                    console.error(`[Auto-Image] Error generating image for ${location.name || imgKey}:`, e);
+                } finally {
+                    this.RUNTIME.generatingImages.delete(imgKey);
+                    if (typeof UIManager !== 'undefined') {
+                        UIManager.renderWorldMapModal();
+                    }
+                }
+            },
+
+            /**
+             * Checks if any adjacent locations to the current coordinates are empty,
+             * and initiates batch generation for them if enableAutoBuildLocations is true.
+             * @param {number} currentX
+             * @param {number} currentY
+             */
+            async checkAndGenerateAdjacentLocations(currentX, currentY) {
+                const state = ReactiveStore.state;
+                if (!state.enableAutoBuildLocations) return;
+
+                const emptyAdjacentCoords = [];
+                // Check surrounding 3x3 tiles
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        const nx = currentX + dx;
+                        const ny = currentY + dy;
+                        if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
+                            const loc = state.worldMap.grid.find(l => l.coords.x === nx && l.coords.y === ny);
+                            if (loc) {
+                                const hasName = loc.name && loc.name.trim() !== "" && loc.name !== "Undefined";
+                                const hasDesc = loc.description && loc.description.trim() !== "";
+                                if (!hasName && !hasDesc) {
+                                    // Make sure we are not already generating this coordinate
+                                    if (!this.RUNTIME.generatingTiles.has(`${nx},${ny}`)) {
+                                        emptyAdjacentCoords.push({ x: nx, y: ny });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (emptyAdjacentCoords.length === 0) return;
+
+                console.log(`[Auto-Build] Found ${emptyAdjacentCoords.length} empty adjacent locations. Starting background generation...`);
+                
+                if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                    UIManager.showNotification(`Auto-building ${emptyAdjacentCoords.length} adjacent locations...`, 'info');
+                }
+
+                // Call the generation method asynchronously (don't block the user's move)
+                this.generateAdjacentLocations(emptyAdjacentCoords).catch(err => {
+                    console.error("[Auto-Build] Failed to generate adjacent locations:", err);
+                });
+            },
+
+            /**
+             * Generates blank adjacent locations on the fly.
+             * @param {Array<Object>} emptyCoords - Coordinates to generate locations for.
+             */
+            async generateAdjacentLocations(emptyCoords) {
+                if (!emptyCoords || emptyCoords.length === 0) return;
+                const state = ReactiveStore.state;
+                const startMsgId = UTILITY.uuid();
+
+                // 1. Mark tiles as generating
+                emptyCoords.forEach(coord => {
+                    this.RUNTIME.generatingTiles.add(`${coord.x},${coord.y}`);
+                });
+                
+                if (typeof UIManager !== 'undefined') {
+                    UIManager.renderWorldMapModal();
+                }
+
+                // 2. Add System Message indicating progress
+                if (typeof NarrativeController !== 'undefined') {
+                    state.chat_history.push({
+                        id: startMsgId,
+                        type: 'system_event',
+                        content: `System: Auto-building ${emptyCoords.length} adjacent locations in the background...`,
+                        timestamp: new Date().toISOString(),
+                        isNew: true
+                    });
+                    if (typeof UIManager !== 'undefined') {
+                        UIManager.renderChat();
+                    }
+                }
+
+                // Chunk coordinates in batches of max 3 to prevent timeouts on slower/local backends
+                const chunkSize = 3;
+                const chunks = [];
+                for (let i = 0; i < emptyCoords.length; i += chunkSize) {
+                    chunks.push(emptyCoords.slice(i, i + chunkSize));
+                }
+
+                let totalUpdated = 0;
+                const allGeneratedNames = [];
+                let hasFailure = false;
+
+                try {
+                    for (let batchIdx = 0; batchIdx < chunks.length; batchIdx++) {
+                        const batch = chunks[batchIdx];
+                        console.log(`[Auto-Build] Processing batch ${batchIdx + 1}/${chunks.length} with ${batch.length} coords...`);
+                        
+                        try {
+                            const prompt = PromptBuilder.buildAdjacentLocationsPrompt(state, batch, state);
+                            const jsonResponse = await APIService.callAI(prompt, true);
+                            const responseObj = UTILITY.extractAndParseJSON(jsonResponse);
+
+                            let locationsArray = null;
+                            if (responseObj && typeof responseObj === 'object') {
+                                if (Array.isArray(responseObj.locations)) {
+                                    locationsArray = responseObj.locations;
+                                } else if (Array.isArray(responseObj)) {
+                                    locationsArray = responseObj;
+                                }
+                            }
+
+                            if (!locationsArray || locationsArray.length === 0) {
+                                console.warn(`[Auto-Build] Batch ${batchIdx + 1} received empty or invalid response from AI.`);
+                                hasFailure = true;
+                                continue;
+                            }
+
+                            let batchUpdatedCount = 0;
+                            for (const generatedLoc of locationsArray) {
+                                if (!generatedLoc.coords || generatedLoc.coords.x === undefined || generatedLoc.coords.y === undefined) continue;
+                                const targetLoc = state.worldMap.grid.find(l => l.coords.x === generatedLoc.coords.x && l.coords.y === generatedLoc.coords.y);
+                                if (targetLoc) {
+                                    // Only update if it is still empty (to prevent overwriting if user manually edited it in the meantime)
+                                    const hasName = targetLoc.name && targetLoc.name.trim() !== "" && targetLoc.name !== "Undefined";
+                                    const hasDesc = targetLoc.description && targetLoc.description.trim() !== "";
+                                    if (!hasName && !hasDesc) {
+                                        targetLoc.name = generatedLoc.name || "Unnamed Area";
+                                        targetLoc.description = generatedLoc.description || "";
+                                        targetLoc.prompt = generatedLoc.prompt || "";
+                                        targetLoc.local_static_entries = generatedLoc.local_static_entries || [];
+                                        targetLoc.characters = generatedLoc.characters || [];
+                                        batchUpdatedCount++;
+                                        allGeneratedNames.push(targetLoc.name);
+
+                                        // Trigger NPCs generation if toggle is enabled and location does not have NPCs
+                                        if (state.enableLocationCharacters !== false) {
+                                            this.generateLocationCharacters(targetLoc, true).catch(err => {
+                                                console.error(`[Auto-Build] Failed to generate characters for location: ${targetLoc.name}`, err);
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (batchUpdatedCount > 0) {
+                                totalUpdated += batchUpdatedCount;
+                                // Force save immediately to persist changes to IndexedDB
+                                await ReactiveStore.forceSave();
+
+                                // Update system message and re-render map incrementally
+                                const chatMsg = state.chat_history.find(m => m.id === startMsgId);
+                                if (chatMsg) {
+                                    chatMsg.content = `System: Auto-building adjacent locations (${allGeneratedNames.length}/${emptyCoords.length} built)...`;
+                                }
+                                if (typeof UIManager !== 'undefined') {
+                                    UIManager.renderChat();
+                                    UIManager.renderWorldMapModal();
+                                }
+                            }
+                        } catch (err) {
+                            console.error(`[Auto-Build] Error in batch ${batchIdx + 1}:`, err);
+                            hasFailure = true;
+                        } finally {
+                            // Clear generated status for this batch's tiles immediately
+                            batch.forEach(coord => {
+                                this.RUNTIME.generatingTiles.delete(`${coord.x},${coord.y}`);
+                            });
+                            if (typeof UIManager !== 'undefined') {
+                                UIManager.renderWorldMapModal();
+                            }
+                        }
+                    }
+
+                    // Finalizing system message and notifications
+                    const chatMsg = state.chat_history.find(m => m.id === startMsgId);
+                    if (totalUpdated > 0) {
+                        if (chatMsg) {
+                            if (hasFailure) {
+                                chatMsg.content = `System: Generated adjacent locations (partial success): ${allGeneratedNames.join(', ')}`;
+                            } else {
+                                chatMsg.content = `System: Generated adjacent locations: ${allGeneratedNames.join(', ')}`;
+                            }
+                        }
+                        if (typeof UIManager !== 'undefined') {
+                            UIManager.renderChat();
+                            if (UIManager.showNotification) {
+                                UIManager.showNotification(`Successfully auto-built ${totalUpdated} locations!`, 'success');
+                            }
+                        }
+                    } else {
+                        if (chatMsg) {
+                            chatMsg.content = `System: Failed to auto-build adjacent locations.`;
+                        }
+                        if (typeof UIManager !== 'undefined') {
+                            UIManager.renderChat();
+                        }
+                    }
+
+                } catch (e) {
+                    console.error("[Auto-Build] Global error in generateAdjacentLocations:", e);
+                    const chatMsg = state.chat_history.find(m => m.id === startMsgId);
+                    if (chatMsg) {
+                        chatMsg.content = `System: Failed to auto-build adjacent locations.`;
+                    }
+                    if (typeof UIManager !== 'undefined') {
+                        UIManager.renderChat();
+                    }
+                } finally {
+                    // Safety clean up of all tiles in this request
+                    emptyCoords.forEach(coord => {
+                        this.RUNTIME.generatingTiles.delete(`${coord.x},${coord.y}`);
+                    });
+                    if (typeof UIManager !== 'undefined') {
+                        UIManager.renderWorldMapModal();
+                    }
+                }
             },
 
             /**
@@ -35857,6 +37597,9 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     state.worldMap.currentLocation = { x, y };
                     this.RUNTIME.turnOfArrival = state.messageCounter;
 
+                    // Trigger Auto-Build of adjacent locations if enabled
+                    this.checkAndGenerateAdjacentLocations(x, y);
+
                     // 2. Update Path
                     if (state.worldMap.destination && state.worldMap.destination.x !== null) {
                         state.worldMap.path = UTILITY.findPath(state.worldMap.grid, state.worldMap.currentLocation, state.worldMap.destination);
@@ -35883,6 +37626,18 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         }
                     } else {
                         console.log(`[Location NPCs] Movement detected, but Location NPCs feature is disabled.`);
+                    }
+
+                    // 4.6 Try to Generate Location Background Image if enabled and missing
+                    if (state.enableAutoGenerateLocationImages) {
+                        if (!targetLocation.imageUrl) {
+                            console.log(`[Auto-Image] Moving to ${targetLocation.name} with no image. Initiating background image generation.`);
+                            this.generateLocationImage(targetLocation).catch(err => {
+                                console.error(`[Auto-Image] Failed to generate image for ${targetLocation.name}:`, err);
+                            });
+                        } else {
+                            console.log(`[Auto-Image] Moving to ${targetLocation.name}. Image already exists.`);
+                        }
                     }
 
                     // 5. Trigger AI Response (Narrator prefers to speak on move)
@@ -35935,11 +37690,22 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     if (location) {
                         if (!location.local_static_entries) location.local_static_entries = [];
 
+                        const messageIds = relevantHistory.map(msg => msg.id);
+                        let snapshotObj = null;
+                        if (typeof NarrativeController !== 'undefined' && messageIds.length > 0) {
+                            snapshotObj = NarrativeController.createKnowledgeSnapshot(messageIds);
+                        }
+
                         location.local_static_entries.push({
                             id: UTILITY.uuid(),
                             title: `Events from turn ${startTurn} to ${endTurn}`,
                             content: summaryContent
                         });
+
+                        if (snapshotObj) {
+                            state.knowledge_revisions = state.knowledge_revisions || [];
+                            state.knowledge_revisions.push(snapshotObj);
+                        }
                     }
                 } catch (error) {
                     console.error("Failed to auto-generate location memory:", error);
@@ -37156,6 +38922,11 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 
                 if (parseResult.changes.length === 0) return;
                 
+                let snapshotObj = null;
+                if (typeof NarrativeController !== 'undefined' && messageObj && messageObj.id) {
+                    snapshotObj = NarrativeController.createKnowledgeSnapshot([messageObj.id]);
+                }
+                
                 const notifications = [];
                 
                 parseResult.changes.forEach(change => {
@@ -37198,12 +38969,19 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                             }
                         } else {
                             // Start new quest
+                            let charId = null;
+                            if (change.characterName) {
+                                const characters = (ReactiveStore.state.characters || []);
+                                const character = characters.find(c => c.name.toLowerCase().includes(change.characterName.toLowerCase()));
+                                if (character) charId = character.id;
+                            }
                             const newQuest = {
                                 id: UTILITY.uuid(),
                                 title: change.title,
                                 status: change.status,
                                 objective: change.objective,
-                                log: change.objective ? [change.objective] : []
+                                log: change.objective ? [change.objective] : [],
+                                characterId: charId
                             };
                             state.gameState.journal.push(newQuest);
                             notifications.push(`New Quest active: ${change.title}`);
@@ -37254,6 +39032,12 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                         }, index * 800);
                     });
                 }
+
+                if (snapshotObj) {
+                    state.knowledge_revisions = state.knowledge_revisions || [];
+                    state.knowledge_revisions.push(snapshotObj);
+                    ReactiveStore.forceSave();
+                }
             },
 
             /**
@@ -37283,7 +39067,7 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
             /**
              * Directly manages quests via UI modal actions.
              */
-            addQuest(title, objective) {
+            addQuest(title, objective, characterId) {
                 const state = ReactiveStore.state;
                 if (!state.gameState) state.gameState = { resources: [], relationships: [], journal: [] };
                 
@@ -37292,11 +39076,12 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                     title,
                     status: 'active',
                     objective,
-                    log: objective ? [objective] : []
+                    log: objective ? [objective] : [],
+                    characterId: characterId || null
                 });
             },
 
-            updateQuest(id, status, objective) {
+            updateQuest(id, status, objective, characterId) {
                 const state = ReactiveStore.state;
                 if (!state.gameState) return;
                 
@@ -37308,6 +39093,21 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                         if (!quest.log) quest.log = [];
                         quest.log.push(objective);
                     }
+                    if (characterId !== undefined) {
+                        quest.characterId = characterId || null;
+                    }
+                }
+            },
+
+            updateQuestObjective(questId, objective) {
+                const state = ReactiveStore.state;
+                if (!state.gameState) return;
+                
+                const quest = state.gameState.journal.find(q => q.id === questId);
+                if (quest) {
+                    quest.objective = objective;
+                    if (!quest.log) quest.log = [];
+                    quest.log.push(objective);
                 }
             },
 
@@ -37413,12 +39213,20 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                             if (action === 'complete') status = 'completed';
                             else if (action === 'fail') status = 'failed';
 
+                            let charId = null;
+                            if (change.characterName) {
+                                const characters = (ReactiveStore.state.characters || []);
+                                const character = characters.find(c => c.name.toLowerCase().includes(change.characterName.toLowerCase()));
+                                if (character) charId = character.id;
+                            }
+
                             const newQuest = {
                                 id: UTILITY.uuid(),
                                 title: title,
                                 status: status,
                                 objective: objective,
-                                log: objective ? [objective] : []
+                                log: objective ? [objective] : [],
+                                characterId: charId
                             };
                             state.gameState.journal.push(newQuest);
                             notifications.push(`New Quest active: ${title}`);
@@ -37823,9 +39631,11 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 await StateManager.loadActiveNarrative();
                 const state = StateManager.getState();
 
-                // Populate OpenRouter cache early if active provider to ensure vision detection works
+                // Populate OpenRouter/NanoGPT cache early if active provider to ensure vision detection works
                 if (state && state.apiProvider === 'openrouter') {
                     APIService.fetchOpenRouterModels().catch(() => { });
+                } else if (state && state.apiProvider === 'nanogpt') {
+                    APIService.fetchNanoGPTModels().catch(() => { });
                 }
 
                 // 5. Initialize Event System (THE NEW LOGIC)
@@ -38167,9 +39977,10 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                             if (isAtTop) {
                                 const history = UIManager.RUNTIME.inputHistory;
                                 if (history && history.length > 0) {
-                                    // Only allow starting history navigation if field is empty OR already in history
-                                    const isCurrentlyInHistory = UIManager.RUNTIME.inputHistoryIndex < history.length;
-                                    if (chatInput.value.trim() !== '' && !isCurrentlyInHistory) {
+                                    const index = UIManager.RUNTIME.inputHistoryIndex;
+                                    const currentHistoryVal = (index >= 0 && index < history.length) ? history[index] : null;
+                                    const hasUnsavedContent = chatInput.value.trim() !== '' && chatInput.value !== currentHistoryVal;
+                                    if (hasUnsavedContent) {
                                         return;
                                     }
 
@@ -38186,6 +39997,13 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                             if (isAtBottom) {
                                 const history = UIManager.RUNTIME.inputHistory;
                                 if (history && UIManager.RUNTIME.inputHistoryIndex !== undefined && UIManager.RUNTIME.inputHistoryIndex < history.length) {
+                                    const index = UIManager.RUNTIME.inputHistoryIndex;
+                                    const currentHistoryVal = (index >= 0 && index < history.length) ? history[index] : null;
+                                    const hasUnsavedContent = chatInput.value.trim() !== '' && chatInput.value !== currentHistoryVal;
+                                    if (hasUnsavedContent) {
+                                        return;
+                                    }
+
                                     e.preventDefault();
                                     UIManager.RUNTIME.inputHistoryIndex++;
                                     if (UIManager.RUNTIME.inputHistoryIndex === history.length) {

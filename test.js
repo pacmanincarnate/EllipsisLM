@@ -877,6 +877,8 @@ test('parseStateUpdateString: parses quest actions', () => {
     deepEq(UTILITY.parseStateUpdateString('Quest Complete: Escape the Dungeon'), { type: 'quest', title: 'Escape the Dungeon', status: 'completed', objective: '', isUpdate: false });
     deepEq(UTILITY.parseStateUpdateString('Quest Update: Escape the Dungeon (Objective: Find exit)'), { type: 'quest', title: 'Escape the Dungeon', status: 'active', objective: 'Find exit', isUpdate: true });
     deepEq(UTILITY.parseStateUpdateString('Quest fail: Escape the Dungeon'), { type: 'quest', title: 'Escape the Dungeon', status: 'failed', objective: '', isUpdate: false });
+    deepEq(UTILITY.parseStateUpdateString('Quest start: Escape the Dungeon (assigned: Marcus)'), { type: 'quest', title: 'Escape the Dungeon', status: 'active', objective: '', characterName: 'Marcus', isUpdate: false });
+    deepEq(UTILITY.parseStateUpdateString('Quest Update: Escape the Dungeon (assigned: Marcus) (Objective: Find exit)'), { type: 'quest', title: 'Escape the Dungeon', status: 'active', objective: 'Find exit', characterName: 'Marcus', isUpdate: true });
 });
 
 test('parseStateUpdateString: parses relationship changes', () => {
@@ -946,6 +948,11 @@ test('parseQuestLine: parses various formats', () => {
     deepEq(UTILITY.parseQuestLine('complete|Find Thorne'), { action: 'complete', title: 'Find Thorne', objective: '' });
     deepEq(UTILITY.parseQuestLine('update: Escape the Dungeon (Objective: Find the cell key)'), { action: 'update', title: 'Escape the Dungeon', objective: 'Find the cell key' });
     deepEq(UTILITY.parseQuestLine('complete: Escape the Dungeon'), { action: 'complete', title: 'Escape the Dungeon', objective: '' });
+    // Assigned character parsing formats
+    deepEq(UTILITY.parseQuestLine('start|Marcus|Find Thorne|Go to the inn'), { action: 'start', characterName: 'Marcus', title: 'Find Thorne', objective: 'Go to the inn' });
+    deepEq(UTILITY.parseQuestLine('complete|Marcus|Find Thorne'), { action: 'complete', characterName: 'Marcus', title: 'Find Thorne', objective: '' });
+    deepEq(UTILITY.parseQuestLine('start: Escape the Dungeon (assigned: Marcus)'), { action: 'start', characterName: 'Marcus', title: 'Escape the Dungeon', objective: '' });
+    deepEq(UTILITY.parseQuestLine('update: Escape the Dungeon (assigned: Marcus) (Objective: Find exit)'), { action: 'update', characterName: 'Marcus', title: 'Escape the Dungeon', objective: 'Find exit' });
 });
 
 test('parseRelationshipLine: parses various formats', () => {
@@ -1040,6 +1047,37 @@ test('migrateGameState: migrates/retains existing rich fields, setting default v
     assert.equal(migrated.relationships[0].track, 'Trust');
     assert.equal(migrated.relationships[0].stance, 'Loyal companion');
     deepEq(migrated.relationships[0].history, []);
+});
+
+test('getDefaultSystemPrompts: includes prompt_adjacent_locations_gen default value', () => {
+    const prompts = UTILITY.getDefaultSystemPrompts();
+    assert.ok(prompts.prompt_adjacent_locations_gen);
+    assert.ok(prompts.prompt_adjacent_locations_gen.includes('{target_coords}'));
+    assert.ok(prompts.prompt_adjacent_locations_gen.includes('{surrounding_locations}'));
+});
+
+// ─── parseJournalExtractions ──────────────────────────────────────────
+
+test('parseJournalExtractions: empty/null input returns empty array', () => {
+    deepEq(UTILITY.parseJournalExtractions(''), []);
+    deepEq(UTILITY.parseJournalExtractions(null), []);
+});
+
+test('parseJournalExtractions: parses plot and reflection lines correctly', () => {
+    const text = `
+    [PLOT] The group entered the ancient ruins.
+    [REFLECTION: Arthur] Arthur felt a deep sense of dread.
+    [PLOT] They discovered a glowing magical artifact.
+    [REFLECTION: Merlin] Merlin was fascinated by the artifact's ancient runes.
+    [INVALID] Some invalid line that should be ignored.
+    `;
+    const expected = [
+        { type: 'plot', content: 'The group entered the ancient ruins.' },
+        { type: 'reflection', character_name: 'Arthur', content: 'Arthur felt a deep sense of dread.' },
+        { type: 'plot', content: 'They discovered a glowing magical artifact.' },
+        { type: 'reflection', character_name: 'Merlin', content: "Merlin was fascinated by the artifact's ancient runes." }
+    ];
+    deepEq(UTILITY.parseJournalExtractions(text), expected);
 });
 
 test('index.html lookbehind assertions check: ensures no (?<= or (?<! exist in index.html', () => {
