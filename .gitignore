@@ -31,3 +31,6 @@ Thumbs.db
 .env.*.local
 MusicAPIDetails
 UI_GUIDELINES.html
+.agents/rules/instructions.md
+test.js
+test.js

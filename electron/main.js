@@ -587,6 +587,92 @@ ipcMain.handle('app:scrapeUrl', async (_event, url) => {
         });
     });
 });
+
+// ============================================================
+// NATIVE AUTO-BACKUP IPC HANDLERS
+// ============================================================
+ipcMain.handle('backup:saveNative', async (_event, payload) => {
+    try {
+        if (!payload || typeof payload !== 'object') return { success: false, error: 'Invalid payload' };
+        const backupDir = path.join(app.getPath('userData'), 'autobackups');
+        if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+
+        const latestPath = path.join(backupDir, 'autobackup_latest.json');
+        const prevPath = path.join(backupDir, 'autobackup_previous.json');
+        const tempPath = path.join(backupDir, 'autobackup_latest.json.tmp');
+
+        // Roll previous backup if latest exists
+        if (fs.existsSync(latestPath)) {
+            try {
+                fs.copyFileSync(latestPath, prevPath);
+            } catch (e) {
+                console.warn('[AutoBackup] Failed to copy previous backup:', e);
+            }
+        }
+
+        // Atomic write via temp file
+        const dataStr = JSON.stringify(payload);
+        fs.writeFileSync(tempPath, dataStr, 'utf8');
+        fs.renameSync(tempPath, latestPath);
+
+        return { success: true, timestamp: payload.timestamp || new Date().toISOString(), bytes: dataStr.length };
+    } catch (e) {
+        console.error('[AutoBackup] Native save error:', e);
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('backup:loadNative', async () => {
+    try {
+        const backupDir = path.join(app.getPath('userData'), 'autobackups');
+        const latestPath = path.join(backupDir, 'autobackup_latest.json');
+        const prevPath = path.join(backupDir, 'autobackup_previous.json');
+
+        let targetPath = null;
+        if (fs.existsSync(latestPath)) targetPath = latestPath;
+        else if (fs.existsSync(prevPath)) targetPath = prevPath;
+
+        if (!targetPath) return { success: false, error: 'No native backup file found.' };
+
+        try {
+            const raw = fs.readFileSync(targetPath, 'utf8');
+            const data = JSON.parse(raw);
+            return { success: true, data, source: path.basename(targetPath) };
+        } catch (parseErr) {
+            console.warn(`[AutoBackup] ${targetPath} corrupted, attempting fallback...`);
+            if (targetPath === latestPath && fs.existsSync(prevPath)) {
+                const rawPrev = fs.readFileSync(prevPath, 'utf8');
+                const dataPrev = JSON.parse(rawPrev);
+                return { success: true, data: dataPrev, source: 'autobackup_previous.json' };
+            }
+            throw parseErr;
+        }
+    } catch (e) {
+        console.error('[AutoBackup] Native load error:', e);
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('backup:getInfo', async () => {
+    try {
+        const backupDir = path.join(app.getPath('userData'), 'autobackups');
+        const latestPath = path.join(backupDir, 'autobackup_latest.json');
+        const prevPath = path.join(backupDir, 'autobackup_previous.json');
+
+        const info = { latest: null, previous: null };
+        if (fs.existsSync(latestPath)) {
+            const stat = fs.statSync(latestPath);
+            info.latest = { mtime: stat.mtime.toISOString(), sizeBytes: stat.size };
+        }
+        if (fs.existsSync(prevPath)) {
+            const stat = fs.statSync(prevPath);
+            info.previous = { mtime: stat.mtime.toISOString(), sizeBytes: stat.size };
+        }
+        return { success: true, info };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
 // ============================================================
 // WINDOW CREATION
 // ============================================================

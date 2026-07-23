@@ -1095,6 +1095,58 @@ test('index.html lookbehind assertions check: ensures no (?<= or (?<! exist in i
     assert.deepEqual(matches, [], `Found lookbehind assertions in index.html:\n${matches.join('\n')}`);
 });
 
+// ─── AutoBackup Helpers ──────────────────────────────────────────────────
+
+test('buildBackupPayload: builds structured payload from arrays', () => {
+    const stories = [{ id: 's1', title: 'Test Story' }];
+    const nars = [{ id: 'n1', title: 'Test Narrative' }];
+    const folders = [{ id: 'f1', name: 'Test Folder' }];
+    const payload = UTILITY.buildBackupPayload(stories, nars, folders, '2.0');
+
+    assert.equal(payload.version, '2.0');
+    assert.equal(payload.storiesCount, 1);
+    assert.equal(payload.narrativesCount, 1);
+    assert.equal(payload.foldersCount, 1);
+    assert.ok(payload.timestamp);
+});
+
+test('validateBackupData: validates structure and detects empty state', () => {
+    const invalid = UTILITY.validateBackupData(null);
+    assert.equal(invalid.valid, false);
+
+    const empty = UTILITY.validateBackupData({ stories: [], narratives: [] });
+    assert.equal(empty.valid, false);
+
+    const valid = UTILITY.validateBackupData({ stories: [{ id: 's1' }], narratives: [] });
+    assert.equal(valid.valid, true);
+    assert.equal(valid.storiesCount, 1);
+});
+
+test('sanitizeBackupForLocalStorage: strips image properties and prunes large chat histories', () => {
+    const payload = {
+        stories: [{ id: 's1', characterImages: { a: 'blob' } }],
+        narratives: [{ id: 'n1', chat_history: Array(100).fill({ role: 'user', content: 'hello' }) }]
+    };
+    const sanitized = UTILITY.sanitizeBackupForLocalStorage(payload, 500);
+    assert.ok(sanitized);
+    assert.equal(sanitized.stories[0].characterImages, undefined);
+    assert.ok(sanitized.narratives[0].chat_history.length <= 50);
+});
+
+test('isBackupNewerOrRicher: compares backup vs current state correctly', () => {
+    const backup = {
+        timestamp: new Date().toISOString(),
+        stories: [{ id: 's1' }],
+        narratives: [{ id: 'n1' }]
+    };
+    // Primary DB is empty
+    assert.equal(UTILITY.isBackupNewerOrRicher(backup, [], []), true);
+    // Primary DB has same count (intact, backup not needed)
+    assert.equal(UTILITY.isBackupNewerOrRicher(backup, [{ id: 's1' }], [{ id: 'n1' }]), false);
+    // Primary DB has more data
+    assert.equal(UTILITY.isBackupNewerOrRicher(backup, [{ id: 's1' }, { id: 's2' }], [{ id: 'n1' }, { id: 'n2' }]), false);
+});
+
 
 
 

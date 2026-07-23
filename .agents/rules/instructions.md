@@ -28,6 +28,7 @@ EllipsisLM uses an unconventional but highly deliberate architecture that priori
 - `[SEC:HTML:BODY]` UI structure, modals, containers.
 - `[SEC:JS:STATE:RS]` Custom implementation of a Proxy-based state `ReactiveStore` to manage reactive data.
 - `[SEC:JS:SRV:DB]` Database services natively wrapping `IndexedDB` for local storage in the browser cache.
+- `[SEC:JS:SRV:BACKUP]` AutoBackupService managing zero-impact rolling auto-backups and seamless automatic recovery.
 - `[SEC:JS:UI:TEMPLATE]` UI component definition strings to dynamically inject HTML.
 - `[SEC:JS:CTRL:*]` Controllers responsible for orchestrating specific segments (e.g., `LibraryController` for managing stories, `NarrativeController` for routing chats, `WorldController` for managing the map).
 - `[SEC:JS:MOD:AH]` Custom central action handler managing delegated events to minimize event listeners.

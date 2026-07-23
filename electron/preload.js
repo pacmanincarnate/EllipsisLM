@@ -119,5 +119,12 @@ contextBridge.exposeInMainWorld('electronBridge', {
 
         /** Scrape JSON data from a URL using a hidden browser window */
         scrapeUrl: (url) => ipcRenderer.invoke('app:scrapeUrl', url)
+    },
+
+    /** Native Auto-Backup management */
+    backup: {
+        saveNative: (payload) => ipcRenderer.invoke('backup:saveNative', payload),
+        loadNative: () => ipcRenderer.invoke('backup:loadNative'),
+        getInfo: () => ipcRenderer.invoke('backup:getInfo')
     }
 });

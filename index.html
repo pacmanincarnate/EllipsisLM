@@ -10,6 +10,7 @@
     [SEC:JS:CORE]           - Script Initialization & Global Constants
     [SEC:JS:MOD:AH]         - ActionHandler (Event Delegation)
     [SEC:JS:SRV:DB]         - DBService (IndexedDB Wrapper)
+    [SEC:JS:SRV:BACKUP]     - AutoBackupService (Rolling Auto-Backups)
     [SEC:JS:SRV:IMG_GEN]    - ImageGenerationService
     [SEC:JS:UTIL:UTILS]     - UTILITY (Helper Functions)
     [SEC:JS:UTIL:PB]        - PromptBuilder (Context Logic)
@@ -65,12 +66,17 @@
 
     <title>EllipsisLM</title>
     <!-- Installable Web App: manifest + service worker (enables Add to Home Screen on Android/iOS) -->
-    <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="https://github.com/pacmanincarnate/EllipsisLM/blob/main/logo.jpg?raw=true">
     <link rel="icon" type="image/png" href="https://github.com/pacmanincarnate/EllipsisLM/blob/main/logo.jpg?raw=true">
     <script>
-      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-        window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+      if (window.location.protocol.startsWith('http')) {
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = './manifest.json';
+        document.head.appendChild(manifestLink);
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+        }
       }
     </script>
 
@@ -7071,11 +7077,19 @@
 
             async getAllStories() { return this._getAll('stories'); },
             async getStory(id) { return this._get('stories', id); },
-            async saveStory(story) { return this._performWrite('stories', story); },
+            async saveStory(story) {
+                const res = await this._performWrite('stories', story);
+                if (res && typeof AutoBackupService !== 'undefined') AutoBackupService.scheduleBackup();
+                return res;
+            },
             async deleteStory(id) { return this._delete('stories', id); },
 
             async getNarrative(id) { return this._get('narratives', id); },
-            async saveNarrative(narrative) { return this._performWrite('narratives', narrative); },
+            async saveNarrative(narrative) {
+                const res = await this._performWrite('narratives', narrative);
+                if (res && typeof AutoBackupService !== 'undefined') AutoBackupService.scheduleBackup();
+                return res;
+            },
             async deleteNarrative(id) { return this._delete('narratives', id); },
 
             async getAllFolders() { return this._getAll('folders'); },
@@ -7411,6 +7425,141 @@
                         req.onerror = () => resolve(false);
                     } catch (e) { resolve(false); }
                 });
+            }
+        };
+
+        /**
+         * =================================================================================================
+         * [SEC:JS:SRV:BACKUP]
+         * AutoBackupService Module
+         * Manages seamless, zero-impact rolling auto-backups and automatic recovery from DB loss.
+         * =================================================================================================
+         */
+        const AutoBackupService = {
+            _backupTimer: null,
+            _isBackupRunning: false,
+
+            async requestPersistentStorage() {
+                try {
+                    if (navigator.storage && typeof navigator.storage.persist === 'function') {
+                        const isPersisted = await navigator.storage.persist();
+                        console.log(`[AutoBackup] Storage Persistence granted: ${isPersisted}`);
+                    }
+                } catch (e) {
+                    console.warn("[AutoBackup] Storage persistence check failed:", e);
+                }
+            },
+
+            scheduleBackup(delayMs = 3000) {
+                if (this._backupTimer) clearTimeout(this._backupTimer);
+                this._backupTimer = setTimeout(() => {
+                    this.performAutoBackup().catch(err => {
+                        console.warn("[AutoBackup] Background backup task error (fail-soft):", err);
+                    });
+                }, delayMs);
+            },
+
+            async performAutoBackup() {
+                if (this._isBackupRunning) return;
+                this._isBackupRunning = true;
+                try {
+                    const stories = await DBService.getAllStories();
+                    if (!stories || stories.length === 0) {
+                        this._isBackupRunning = false;
+                        return;
+                    }
+
+                    const narrativePromises = stories.flatMap(s => (s.narratives || []).map(nStub => DBService.getNarrative(nStub.id)));
+                    const narrativesRaw = await Promise.all(narrativePromises);
+                    const narratives = narrativesRaw.filter(Boolean);
+                    const folders = await DBService.getAllFolders();
+
+                    const payload = UTILITY.buildBackupPayload(stories, narratives, folders);
+
+                    // 1. Desktop Mode (Electron native file backup)
+                    if (window.electronBridge && window.electronBridge.backup && typeof window.electronBridge.backup.saveNative === 'function') {
+                        await window.electronBridge.backup.saveNative(payload);
+                    }
+
+                    // 2. Web Mode (localStorage lightweight backup)
+                    try {
+                        const cleanPayload = UTILITY.sanitizeBackupForLocalStorage(payload, 2000000);
+                        if (cleanPayload) {
+                            localStorage.setItem('ellipsis_emergency_backup', JSON.stringify(cleanPayload));
+                        }
+                    } catch (e) {
+                        console.warn("[AutoBackup] localStorage write skipped:", e);
+                    }
+                } catch (err) {
+                    console.warn("[AutoBackup] Auto backup failed (fail-soft):", err);
+                } finally {
+                    this._isBackupRunning = false;
+                }
+            },
+
+            async getLatestBackup() {
+                // 1. Check Electron Native File Backup
+                if (window.electronBridge && window.electronBridge.backup && typeof window.electronBridge.backup.loadNative === 'function') {
+                    const nativeRes = await window.electronBridge.backup.loadNative();
+                    if (nativeRes && nativeRes.success && nativeRes.data) {
+                        const validated = UTILITY.validateBackupData(nativeRes.data);
+                        if (validated.valid) return nativeRes.data;
+                    }
+                }
+
+                // 2. Check localStorage Emergency Backup
+                try {
+                    const raw = localStorage.getItem('ellipsis_emergency_backup');
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        const validated = UTILITY.validateBackupData(parsed);
+                        if (validated.valid) return parsed;
+                    }
+                } catch (e) {}
+
+                return null;
+            },
+
+            async autoRecoverIfMissing(currentStories, currentNarratives) {
+                try {
+                    const backup = await this.getLatestBackup();
+                    if (!backup) return false;
+
+                    const shouldRecover = UTILITY.isBackupNewerOrRicher(backup, currentStories, currentNarratives);
+                    if (!shouldRecover) return false;
+
+                    console.log("[AutoBackup] Primary DB empty/corrupted. Performing automatic seamless recovery...");
+                    
+                    let restoredCount = 0;
+                    if (backup.stories && Array.isArray(backup.stories)) {
+                        for (const story of backup.stories) {
+                            await DBService.saveStory(story);
+                            restoredCount++;
+                        }
+                    }
+                    if (backup.narratives && Array.isArray(backup.narratives)) {
+                        for (const narrative of backup.narratives) {
+                            await DBService.saveNarrative(narrative);
+                        }
+                    }
+                    if (backup.folders && Array.isArray(backup.folders)) {
+                        for (const folder of backup.folders) {
+                            await DBService.saveFolder(folder);
+                        }
+                    }
+
+                    if (restoredCount > 0) {
+                        setTimeout(() => {
+                            if (window.UIManager && typeof UIManager.showNotification === 'function') {
+                                UIManager.showNotification(`✨ Library Auto-Restored: Successfully recovered ${restoredCount} stories from backup.`, 'success');
+                            }
+                        }, 1000);
+                        return true;
+                    }
+                } catch (e) {
+                    console.error("[AutoBackup] Auto-recovery exception:", e);
+                }
+                return false;
             }
         };
 
@@ -7863,8 +8012,17 @@
              * @returns {Promise<{storyStubs: Array, activeStory: Object|null, activeNarrative: Object|null}>}
              */
             async loadApplicationData() {
-                const storyStubs = await DBService.getAllStories();
-                const folders = await DBService.getAllFolders();
+                let storyStubs = await DBService.getAllStories();
+                let folders = await DBService.getAllFolders();
+
+                // Auto-Recovery Check: If primary DB returned empty, check rolling auto-backup
+                if ((!storyStubs || storyStubs.length === 0) && typeof AutoBackupService !== 'undefined') {
+                    const recovered = await AutoBackupService.autoRecoverIfMissing(storyStubs, []);
+                    if (recovered) {
+                        storyStubs = await DBService.getAllStories();
+                        folders = await DBService.getAllFolders();
+                    }
+                }
 
                 // Robust local storage retrieval
                 let activeStoryId = localStorage.getItem('active_story_id');
@@ -13010,6 +13168,86 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 }
 
                 return result;
+            },
+
+            /**
+             * Auto-Backup Utility Helpers
+             */
+            buildBackupPayload(stories = [], narratives = [], folders = [], appVersion = '1.0') {
+                return {
+                    version: appVersion,
+                    timestamp: new Date().toISOString(),
+                    storiesCount: Array.isArray(stories) ? stories.length : 0,
+                    narrativesCount: Array.isArray(narratives) ? narratives.length : 0,
+                    foldersCount: Array.isArray(folders) ? folders.length : 0,
+                    stories: Array.isArray(stories) ? stories : [],
+                    narratives: Array.isArray(narratives) ? narratives : [],
+                    folders: Array.isArray(folders) ? folders : []
+                };
+            },
+
+            sanitizeBackupForLocalStorage(payload, maxBytes = 2000000) {
+                if (!payload || typeof payload !== 'object') return null;
+                let clean = JSON.parse(JSON.stringify(payload));
+                
+                if (clean.stories && Array.isArray(clean.stories)) {
+                    clean.stories.forEach(s => {
+                        if (s && s.characterImages) delete s.characterImages;
+                    });
+                }
+                
+                let str = JSON.stringify(clean);
+                if (str.length <= maxBytes) return clean;
+
+                if (clean.narratives && Array.isArray(clean.narratives)) {
+                    clean.narratives.forEach(n => {
+                        if (n && Array.isArray(n.chat_history) && n.chat_history.length > 50) {
+                            n.chat_history = n.chat_history.slice(-50);
+                        }
+                    });
+                }
+
+                str = JSON.stringify(clean);
+                if (str.length <= maxBytes) return clean;
+
+                if (clean.narratives && Array.isArray(clean.narratives)) {
+                    clean.narratives.forEach(n => {
+                        if (n && Array.isArray(n.chat_history) && n.chat_history.length > 20) {
+                            n.chat_history = n.chat_history.slice(-20);
+                        }
+                    });
+                }
+
+                return clean;
+            },
+
+            validateBackupData(data) {
+                if (!data || typeof data !== 'object') return { valid: false, storiesCount: 0, narrativesCount: 0, reason: 'Invalid object' };
+                const stories = Array.isArray(data.stories) ? data.stories : [];
+                const narratives = Array.isArray(data.narratives) ? data.narratives : [];
+                if (stories.length === 0 && narratives.length === 0) {
+                    return { valid: false, storiesCount: 0, narrativesCount: 0, reason: 'Empty stories and narratives' };
+                }
+                return {
+                    valid: true,
+                    storiesCount: stories.length,
+                    narrativesCount: narratives.length,
+                    foldersCount: Array.isArray(data.folders) ? data.folders.length : 0,
+                    timestamp: data.timestamp || null
+                };
+            },
+
+            isBackupNewerOrRicher(backupData, currentStories = [], currentNarratives = []) {
+                const validation = this.validateBackupData(backupData);
+                if (!validation.valid) return false;
+
+                const currStoriesCount = Array.isArray(currentStories) ? currentStories.length : 0;
+                const currNarrativesCount = Array.isArray(currentNarratives) ? currentNarratives.length : 0;
+
+                if (currStoriesCount === 0 && currNarrativesCount === 0) return true;
+                if (validation.storiesCount > currStoriesCount || validation.narrativesCount > currNarrativesCount) return true;
+
+                return false;
             }
         };
 
@@ -13326,7 +13564,7 @@ JSON Schema:
 
                 const replacer = this._getReplacer(charToAct);
                 let modelInstructions = charToAct.model_instructions || state.system_prompt;
-                if (state.gameState) {
+                if (state.gameState && state.enableJournal !== false) {
                     const gameStateXml = this.buildGameStateXml(state.gameState);
                     if (gameStateXml) {
                         modelInstructions = gameStateXml + "\n\n" + modelInstructions;
@@ -17702,6 +17940,8 @@ Write only the character's message.`;
              * Toggles the Journal & Inventory panel collapsed/expanded state.
              */
             toggleInventoryPanel() {
+                const state = StateManager.getState();
+                if (state && state.enableJournal === false) return;
                 const container = document.getElementById('inventory-panel-container');
                 if (container) {
                     const wasHidden = container.classList.contains('hidden');
@@ -17729,7 +17969,7 @@ Write only the character's message.`;
                 const container = document.getElementById('inventory-panel-container');
                 if (!container) return;
 
-                if (!state || !state.gameState) {
+                if (!state || !state.gameState || state.enableJournal === false) {
                     container.classList.add('hidden');
                     container.innerHTML = '';
                     return;
@@ -34174,7 +34414,7 @@ Rules:
 
                 // 1.5 Build current state context
                 let currentStateContext = '';
-                if (state.gameState) {
+                if (state.gameState && state.enableJournal !== false) {
                     const inv = (state.gameState.resources || []).map(r => `- ${r.name}: Qty ${r.value}`).join('\n') || 'None';
                     const activeQuests = (state.gameState.journal || []).filter(q => q.status === 'active');
                     const quests = activeQuests.map(q => `- ${q.title} (Current Objective: ${q.objective || 'None'})`).join('\n') || 'None';
@@ -34270,17 +34510,19 @@ ${relationships}
                         taskLines.push(`${taskNum++}. Output any stats that changed due to the actions in the text (e.g. Thorne|Health|-5). Characters and stats: \n${statsContext}\nFormat as character_name|stat_name|delta. If none changed, leave it blank.`);
                     }
 
-                    // Inventory Task
-                    formatRequirements.push(`### Inventory\n<item_name>|<delta>\n<item_name>|<delta>`);
-                    taskLines.push(`${taskNum++}. Identify any items obtained or lost in the TEXT. Format as item name and integer change (e.g., Gold|10 or Key|-1). Reference the Current Inventory to avoid duplicate updates. Leave blank if no inventory changes.`);
+                    if (state.enableJournal !== false) {
+                        // Inventory Task
+                        formatRequirements.push(`### Inventory\n<item_name>|<delta>\n<item_name>|<delta>`);
+                        taskLines.push(`${taskNum++}. Identify any items obtained or lost in the TEXT. Format as item name and integer change (e.g., Gold|10 or Key|-1). Reference the Current Inventory to avoid duplicate updates. Leave blank if no inventory changes.`);
 
-                    // Quests Task
-                    formatRequirements.push(`### Quests\n<action>|<quest_title>|<objective>\n<action>|<quest_title>|<objective>`);
-                    taskLines.push(`${taskNum++}. Identify quest changes (action: 'start', 'update', 'complete', 'fail'). If starting or updating, specify the objective. Format as action|quest_title|objective. CRITICAL: Do NOT create quests that replicate relationship changes or character feelings. Reference the Current Active Quests list to update existing quests rather than starting duplicates. Leave blank if no quest changes.`);
+                        // Quests Task
+                        formatRequirements.push(`### Quests\n<action>|<quest_title>|<objective>\n<action>|<quest_title>|<objective>`);
+                        taskLines.push(`${taskNum++}. Identify quest changes (action: 'start', 'update', 'complete', 'fail'). If starting or updating, specify the objective. Format as action|quest_title|objective. CRITICAL: Do NOT create quests that replicate relationship changes or character feelings. Reference the Current Active Quests list to update existing quests rather than starting duplicates. Leave blank if no quest changes.`);
 
-                    // Relationships Task
-                    formatRequirements.push(`### Relationships\n<character_name>|<track>|<change_value>\n<character_name>|<track>|<change_value>`);
-                    taskLines.push(`${taskNum++}. Identify changes in character relationships (feelings, trust, standing, affection). Track defaults to 'Affection'. Format as character_name|track|change_value. Story characters: ${validCharNames}. Leave blank if no changes.`);
+                        // Relationships Task
+                        formatRequirements.push(`### Relationships\n<character_name>|<track>|<change_value>\n<character_name>|<track>|<change_value>`);
+                        taskLines.push(`${taskNum++}. Identify changes in character relationships (feelings, trust, standing, affection). Track defaults to 'Affection'. Format as character_name|track|change_value. Story characters: ${validCharNames}. Leave blank if no changes.`);
+                    }
 
                     const prompt = `You are an analysis engine. Analyze the TEXT.
 
@@ -34320,13 +34562,13 @@ ${formatRequirements.join('\n\n')}
                     }
 
                     let inventoryChanges = [];
-                    if (data['Inventory'] && typeof data['Inventory'] === 'string') {
+                    if (state.enableJournal !== false && data['Inventory'] && typeof data['Inventory'] === 'string') {
                         inventoryChanges = parseLines(data['Inventory'], (line) => UTILITY.parseInventoryLine(line))
                             .filter(i => i.name && i.delta !== 0);
                     }
 
                     let questChanges = [];
-                    if (data['Quests'] && typeof data['Quests'] === 'string') {
+                    if (state.enableJournal !== false && data['Quests'] && typeof data['Quests'] === 'string') {
                         questChanges = parseLines(data['Quests'], (line) => UTILITY.parseQuestLine(line))
                             .filter(q => {
                                 if (!q.title) return false;
@@ -34341,7 +34583,7 @@ ${formatRequirements.join('\n\n')}
                     }
 
                     let relationshipChanges = [];
-                    if (data['Relationships'] && typeof data['Relationships'] === 'string') {
+                    if (state.enableJournal !== false && data['Relationships'] && typeof data['Relationships'] === 'string') {
                         relationshipChanges = parseLines(data['Relationships'], (line) => UTILITY.parseRelationshipLine(line))
                             .filter(r => r.charName && r.changeVal !== 0);
                     }
@@ -34413,7 +34655,7 @@ ${formatRequirements.join('\n\n')}
                 }
 
                 // 3. Apply journal changes (inventory, quests, relationships) via InventoryController
-                if (typeof InventoryController !== 'undefined' && typeof InventoryController.applyJournalChanges === 'function') {
+                if (state.enableJournal !== false && typeof InventoryController !== 'undefined' && typeof InventoryController.applyJournalChanges === 'function') {
                     InventoryController.applyJournalChanges(
                         analysis.inventory_changes,
                         analysis.quest_changes,
@@ -38920,7 +39162,7 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 // Clean the message content of the indicators
                 messageObj.content = parseResult.cleanedText;
                 
-                if (parseResult.changes.length === 0) return;
+                if (parseResult.changes.length === 0 || state.enableJournal === false) return;
                 
                 let snapshotObj = null;
                 if (typeof NarrativeController !== 'undefined' && messageObj && messageObj.id) {
@@ -39146,7 +39388,7 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
              */
             applyJournalChanges(inventoryChanges, questChanges, relationshipChanges) {
                 const state = StateManager.getState();
-                if (!state) return;
+                if (!state || state.enableJournal === false) return;
 
                 if (!state.gameState) {
                     state.gameState = { resources: [], relationships: [], journal: [] };
