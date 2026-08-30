@@ -5037,6 +5037,22 @@
                         </label>
                     </div>
 
+                    <!-- Combine As Narrator Toggle -->
+                    <div
+                        class="flex items-center justify-between bg-gray-900/30 p-4 rounded-lg border border-gray-700/50 hover:bg-gray-900/40 transition-colors">
+                        <div>
+                            <span class="text-gray-200 font-medium block">Combine As Narrator</span>
+                            <span class="text-xs text-gray-500">Combined messages are told by the narrator instead of the
+                                character who replied. Useful for a full cast, intrusive in a two-hander.</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="combine-as-narrator-toggle" class="sr-only peer">
+                            <div
+                                class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                            </div>
+                        </label>
+                    </div>
+
                     <!-- Response Options Toggle -->
                     <div
                         class="flex items-center justify-between bg-gray-900/30 p-4 rounded-lg border border-gray-700/50 hover:bg-gray-900/40 transition-colors">
@@ -8799,6 +8815,7 @@
 
                             // AI Logic Toggles
                             'enableAutoStaticKnowledge', 'enableAnalysis', 'enableResponseOptions', 'enableStats', 'enableLivingPersona', 'enableJournal',
+                            'combineAsNarrator',
                             'enableAutoBuildLocations', 'enableAutoGenerateLocationImages',
 
                             // Visual
@@ -12261,6 +12278,25 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
             },
 
             /**
+             * Decides whether the message at `index` can absorb the one before it.
+             * Both sides must be ordinary chat: lore reveals and system events are not
+             * prose anyone wrote, and merging them would erase machinery the story needs.
+             * @param {Array<Object>} history - The chat history.
+             * @param {number} index - Index of the later message.
+             * @returns {boolean} - Whether a combine is offered at this index.
+             */
+            canCombineAt(history, index) {
+                if (!Array.isArray(history)) return false;
+                if (!Number.isInteger(index) || index < 1) return false;
+                const later = history[index];
+                const earlier = history[index - 1];
+                if (!later || !earlier) return false;
+                if (later.type !== 'chat' || earlier.type !== 'chat') return false;
+                if (!later.content || !earlier.content) return false;
+                return true;
+            },
+
+            /**
              * Safely extracts and parses JSON from a string, handling markdown code blocks.
              * @param {string} str - The string containing JSON.
              * @returns {Object|null} - The parsed object or null.
@@ -12624,6 +12660,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     enableStats: globals.default_enableStats !== undefined ? globals.default_enableStats : false,
                     enableLivingPersona: globals.default_enableLivingPersona !== undefined ? globals.default_enableLivingPersona : false,
                     enableJournal: globals.default_enableJournal !== undefined ? globals.default_enableJournal : true,
+                    combineAsNarrator: false,
                     responseLength: globals.default_responseLength || 'normal',
                     useAlphaMask: false,
                     enableAutoBuildLocations: false,
@@ -12653,6 +12690,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     visual_master_base_prompt: "You are a visual director. Based on the provided chat history, characters, and location, generate a high-quality, vivid, and detailed image generation prompt that captures the current scene. Focus on atmosphere, lighting, and key subjects. Output ONLY the visual description.",
                     prompt_auto_static_knowledge: "You are an automated archivist. Analyze the recent conversation transcript and the EXISTING static knowledge base. Your goal is to identify new information that needs to be recorded or updated.\n\n### Tasks\n1. Analyze the transcript for new events, character updates, items used/found, world-building lore, or relationship changes.\n2. Cross-reference with the existing list of entries to see if any matches exist.\n\n### Existing Knowledge\n{existing_knowledge}\n\n### Transcript\n{transcript}\n\n### Output Format\nRespond with a delimited list using a pipe character '|' in this exact format:\nCategory | Subject | New Detail or Update\nIf there are multiple entries, place each on a new line. If no changes are needed, return literally 'null'.\n\nValid Categories:\n- Event (for major plot events)\n- Character (for character details/updates)\n- Item (for important items)\n- World (for locations and world lore)\n- Relationship (for character interpersonal updates)\n\nExample Output:\nCharacter | Alistair | He has acquired a mysterious silver amulet with a blue gem.\nRelationship | Alistair & Elara | Alistair has started to trust Elara after she saved him from the wolf.",
                     prompt_response_options_gen: "You are a master roleplayer and choose-your-own-adventure guide.\nBased on the current story context, characters, and the last response, generate 4 drastically different and divergent follow-up actions or responses strictly from the first-person perspective of the user character, {user_character}.\nEach option must take the narrative in a completely distinct direction. Ensure no two options are similar in tone, intent, or action.\nEach option should have a short, catchy 'label' (for a button) and a full 'prompt' (the text that will be sent to the AI if selected, written from the user character's perspective).\nLabels should be highly distinct and represent entirely different emotional or strategic paths (e.g., Aggressive Confrontation, Cautious Retreat, Clever Deception, Compassionate Inquiry).\n\n### Context\n{context}\n\n### Last Response\n{last_response}\n\nRespond ONLY with a valid JSON array of objects: [{ \"label\": \"Short Action\", \"prompt\": \"The full detailed response text representing {user_character}'s action or dialogue.\" }]. Generate exactly 4 options.",
+                    prompt_combine_messages: "You are a prose editor. The two passages below cover the SAME stretch of story, written from two sides, so the same beats are told twice.\n\nRewrite them as ONE continuous passage that reads as a single moment.\n\n### RULES\n1. Interleave the beats in the order they actually happen. Do not simply place one passage after the other.\n2. Keep every distinct action, reaction, and line of dialogue from both passages.\n3. Where both passages describe the same beat, merge them into a single telling and keep the more vivid wording.\n4. Preserve dialogue as written. Do not reword what a character says.\n5. Invent nothing. No new events, characters, or details.\n6. Match the voice, tense, and sentence rhythm of the source passages. If they run long flowing sentences, do not break the result into short clipped ones.\n7. Output ONLY the combined passage. No preamble, no headings, no commentary.\n\n### PASSAGE ONE \u2014 {first_speaker}\n{first_passage}\n\n### PASSAGE TWO \u2014 {second_speaker}\n{second_passage}",
                     prompt_stats_init: "You are analyzing a roleplay story to determine appropriate character stats for a game-like RPG system.\n\n### Story Context\n{context}\n\n### Characters\n{characters}\n\n### Task\nGenerate 4 to 6 stats appropriate for this story's genre and setting, interpersonal relationships, and emotions. Each stat must have a brief one-sentence description explaining what it measures and how it can change. Each character should have unique values reflecting their strengths, weaknesses, and relationships. Values range 0-100.\n\nReturn valid JSON:\n{\n  \"stats\": [{\"name\": \"Stat1\", \"description\": \"Brief explanation of what this stat measures.\"}, {\"name\": \"Stat2\", \"description\": \"Brief explanation.\"}],\n  \"characters\": {\n    \"CharacterName1\": [val1, val2],\n    \"CharacterName2\": [val1, val2]\n  }\n}",
                     swarm_scratchpad_prompt: "You are {character_name}. You are privately evaluating the current scene based on your internal state and the objective reality of the situation.\n\n## OBJECTIVE SCENE Analysis\n{objective_description}\n\n## YOUR PERSONA\n{character_description}\n\n## RECENT SCENE — LAST 5 EXCHANGES\n{recent_history}\n\n## INSTRUCTIONS\nAnalyze this scene from your specific perspective. Consider your motivations, desires, and the immediate physical situation. Focus on how your personality influences your goals for this interaction. Your reflections remain private and are intended purely for internal character consistency.\n\nRespond with a single paragraph describing your deep, internal emotional chain-of-thought. Focus exclusively on the immediate impact of the scene and your intended behavior. \n\nWrite your internal thoughts now:",
                     swarm_director_prompt: "You are the Scene Architect and Narrative Director. Your objective is to shape the scene's momentum, tension, and subtext based on the internal character states and the recent narrative flow.\n\n### WORLD LORE\n{world_lore}\n\n### CHARACTER REFERENCE\n{character_descriptions}\n\n### CHARACTER REFLECTIONS\n{winner_intents}\n\n### RECENT NARRATIVE EXCERPT\n{recent_history}\n\n## INSTRUCTIONS\nBased on the context above, provide precise staging instructions for {primary_speaker}. Your goal is to guide their next actions and dialogue to maximize narrative impact, build on relationships, and reflect their internal motivations.\n\n## STAGING GUIDELINES\n- Objective Directives: Provide behavioral cues and subtext (e.g., 'Action: Approaching with cautious optimism.', 'Tone: Impatient beneath a mask of politeness.').\n- Perspective Rule: DO NOT address the character as 'You'. Write instructions as objective behavioral tags that describe their intended state or action.\n- Conflict & Pacing: Use the character's internal reflections to drive the scene toward the most compelling narrative path.",
@@ -14348,6 +14386,30 @@ JSON Schema:
              * @param {string} characterId - The ID of the character to evolve.
              * @returns {string} - The constructed prompt.
              */
+            /**
+             * Builds the prompt that fuses a message and its reply into one passage.
+             * @param {Object} firstMsg - The earlier message.
+             * @param {Object} secondMsg - The reply that overlaps it.
+             * @returns {string} - The constructed prompt, or "" if either side is empty.
+             */
+            buildCombineMessagesPrompt(firstMsg, secondMsg) {
+                if (!firstMsg || !secondMsg) return "";
+                const state = StateManager.getState();
+                const nameOf = (m) => {
+                    const c = ReactiveStore.getCharacter(m.character_id);
+                    return c ? c.name : 'Unknown';
+                };
+
+                const template = state.prompt_combine_messages
+                    || UTILITY.getDefaultSystemPrompts().prompt_combine_messages;
+
+                return template
+                    .replace(/\{first_speaker\}/g, nameOf(firstMsg))
+                    .replace(/\{first_passage\}/g, firstMsg.content || '')
+                    .replace(/\{second_speaker\}/g, nameOf(secondMsg))
+                    .replace(/\{second_passage\}/g, secondMsg.content || '');
+            },
+
             buildLivingPersonaPrompt(characterId) {
                 const state = StateManager.getState();
                 const char = ReactiveStore.getCharacter(characterId);
@@ -18766,6 +18828,15 @@ Write only the character's message.`;
                 const items = [];
                 if (allowImageGen) {
                     items.push(`<button onclick="VisualMaster.triggerVisualEvent(${index}, this)" class="w-full text-left px-4 py-2 hover:bg-indigo-600/50 text-white text-sm transition-colors flex items-center">${icon('M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z')}Generate Image</button>`);
+                }
+                const history = (ReactiveStore.state && ReactiveStore.state.chat_history) || [];
+                const msg = history[index];
+                if (UTILITY.canCombineAt(history, index)) {
+                    items.push(row('combine-with-previous', 'Combine with Previous', 'M4 6h16M4 12h16M9 18h6', 'hover:bg-indigo-600/50'));
+                }
+                if (msg && msg.combined_from) {
+                    items.push(row('recombine-message', 'Combine Again', 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', 'hover:bg-indigo-600/50'));
+                    items.push(row('split-combined-message', 'Split Back Apart', 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4', 'hover:bg-amber-600/50'));
                 }
                 items.push(row('create-static-from-message', 'Create Static Memory', 'M12 6v6m0 0v6m0-6h6m-6 0H6', 'hover:bg-emerald-600/50'));
                 items.push(row('chat-copy', 'Copy to Clipboard', 'M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3', 'hover:bg-blue-600/50'));
@@ -24999,7 +25070,7 @@ Write only the character's message.`;
 
                 // --- Prompt Editor Logic (Unified) ---
                 const promptGroups = {
-                    'Core Narrative': ['system_prompt', 'prompt_response_options_gen', 'prompt_stats_init', 'prompt_story_notes_gen', 'prompt_story_tags_gen'],
+                    'Core Narrative': ['system_prompt', 'prompt_combine_messages', 'prompt_response_options_gen', 'prompt_stats_init', 'prompt_story_notes_gen', 'prompt_story_tags_gen'],
                     'Agents': ['event_master_base_prompt', 'visual_master_base_prompt', 'prompt_persona_gen', 'prompt_living_persona_gen', 'prompt_timeline_extractor', 'prompt_relationship_matrix'],
                     'Lore & Map': ['prompt_world_map_gen', 'prompt_location_gen', 'prompt_adjacent_locations_gen', 'prompt_entry_gen', 'prompt_location_memory_gen', 'prompt_auto_static_knowledge'],
                     'Director Mode': ['swarm_scratchpad_prompt', 'swarm_director_prompt'],
@@ -25012,6 +25083,7 @@ Write only the character's message.`;
                     'visual_master_base_prompt': 'Automatically generates visuals for the scene based on chat context. Variable: {chat_history}',
                     'prompt_persona_gen': 'Used by the AI button on a character\'s persona. Variables: {concept}, {name}',
                     'prompt_living_persona_gen': 'Evolves a character based on recent history. Variables: {base_persona}, {transcript}',
+                    'prompt_combine_messages': 'Fuses a message and the reply to it into one passage, for when both retell the same beats. Variables: {first_speaker}, {first_passage}, {second_speaker}, {second_passage}',
                     'prompt_response_options_gen': 'Guide the AI as it generates 4 follow-up options for the user. Variables: {context}, {last_response}',
                     'prompt_world_map_gen': 'Generates the entire world map. Variables: {characters}, {static}, {recent}',
                     'prompt_location_gen': 'Generates a location\'s detailed prompt. Variables: {name}, {description}',
@@ -25256,6 +25328,16 @@ Write only the character's message.`;
                     livingPersonaToggle.checked = state.enableLivingPersona === true; // Default false
                     livingPersonaToggle.addEventListener('change', (e) => {
                         state.enableLivingPersona = e.target.checked;
+                        if (typeof ReactiveStore.forceSave === 'function') ReactiveStore.forceSave();
+                    });
+                }
+
+                // Toggle for Combine As Narrator
+                const combineNarratorToggle = document.getElementById('combine-as-narrator-toggle');
+                if (combineNarratorToggle) {
+                    combineNarratorToggle.checked = state.combineAsNarrator === true; // Default false
+                    combineNarratorToggle.addEventListener('change', (e) => {
+                        state.combineAsNarrator = e.target.checked;
                         if (typeof ReactiveStore.forceSave === 'function') ReactiveStore.forceSave();
                     });
                 }
@@ -33925,6 +34007,143 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
              * Cycles through versions of a message.
              * @param {number} index - The index of the message in chat_history.
              */
+            /**
+             * Resolves who owns a combined message. The character who replied owns it by
+             * default; a narrator takes it only when the story opts in AND one is actually
+             * active, because a narrator surfacing in a two-hander reads as a third wheel.
+             * @param {Object} replyMsg - The later of the two messages.
+             * @returns {string} - Character id to attribute the merge to.
+             */
+            resolveCombineSpeaker(replyMsg) {
+                const state = ReactiveStore.state;
+                if (state.combineAsNarrator) {
+                    const located = (typeof ReactiveStore.getActiveLocationCharacters === 'function')
+                        ? ReactiveStore.getActiveLocationCharacters()
+                        : [];
+                    const narrator = [...(state.characters || []), ...located]
+                        .find(c => c && c.is_narrator && c.is_active);
+                    // No narrator on stage: fall through rather than invent one.
+                    if (narrator) return narrator.id;
+                }
+                return replyMsg.character_id;
+            },
+
+            /**
+             * Fuses the message at `index` with the one before it into a single passage,
+             * for when a reply retells the beats the previous message already covered.
+             * The originals are kept on the merged message so it can be split again.
+             * @param {number} index - Index of the later message.
+             */
+            async combineWithPrevious(index) {
+                const state = ReactiveStore.state;
+                if (this.RUNTIME.combineInFlight) return;
+                if (!UTILITY.canCombineAt(state.chat_history, index)) return;
+
+                const later = state.chat_history[index];
+                const earlier = state.chat_history[index - 1];
+                const prompt = PromptBuilder.buildCombineMessagesPrompt(earlier, later);
+                if (!prompt) return;
+
+                this.RUNTIME.combineInFlight = true;
+                // Same indicator as an ordinary turn, attributed to whoever will own the
+                // result, so a combine looks like every other wait in the app instead of
+                // a toast that leaves you guessing whether anything is happening.
+                UIManager.showTypingIndicator(this.resolveCombineSpeaker(later), 'is combining the last two messages...');
+                let combined = null;
+                try {
+                    combined = await APIService.callAI(prompt);
+                } catch (e) {
+                    UIManager.showNotification(e.message || 'Combine failed.', 'error');
+                } finally {
+                    this.RUNTIME.combineInFlight = false;
+                    UIManager.hideTypingIndicator();
+                }
+                if (!combined || !combined.trim()) {
+                    UIManager.showNotification('Combine returned nothing. Messages left as they were.', 'error');
+                    return;
+                }
+                combined = combined.trim();
+
+                const merged = {
+                    id: UTILITY.uuid(),
+                    type: 'chat',
+                    character_id: this.resolveCombineSpeaker(later),
+                    content: combined,
+                    emotion: later.emotion,
+                    // The moment begins where the first passage began.
+                    timestamp: earlier.timestamp || later.timestamp,
+                    images: [...(earlier.images || []), ...(later.images || [])],
+                    versions: [{ content: combined, emotion: later.emotion }],
+                    currentVersion: 0,
+                    // Deep copies so Split Back Apart restores exactly what was here.
+                    combined_from: JSON.parse(JSON.stringify([earlier, later]))
+                };
+
+                state.chat_history.splice(index - 1, 2, merged);
+                // Two chat messages became one; the every-six-messages agents count turns.
+                state.messageCounter = Math.max(0, (state.messageCounter || 0) - 1);
+                await ReactiveStore.forceSave();
+                UIManager.renderChat();
+                UIManager.showNotification('Messages combined.', 'success');
+            },
+
+            /**
+             * Runs the combine again on the same two originals and keeps the result as
+             * another version, so earlier takes stay reachable by tapping the bubble.
+             * @param {number} index - Index of the combined message.
+             */
+            async recombineMessage(index) {
+                const state = ReactiveStore.state;
+                const msg = state.chat_history[index];
+                if (!msg || !msg.combined_from || msg.combined_from.length < 2) return;
+                if (this.RUNTIME.combineInFlight) return;
+
+                const prompt = PromptBuilder.buildCombineMessagesPrompt(msg.combined_from[0], msg.combined_from[1]);
+                if (!prompt) return;
+
+                this.RUNTIME.combineInFlight = true;
+                UIManager.showTypingIndicator(msg.character_id, 'is combining the scene again...');
+                let combined = null;
+                try {
+                    combined = await APIService.callAI(prompt);
+                } catch (e) {
+                    UIManager.showNotification(e.message || 'Combine failed.', 'error');
+                } finally {
+                    this.RUNTIME.combineInFlight = false;
+                    UIManager.hideTypingIndicator();
+                }
+                if (!combined || !combined.trim()) {
+                    UIManager.showNotification('Combine returned nothing. The current take is unchanged.', 'error');
+                    return;
+                }
+                combined = combined.trim();
+
+                msg.versions = msg.versions || [{ content: msg.content, emotion: msg.emotion }];
+                msg.versions.push({ content: combined, emotion: msg.emotion });
+                msg.currentVersion = msg.versions.length - 1;
+                msg.content = combined;
+                await ReactiveStore.forceSave();
+                UIManager.renderChat();
+                UIManager.showNotification(`Take ${msg.versions.length}. Tap the bubble to compare.`, 'success');
+            },
+
+            /**
+             * Restores a combined message to the two messages it was made from.
+             * @param {number} index - Index of the combined message.
+             */
+            async splitCombinedMessage(index) {
+                const state = ReactiveStore.state;
+                const msg = state.chat_history[index];
+                if (!msg || !msg.combined_from || msg.combined_from.length < 2) return;
+
+                const originals = JSON.parse(JSON.stringify(msg.combined_from));
+                state.chat_history.splice(index, 1, ...originals);
+                state.messageCounter = (state.messageCounter || 0) + 1;
+                await ReactiveStore.forceSave();
+                UIManager.renderChat();
+                UIManager.showNotification('Split back into two messages.', 'success');
+            },
+
             async cycleMessageVersion(index) {
                 const state = ReactiveStore.state;
                 const msg = state.chat_history[index];
@@ -40620,6 +40839,9 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                     const y = r ? r.bottom + 4 : (e ? e.clientY : 0);
                     UIManager.openMessageMenu(parseInt(ds.index), x, y);
                 });
+                ActionHandler.register('combine-with-previous', (ds) => NarrativeController.combineWithPrevious(parseInt(ds.index)));
+                ActionHandler.register('recombine-message', (ds) => NarrativeController.recombineMessage(parseInt(ds.index)));
+                ActionHandler.register('split-combined-message', (ds) => NarrativeController.splitCombinedMessage(parseInt(ds.index)));
                 ActionHandler.register('chat-copy', (ds) => NarrativeController.copyMessage(ds.index));
                 ActionHandler.register('chat-edit', (ds) => NarrativeController.openEditModal(ds.index));
                 ActionHandler.register('chat-delete', (ds) => NarrativeController.deleteMessage(ds.index));

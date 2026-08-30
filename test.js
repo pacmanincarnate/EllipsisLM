@@ -494,6 +494,50 @@ test('lowestLoreIndexByEntry: returns an empty map for empty or missing input', 
     deepEq(UTILITY.lowestLoreIndexByEntry(undefined), {});
 });
 
+// ─── canCombineAt ────────────────────
+
+test('canCombineAt: allows combining a reply with the chat message before it', () => {
+    const history = [
+        { type: 'chat', content: 'He lifted the sword.' },
+        { type: 'chat', content: 'The thieves laughed.' }
+    ];
+    assert.equal(UTILITY.canCombineAt(history, 1), true);
+});
+
+test('canCombineAt: refuses index 0, which has nothing before it', () => {
+    const history = [{ type: 'chat', content: 'He lifted the sword.' }];
+    assert.equal(UTILITY.canCombineAt(history, 0), false);
+});
+
+test('canCombineAt: refuses lore reveals and system events on either side', () => {
+    const lorePrev = [
+        { type: 'lore_reveal', content: 'The vault remembers.' },
+        { type: 'chat', content: 'She stepped back.' }
+    ];
+    assert.equal(UTILITY.canCombineAt(lorePrev, 1), false, 'lore reveal as the earlier message');
+
+    const eventLater = [
+        { type: 'chat', content: 'She stepped back.' },
+        { type: 'system_event', content: 'The door seals.' }
+    ];
+    assert.equal(UTILITY.canCombineAt(eventLater, 1), false, 'system event as the later message');
+});
+
+test('canCombineAt: refuses empty content on either side', () => {
+    const history = [
+        { type: 'chat', content: '' },
+        { type: 'chat', content: 'The thieves laughed.' }
+    ];
+    assert.equal(UTILITY.canCombineAt(history, 1), false);
+});
+
+test('canCombineAt: refuses bad input instead of throwing', () => {
+    assert.equal(UTILITY.canCombineAt(undefined, 1), false);
+    assert.equal(UTILITY.canCombineAt([], 1), false);
+    assert.equal(UTILITY.canCombineAt([{ type: 'chat', content: 'a' }], 5), false);
+    assert.equal(UTILITY.canCombineAt([{ type: 'chat', content: 'a' }], 1.5), false);
+});
+
 // ─── createDefaultMapGrid ─────────────────────────────────────────────────
 
 test('createDefaultMapGrid: returns an 8x8 grid with empty content', () => {
