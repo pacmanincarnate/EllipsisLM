@@ -529,6 +529,115 @@ test('testLoreEntries: triggers GM-style rule mapping with probability and keywo
     assert.equal(r2 && r2.id, 'r2');
 });
 
+// ─── lowestLoreIndexByEntry ──────────────────
+
+test('lowestLoreIndexByEntry: rewinds to the earliest stage when an entry revealed twice', () => {
+    const removed = [
+        { type: 'lore_reveal', dynamic_entry_id: 'e1', previous_index: 3 },
+        { type: 'lore_reveal', dynamic_entry_id: 'e1', previous_index: 1 },
+        { type: 'lore_reveal', dynamic_entry_id: 'e2', previous_index: 2 }
+    ];
+    deepEq(UTILITY.lowestLoreIndexByEntry(removed), { e1: 1, e2: 2 });
+});
+
+test('lowestLoreIndexByEntry: keeps stage 0 (must not be dropped as falsy)', () => {
+    const removed = [{ type: 'lore_reveal', dynamic_entry_id: 'e1', previous_index: 0 }];
+    deepEq(UTILITY.lowestLoreIndexByEntry(removed), { e1: 0 });
+});
+
+test('lowestLoreIndexByEntry: ignores chat messages and pre-upgrade reveals', () => {
+    const removed = [
+        { type: 'chat', content: 'hello', dynamic_entry_id: 'e1', previous_index: 5 },
+        { type: 'lore_reveal', dynamic_entry_id: 'e2' },
+        { type: 'lore_reveal', previous_index: 4 },
+        null
+    ];
+    deepEq(UTILITY.lowestLoreIndexByEntry(removed), {});
+});
+
+test('lowestLoreIndexByEntry: returns an empty map for empty or missing input', () => {
+    deepEq(UTILITY.lowestLoreIndexByEntry([]), {});
+    deepEq(UTILITY.lowestLoreIndexByEntry(undefined), {});
+});
+
+// ─── filterVisualLore ────────────────────
+
+const VL = [
+    { id: 'a', title: 'Crimson Surcoat', category: 'item', description: 'A crimson surcoat with a worn hem.', created: 100 },
+    { id: 'b', title: 'Squire Dagger', category: 'item', description: 'A dull training dagger.', created: 300 },
+    { id: 'c', title: 'The Keep', category: 'world', description: 'A cold stone hall.', created: 200 }
+];
+
+test('filterVisualLore: returns everything newest first when unfiltered', () => {
+    deepEq(UTILITY.filterVisualLore(VL, 'all', '').map(i => i.id), ['b', 'c', 'a']);
+});
+
+test('filterVisualLore: narrows to one category', () => {
+    deepEq(UTILITY.filterVisualLore(VL, 'world', '').map(i => i.id), ['c']);
+    deepEq(UTILITY.filterVisualLore(VL, 'item', '').map(i => i.id), ['b', 'a']);
+});
+
+test('filterVisualLore: query matches the description, not just the title', () => {
+    deepEq(UTILITY.filterVisualLore(VL, 'all', 'worn hem').map(i => i.id), ['a'],
+        'the phrase worn hem appears only in the description');
+    deepEq(UTILITY.filterVisualLore(VL, 'all', 'dagger').map(i => i.id), ['b']);
+});
+
+test('filterVisualLore: query is case-insensitive and combines with category', () => {
+    deepEq(UTILITY.filterVisualLore(VL, 'all', 'CRIMSON').map(i => i.id), ['a']);
+    deepEq(UTILITY.filterVisualLore(VL, 'world', 'crimson'), [], 'category wins over a title match');
+});
+
+test('filterVisualLore: treats a missing category as other, and survives junk', () => {
+    const messy = [null, { id: 'x', title: 'Odd', description: 'no category', created: 1 }];
+    deepEq(UTILITY.filterVisualLore(messy, 'other', '').map(i => i.id), ['x']);
+    deepEq(UTILITY.filterVisualLore(messy, 'item', ''), []);
+    deepEq(UTILITY.filterVisualLore(undefined, 'all', ''), []);
+});
+
+// ─── collapseErrors ────────────────────
+
+test('collapseErrors: groups repeats into one row with a count', () => {
+    const rows = UTILITY.collapseErrors([
+        { message: 'Connection timed out.', ts: 100 },
+        { message: 'Connection timed out.', ts: 200 },
+        { message: 'Connection timed out.', ts: 300 }
+    ]);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].count, 3);
+    assert.equal(rows[0].firstTs, 100);
+    assert.equal(rows[0].lastTs, 300);
+});
+
+test('collapseErrors: orders distinct errors most recent first', () => {
+    const rows = UTILITY.collapseErrors([
+        { message: 'old failure', ts: 100 },
+        { message: 'newer failure', ts: 500 },
+        { message: 'middle failure', ts: 300 }
+    ]);
+    deepEq(rows.map(r => r.message), ['newer failure', 'middle failure', 'old failure']);
+});
+
+test('collapseErrors: a repeat refreshes its position, not its first-seen time', () => {
+    const rows = UTILITY.collapseErrors([
+        { message: 'flaky call', ts: 100 },
+        { message: 'other failure', ts: 200 },
+        { message: 'flaky call', ts: 900 }
+    ]);
+    assert.equal(rows[0].message, 'flaky call');
+    assert.equal(rows[0].count, 2);
+    assert.equal(rows[0].firstTs, 100, 'first sighting is preserved');
+    assert.equal(rows[0].lastTs, 900);
+});
+
+test('collapseErrors: skips junk entries and survives no input', () => {
+    deepEq(UTILITY.collapseErrors([]), []);
+    deepEq(UTILITY.collapseErrors(undefined), []);
+    const rows = UTILITY.collapseErrors([null, { ts: 1 }, { message: '', ts: 2 }, { message: 'real', ts: 3 }]);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].message, 'real');
+});
+
 // ─── createDefaultMapGrid ─────────────────────────────────────────────────
 
 test('createDefaultMapGrid: returns an 8x8 grid with empty content', () => {
@@ -1246,9 +1355,94 @@ test('formatTitleWithCategory: applies and updates category tags on title string
     assert.equal(UTILITY.formatTitleWithCategory('', 'event'), '[Event] Untitled');
 });
 
+// ─── normalizeVisionEndpoint ──────────────────────────────────────────────
 
+test('normalizeVisionEndpoint: bare host gains a scheme', () => {
+    assert.equal(UTILITY.normalizeVisionEndpoint('localhost:5001'), 'http://localhost:5001');
+    assert.equal(UTILITY.normalizeVisionEndpoint('192.168.1.40:1234'), 'http://192.168.1.40:1234');
+});
 
+test('normalizeVisionEndpoint: existing scheme is preserved, including https', () => {
+    assert.equal(UTILITY.normalizeVisionEndpoint('http://localhost:5001'), 'http://localhost:5001');
+    assert.equal(UTILITY.normalizeVisionEndpoint('https://vision.example.com'), 'https://vision.example.com');
+});
 
+test('normalizeVisionEndpoint: trailing slashes are stripped', () => {
+    assert.equal(UTILITY.normalizeVisionEndpoint('http://localhost:5001/'), 'http://localhost:5001');
+    assert.equal(UTILITY.normalizeVisionEndpoint('http://localhost:5001///'), 'http://localhost:5001');
+});
 
+test('normalizeVisionEndpoint: a pasted chat-completions path collapses to the origin', () => {
+    // People copy the full URL out of provider docs. All of these must reach the same base,
+    // or VisionBridgeService would build http://host/v1/chat/completions/v1/chat/completions.
+    assert.equal(UTILITY.normalizeVisionEndpoint('http://localhost:5001/v1/chat/completions'), 'http://localhost:5001');
+    assert.equal(UTILITY.normalizeVisionEndpoint('http://localhost:5001/v1/chat/completions/'), 'http://localhost:5001');
+    assert.equal(UTILITY.normalizeVisionEndpoint('http://localhost:5001/chat/completions'), 'http://localhost:5001');
+    assert.equal(UTILITY.normalizeVisionEndpoint('http://localhost:5001/v1'), 'http://localhost:5001');
+    assert.equal(UTILITY.normalizeVisionEndpoint('http://localhost:5001/v1/'), 'http://localhost:5001');
+});
 
+test('normalizeVisionEndpoint: whitespace is tolerated', () => {
+    assert.equal(UTILITY.normalizeVisionEndpoint('  http://localhost:5001  '), 'http://localhost:5001');
+    assert.equal(UTILITY.normalizeVisionEndpoint('http://local host:5001'), 'http://localhost:5001');
+});
 
+test('normalizeVisionEndpoint: unusable input yields an empty string, never a bare scheme', () => {
+    // The caller treats "" as "fall back to the default port". Returning "http://" would
+    // instead produce a real fetch to a nonsense URL.
+    assert.equal(UTILITY.normalizeVisionEndpoint(''), '');
+    assert.equal(UTILITY.normalizeVisionEndpoint('   '), '');
+    assert.equal(UTILITY.normalizeVisionEndpoint('/v1/chat/completions'), '');
+    assert.equal(UTILITY.normalizeVisionEndpoint(null), '');
+    assert.equal(UTILITY.normalizeVisionEndpoint(undefined), '');
+    assert.equal(UTILITY.normalizeVisionEndpoint(42), '');
+});
+
+// ─── buildVisionContextBlock ──────────────────────────────────────────────
+
+test('buildVisionContextBlock: nothing describable yields an empty string', () => {
+    // "" is the signal that the bridge produced nothing, so callAI falls back to the
+    // original no-vision notice. Any non-empty string here would be injected verbatim.
+    assert.equal(UTILITY.buildVisionContextBlock([]), '');
+    assert.equal(UTILITY.buildVisionContextBlock(['', '   ']), '');
+    assert.equal(UTILITY.buildVisionContextBlock(null), '');
+    assert.equal(UTILITY.buildVisionContextBlock('a string, not an array'), '');
+});
+
+test('buildVisionContextBlock: a single image is not numbered', () => {
+    const out = UTILITY.buildVisionContextBlock(['A red bicycle leaning on a wall.']);
+    assert.ok(out.includes('an image'), 'should read naturally for one image');
+    assert.ok(out.includes('A red bicycle leaning on a wall.'));
+    assert.ok(!out.includes('Image 1:'), 'single image should not be enumerated');
+});
+
+test('buildVisionContextBlock: multiple images are numbered in order', () => {
+    const out = UTILITY.buildVisionContextBlock(['First scene.', 'Second scene.']);
+    assert.ok(out.includes('2 images'));
+    assert.ok(out.includes('Image 1: First scene.'));
+    assert.ok(out.includes('Image 2: Second scene.'));
+    assert.ok(out.indexOf('Image 1:') < out.indexOf('Image 2:'), 'order must match upload order');
+});
+
+test('buildVisionContextBlock: blank entries are dropped without disturbing numbering', () => {
+    const out = UTILITY.buildVisionContextBlock(['Kept one.', '   ', 'Kept two.']);
+    assert.ok(out.includes('2 images'));
+    assert.ok(out.includes('Image 1: Kept one.'));
+    assert.ok(out.includes('Image 2: Kept two.'));
+    assert.ok(!out.includes('Image 3:'));
+});
+
+test('buildVisionContextBlock: entries are trimmed', () => {
+    const out = UTILITY.buildVisionContextBlock(['  padded description  ']);
+    assert.ok(out.includes('padded description'));
+    assert.ok(!out.includes('  padded description  '));
+});
+
+test('buildVisionContextBlock: instructs the model never to reveal the mechanism', () => {
+    // The whole point of silent injection. A character replying "based on the image
+    // description provided" breaks immersion and would make the feature worse than useless.
+    const out = UTILITY.buildVisionContextBlock(['A quiet street at dusk.']);
+    assert.ok(out.includes('[VISUAL CONTEXT]'));
+    assert.ok(/never mention this/i.test(out));
+    assert.ok(/described to you/i.test(out));
+});

@@ -142,6 +142,11 @@ EllipsisLM supports unlimited characters in any given story.
 - **Beta Music Generation**: Analyze the current scene vibe and automatically generate background instrumental music every N messages using **Lyra 3** (requires Google Gemini API).
 - **Image Creation**: The integrated "AI Painter" allows you to generate new character portraits and background images directly within the app using your chosen backend.
 - **Text-to-Speech (TTS)**: Built-in TTS support allows for the AI's responses to be read aloud for a more immersive experience.
+- **Vision Bridge**: Share a photo with a character even when the model you are writing with is
+  text-only. Some of the best writing models simply cannot look at pictures. Turn on the Vision
+  Bridge and point it at a model that can — a small local one is plenty — and anything you upload is
+  quietly described for your writer behind the scenes. Your character reacts to the picture as if
+  they had glanced at it. Nothing about the handoff appears in the story.
 
 ![TTS and Emotional Portraits](assets/screenshots/tts_sentiment.png)
 
@@ -159,6 +164,7 @@ EllipsisLM is backend-agnostic. You can switch between local and cloud models de
 | **Data Privacy** | Conversations may be logged/trained on. | Stored 100% locally. |
 | **Content Filtering** | Often restrictive and censored. | No built-in filters; total creative freedom. |
 | **Control** | Fixed settings and models. | Complete control over prompts and backend. |
+| **Sharing Images** | Uploaded to whoever runs the model. | Can be described by a local model, so the picture never leaves your machine. |
 | **Cost** | Monthly subscription fees. | Free for local use or pay-per-token for APIs. |
 
 
@@ -207,6 +213,30 @@ A user-friendly local interface for downloading and running models.
 6.  **In EllipsisLM**: Open **Global Settings** > **AI Backend** > Select **LM Studio**. Ensure the **LM Studio Server URL** is set to `http://localhost:1234/v1`.
 
 ---
+
+### 5. Vision Bridge (Optional)
+
+Only worth setting up if you like a model that cannot see images — DeepSeek and most reasoning
+models are in that group. It has no effect on models that already handle pictures themselves.
+
+The idea is simple: keep writing with whatever model you prefer, and let a second model do the
+looking. That second model can be a small one running on your own machine, so your pictures never
+leave the house even when your writing model is in the cloud.
+
+1. Load any vision-capable model in KoboldCPP or LM Studio. For KoboldCPP that means picking a
+   multimodal projector (an `mmproj` file) alongside the model itself.
+2. In EllipsisLM, open **Settings → Model** and scroll to **Vision Bridge**.
+3. Choose your backend, confirm the address, and press **Test Connection**.
+4. If you would rather use a cloud describer, choose OpenRouter and name a vision model.
+
+Now upload an image mid-scene as you normally would. Your character responds to what is in it.
+
+The **Description Instruction** box controls what the describing model is asked to do. The default
+aims for vivid, concrete prose. Rewrite it if descriptions come back too clinical, too brief, or
+too shy about what is actually in the picture.
+
+If the bridge is off, unreachable, or fails for any reason, nothing breaks — you simply get the old
+behaviour, where the character tells you they cannot see the image.
 
 ### Connecting to EllipsisLM
 Once your backend is running or your API key is ready:
