@@ -494,6 +494,41 @@ test('lowestLoreIndexByEntry: returns an empty map for empty or missing input', 
     deepEq(UTILITY.lowestLoreIndexByEntry(undefined), {});
 });
 
+// ─── filterVisualLore ────────────────────
+
+const VL = [
+    { id: 'a', title: 'Crimson Surcoat', category: 'item', description: 'A crimson surcoat with a worn hem.', created: 100 },
+    { id: 'b', title: 'Squire Dagger', category: 'item', description: 'A dull training dagger.', created: 300 },
+    { id: 'c', title: 'The Keep', category: 'world', description: 'A cold stone hall.', created: 200 }
+];
+
+test('filterVisualLore: returns everything newest first when unfiltered', () => {
+    deepEq(UTILITY.filterVisualLore(VL, 'all', '').map(i => i.id), ['b', 'c', 'a']);
+});
+
+test('filterVisualLore: narrows to one category', () => {
+    deepEq(UTILITY.filterVisualLore(VL, 'world', '').map(i => i.id), ['c']);
+    deepEq(UTILITY.filterVisualLore(VL, 'item', '').map(i => i.id), ['b', 'a']);
+});
+
+test('filterVisualLore: query matches the description, not just the title', () => {
+    deepEq(UTILITY.filterVisualLore(VL, 'all', 'worn hem').map(i => i.id), ['a'],
+        'the phrase worn hem appears only in the description');
+    deepEq(UTILITY.filterVisualLore(VL, 'all', 'dagger').map(i => i.id), ['b']);
+});
+
+test('filterVisualLore: query is case-insensitive and combines with category', () => {
+    deepEq(UTILITY.filterVisualLore(VL, 'all', 'CRIMSON').map(i => i.id), ['a']);
+    deepEq(UTILITY.filterVisualLore(VL, 'world', 'crimson'), [], 'category wins over a title match');
+});
+
+test('filterVisualLore: treats a missing category as other, and survives junk', () => {
+    const messy = [null, { id: 'x', title: 'Odd', description: 'no category', created: 1 }];
+    deepEq(UTILITY.filterVisualLore(messy, 'other', '').map(i => i.id), ['x']);
+    deepEq(UTILITY.filterVisualLore(messy, 'item', ''), []);
+    deepEq(UTILITY.filterVisualLore(undefined, 'all', ''), []);
+});
+
 // ─── collapseErrors ────────────────────
 
 test('collapseErrors: groups repeats into one row with a count', () => {

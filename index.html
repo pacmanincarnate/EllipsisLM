@@ -13,6 +13,7 @@
     [SEC:JS:SRV:BACKUP]     - AutoBackupService (Rolling Auto-Backups)
     [SEC:JS:SRV:IMG_GEN]    - ImageGenerationService
     [SEC:JS:SRV:VB]         - VisionBridgeService (Image Describer for Text-Only Models)
+    [SEC:JS:SRV:VL]         - VisualLoreService (Reusable Reference Items)
     [SEC:JS:UTIL:UTILS]     - UTILITY (Helper Functions)
     [SEC:JS:UTIL:PB]        - PromptBuilder (Context Logic)
     [SEC:JS:SRV:IE]         - ImportExportService
@@ -2774,6 +2775,30 @@
                 background-color: rgba(127, 29, 29, 0.4);
             }
         }
+        /* Visual Lore. Fixed tiles so rows stay aligned whether or not an item has a
+           picture, and so a tall photo cannot stretch the list. */
+        .visual-lore-thumb {
+            width: 40px;
+            height: 40px;
+            flex: 0 0 40px;
+            border-radius: 4px;
+            object-fit: cover;
+            background-color: rgba(0, 0, 0, 0.35);
+        }
+
+        .visual-lore-thumb-empty {
+            border: 1px dashed rgba(148, 163, 184, 0.35);
+        }
+
+        .visual-lore-preview {
+            width: 140px;
+            height: 140px;
+            flex: 0 0 140px;
+            border-radius: 6px;
+            object-fit: cover;
+            background-color: rgba(0, 0, 0, 0.35);
+        }
+
         .animate-pulse-crimson {
             animation: pulse-crimson 2s infinite ease-in-out;
         }
@@ -3208,6 +3233,8 @@
                         </div>
                     </div>
 
+                    <div id="visual-lore-chips" class="hidden flex-wrap gap-1 px-3 pt-2"></div>
+
                     <textarea id="chat-input"
                         class="w-full bg-transparent outline-none resize-none p-3 focus:ring-0 border-0 grow"
                         placeholder="Message..." rows="4"
@@ -3266,10 +3293,11 @@
                             </svg>
                         </button>
 
-                        <!-- Image Upload -->
+                        <!-- Image Upload. Long press or right click opens a small menu with
+                             this and the Visual Lore shelf, so the shelf costs no extra button. -->
                         <button id="upload-image-btn" onclick="document.getElementById('image-upload-input').click()"
                             class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                            title="Upload Image">
+                            title="Upload Image (long press or right click for more)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" class="lucide lucide-image">
@@ -3359,6 +3387,50 @@
     <div id="message-context-menu"
         class="hidden fixed z-50 bg-gray-900/90 backdrop-blur-md border border-gray-700 rounded-lg shadow-xl py-1 overflow-hidden"
         style="min-width: 210px;"></div>
+
+    <!-- Image button menu: opened by a long press or right click on the image button,
+         the same way the generate button opens its own. Both entries are ways to put
+         something visual into the turn being written - a picture off the device, or an
+         item off the Visual Lore shelf - which is why they share one button. -->
+    <!-- [UI:MENU:IMAGE] -->
+    <div id="image-context-menu"
+        class="hidden fixed z-50 bg-gray-900/90 backdrop-blur-md border border-gray-700 rounded-lg shadow-xl py-1 overflow-hidden"
+        style="min-width: 210px;">
+        <button data-action="upload-image"
+            class="w-full text-left px-4 py-2 hover:bg-indigo-600/50 text-white text-sm transition-colors flex items-center">
+            <svg class="w-4 h-4 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            Upload Image
+        </button>
+        <button data-action="visual-lore-open-picker"
+            class="w-full text-left px-4 py-2 hover:bg-teal-600/50 text-white text-sm transition-colors flex items-center">
+            <svg class="w-4 h-4 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 12h14M5 16h6"></path></svg>
+            Attach from Visual Lore
+        </button>
+    </div>
+
+    <!-- Visual Lore picker: choose items to attach to the turn being written. -->
+    <!-- [UI:MENU:VISUAL_LORE] -->
+    <div id="visual-lore-picker" class="fixed inset-0 z-[70] items-center justify-center hidden p-4">
+        <div class="modal-overlay absolute inset-0" data-action="visual-lore-close-picker"></div>
+        <div class="bg-gray-800/90 backdrop-blur-md rounded-lg shadow-xl relative flex flex-col w-full max-w-lg max-h-[80vh] overflow-hidden">
+            <div class="p-3 flex items-center justify-between border-b border-gray-700 shrink-0">
+                <span class="font-semibold text-gray-100">Attach from Visual Lore</span>
+                <button data-action="visual-lore-close-picker" class="text-gray-400 hover:text-white transition-colors" aria-label="Close">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-3 shrink-0 space-y-2">
+                <input type="text" id="visual-lore-picker-search" placeholder="Search..."
+                    class="w-full bg-black/30 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-200 outline-none focus:border-indigo-500">
+                <div id="visual-lore-picker-filter" class="flex flex-wrap gap-1"></div>
+            </div>
+            <div id="visual-lore-picker-list" class="px-3 pb-3 overflow-y-auto flex-grow"></div>
+            <div class="p-3 border-t border-gray-700 shrink-0 flex justify-end">
+                <button data-action="visual-lore-close-picker"
+                    class="px-4 py-2 text-xs font-semibold rounded bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">Done</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Error dot: errors collect here instead of throwing a full-width toast over the
          chat. On a phone that toast covered the top of the story for three seconds and
@@ -3920,6 +3992,8 @@
                         class="py-2 px-2 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">Dynamic</button>
                     <button id="knowledge-tab-gm" onclick="UIManager.switchKnowledgeTab('gm')"
                         class="py-2 px-2 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">GM Agent</button>
+                    <button id="knowledge-tab-visual" onclick="UIManager.switchKnowledgeTab('visual')"
+                        class="py-2 px-2 font-semibold text-lg border-b-2 border-transparent text-gray-400 hover:text-white">Visual Lore</button>
                 </div>
                 <div class="flex items-center space-x-2">
                     <button data-action="close-modal" data-id="knowledge-modal"
@@ -3933,6 +4007,20 @@
                 </div>
             </div>
             <div class="p-4 flex-grow overflow-hidden min-h-0">
+                <div id="knowledge-visual-content" class="h-full flex-col md:flex-row gap-4 hidden">
+                    <div class="w-full md:w-1/3 flex flex-col h-1/3 md:h-full gap-2">
+                        <div class="flex gap-2">
+                            <button data-action="visual-lore-add"
+                                class="px-3 py-1.5 text-xs font-semibold rounded bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">Add Item</button>
+                            <input type="text" id="visual-lore-search" placeholder="Search..."
+                                class="flex-grow bg-black/30 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-indigo-500">
+                        </div>
+                        <div id="visual-lore-filter-container" class="flex flex-wrap gap-1 p-1 bg-black/20 rounded"></div>
+                        <div id="visual-lore-list" class="bg-black/30 rounded-lg p-2 overflow-y-auto flex-grow"></div>
+                    </div>
+                    <div id="visual-lore-details" class="w-full md:w-2/3 bg-black/30 rounded-lg p-4 overflow-y-auto flex-grow"></div>
+                    <input type="file" id="visual-lore-file" class="hidden" accept="image/*">
+                </div>
                 <div id="knowledge-static-content" class="h-full flex flex-col md:flex-row gap-4">
                     <div class="w-full md:w-1/3 flex flex-col h-1/3 md:h-full gap-2">
                         <div id="static-category-filter-container" class="flex flex-wrap gap-1 p-1 bg-black/20 rounded"></div>
@@ -6317,11 +6405,22 @@
                 <div id="vision-bridge-shared-settings" class="space-y-4 mt-4 hidden">
                     <div>
                         <label class="block text-xs uppercase text-gray-500 font-bold mb-1">Vision Model</label>
-                        <input type="text" id="vision-bridge-model" data-setting-key="visionBridgeModel"
-                            placeholder="e.g. google/gemma-4-12b-it"
-                            class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                        <div class="flex space-x-2">
+                            <input type="text" id="vision-bridge-model" data-setting-key="visionBridgeModel"
+                                placeholder="e.g. google/gemma-4-12b-it"
+                                class="flex-grow bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                            <button id="vision-bridge-browse-btn" onclick="AppController.openOpenRouterModelBrowser('vision')"
+                                class="bg-gray-700 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-lg transition-colors"
+                                title="Browse vision models">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                                </svg>
+                            </button>
+                        </div>
                         <p class="text-xs text-gray-500 mt-1">Local servers usually ignore this and use
-                            whichever model is loaded. Required for OpenRouter.</p>
+                            whichever model is loaded. Required for OpenRouter. Browsing lists only
+                            models that can actually read an image.</p>
                     </div>
                     <div>
                         <label class="block text-xs uppercase text-gray-500 font-bold mb-1">Description Instruction</label>
@@ -6993,6 +7092,119 @@
                         }
                     }
                 });
+
+                // --- IMAGE BUTTON MENU: LONG PRESS / RIGHT CLICK ---
+                // The Visual Lore shelf attaches to the turn being written, so its trigger
+                // belongs in the composer - but it does not earn a button of its own beside
+                // Send. It shares the image button, which opens a small menu the way the
+                // generate button does: upload a picture, or attach from the shelf. Both
+                // are "put something visual in this turn", so one button covers them.
+
+                let imgPressTimer = null;
+                let imgPressStart = null;
+                // The button opens the file dialog from an inline onclick. The synthetic
+                // click a long press raises when the finger lifts would open that dialog
+                // behind the menu, so it gets consumed.
+                let imgSwallowClick = false;
+                const cancelImgPress = () => {
+                    if (imgPressTimer) clearTimeout(imgPressTimer);
+                    imgPressTimer = null;
+                    imgPressStart = null;
+                };
+
+                // Desktop right-click. Android Chrome raises this too, after the timer
+                // below has already opened the menu; opening it twice only repositions it.
+                document.body.addEventListener('contextmenu', (e) => {
+                    if (!e.target.closest('#upload-image-btn')) return;
+                    e.preventDefault();
+                    UIManager.openImageMenu(e.clientX, e.clientY);
+                });
+
+                // iOS Safari never raises contextmenu, so long-press needs its own timer.
+                // 300ms + haptic matches the message menu and the story card drag.
+                document.body.addEventListener('touchstart', (e) => {
+                    const btn = e.target.closest('#upload-image-btn');
+                    if (!btn || !e.touches || !e.touches[0]) return;
+                    const t = e.touches[0];
+                    imgPressStart = { x: t.clientX, y: t.clientY };
+                    imgPressTimer = setTimeout(() => {
+                        if (navigator.vibrate) navigator.vibrate(50);
+                        UIManager.openImageMenu(imgPressStart.x, imgPressStart.y);
+                        imgSwallowClick = true;
+                        cancelImgPress();
+                    }, 300);
+                }, { passive: true });
+
+                // Sliding off the button cancels, so a mis-aimed press still uploads.
+                document.body.addEventListener('touchmove', (e) => {
+                    if (!imgPressStart || !e.touches || !e.touches[0]) return;
+                    const t = e.touches[0];
+                    if (Math.abs(t.clientX - imgPressStart.x) > 10 || Math.abs(t.clientY - imgPressStart.y) > 10) {
+                        cancelImgPress();
+                    }
+                }, { passive: true });
+                document.body.addEventListener('touchend', cancelImgPress);
+                document.body.addEventListener('touchcancel', cancelImgPress);
+
+                // Capture phase: the file dialog is opened by an inline onclick on the
+                // button itself, so the document is the only place a click can be caught
+                // ahead of it. Two get consumed here - the synthetic one the long press
+                // raises, and a tap on the button while the menu is open, which should put
+                // the menu away rather than also opening the dialog behind it. The flag
+                // clears on the first click either way, so a press that never raised one
+                // cannot swallow an unrelated tap later.
+                document.addEventListener('click', (e) => {
+                    const onButton = !!e.target.closest('#upload-image-btn');
+                    const menu = document.getElementById('image-context-menu');
+                    const menuOpen = !!menu && !menu.classList.contains('hidden');
+
+                    if (imgSwallowClick) {
+                        imgSwallowClick = false;
+                        if (onButton) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            return;
+                        }
+                    }
+                    if (onButton && menuOpen) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        UIManager.closeImageMenu();
+                    }
+                }, true);
+
+                // Dismissal. Choosing an entry closes it too: ActionHandler's own listener
+                // is on document.body, so the action has already run by the time this one
+                // sees the click on its way up.
+                document.addEventListener('click', (e) => {
+                    const menu = document.getElementById('image-context-menu');
+                    if (!menu || menu.classList.contains('hidden')) return;
+                    if (e.target.closest('#upload-image-btn')) return;
+                    UIManager.closeImageMenu();
+                });
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') UIManager.closeImageMenu();
+                });
+                // Capture phase so scrolling any container, not just the window, dismisses.
+                window.addEventListener('scroll', () => UIManager.closeImageMenu(), true);
+
+                // Visual Lore picker search.
+                const vlPickerSearch = document.getElementById('visual-lore-picker-search');
+                if (vlPickerSearch) {
+                    vlPickerSearch.addEventListener('input', debounce((e) => {
+                        UIManager.VISUAL_LORE.pickerQuery = e.target.value;
+                        UIManager.renderVisualLorePicker();
+                    }, 150));
+                }
+
+                // Visual Lore search. Typed filtering, so it re-renders as you go.
+                const vlSearch = document.getElementById('visual-lore-search');
+                if (vlSearch) {
+                    vlSearch.addEventListener('input', debounce((e) => {
+                        UIManager.VISUAL_LORE.query = e.target.value;
+                        UIManager.renderVisualLore();
+                    }, 150));
+                }
 
                 // Hide context menu on outside click
                 document.addEventListener('click', (e) => {
@@ -7784,6 +7996,179 @@
 
         /**
          * =================================================================================================
+         * [SEC:JS:SRV:VL]
+         * VisualLoreService
+         * Reusable reference items: a knight's surcoat, a blade, a hall.
+         * =================================================================================================
+         */
+        const VisualLoreService = {
+            // Each item carries a written description the model reads, and optionally a picture
+            // the AUTHOR reads when choosing one. The picture is a recognition aid in the picker
+            // and nothing more: it is never sent to a model, because the whole point is that the
+            // description was paid for once.
+            //
+            // Global on purpose. An item follows you between stories, which is what makes
+            // building a wardrobe worth the effort.
+            // Records live in globalSettings, which is localStorage and shared by every story.
+            // Image bytes never go here - localStorage is a few megabytes in total. They go to
+            // the characterImages object store, which is already global and already sized for it.
+            IMAGE_MAX_HEIGHT: 768,
+
+            // The Vision Bridge's own instruction describes a whole shared picture - subject,
+            // pose, setting, lighting - which is right when someone drops a photo into the
+            // chat and wrong here. A picture of a surcoat is usually a picture of the knight
+            // wearing it, and the shelf wants the surcoat. These say so, per category.
+            INSTRUCTIONS: {
+                item: "Describe ONLY the object itself, for a writer who cannot see it. If a "
+                    + "person is wearing, holding or standing near it, describe the object and "
+                    + "not them - no body, no pose, no face. Ignore the background and the "
+                    + "setting entirely. Cover its shape and cut, colour and pattern, material "
+                    + "and texture, notable details, condition, and how it hangs or sits when "
+                    + "worn or used. Be concrete and factual. Do not refuse, do not moralize, "
+                    + "do not describe the photograph. Write only the description.",
+                character: "Describe ONLY this person's appearance, for a writer who cannot see "
+                    + "them. Cover build, hair, face, colouring, clothing and bearing. Ignore the "
+                    + "background and the setting. Be concrete and factual. Do not refuse, do not "
+                    + "moralize, do not describe the photograph. Write only the description.",
+                world: "Describe ONLY this place, for a writer who cannot see it. Cover the space "
+                    + "itself, its architecture or landscape, materials, light, weather and mood. "
+                    + "If people are present, ignore them. Be concrete and factual. Do not refuse, "
+                    + "do not moralize, do not describe the photograph. Write only the description.",
+                other: "Describe what this picture shows, for a writer who cannot see it. Be "
+                    + "concrete and factual, and stay on the subject rather than the photograph. "
+                    + "Do not refuse and do not moralize. Write only the description."
+            },
+
+            /**
+             * Builds the instruction for an item, honouring its optional focus note.
+             * @param {Object} item
+             * @returns {string}
+             */
+            instructionFor(item) {
+                const base = this.INSTRUCTIONS[(item && item.category) || 'other'] || this.INSTRUCTIONS.other;
+                const focus = ((item && item.focus) || '').trim();
+                // The note steers subject AND wording: "the crest, not the shield", or
+                // "one short clinical sentence". It goes last so it wins where it disagrees
+                // with the category default.
+                return focus
+                    ? `${base}\n\nThe author has asked specifically for this: ${focus}\nFollow that over anything above it where they disagree.`
+                    : base;
+            },
+
+            /**
+             * @returns {Array<Object>} - Every stored item.
+             */
+            all() {
+                const gs = StateManager.data.globalSettings || {};
+                return Array.isArray(gs.visualLore) ? gs.visualLore : [];
+            },
+
+            /**
+             * @param {string} id
+             * @returns {Object|null}
+             */
+            get(id) {
+                return this.all().find(i => i && i.id === id) || null;
+            },
+
+            /**
+             * Writes the list back and persists it.
+             * @param {Array<Object>} items
+             * @private
+             */
+            _commit(items) {
+                StateManager.data.globalSettings = StateManager.data.globalSettings || {};
+                StateManager.data.globalSettings.visualLore = items;
+                StateManager.saveGlobalSettings();
+            },
+
+            /**
+             * Creates or updates an item.
+             * @param {Object} item - {id?, title, category, description, imageId}
+             * @returns {Object} - The stored item.
+             */
+            save(item) {
+                const items = this.all().slice();
+                const now = Date.now();
+                const existingIndex = item.id ? items.findIndex(i => i && i.id === item.id) : -1;
+
+                const record = {
+                    id: item.id || UTILITY.uuid(),
+                    title: (item.title || '').trim() || 'Untitled',
+                    category: item.category || 'item',
+                    description: (item.description || '').trim(),
+                    focus: (item.focus || '').trim(),
+                    imageId: item.imageId || null,
+                    created: existingIndex !== -1 ? (items[existingIndex].created || now) : now
+                };
+
+                if (existingIndex !== -1) items[existingIndex] = record;
+                else items.push(record);
+
+                this._commit(items);
+                return record;
+            },
+
+            /**
+             * Deletes an item, and its picture with it.
+             * @param {string} id
+             */
+            async remove(id) {
+                const item = this.get(id);
+                this._commit(this.all().filter(i => i && i.id !== id));
+                if (item && item.imageId) {
+                    try { await DBService.deleteImage(item.imageId); }
+                    catch (e) { console.warn('Visual Lore: image cleanup failed.', e); }
+                }
+            },
+
+            /**
+             * Stores a picture for an item, shrunk. A vision model downsizes its input anyway,
+             * so keeping the full-size original would cost megabytes to buy nothing.
+             * @param {Blob|File} file
+             * @returns {Promise<string>} - The image id.
+             */
+            async storeImage(file) {
+                const blob = await ImageProcessor.processImageAsBlob(file, this.IMAGE_MAX_HEIGHT);
+                const imageId = 'vl_' + UTILITY.uuid();
+                await DBService.saveImage(imageId, blob);
+                return imageId;
+            },
+
+            /**
+             * Asks the Vision Bridge to describe a stored picture.
+             * @param {string} imageId
+             * @returns {Promise<string|null>} - The description, or null if unavailable.
+             */
+            async describeImage(imageId, item = null) {
+                if (typeof VisionBridgeService === 'undefined' || !VisionBridgeService.isEnabled()) return null;
+                const blob = await DBService.getImage(imageId);
+                if (!blob) return null;
+                const data = await UTILITY.blobToBase64(blob);
+                return VisionBridgeService.describeSingle(
+                    { id: imageId, mimeType: blob.type, data },
+                    this.instructionFor(item));
+            },
+
+            /**
+             * Builds the prompt section for the items attached to a turn. Titles are included
+             * so the model can name the thing rather than describing it from scratch.
+             * @param {Array<string>} ids
+             * @returns {string} - The section, or "" when nothing resolves.
+             */
+            buildContextBlock(ids) {
+                if (!Array.isArray(ids) || ids.length === 0) return '';
+                const lines = ids
+                    .map(id => this.get(id))
+                    .filter(item => item && item.description)
+                    .map(item => `- ${item.title}: ${item.description}`);
+                if (lines.length === 0) return '';
+                return '## PRESENT DETAIL\n' + lines.join('\n');
+            }
+        };
+
+        /**
+         * =================================================================================================
          * [SEC:JS:SRV:BACKUP]
          * AutoBackupService Module
          * Manages seamless, zero-impact rolling auto-backups and automatic recovery from DB loss.
@@ -8445,6 +8830,27 @@
                 const usable = results.filter(r => typeof r === 'string' && r.trim().length > 0);
                 if (usable.length === 0) return null;
                 return UTILITY.buildVisionContextBlock(usable);
+            },
+
+            /**
+             * Describes ONE image and returns the raw prose, without the context block
+             * wrapper describe() adds. Visual Lore stores the description as editable text,
+             * so it wants the sentence, not a formatted prompt section.
+             * @param {Object} img - {id, mimeType, data} as built by _resolveMultimodalPrompt.
+             * @param {string} [instructionOverride] - Optional alternative instruction.
+             * @returns {Promise<string|null>} - The description, or null.
+             */
+            async describeSingle(img, instructionOverride = null) {
+                if (!this.isEnabled() || !img) return null;
+                const gs = StateManager.data.globalSettings || {};
+                const instruction = (instructionOverride || gs.visionBridgeInstruction || '').trim()
+                    || this.DEFAULT_INSTRUCTION;
+                // Deliberately does NOT swallow. describe() catches per image so one bad
+                // upload cannot spoil a whole turn, but a person who pressed a Describe
+                // button needs the actual reason - "returned nothing" sent me looking in the
+                // app for a fault that was an account setting on the provider.
+                const described = await this._describeOne(img, instruction, null);
+                return (typeof described === 'string' && described.trim()) ? described.trim() : null;
             },
 
             /**
@@ -12441,6 +12847,30 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
             },
 
             /**
+             * Filters Visual Lore items by category and a free-text query, newest first.
+             * The query matches the title and the description, so "crimson" finds a banner
+             * described as black even when the title does not say so.
+             * @param {Array<Object>} items - The stored items.
+             * @param {string} category - A category id, or "all".
+             * @param {string} query - Free text; blank matches everything.
+             * @returns {Array<Object>} - The matching items, newest first.
+             */
+            filterVisualLore(items, category, query) {
+                const list = Array.isArray(items) ? items.filter(Boolean) : [];
+                const cat = (category || 'all').toLowerCase();
+                const q = String(query || '').trim().toLowerCase();
+
+                const matched = list.filter(item => {
+                    if (cat !== 'all' && (item.category || 'other').toLowerCase() !== cat) return false;
+                    if (!q) return true;
+                    const haystack = ((item.title || '') + ' ' + (item.description || '')).toLowerCase();
+                    return haystack.includes(q);
+                });
+
+                return matched.sort((a, b) => (b.created || 0) - (a.created || 0));
+            },
+
+            /**
              * Groups repeated error messages so a failure that fires twenty times reads as
              * one line with a count rather than twenty identical rows. Most recent first.
              * @param {Array<Object>} entries - Raw {message, ts} entries, oldest first.
@@ -14689,6 +15119,13 @@ JSON Schema:
                         const char = ReactiveStore.getCharacter(msg.character_id);
                         const name = char ? char.name : (msg.character_id === 'user' ? 'User' : 'Character');
                         p += `### ${name}:\n${replacer(msg.content)}\n\n`;
+                        // Visual Lore attached to this turn. Kept beside its message so it
+                        // leaves the prompt when the message scrolls out of the window,
+                        // rather than needing its own rule for when a detail stops mattering.
+                        if (msg.item_ids && msg.item_ids.length && typeof VisualLoreService !== 'undefined') {
+                            const detail = VisualLoreService.buildContextBlock(msg.item_ids);
+                            if (detail) p += `${detail}\n\n`;
+                        }
                     } else if (msg.type === 'lore_reveal') {
                         p += `### System Note:\n${replacer(msg.content)}\n\n`;
                     } else if (msg.type === 'system_event') {
@@ -15705,9 +16142,9 @@ Write only the character's message.`;
              * @param {File|Blob} imageFile - The image file to process.
              * @returns {Promise<Blob>} - The processed image blob.
              */
-            async processImageAsBlob(imageFile) {
+            async processImageAsBlob(imageFile, maxHeight = 2000) {
                 return new Promise((resolve, reject) => {
-                    const MAX_HEIGHT = 2000;
+                    const MAX_HEIGHT = maxHeight;
                     const QUALITY = 0.85;
                     const reader = new FileReader();
                     reader.onload = (e) => {
@@ -18979,10 +19416,19 @@ Write only the character's message.`;
 
                 menu.innerHTML = items.join('');
                 menu.classList.remove('hidden');
+                this._placeMenuAt(menu, clientX, clientY);
+            },
 
-                // Measure after unhiding, then clamp to all four edges. The existing
-                // generate-context-menu only clamps top-left, which runs off a phone screen
-                // when opened near the bottom.
+            /**
+             * Positions an already-visible menu at a viewport point, clamped to all four
+             * edges. Measuring needs the menu unhidden, so this runs after showing it. The
+             * older generate-context-menu clamps top-left only, which runs off the bottom
+             * of a phone screen; anything opened from the composer sits down there.
+             * @param {HTMLElement} menu - The menu element, already unhidden.
+             * @param {number} clientX - Viewport X to anchor to.
+             * @param {number} clientY - Viewport Y to anchor to.
+             */
+            _placeMenuAt(menu, clientX, clientY) {
                 const rect = menu.getBoundingClientRect();
                 const margin = 8;
                 let left = clientX;
@@ -18994,6 +19440,28 @@ Write only the character's message.`;
 
                 menu.style.left = `${left}px`;
                 menu.style.top = `${top}px`;
+            },
+
+            /**
+             * Opens the image button's menu at the given viewport point. Contents are
+             * static markup, so unlike the message menu there is nothing to build first.
+             * @param {number} clientX - Viewport X to anchor to.
+             * @param {number} clientY - Viewport Y to anchor to.
+             */
+            openImageMenu(clientX, clientY) {
+                const menu = document.getElementById('image-context-menu');
+                if (!menu) return;
+                menu.classList.remove('hidden');
+                this._placeMenuAt(menu, clientX, clientY);
+            },
+
+            /**
+             * Hides the image button's menu if it is open.
+             */
+            closeImageMenu() {
+                const menu = document.getElementById('image-context-menu');
+                if (!menu) return;
+                menu.classList.add('hidden');
             },
 
             /**
@@ -20216,13 +20684,15 @@ Write only the character's message.`;
                 const staticTab = document.getElementById('knowledge-tab-static');
                 const dynamicTab = document.getElementById('knowledge-tab-dynamic');
                 const gmTab = document.getElementById('knowledge-tab-gm');
+                const visualTab = document.getElementById('knowledge-tab-visual');
                 const staticContent = document.getElementById('knowledge-static-content');
                 const dynamicContent = document.getElementById('knowledge-dynamic-content');
                 const gmContent = document.getElementById('knowledge-gm-content');
+                const visualContent = document.getElementById('knowledge-visual-content');
 
                 // Helper to toggle active classes
                 const setActiveTab = (activeTabEl, activeContentEl) => {
-                    [staticTab, dynamicTab, gmTab].forEach(tab => {
+                    [staticTab, dynamicTab, gmTab, visualTab].forEach(tab => {
                         if (tab) {
                             if (tab === activeTabEl) {
                                 tab.classList.add('border-indigo-500', 'text-white');
@@ -20233,7 +20703,7 @@ Write only the character's message.`;
                             }
                         }
                     });
-                    [staticContent, dynamicContent, gmContent].forEach(content => {
+                    [staticContent, dynamicContent, gmContent, visualContent].forEach(content => {
                         if (content) {
                             if (content === activeContentEl) {
                                 content.classList.remove('hidden');
@@ -20253,7 +20723,12 @@ Write only the character's message.`;
                 } else if (tabName === 'gm') {
                     setActiveTab(gmTab, gmContent);
                     this.renderGMRules();
+                } else if (tabName === 'visual') {
+                    setActiveTab(visualTab, visualContent);
+                    if (visualContent) visualContent.classList.add('flex');
+                    this.renderVisualLore();
                 }
+                if (visualContent && tabName !== 'visual') visualContent.classList.remove('flex');
             },
 
             switchKnowledgeTab(tabName) {
@@ -20271,6 +20746,247 @@ Write only the character's message.`;
             /**
              * Renders the list of static lore entries.
              */
+            /**
+             * Visual Lore runtime: which category is filtered, and which item is open.
+             */
+            VISUAL_LORE: { filter: 'all', query: '', selectedId: null, busy: false },
+
+            /**
+             * Renders the Visual Lore shelf: filter pills, the item list, and the open item.
+             */
+            /**
+             * Items chosen for the turn currently being written, before it is sent.
+             */
+            VISUAL_LORE_PENDING: [],
+
+            /**
+             * Opens the attach picker.
+             */
+            openVisualLorePicker() {
+                const el = document.getElementById('visual-lore-picker');
+                if (!el) return;
+                this.VISUAL_LORE.pickerQuery = '';
+                const search = document.getElementById('visual-lore-picker-search');
+                if (search) search.value = '';
+                this.renderVisualLorePicker();
+                el.classList.remove('hidden');
+                el.classList.add('flex');
+            },
+
+            /**
+             * Closes the attach picker.
+             */
+            closeVisualLorePicker() {
+                const el = document.getElementById('visual-lore-picker');
+                if (!el) return;
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            },
+
+            /**
+             * Renders the picker list, with what is already attached marked.
+             */
+            renderVisualLorePicker() {
+                const listEl = document.getElementById('visual-lore-picker-list');
+                const filterEl = document.getElementById('visual-lore-picker-filter');
+                if (!listEl || !filterEl) return;
+
+                const cats = [{ id: 'all', label: 'All' }, { id: 'item', label: 'Items' },
+                    { id: 'character', label: 'Characters' }, { id: 'world', label: 'Places' },
+                    { id: 'event', label: 'Events' }, { id: 'other', label: 'Other' }];
+                const active = this.VISUAL_LORE.pickerFilter || 'all';
+                filterEl.innerHTML = cats.map(c => {
+                    const cls = c.id === active
+                        ? 'px-2 py-1 text-xs font-semibold rounded bg-indigo-600 text-white'
+                        : 'px-2 py-1 text-xs font-semibold rounded bg-gray-700/50 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors';
+                    return DOM.html`<button data-action="visual-lore-picker-filter" data-cat="${c.id}" class="${cls}">${c.label}</button>`.toString();
+                }).join('');
+
+                const items = UTILITY.filterVisualLore(
+                    VisualLoreService.all(), active, this.VISUAL_LORE.pickerQuery || '');
+
+                if (items.length === 0) {
+                    listEl.innerHTML = DOM.html`<p class="text-xs text-gray-500 p-2">Nothing on the shelf yet. Add items in Knowledge, Visual Lore.</p>`.toString();
+                    return;
+                }
+
+                listEl.innerHTML = items.map(item => {
+                    const on = this.VISUAL_LORE_PENDING.includes(item.id);
+                    const cls = on ? 'bg-teal-600/30 border-teal-500' : 'bg-black/20 border-transparent hover:bg-black/40';
+                    const thumb = item.imageId
+                        ? DOM.html`<img data-vl-img="${item.imageId}" class="visual-lore-thumb" alt="">`.toString()
+                        : DOM.html`<div class="visual-lore-thumb visual-lore-thumb-empty"></div>`.toString();
+                    const tick = on
+                        ? '<svg class="w-4 h-4 text-teal-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'
+                        : '';
+                    return DOM.html`<button data-action="visual-lore-toggle" data-id="${item.id}"
+                        class="w-full text-left flex items-center gap-2 p-2 mb-1 rounded border ${cls} transition-colors">
+                        ${DOM.unsafe(thumb)}
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-xs font-semibold text-gray-100 truncate">${item.title}</span>
+                            <span class="block text-[10px] text-gray-500 truncate">${item.description}</span>
+                        </span>
+                        ${DOM.unsafe(tick)}
+                    </button>`.toString();
+                }).join('');
+
+                this._hydrateVisualLoreThumbs('#visual-lore-picker-list');
+            },
+
+            /**
+             * Renders the attached chips above the message box.
+             */
+            renderVisualLoreChips() {
+                const el = document.getElementById('visual-lore-chips');
+                if (!el) return;
+                const ids = this.VISUAL_LORE_PENDING;
+                if (!ids.length) {
+                    el.classList.add('hidden');
+                    el.classList.remove('flex');
+                    el.innerHTML = '';
+                    return;
+                }
+                el.classList.remove('hidden');
+                el.classList.add('flex');
+                el.innerHTML = ids.map(id => {
+                    const item = VisualLoreService.get(id);
+                    if (!item) return '';
+                    return DOM.html`<button data-action="visual-lore-toggle" data-id="${item.id}"
+                        class="flex items-center gap-1 px-2 py-1 rounded-full bg-teal-600/25 border border-teal-500/40 text-[11px] text-teal-100 hover:bg-teal-600/40 transition-colors"
+                        title="Remove from this message">${item.title}
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>`.toString();
+                }).join('');
+            },
+
+            renderVisualLore() {
+                const listEl = document.getElementById('visual-lore-list');
+                const filterEl = document.getElementById('visual-lore-filter-container');
+                if (!listEl || !filterEl) return;
+
+                    const cats = [{ id: 'all', label: 'All' }, { id: 'item', label: 'Items' }, { id: 'character', label: 'Characters' }, { id: 'world', label: 'Places' }, { id: 'event', label: 'Events' }, { id: 'other', label: 'Other' }];
+                const active = this.VISUAL_LORE.filter;
+                filterEl.innerHTML = cats.map(c => {
+                    const cls = c.id === active
+                        ? 'px-2 py-1 text-xs font-semibold rounded bg-indigo-600 text-white shadow'
+                        : 'px-2 py-1 text-xs font-semibold rounded bg-gray-700/50 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors';
+                    return DOM.html`<button data-action="visual-lore-filter" data-cat="${c.id}" class="${cls}">${c.label}</button>`.toString();
+                }).join('');
+
+                const items = UTILITY.filterVisualLore(
+                    VisualLoreService.all(), this.VISUAL_LORE.filter, this.VISUAL_LORE.query);
+
+                if (items.length === 0) {
+                    listEl.innerHTML = DOM.html`<p class="text-xs text-gray-500 p-2">Nothing here yet. Add an item to start your shelf.</p>`.toString();
+                } else {
+                    listEl.innerHTML = items.map(item => {
+                        const sel = item.id === this.VISUAL_LORE.selectedId;
+                        const cls = sel ? 'bg-indigo-600/30 border-indigo-500' : 'bg-black/20 border-transparent hover:bg-black/40';
+                        // A blank tile keeps the rows aligned when an item has no picture.
+                        const thumb = item.imageId
+                            ? DOM.html`<img data-vl-img="${item.imageId}" class="visual-lore-thumb" alt="">`.toString()
+                            : DOM.html`<div class="visual-lore-thumb visual-lore-thumb-empty"></div>`.toString();
+                        return DOM.html`<button data-action="visual-lore-select" data-id="${item.id}"
+                            class="w-full text-left flex items-center gap-2 p-2 mb-1 rounded border ${cls} transition-colors">
+                            ${DOM.unsafe(thumb)}
+                            <span class="min-w-0 flex-1">
+                                <span class="block text-xs font-semibold text-gray-100 truncate">${item.title}</span>
+                                <span class="block text-[10px] text-gray-500">${(cats.find(c => c.id === item.category) || {}).label || item.category}</span>
+                            </span>
+                        </button>`.toString();
+                    }).join('');
+                    this._hydrateVisualLoreThumbs();
+                }
+
+                this.renderVisualLoreDetails();
+            },
+
+            /**
+             * Loads thumbnails from the image store into the rendered rows.
+             * @private
+             */
+            async _hydrateVisualLoreThumbs(scope = '#visual-lore-list') {
+                const imgs = document.querySelectorAll(scope + ' img[data-vl-img]');
+                for (const img of imgs) {
+                    try {
+                        const blob = await DBService.getImage(img.dataset.vlImg);
+                        if (blob) img.src = URL.createObjectURL(blob);
+                    } catch (e) { console.warn('Visual Lore: thumbnail load failed.', e); }
+                }
+            },
+
+            /**
+             * Renders the open item, or the empty state.
+             */
+            renderVisualLoreDetails() {
+                const el = document.getElementById('visual-lore-details');
+                if (!el) return;
+
+                const item = this.VISUAL_LORE.selectedId ? VisualLoreService.get(this.VISUAL_LORE.selectedId) : null;
+                if (!item) {
+                    el.innerHTML = DOM.html`<p class="text-sm text-gray-500">Pick an item, or add one.</p>`.toString();
+                    return;
+                }
+
+                    const cats = [{ id: 'all', label: 'All' }, { id: 'item', label: 'Items' }, { id: 'character', label: 'Characters' }, { id: 'world', label: 'Places' }, { id: 'event', label: 'Events' }, { id: 'other', label: 'Other' }];
+                const bridgeReady = (typeof VisionBridgeService !== 'undefined') && VisionBridgeService.isEnabled();
+                const busy = this.VISUAL_LORE.busy;
+
+                const picture = item.imageId
+                    ? DOM.html`<img data-vl-img="${item.imageId}" class="visual-lore-preview" alt="">`.toString()
+                    : DOM.html`<div class="visual-lore-preview visual-lore-thumb-empty flex items-center justify-center"><span class="text-[10px] text-gray-600">No picture</span></div>`.toString();
+
+                const describeLabel = item.description ? "Describe again" : "Describe with AI";
+                const describeBtn = bridgeReady && item.imageId
+                    ? DOM.html`<button data-action="visual-lore-describe" data-id="${item.id}" ${DOM.unsafe(busy ? "disabled" : "")}
+                        class="px-3 py-1.5 text-xs font-semibold rounded bg-teal-600 hover:bg-teal-500 text-white transition-colors">${busy ? "Describing..." : describeLabel}</button>`.toString()
+                    : '';
+
+                const hint = !item.imageId
+                    ? 'Text-only item. Add a picture if it helps you recognise it in the picker.'
+                    : (bridgeReady ? '' : 'Set up the Vision Bridge in Settings to describe pictures automatically.');
+
+                el.innerHTML = DOM.html`<div class="flex flex-col gap-3">
+                    <div class="flex gap-4 items-start">
+                        ${DOM.unsafe(picture)}
+                        <div class="flex-1 flex flex-col gap-2 min-w-0">
+                            <input type="text" id="visual-lore-title" value="${item.title}" placeholder="Name"
+                                class="w-full bg-black/40 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-100 outline-none focus:border-indigo-500">
+                            <select id="visual-lore-category"
+                                class="w-full bg-black/40 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-indigo-500">
+                                ${DOM.unsafe(cats.filter(c => c.id !== 'all').map(c =>
+                                    `<option value="${c.id}"${c.id === item.category ? ' selected' : ''}>${c.label}</option>`).join(''))}
+                            </select>
+                            <div class="flex flex-wrap gap-2">
+                                <button data-action="visual-lore-pick-image" data-id="${item.id}"
+                                    class="px-3 py-1.5 text-xs font-semibold rounded bg-gray-700 hover:bg-gray-600 text-white transition-colors">${item.imageId ? "Replace picture" : "Add picture"}</button>
+                                ${DOM.unsafe(describeBtn)}
+                            </div>
+                        </div>
+                    </div>
+                    <input type="text" id="visual-lore-focus" value="${item.focus || ''}"
+                        placeholder="What should the AI describe, and how? (optional)"
+                        class="w-full bg-black/40 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-300 outline-none focus:border-indigo-500">
+                    <textarea id="visual-lore-description" rows="8" placeholder="What the character knows about this."
+                        class="w-full bg-black/40 border border-gray-700 rounded px-2 py-2 text-sm text-gray-200 outline-none focus:border-indigo-500 resize-y">${item.description}</textarea>
+                    <p class="text-[11px] text-gray-500">${hint}</p>
+                    <div class="flex gap-2">
+                        <button data-action="visual-lore-save" data-id="${item.id}"
+                            class="px-4 py-2 text-xs font-semibold rounded bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">Save</button>
+                        <button data-action="visual-lore-delete" data-id="${item.id}"
+                            class="px-4 py-2 text-xs font-semibold rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition-colors">Delete</button>
+                    </div>
+                </div>`.toString();
+
+                this._hydrateVisualLoreThumbs();
+                const preview = document.querySelector('#visual-lore-details img[data-vl-img]');
+                if (preview) {
+                    DBService.getImage(preview.dataset.vlImg).then(blob => {
+                        if (blob) preview.src = URL.createObjectURL(blob);
+                    }).catch(() => {});
+                }
+            },
+
             renderStaticEntries() {
                 const state = StateManager.getState();
 
@@ -26303,6 +27019,20 @@ Write only the character's message.`;
                     // - 'text' mode  -> default endpoint          (returns text/multimodal models)
                     let models = await APIService.fetchOpenRouterModels(mode);
 
+                    // "image" mode means models that PRODUCE pictures. The Vision Bridge
+                    // needs the opposite: models that can READ one. That is not a separate
+                    // endpoint, so filter the normal list on input modalities.
+                    if (mode === 'vision') {
+                        models = models.filter(m => {
+                            const arch = m && m.architecture;
+                            if (!arch) return false;
+                            if (Array.isArray(arch.input_modalities)) {
+                                return arch.input_modalities.includes('image');
+                            }
+                            return typeof arch.modality === 'string' && arch.modality.includes('image');
+                        });
+                    }
+
                     if (models.length > 0) {
                         console.groupCollapsed("OpenRouter Model Fetch Debug");
                         console.log(`Total Models Fetched (${mode} mode):`, models.length);
@@ -26458,6 +27188,20 @@ Write only the character's message.`;
              * @param {string} modelId - The model ID to select.
              */
             _selectModelFromBrowser(modelId) {
+                if (this.RUNTIME.modelBrowserMode === 'vision') {
+                    const input = document.getElementById('vision-bridge-model');
+                    if (input) {
+                        input.value = modelId;
+                        // The settings binding listens for input, so this keeps the stored
+                        // value in step with the field.
+                        input.dispatchEvent(new Event('input'));
+                    }
+                    StateManager.data.globalSettings.visionBridgeModel = modelId;
+                    StateManager.saveGlobalSettings();
+                    this.closeModal('openrouter-model-modal');
+                    return;
+                }
+
                 if (this.RUNTIME.modelBrowserMode === 'image') {
                     // Image Mode Selection
                     const input = document.getElementById('image-gen-openrouter-model-input');
@@ -33756,6 +34500,15 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 // 1. Add user message immediately
                 const pendingImg = state.pendingImage;
                 const userMsg = await this.addMessageToHistory(userChar.id, messageContent, 'chat', 'neutral', pendingImg ? [pendingImg] : null);
+
+                // Visual Lore attached to this turn. Stored as ids on the message, never as
+                // images: the picture is a recognition aid in the picker, and re-sending it
+                // every turn would undo the point of describing it once.
+                if (typeof UIManager !== 'undefined' && UIManager.VISUAL_LORE_PENDING && UIManager.VISUAL_LORE_PENDING.length) {
+                    if (userMsg) userMsg.item_ids = UIManager.VISUAL_LORE_PENDING.slice();
+                    UIManager.VISUAL_LORE_PENDING = [];
+                    UIManager.renderVisualLoreChips();
+                }
                 const userImages = userMsg ? userMsg.images : [];
 
                 input.value = '';
@@ -35046,6 +35799,20 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     ? userMessage
                     : null;
 
+                // Visual Lore chosen for this turn. sendMessage attaches them to the message
+                // it creates and clears the list before getting here, so anything still
+                // pending belongs to a turn with no message of its own - directing a
+                // character, or passing the turn. Without this they were silently ignored
+                // and left sitting on the chip bar, ready to attach themselves to whatever
+                // was sent next.
+                let pendingLoreIds = [];
+                if (typeof UIManager !== 'undefined' && Array.isArray(UIManager.VISUAL_LORE_PENDING)
+                    && UIManager.VISUAL_LORE_PENDING.length) {
+                    pendingLoreIds = UIManager.VISUAL_LORE_PENDING.slice();
+                    UIManager.VISUAL_LORE_PENDING = [];
+                    UIManager.renderVisualLoreChips();
+                }
+
                 // Clear previous error messages before starting new generation
                 this.clearSystemErrors();
                 this._clearResponseOptions();
@@ -35139,6 +35906,22 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         directiveCustomInstruction =
                             `Generate the next response for ${actingName}. Stay in character.\n\n${directiveInstruction}`;
                     }
+
+                    // There is no message of our own to hang these on, so they ride with the
+                    // instruction. customInstruction REPLACES the default, so restate it when
+                    // there is no directive already doing that.
+                    if (pendingLoreIds.length && typeof VisualLoreService !== 'undefined') {
+                        const detail = VisualLoreService.buildContextBlock(pendingLoreIds);
+                        if (detail) {
+                            if (!directiveCustomInstruction) {
+                                const actingChar = ReactiveStore.getCharacter(targetId);
+                                const actingName = actingChar ? actingChar.name : 'the character';
+                                directiveCustomInstruction =
+                                    `Generate the next response for ${actingName}. Stay in character.`;
+                            }
+                            directiveCustomInstruction += `\n\n${detail}`;
+                        }
+                    }
                     const prompt = PromptBuilder.buildPrompt(targetId, false, historyOverride, directiveCustomInstruction);
 
                     // START REQUEST (Do not await yet if there might be other parallel work, but here we await basic text first)
@@ -35183,12 +35966,17 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     // never stored. Regenerating the message then quietly dropped the
                     // direction and answered the previous message instead. Keeping it on
                     // the message it produced lets handleRegen apply it again.
-                    if (directiveInstruction) {
+                    if (directiveInstruction || pendingLoreIds.length) {
                         const producedIndex = (targetMessageIndex !== null)
                             ? targetMessageIndex
                             : (state.chat_history.length - 1);
                         const producedMsg = state.chat_history[producedIndex];
-                        if (producedMsg) producedMsg.directive = directiveInstruction;
+                        if (producedMsg) {
+                            if (directiveInstruction) producedMsg.directive = directiveInstruction;
+                            // Kept on the reply so the detail stays in play for the turns
+                            // that follow, and so a rerun of this message still carries it.
+                            if (pendingLoreIds.length) producedMsg.item_ids = pendingLoreIds.slice();
+                        }
                     }
 
                     // 7. Analyze combined interaction (Post-Display Concurrency)
@@ -40932,6 +41720,123 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                     const y = r ? r.bottom + 4 : (e ? e.clientY : 0);
                     UIManager.openMessageMenu(parseInt(ds.index), x, y);
                 });
+                // --- Visual Lore: attaching to a turn ---
+                // Both entries in the image button's menu. Upload duplicates what a plain
+                // tap does, so the menu reads as a choice rather than a single stray item.
+                ActionHandler.register('upload-image', () => {
+                    const input = document.getElementById('image-upload-input');
+                    if (input) input.click();
+                });
+                ActionHandler.register('visual-lore-open-picker', () => UIManager.openVisualLorePicker());
+                ActionHandler.register('visual-lore-close-picker', () => UIManager.closeVisualLorePicker());
+                ActionHandler.register('visual-lore-picker-filter', (ds) => {
+                    UIManager.VISUAL_LORE.pickerFilter = ds.cat || 'all';
+                    UIManager.renderVisualLorePicker();
+                });
+                ActionHandler.register('visual-lore-toggle', (ds) => {
+                    const list = UIManager.VISUAL_LORE_PENDING;
+                    const at = list.indexOf(ds.id);
+                    if (at === -1) list.push(ds.id); else list.splice(at, 1);
+                    UIManager.renderVisualLoreChips();
+                    // The chips are also toggles, so only redraw the picker while it is open.
+                    const picker = document.getElementById('visual-lore-picker');
+                    if (picker && !picker.classList.contains('hidden')) UIManager.renderVisualLorePicker();
+                });
+
+                // --- Visual Lore ---
+                ActionHandler.register('visual-lore-filter', (ds) => {
+                    UIManager.VISUAL_LORE.filter = ds.cat || 'all';
+                    UIManager.renderVisualLore();
+                });
+                ActionHandler.register('visual-lore-select', (ds) => {
+                    UIManager.VISUAL_LORE.selectedId = ds.id;
+                    UIManager.renderVisualLore();
+                });
+                ActionHandler.register('visual-lore-add', () => {
+                    const item = VisualLoreService.save({ title: 'New Item', category: 'item', description: '' });
+                    UIManager.VISUAL_LORE.selectedId = item.id;
+                    UIManager.renderVisualLore();
+                });
+                ActionHandler.register('visual-lore-save', (ds) => {
+                    const item = VisualLoreService.get(ds.id);
+                    if (!item) return;
+                    const title = document.getElementById('visual-lore-title');
+                    const category = document.getElementById('visual-lore-category');
+                    const description = document.getElementById('visual-lore-description');
+                    const focus = document.getElementById('visual-lore-focus');
+                    VisualLoreService.save({
+                        id: item.id,
+                        title: title ? title.value : item.title,
+                        category: category ? category.value : item.category,
+                        description: description ? description.value : item.description,
+                        focus: focus ? focus.value : item.focus,
+                        imageId: item.imageId
+                    });
+                    UIManager.renderVisualLore();
+                    UIManager.showNotification('Saved.', 'success');
+                });
+                ActionHandler.register('visual-lore-delete', async (ds) => {
+                    const item = VisualLoreService.get(ds.id);
+                    if (!item) return;
+                    UIManager.showConfirmationModal(`Delete "${item.title}"?`, async () => {
+                        await VisualLoreService.remove(ds.id);
+                        if (UIManager.VISUAL_LORE.selectedId === ds.id) UIManager.VISUAL_LORE.selectedId = null;
+                        UIManager.renderVisualLore();
+                    });
+                });
+                ActionHandler.register('visual-lore-pick-image', (ds) => {
+                    const input = document.getElementById('visual-lore-file');
+                    if (!input) return;
+                    // One-shot handler so the id being edited travels with the pick.
+                    input.onchange = async (e) => {
+                        const file = e.target.files && e.target.files[0];
+                        input.value = '';
+                        if (!file) return;
+                        try {
+                            const item = VisualLoreService.get(ds.id);
+                            if (!item) return;
+                            const previous = item.imageId;
+                            const imageId = await VisualLoreService.storeImage(file);
+                            VisualLoreService.save(Object.assign({}, item, { imageId }));
+                            // Replacing a picture should not leave the old one behind.
+                            if (previous) {
+                                try { await DBService.deleteImage(previous); } catch (err) {}
+                            }
+                            UIManager.renderVisualLore();
+                        } catch (err) {
+                            UIManager.showNotification(err.message || 'Could not store that picture.', 'error');
+                        }
+                    };
+                    input.click();
+                });
+                ActionHandler.register('visual-lore-describe', async (ds) => {
+                    const item = VisualLoreService.get(ds.id);
+                    if (!item || !item.imageId || UIManager.VISUAL_LORE.busy) return;
+                    UIManager.VISUAL_LORE.busy = true;
+                    UIManager.renderVisualLoreDetails();
+                    try {
+                        const focusEl = document.getElementById('visual-lore-focus');
+                        const catEl = document.getElementById('visual-lore-category');
+                        // Use what is on screen, so a focus note works before it is saved.
+                        const aimed = Object.assign({}, item, {
+                            focus: focusEl ? focusEl.value : item.focus,
+                            category: catEl ? catEl.value : item.category
+                        });
+                        const described = await VisualLoreService.describeImage(item.imageId, aimed);
+                        if (described) {
+                            VisualLoreService.save(Object.assign({}, aimed, { description: described }));
+                            UIManager.showNotification('Described. Edit it to taste.', 'success');
+                        } else {
+                            UIManager.showNotification('The model replied with an empty description. It may have declined this picture.', 'error');
+                        }
+                    } catch (err) {
+                        UIManager.showNotification(err.message || 'Describe failed.', 'error');
+                    } finally {
+                        UIManager.VISUAL_LORE.busy = false;
+                        UIManager.renderVisualLore();
+                    }
+                });
+
                 ActionHandler.register('open-error-log', () => UIManager.openErrorLog());
                 ActionHandler.register('close-error-log', () => UIManager.closeErrorLog());
                 ActionHandler.register('clear-error-log', () => UIManager.clearErrorLog());
