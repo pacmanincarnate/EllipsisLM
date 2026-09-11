@@ -2094,6 +2094,11 @@
             transition-delay: 0s;
         }
 
+        .message-dropdown-menu {
+            width: max-content;
+            min-width: max-content;
+        }
+
         /* Touch devices never produce a reliable :hover, so the rule above never fires and
            the whole bar sits at opacity 0 permanently — every per-message action is
            unreachable on a phone. Reveal it there. The kebab is the entry point to the
@@ -8129,7 +8134,10 @@
                     UIManager.closeMessageMenu();
                 });
                 document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') UIManager.closeMessageMenu();
+                    if (e.key === 'Escape') {
+                        UIManager.closeMessageMenu();
+                        if (typeof NarrativeController !== 'undefined') NarrativeController.closeAllMessageMenus();
+                    }
                 });
                 // Capture phase so scrolling any container, not just the window, dismisses.
                 window.addEventListener('scroll', () => UIManager.closeMessageMenu(), true);
@@ -20003,6 +20011,18 @@ Write only the character's message.`;
                     </span>
                 `;
 
+                // Safe check for image gen
+                let allowImageGen = false;
+                try {
+                    allowImageGen = (typeof UIManager !== 'undefined' && UIManager.isImageGenEnabled)
+                        ? UIManager.isImageGenEnabled()
+                        : (typeof StateManager !== 'undefined' && StateManager.data && StateManager.data.globalSettings && StateManager.data.globalSettings.imageGenBackend !== 'disabled');
+                } catch (e) { console.warn("Chat Render Error (Image Gen):", e); }
+
+                const imageGenBtn = allowImageGen
+                    ? `<button data-action="trigger-visual-event" data-index="${index}" class="text-gray-400 hover:text-indigo-400 p-0.5 rounded transition-colors" title="Generate Image"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></button>`
+                    : '';
+
                 const imagesHTML = (msg.images && msg.images.length > 0)
                     ? `<div class="message-image-container">${msg.images.map(imgId => `<img data-img-id="${imgId}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="message-img" onload="UIManager.hydrateMessageImage(this)" onclick="UIManager.viewChatImage(this.src)">`).join('')}</div>`
                     : '';
@@ -20020,34 +20040,39 @@ Write only the character's message.`;
                      ${versionHint}
                      ${thoughtBadge}
                      <span class="timestamp text-xs text-gray-500 ml-2">${timestamp}</span>
-                     <div class="action-btn-group flex items-center ml-auto space-x-3 pl-2">
-                        <button data-action="open-message-menu" data-index="${index}" class="text-gray-400 hover:text-white" title="More actions"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5.01V5m0 7.01V12m0 7.01V19"></path></svg></button>
-                        <button data-action="chat-edit" data-index="${index}" class="text-gray-400 hover:text-white" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-                        <button data-action="confirm-delete-message" data-index="${index}" class="text-gray-400 hover:text-red-400" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                     <div class="action-btn-group flex items-center ml-auto space-x-2 pl-2">
+                        ${DOM.unsafe(imageGenBtn)}
+                        <button data-action="chat-edit" data-index="${index}" class="text-gray-400 hover:text-white p-0.5 rounded transition-colors" title="Edit Message">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
                         <div class="message-menu-anchor relative inline-block">
                             <button data-action="toggle-message-menu" data-index="${index}" class="text-gray-400 hover:text-white p-0.5 rounded transition-colors" title="More options">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
                             </button>
-                            <div id="message-menu-${index}" class="message-dropdown-menu hidden absolute right-0 top-full mt-1 w-44 bg-gray-900/95 border border-gray-700/80 rounded-lg shadow-2xl py-1 z-30 backdrop-blur-md text-xs">
-                                <button id="menu-view-thinking-${index}" data-action="view-message-thinking" data-index="${index}" class="${hasThinking ? 'flex' : 'hidden'} w-full items-center gap-2 px-3 py-1.5 text-left text-purple-300 hover:bg-purple-900/30 transition-colors">
-                                    <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                            <div id="message-menu-${index}" class="message-dropdown-menu hidden absolute right-0 top-full mt-1 bg-gray-900/95 border border-gray-700/80 rounded-lg shadow-2xl py-1.5 z-30 backdrop-blur-md text-xs" style="width: max-content; min-width: max-content;">
+                                <button id="menu-view-thinking-${index}" data-action="view-message-thinking" data-index="${index}" class="${hasThinking ? 'flex' : 'hidden'} w-full items-center gap-2 px-3 py-1.5 text-left whitespace-nowrap text-purple-300 hover:bg-purple-900/30 transition-colors">
+                                    <svg class="w-3.5 h-3.5 shrink-0 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
                                     <span>View Thinking</span>
                                 </button>
-                                <button data-action="chat-copy" data-index="${index}" class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-gray-300 hover:bg-gray-800/80 transition-colors">
-                                    <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                <button data-action="trigger-visual-event" data-index="${index}" class="${allowImageGen ? 'flex' : 'hidden'} w-full items-center gap-2 px-3 py-1.5 text-left whitespace-nowrap text-indigo-300 hover:bg-indigo-900/30 transition-colors">
+                                    <svg class="w-3.5 h-3.5 shrink-0 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    <span>Generate Image</span>
+                                </button>
+                                <button data-action="chat-copy" data-index="${index}" class="flex w-full items-center gap-2 px-3 py-1.5 text-left whitespace-nowrap text-gray-300 hover:bg-gray-800/80 transition-colors">
+                                    <svg class="w-3.5 h-3.5 shrink-0 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
                                     <span>Copy Text</span>
                                 </button>
-                                <button data-action="create-static-from-message" data-index="${index}" class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-gray-300 hover:bg-gray-800/80 transition-colors">
-                                    <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                <button data-action="create-static-from-message" data-index="${index}" class="flex w-full items-center gap-2 px-3 py-1.5 text-left whitespace-nowrap text-gray-300 hover:bg-gray-800/80 transition-colors">
+                                    <svg class="w-3.5 h-3.5 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                                     <span>Create Static Memory</span>
                                 </button>
-                                <button data-action="chat-edit" data-index="${index}" class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-gray-300 hover:bg-gray-800/80 transition-colors">
-                                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                <button data-action="chat-edit" data-index="${index}" class="flex w-full items-center gap-2 px-3 py-1.5 text-left whitespace-nowrap text-gray-300 hover:bg-gray-800/80 transition-colors">
+                                    <svg class="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                     <span>Edit Message</span>
                                 </button>
                                 <div class="my-1 border-t border-gray-800"></div>
-                                <button data-action="confirm-delete-message" data-index="${index}" class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-red-400 hover:bg-red-950/40 transition-colors">
-                                    <svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                <button data-action="confirm-delete-message" data-index="${index}" class="flex w-full items-center gap-2 px-3 py-1.5 text-left whitespace-nowrap text-red-400 hover:bg-red-950/40 transition-colors">
+                                    <svg class="w-3.5 h-3.5 shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     <span>Delete Message</span>
                                 </button>
                             </div>
@@ -20582,18 +20607,41 @@ Write only the character's message.`;
                         && StateManager.data.globalSettings.imageGenBackend !== 'disabled');
                 } catch (e) { console.warn("Message Menu (Image Gen check):", e); }
 
-                const icon = (d) => `<svg class="w-4 h-4 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${d}"></path></svg>`;
-                const row = (action, label, path, hover) =>
-                    `<button data-action="${action}" data-index="${index}" class="w-full text-left px-4 py-2 ${hover} text-white text-sm transition-colors flex items-center">${icon(path)}${label}</button>`;
+                let hasThinking = false;
+                try {
+                    let msg = null;
+                    if (typeof TextModeController !== 'undefined' && TextModeController.RUNTIME && TextModeController.RUNTIME.activeCharId) {
+                        msg = TextModeController.RUNTIME.messages[index];
+                    } else if (typeof NarrativeController !== 'undefined' && NarrativeController.RUNTIME) {
+                        msg = NarrativeController.RUNTIME.messages[index];
+                    }
+                    if (msg) {
+                        const curVer = msg.currentVersion || 0;
+                        const thinkingText = (msg.versions && msg.versions[curVer] && msg.versions[curVer].thinking)
+                            ? msg.versions[curVer].thinking
+                            : (msg.thinking || '');
+                        hasThinking = Boolean(thinkingText && thinkingText.trim());
+                    }
+                } catch (e) { console.warn("Message Menu (Thinking check):", e); }
+
+                const icon = (d, colorClass) => `<svg class="w-4 h-4 mr-3 shrink-0 ${colorClass || ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${d}"></path></svg>`;
+                const row = (action, label, path, hover, textColor, iconColor) =>
+                    `<button data-action="${action}" data-index="${index}" class="w-full text-left px-4 py-2 ${hover} ${textColor || 'text-white'} text-sm transition-colors flex items-center whitespace-nowrap">${icon(path, iconColor)}${label}</button>`;
 
                 const items = [];
                 if (allowImageGen) {
-                    items.push(`<button onclick="VisualMaster.triggerVisualEvent(${index}, this)" class="w-full text-left px-4 py-2 hover:bg-indigo-600/50 text-white text-sm transition-colors flex items-center">${icon('M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z')}Generate Image</button>`);
+                    items.push(`<button onclick="VisualMaster.triggerVisualEvent(${index}, this)" class="w-full text-left px-4 py-2 hover:bg-indigo-600/50 text-gray-300 text-sm transition-colors flex items-center whitespace-nowrap">${icon('M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z', 'text-indigo-400')}Generate Image</button>`);
                 }
-                items.push(row('create-static-from-message', 'Create Static Memory', 'M12 6v6m0 0v6m0-6h6m-6 0H6', 'hover:bg-emerald-600/50'));
-                items.push(row('chat-copy', 'Copy to Clipboard', 'M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3', 'hover:bg-blue-600/50'));
-                items.push(row('chat-edit', 'Edit', 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z', 'hover:bg-indigo-600/50'));
-                items.push(row('confirm-delete-message', 'Delete', 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16', 'hover:bg-red-600/50'));
+
+                if (hasThinking) {
+                    items.push(row('view-message-thinking', 'View Thinking', 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', 'hover:bg-purple-900/30', 'text-purple-300', 'text-purple-400'));
+                }
+
+                items.push(row('chat-copy', 'Copy Text', 'M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3', 'hover:bg-gray-800/80', 'text-gray-300', 'text-blue-400'));
+                items.push(row('create-static-from-message', 'Create Static Memory', 'M12 6v6m0 0v6m0-6h6m-6 0H6', 'hover:bg-gray-800/80', 'text-gray-300', 'text-emerald-400'));
+                items.push(row('chat-edit', 'Edit Message', 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z', 'hover:bg-gray-800/80', 'text-gray-300', 'text-gray-400'));
+                items.push('<div class="my-1 border-t border-gray-700/80"></div>');
+                items.push(row('confirm-delete-message', 'Delete Message', 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16', 'hover:bg-red-950/40', 'text-red-400', 'text-red-400'));
 
                 menu.innerHTML = items.join('');
                 menu.classList.remove('hidden');
@@ -36625,6 +36673,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     ? followingMessages.some(m => m.type === 'dm' && m.exclusive_to_char_id === dmCharId)
                     : followingMessages.some(m => m.type === 'chat' && !m.isHidden);
 
+                this.closeAllMessageMenus();
                 if (!hasFollowingChat) {
                     this.executeDelete(index, 'single');
                 } else {
@@ -36992,7 +37041,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
             /**
              * Toggles the message dropdown menu for a specific message.
              * @param {number} index - The index of the message.
-             * @param {Event} event - The triggering click event.
+             * @param {Event} [event] - The triggering click event.
              */
             toggleMessageMenu(index, event) {
                 if (event) {
@@ -42946,6 +42995,8 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 const msg = state.chat_history[index];
                 if (!msg) return;
 
+                if (typeof NarrativeController !== 'undefined') NarrativeController.closeAllMessageMenus();
+
                 // 1. Show Feedback
                 UIManager.showLoadingSpinner("Extracting knowledge...");
 
@@ -43880,6 +43931,13 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 ActionHandler.register('chat-copy', (ds) => NarrativeController.copyMessage(ds.index));
                 ActionHandler.register('chat-edit', (ds) => NarrativeController.openEditModal(ds.index));
                 ActionHandler.register('chat-delete', (ds) => NarrativeController.deleteMessage(ds.index));
+                ActionHandler.register('trigger-visual-event', (ds, val, e) => {
+                    const btn = (e && e.target) ? e.target.closest('button') : null;
+                    if (typeof NarrativeController !== 'undefined') NarrativeController.closeAllMessageMenus();
+                    if (typeof VisualMaster !== 'undefined') {
+                        VisualMaster.triggerVisualEvent(parseInt(ds.index, 10), btn);
+                    }
+                });
                 ActionHandler.register('view-message-thinking', (ds) => NarrativeController.openThinkingModal(parseInt(ds.index, 10)));
                 ActionHandler.register('toggle-message-menu', (ds, val, e) => NarrativeController.toggleMessageMenu(parseInt(ds.index, 10), e));
                 ActionHandler.register('copy-thinking-modal-text', () => NarrativeController.copyThinkingModalText());
@@ -44563,7 +44621,7 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                     if (openMsgMenus.length > 0) {
                         openMsgMenus.forEach(m => {
                             const anchor = m.closest('.message-menu-anchor');
-                            if (!anchor || !anchor.contains(e.target)) {
+                            if (!anchor || !anchor.contains(e.target) || m.contains(e.target)) {
                                 m.classList.add('hidden');
                             }
                         });
