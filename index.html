@@ -3926,6 +3926,50 @@
         </div>
     </div>
 
+    <!-- Model Thinking / Reasoning Inspection Modal -->
+    <!-- [UI:MODAL:THINKING] -->
+    <div id="thinking-modal" class="fixed inset-0 z-50 items-center justify-center hidden p-4">
+        <div class="modal-overlay absolute inset-0 bg-black/60 backdrop-blur-sm" data-action="close-modal" data-id="thinking-modal"></div>
+        <div class="bg-gray-800/90 backdrop-blur-md rounded-xl shadow-2xl w-full max-w-2xl h-[75vh] max-h-[85vh] relative flex flex-col overflow-hidden border border-gray-700/80">
+            <!-- Header -->
+            <div class="p-4 border-b border-gray-700/80 flex justify-between items-center flex-shrink-0 bg-gray-900/50">
+                <div class="flex items-center gap-2">
+                    <div class="p-2 rounded-lg bg-purple-950/60 border border-purple-800/50 text-purple-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 id="thinking-modal-title" class="text-base font-bold text-white leading-tight">Model Reasoning</h3>
+                        <p id="thinking-modal-subtitle" class="text-xs text-gray-400">Internal scratchpad & thought process</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button data-action="copy-thinking-modal-text" class="flex items-center gap-1.5 bg-gray-700/70 hover:bg-gray-600 text-gray-200 hover:text-white text-xs font-semibold py-1.5 px-3 rounded-lg border border-gray-600/50 transition-colors shadow" title="Copy to clipboard">
+                        <svg class="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        <span>Copy</span>
+                    </button>
+                    <button data-action="close-modal" data-id="thinking-modal" class="bg-black/40 hover:bg-gray-700 text-gray-300 hover:text-white p-2 rounded-full backdrop-blur-sm transition-colors shadow-lg" title="Close">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <!-- Body -->
+            <div class="p-4 overflow-y-auto flex-grow min-h-0 bg-gray-950/60">
+                <pre id="thinking-modal-content" class="w-full h-full font-mono text-xs text-purple-200/90 whitespace-pre-wrap select-text leading-relaxed tracking-wide"></pre>
+            </div>
+            <!-- Footer / Stats -->
+            <div class="px-4 py-2 bg-gray-900/80 border-t border-gray-700/60 flex items-center justify-between text-xs text-gray-400">
+                <span id="thinking-modal-stats">0 words · 0 characters</span>
+                <span class="text-[11px] text-purple-400/70 font-mono">Thought Process</span>
+            </div>
+        </div>
+    </div>
+
     <!-- Appearance & Global Settings: Theme, fonts, AI backends, and user personas -->
     <!-- [UI:MODAL:SETTINGS] -->
     <div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center hidden p-4">
@@ -5444,6 +5488,10 @@
                 <label class="text-gray-400 text-sm block mb-1">Model</label>
                 <select id="gemini-model-selector"
                     class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white">
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fast/Reasoning)</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (Deep Reasoning)</option>
+                    <option value="gemini-2.0-flash">Gemini 2.0 Flash (Fast/Multimodal)</option>
+                    <option value="gemini-2.0-flash-thinking-exp-01-21">Gemini 2.0 Flash Thinking</option>
                     <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast/Cheap)</option>
                     <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8B (Fastest)</option>
                     <option value="gemini-1.5-pro">Gemini 1.5 Pro (High Intelligence)</option>
@@ -9332,6 +9380,11 @@
             webllmEngine: null,
             webllmInitProgress: "",
             openRouterModelCache: null,
+            lastThinking: "",
+
+            getLastThinking() {
+                return this.lastThinking || "";
+            },
 
             async testConnection(provider, config) {
                 try {
@@ -9462,8 +9515,14 @@
 
                 const extract = (res) => {
                     const msg = res?.choices?.[0]?.message || {};
-                    const content = msg.content ?? msg.reasoning_content ?? msg.reasoning ?? "";
-                    return typeof content === 'string' ? content : String(content ?? "");
+                    let thinking = msg.reasoning_content || msg.reasoning || "";
+                    let content = msg.content || "";
+                    const extracted = UTILITY.extractThinking(content);
+                    if (extracted.thinking) {
+                        thinking = [thinking.trim(), extracted.thinking.trim()].filter(Boolean).join('\n\n');
+                        content = extracted.content;
+                    }
+                    return { text: content.trim(), thinking: thinking.trim() };
                 };
 
                 try {
@@ -9575,7 +9634,7 @@
                 }
             },
 
-            async callAI(prompt, isJson = false, signal = null, silent = false) {
+            async callAI(prompt, isJson = false, signal = null, silent = false, options = null) {
                 const state = StateManager.getState();
 
                 // Resolve prompt structure
@@ -9603,24 +9662,43 @@
                 }
 
                 let responseText = "";
+                this.lastThinking = "";
                 try {
+                    let rawResult = null;
                     if (provider === 'gemini') {
-                        responseText = await this.callGemini({ text, images }, activeSignal);
+                        rawResult = await this.callGemini({ text, images }, activeSignal);
                     } else if (provider === 'openrouter') {
-                        responseText = await this.callOpenRouter({ text, images }, activeSignal);
+                        rawResult = await this.callOpenRouter({ text, images }, activeSignal);
                     } else if (provider === 'nanogpt') {
-                        responseText = await this.callNanoGPT({ text, images }, activeSignal);
+                        rawResult = await this.callNanoGPT({ text, images }, activeSignal);
                     } else if (provider === 'webllm') {
-                        responseText = await this.callWebLLM(text, activeSignal);
+                        rawResult = await this.callWebLLM(text, activeSignal);
                     } else if (provider === 'koboldcpp') {
-                        responseText = await this.callKoboldCPP({ text, images }, activeSignal, isJson);
+                        rawResult = await this.callKoboldCPP({ text, images }, activeSignal, isJson);
                     } else if (provider === 'lmstudio') {
-                        responseText = await this.callLMStudio({ text, images }, activeSignal, isJson);
+                        rawResult = await this.callLMStudio({ text, images }, activeSignal, isJson);
+                    }
+
+                    if (rawResult && typeof rawResult === 'object' && ('text' in rawResult || 'thinking' in rawResult)) {
+                        responseText = rawResult.text ?? "";
+                        this.lastThinking = rawResult.thinking ?? "";
+                    } else {
+                        responseText = rawResult;
                     }
 
                     // Defend against providers that return null/undefined or non-strings.
                     if (responseText == null) responseText = "";
                     else if (typeof responseText !== 'string') responseText = String(responseText);
+
+                    // If responseText still contains thought tags, extract them into lastThinking
+                    const extracted = UTILITY.extractThinking(responseText);
+                    if (extracted.thinking) {
+                        this.lastThinking = [this.lastThinking.trim(), extracted.thinking.trim()].filter(Boolean).join('\n\n');
+                        responseText = extracted.content;
+                    }
+
+                    // Always strip internal thinking blocks before downstream processing
+                    responseText = UTILITY.stripThinking(responseText);
 
                     if (isJson) {
                         // Match either {} or [] patterns, whichever comes first
@@ -9629,10 +9707,11 @@
                         throw new Error("AI response was not in the expected JSON format.");
                     }
 
-                    // [NEW] Strip internal thinking blocks for prose responses
-                    responseText = UTILITY.stripThinking(responseText);
-
-                    return responseText.trim();
+                    const cleanProse = responseText.trim();
+                    if (options && options.returnMeta) {
+                        return { text: cleanProse, thinking: this.lastThinking };
+                    }
+                    return cleanProse;
 
                 } catch (error) {
                     if (error.name === 'AbortError') {
@@ -9774,13 +9853,20 @@
                 const data = await res.json();
                 // Aggregate all non-thought text parts. Some Gemini responses split output
                 // across multiple parts, and reasoning models put thinking in `thought:true`
-                // parts that should be excluded from the user-facing text.
+                // parts that should be captured as thinking and excluded from the user-facing text.
                 const parts = data.candidates?.[0]?.content?.parts || [];
-                const text = parts
+                const thoughtParts = parts
+                    .filter(p => p && p.thought && typeof p.text === 'string')
+                    .map(p => p.text)
+                    .join('');
+                const rawText = parts
                     .filter(p => p && !p.thought && typeof p.text === 'string')
                     .map(p => p.text)
                     .join('');
-                return text || "";
+
+                const extracted = UTILITY.extractThinking(rawText);
+                const finalThinking = [thoughtParts.trim(), extracted.thinking.trim()].filter(Boolean).join('\n\n');
+                return { text: extracted.content || "", thinking: finalThinking };
             },
 
             /**
@@ -9858,7 +9944,7 @@
                 const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                    body: JSON.stringify({ model: model, messages: messagesPayload }),
+                    body: JSON.stringify({ model: model, messages: messagesPayload, include_reasoning: true }),
                     signal
                 });
 
@@ -9874,12 +9960,17 @@
                 }
                 const data = await res.json();
                 const msg = data.choices?.[0]?.message || {};
-                // Some OpenRouter models (reasoning models, refusal responses) return
-                // `content: null` and put the actual text in `reasoning` / `reasoning_content`.
-                // Fall back through those before defaulting to empty string so callAI can
-                // safely .trim() and let upstream retry/fallback logic handle empties.
-                const content = msg.content ?? msg.reasoning_content ?? msg.reasoning ?? "";
-                return typeof content === 'string' ? content : String(content ?? "");
+                let thinking = msg.reasoning || msg.reasoning_content || "";
+                let content = msg.content || "";
+
+                // In case the model outputs raw thought tags in content
+                const extracted = UTILITY.extractThinking(content);
+                if (extracted.thinking) {
+                    thinking = [thinking.trim(), extracted.thinking.trim()].filter(Boolean).join('\n\n');
+                    content = extracted.content;
+                }
+
+                return { text: content.trim(), thinking: thinking.trim() };
             },
 
             /**
@@ -9937,8 +10028,16 @@
                 }
                 const data = await res.json();
                 const msg = data.choices?.[0]?.message || {};
-                const content = msg.content ?? msg.reasoning_content ?? msg.reasoning ?? "";
-                return typeof content === 'string' ? content : String(content ?? "");
+                let thinking = msg.reasoning_content || msg.reasoning || "";
+                let content = msg.content || "";
+
+                const extracted = UTILITY.extractThinking(content);
+                if (extracted.thinking) {
+                    thinking = [thinking.trim(), extracted.thinking.trim()].filter(Boolean).join('\n\n');
+                    content = extracted.content;
+                }
+
+                return { text: content.trim(), thinking: thinking.trim() };
             },
 
             /**
@@ -10131,7 +10230,8 @@
                     resultText = resultText.substring(0, truncateIdx);
                 }
 
-                return resultText.trim();
+                const extracted = UTILITY.extractThinking(resultText);
+                return { text: extracted.content.trim(), thinking: extracted.thinking.trim() };
             },
 
             /**
@@ -10284,8 +10384,16 @@
                 }
                 const data = await res.json();
                 const msg = data.choices?.[0]?.message || {};
-                const content = msg.content ?? msg.reasoning_content ?? msg.reasoning ?? "";
-                return typeof content === 'string' ? content : String(content ?? "");
+                let thinking = msg.reasoning_content || msg.reasoning || "";
+                let content = msg.content || "";
+
+                const extracted = UTILITY.extractThinking(content);
+                if (extracted.thinking) {
+                    thinking = [thinking.trim(), extracted.thinking.trim()].filter(Boolean).join('\n\n');
+                    content = extracted.content;
+                }
+
+                return { text: content.trim(), thinking: thinking.trim() };
             },
         };
 
@@ -11507,20 +11615,64 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
             },
 
             /**
+             * Extracts internal model "thinking" blocks (e.g. <think>...</think>) from a string.
+             * Supports <think>, <thought>, <thinking>, <reasoning>, [THOUGHTS], [REASONING], [THINK].
+             * Also cleanly handles unclosed tags at the end of the text (e.g. truncated responses).
+             * @param {string} text - The raw AI response.
+             * @returns {{ thinking: string, content: string }} - Extracted thoughts and cleaned content.
+             */
+            extractThinking(text) {
+                if (!text || typeof text !== 'string') {
+                    return { thinking: "", content: "" };
+                }
+
+                const thoughts = [];
+                let content = text;
+
+                const patterns = [
+                    /<think>([\s\S]*?)(?:<\/think>|$)/gi,
+                    /<thought>([\s\S]*?)(?:<\/thought>|$)/gi,
+                    /<thinking>([\s\S]*?)(?:<\/thinking>|$)/gi,
+                    /<reasoning>([\s\S]*?)(?:<\/reasoning>|$)/gi,
+                    /<scratchpad>([\s\S]*?)(?:<\/scratchpad>|$)/gi,
+                    /\[THOUGHTS?\]([\s\S]*?)(?:\[\/THOUGHTS?\]|$)/gi,
+                    /\[REASONING\]([\s\S]*?)(?:\[\/REASONING\]|$)/gi,
+                    /\[THINK\]([\s\S]*?)(?:\[\/THINK\]|$)/gi
+                ];
+
+                for (const pattern of patterns) {
+                    content = content.replace(pattern, (match, thought) => {
+                        const trimmed = (thought || "").trim();
+                        if (trimmed) thoughts.push(trimmed);
+                        return "";
+                    });
+                }
+
+                return {
+                    thinking: thoughts.join('\n\n').trim(),
+                    content: content.trim()
+                };
+            },
+
+            /**
              * Strips internal model "thinking" blocks (e.g. <think>...</think>) from a string.
-             * Supports standard tags like <think>, [THOUGHTS], [REASONING], etc.
+             * Supports standard tags like <think>, <thought>, <thinking>, <scratchpad>, [THOUGHTS], [REASONING], [THINK].
+             * Also cleanly removes unclosed tags at end of text.
              * @param {string} text - The raw AI response.
              * @returns {string} - The cleaned text.
              */
             stripThinking(text) {
                 if (!text || typeof text !== 'string') return text;
 
-                // 1. Tag-based strip (<think>, [THOUGHTS], [REASONING])
-                // We use [\s\S]*? to handle multi-line content lazily
                 let clean = text
-                    .replace(/<think>[\s\S]*?<\/think>/gi, '')
-                    .replace(/\[THOUGHTS?\][\s\S]*?\[\/THOUGHTS?\]/gi, '')
-                    .replace(/\[REASONING\][\s\S]*?\[\/REASONING\]/gi, '');
+                    .replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '')
+                    .replace(/<thought>[\s\S]*?(?:<\/thought>|$)/gi, '')
+                    .replace(/<thinking>[\s\S]*?(?:<\/thinking>|$)/gi, '')
+                    .replace(/<reasoning>[\s\S]*?(?:<\/reasoning>|$)/gi, '')
+                    .replace(/<scratchpad>[\s\S]*?(?:<\/scratchpad>|$)/gi, '')
+                    .replace(/\[THOUGHTS?\][\s\S]*?(?:\[\/THOUGHTS?\]|$)/gi, '')
+                    .replace(/\[REASONING\][\s\S]*?(?:\[\/REASONING\]|$)/gi, '')
+                    .replace(/\[THINK\][\s\S]*?(?:\[\/THINK\]|$)/gi, '');
 
                 return clean.trim();
             },
@@ -13597,7 +13749,7 @@ JSON Schema:
 
                     let spacesInMessage = 0;
                     if (!msg.isHidden) {
-                        const content = msg.content || '';
+                        const content = UTILITY.stripThinking(msg.content || '');
                         spacesInMessage = (content.split(" ").length - 1);
                     }
 
@@ -13789,7 +13941,7 @@ JSON Schema:
 
                 const transcript = historySlice.map(msg => {
                     const speaker = ReactiveStore.getCharacter(msg.character_id) || { name: 'Unknown' };
-                    return `${speaker.name}: ${msg.content}`;
+                    return `${speaker.name}: ${UTILITY.stripThinking(msg.content || '')}`;
                 }).join('\n\n');
 
                 return promptTemplate
@@ -13814,7 +13966,7 @@ JSON Schema:
                     .slice(-10);
                 const transcript = history.map(msg => {
                     const speaker = ReactiveStore.getCharacter(msg.character_id) || { name: 'Unknown' };
-                    return `${speaker.name}: ${msg.content}`;
+                    return `${speaker.name}: ${UTILITY.stripThinking(msg.content || '')}`;
                 }).join('\n\n');
 
                 // As per Swarm V2: Only recent history is included in this phase
@@ -13890,7 +14042,7 @@ JSON Schema:
                     exampleDialogue.forEach(msg => {
                         if (!msg) return;
                         const char = ReactiveStore.getCharacter(msg.character_id);
-                        if (char) examplesText += `${char.name}: ${replacer(msg.content)}\n`;
+                        if (char) examplesText += `${char.name}: ${replacer(UTILITY.stripThinking(msg.content || ''))}\n`;
                     });
                     if (examplesText) {
                         p += "## EXAMPLE DIALOGUE\n" + examplesText + "\n";
@@ -13910,11 +14062,11 @@ JSON Schema:
                     if (msg.type === 'chat') {
                         const char = ReactiveStore.getCharacter(msg.character_id);
                         const name = char ? char.name : (msg.character_id === 'user' ? 'User' : 'Character');
-                        p += `### ${name}:\n${replacer(msg.content)}\n\n`;
+                        p += `### ${name}:\n${replacer(UTILITY.stripThinking(msg.content || ''))}\n\n`;
                     } else if (msg.type === 'lore_reveal') {
-                        p += `### System Note:\n${replacer(msg.content)}\n\n`;
+                        p += `### System Note:\n${replacer(UTILITY.stripThinking(msg.content || ''))}\n\n`;
                     } else if (msg.type === 'system_event') {
-                        p += `### System Event: ${replacer(msg.content)}\n\n`;
+                        p += `### System Event: ${replacer(UTILITY.stripThinking(msg.content || ''))}\n\n`;
                     }
                 });
                 p += "\n## INSTRUCTION\n";
@@ -13982,7 +14134,7 @@ JSON Schema:
                     exampleDialogue.forEach(msg => {
                         if (!msg) return;
                         const char = ReactiveStore.getCharacter(msg.character_id);
-                        if (char) examples += `${char.name}: ${replacer(msg.content)}\n`;
+                        if (char) examples += `${char.name}: ${replacer(UTILITY.stripThinking(msg.content || ''))}\n`;
                     });
                     if (examples) {
                         system.push("## EXAMPLE DIALOGUE\n" + examples);
@@ -14019,9 +14171,9 @@ JSON Schema:
                 // Helper for uniform system message formatting across templates
                 const formatSystemMsg = (msg) => {
                     if (msg.type === 'lore_reveal') {
-                        return `### System Note:\n${replacer(msg.content)}`;
+                        return `### System Note:\n${replacer(UTILITY.stripThinking(msg.content || ''))}`;
                     } else if (msg.type === 'system_event') {
-                        return `### System Event: ${replacer(msg.content)}`;
+                        return `### System Event: ${replacer(UTILITY.stripThinking(msg.content || ''))}`;
                     }
                     return '';
                 };
@@ -14037,7 +14189,7 @@ JSON Schema:
                             const is_user = char ? char.is_user : (msg.character_id === 'user');
                             const name = char ? char.name : (is_user ? 'User' : 'Character');
                             role = is_user ? 'user' : 'assistant';
-                            content = `${name}:\n${replacer(msg.content)}`;
+                            content = `${name}:\n${replacer(UTILITY.stripThinking(msg.content || ''))}`;
                         } else {
                             role = 'system';
                             content = formatSystemMsg(msg);
@@ -14060,7 +14212,7 @@ JSON Schema:
                             const is_user = char ? char.is_user : (msg.character_id === 'user');
                             const name = char ? char.name : (is_user ? 'User' : 'Character');
                             role = is_user ? 'user' : 'model';
-                            content = `${name}:\n${replacer(msg.content)}`;
+                            content = `${name}:\n${replacer(UTILITY.stripThinking(msg.content || ''))}`;
                         } else {
                             // System events injected as user context for Gemma
                             return `<start_of_turn>user\n${formatSystemMsg(msg)}<end_of_turn>`;
@@ -14083,7 +14235,7 @@ JSON Schema:
                             const is_user = char ? char.is_user : (msg.character_id === 'user');
                             const name = char ? char.name : (is_user ? 'User' : 'Character');
                             role = is_user ? 'user' : 'assistant';
-                            content = `${name}:\n${replacer(msg.content)}`;
+                            content = `${name}:\n${replacer(UTILITY.stripThinking(msg.content || ''))}`;
                         } else {
                             return `<|system|>\n${formatSystemMsg(msg)}<|end|>`;
                         }
@@ -14102,7 +14254,7 @@ JSON Schema:
                             const char = ReactiveStore.getCharacter(msg.character_id);
                             const is_user = char ? char.is_user : (msg.character_id === 'user');
                             const name = char ? char.name : (is_user ? 'User' : 'Character');
-                            return `${is_user ? 'user' : 'assistant'}:${name}:\n${replacer(msg.content)}`;
+                            return `${is_user ? 'user' : 'assistant'}:${name}:\n${replacer(UTILITY.stripThinking(msg.content || ''))}`;
                         } else {
                             return `system:${formatSystemMsg(msg)}`;
                         }
@@ -14121,7 +14273,7 @@ JSON Schema:
                             const is_user = char ? char.is_user : (msg.character_id === 'user');
                             const name = char ? char.name : (is_user ? 'User' : 'Character');
                             role = is_user ? 'user' : 'assistant';
-                            content = `${name}:\n${replacer(msg.content)}`;
+                            content = `${name}:\n${replacer(UTILITY.stripThinking(msg.content || ''))}`;
                         } else {
                             content = formatSystemMsg(msg);
                         }
@@ -14137,7 +14289,7 @@ JSON Schema:
                         if (msg.type === 'chat') {
                             const char = ReactiveStore.getCharacter(msg.character_id);
                             const name = char ? char.name : (msg.character_id === 'user' ? 'User' : 'Character');
-                            return `${name}: ${replacer(msg.content)}`;
+                            return `${name}: ${replacer(UTILITY.stripThinking(msg.content || ''))}`;
                         } else {
                             return formatSystemMsg(msg);
                         }
@@ -14162,7 +14314,7 @@ JSON Schema:
                     .filter(m => m && m.type === 'chat' && !m.isHidden)
                     .map(m => {
                         const char = (state.characters || []).find(c => c.id === m.character_id);
-                        return `${char ? char.name : 'Unknown'}: ${m.content}`;
+                        return `${char ? char.name : 'Unknown'}: ${UTILITY.stripThinking(m.content || '')}`;
                     })
                     .join('\n');
 
@@ -14213,7 +14365,8 @@ JSON Schema:
                     .map(m => {
                         const char = (state.characters || []).find(c => c.id === m.character_id);
                         // Truncate long messages to conserve tokens
-                        const content = m.content.length > 200 ? m.content.substring(0, 200) + '...' : m.content;
+                        const stripped = UTILITY.stripThinking(m.content || '');
+                        const content = stripped.length > 200 ? stripped.substring(0, 200) + '...' : stripped;
                         return `${char ? char.name : 'Unknown'}: ${content}`;
                     })
                     .join('\n');
@@ -14319,7 +14472,7 @@ ${newFact}
                     .map(m => {
                         const char = (state.characters || []).find(c => c.id === m.character_id);
                         const name = char ? char.name : (m.is_user ? 'Player' : 'Unknown');
-                        return `${name}: ${m.content}`;
+                        return `${name}: ${UTILITY.stripThinking(m.content || '')}`;
                     })
                     .join('\n');
 
@@ -17645,6 +17798,21 @@ Write only the character's message.`;
                     ? DOM.html`<span id="version-hint-${index}" class="text-[12px] text-gray-500 ml-2 select-none self-center" title="Click bubble to view ${msg.versions.length} versions">v${(msg.currentVersion || 0) + 1}/${msg.versions.length}</span>`
                     : DOM.html`<span id="version-hint-${index}"></span>`;
 
+                const curVer = msg.currentVersion || 0;
+                const thinkingText = (msg.versions && msg.versions[curVer] && msg.versions[curVer].thinking)
+                    ? msg.versions[curVer].thinking
+                    : (msg.thinking || '');
+                const hasThinking = Boolean(thinkingText && thinkingText.trim());
+
+                const thoughtBadge = DOM.html`
+                    <span id="thought-badge-${index}" class="${hasThinking ? '' : 'hidden'}">
+                        <button data-action="view-message-thinking" data-index="${index}" class="text-[11px] inline-flex items-center gap-1 text-purple-300/90 hover:text-purple-200 bg-purple-950/50 hover:bg-purple-900/60 border border-purple-700/50 px-1.5 py-0.5 rounded ml-2 select-none transition-colors" title="View Thinking / Reasoning">
+                            <svg class="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                            <span>Thought</span>
+                        </button>
+                    </span>
+                `;
+
                 const imagesHTML = (msg.images && msg.images.length > 0)
                     ? `<div class="message-image-container">${msg.images.map(imgId => `<img data-img-id="${imgId}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="message-img" onload="UIManager.hydrateMessageImage(this)" onclick="UIManager.viewChatImage(this.src)">`).join('')}</div>`
                     : '';
@@ -17660,12 +17828,41 @@ Write only the character's message.`;
                         ${character.name}
                      </p>
                      ${versionHint}
+                     ${thoughtBadge}
                      <span class="timestamp text-xs text-gray-500 ml-2">${timestamp}</span>
-                     <div class="action-btn-group flex ml-auto space-x-4 pl-2">
+                     <div class="action-btn-group flex items-center ml-auto space-x-3 pl-2">
                         ${DOM.unsafe(imageGenBtn)}
                         <button data-action="create-static-from-message" data-index="${index}" class="text-gray-400 hover:text-emerald-300" title="Create Static Memory"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></button>
                         <button data-action="chat-edit" data-index="${index}" class="text-gray-400 hover:text-white" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
                         <button data-action="confirm-delete-message" data-index="${index}" class="text-gray-400 hover:text-red-400" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                        <div class="message-menu-anchor relative inline-block">
+                            <button data-action="toggle-message-menu" data-index="${index}" class="text-gray-400 hover:text-white p-0.5 rounded transition-colors" title="More options">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+                            </button>
+                            <div id="message-menu-${index}" class="message-dropdown-menu hidden absolute right-0 top-full mt-1 w-44 bg-gray-900/95 border border-gray-700/80 rounded-lg shadow-2xl py-1 z-30 backdrop-blur-md text-xs">
+                                <button id="menu-view-thinking-${index}" data-action="view-message-thinking" data-index="${index}" class="${hasThinking ? 'flex' : 'hidden'} w-full items-center gap-2 px-3 py-1.5 text-left text-purple-300 hover:bg-purple-900/30 transition-colors">
+                                    <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                                    <span>View Thinking</span>
+                                </button>
+                                <button data-action="chat-copy" data-index="${index}" class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-gray-300 hover:bg-gray-800/80 transition-colors">
+                                    <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                    <span>Copy Text</span>
+                                </button>
+                                <button data-action="create-static-from-message" data-index="${index}" class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-gray-300 hover:bg-gray-800/80 transition-colors">
+                                    <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    <span>Create Static Memory</span>
+                                </button>
+                                <button data-action="chat-edit" data-index="${index}" class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-gray-300 hover:bg-gray-800/80 transition-colors">
+                                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                    <span>Edit Message</span>
+                                </button>
+                                <div class="my-1 border-t border-gray-800"></div>
+                                <button data-action="confirm-delete-message" data-index="${index}" class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-red-400 hover:bg-red-950/40 transition-colors">
+                                    <svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    <span>Delete Message</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="bubble-body rounded-lg px-3 py-2 cursor-pointer transition-all duration-200 relative" 
@@ -20623,9 +20820,22 @@ Write only the character's message.`;
                             }
                         } catch (e) { console.warn(e); }
 
+                        let thinkingBtn = '';
+                        const targetMsg = state.chat_history[historyIndex];
+                        const curVer = targetMsg ? (targetMsg.currentVersion || 0) : 0;
+                        const hasTargetThinking = Boolean(targetMsg && (targetMsg.thinking || (targetMsg.versions && targetMsg.versions[curVer]?.thinking)));
+                        if (hasTargetThinking) {
+                            thinkingBtn = `
+                                <button data-action="view-message-thinking" data-index="${historyIndex}" class="hover:text-purple-400" title="View Thinking">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                                </button>
+                            `;
+                        }
+
                         controlsContainer.innerHTML = `
                             <div class="vn-controls" onclick="event.stopPropagation();">
                                 ${imageGenBtn}
+                                ${thinkingBtn}
                                 <button data-action="create-static-from-message" data-index="${historyIndex}" class="hover:text-emerald-400" title="Create Static Memory">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                                 </button>
@@ -20795,9 +21005,9 @@ Write only the character's message.`;
              * @param {string} emotion - The emotion of the character.
              * @param {number|null} targetMessageIndex - If set, updates an existing message (Versioning support).
              */
-            startStreamingResponse(charId, fullText, emotion, targetMessageIndex = null) {
+            startStreamingResponse(charId, fullText, emotion, targetMessageIndex = null, images = [], thinking = null) {
                 if (typeof NarrativeController !== 'undefined') {
-                    NarrativeController.startStreamingResponse(charId, fullText, emotion, targetMessageIndex);
+                    NarrativeController.startStreamingResponse(charId, fullText, emotion, targetMessageIndex, images, thinking);
                 }
             },
 
@@ -31336,6 +31546,9 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
          * =================================================================================================
          */
         const SwarmOrchestrator = {
+            RUNTIME: {
+                lastPromptDetails: null
+            },
 
             // ── PHASE 1: BROADCAST ────────────────────────────────────────────────────
 
@@ -31467,22 +31680,29 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
              */
             async _executeDirective(char, directive, userAction, state, signal, scratchpadResult = null, objectiveDescription = "") {
                 const prompt = PromptBuilder.buildSwarmCharacterResponsePrompt(char, directive, userAction, state, scratchpadResult, objectiveDescription);
-                this.RUNTIME.lastPromptDetails = {
+                const promptDetails = {
                     prompt: prompt,
                     model: state.apiProvider,
                     charId: char.id,
                     timestamp: new Date().toISOString()
                 };
+                if (this.RUNTIME) this.RUNTIME.lastPromptDetails = promptDetails;
+                if (typeof NarrativeController !== 'undefined' && NarrativeController.RUNTIME) {
+                    NarrativeController.RUNTIME.lastPromptDetails = promptDetails;
+                }
 
                 console.groupCollapsed(`%c[Swarm Phase 4] Character Response: ${char.name}`, "color: #ec4899; font-weight: bold;");
                 console.log("%cDirective:", "color: #f472b6; font-weight: bold;", directive);
                 console.log("%cFull Prompt:", "color: #94a3b8; font-size: 10px;", prompt);
                 console.groupEnd();
 
-                const raw = await APIService.callAI(prompt, false, signal);
-                if (!raw || !raw.trim()) throw new Error(`${char.name} returned an empty response.`);
+                const genResult = await APIService.callAI(prompt, false, signal, { returnMeta: true });
+                const rawText = (typeof genResult === 'object' && genResult !== null) ? genResult.text : genResult;
+                const thinking = (typeof genResult === 'object' && genResult !== null) ? genResult.thinking : (APIService.getLastThinking() || null);
 
-                let prose = raw.trim();
+                if (!rawText || !rawText.trim()) throw new Error(`${char.name} returned an empty response.`);
+
+                let prose = rawText.trim();
 
                 // Apply text formatting if a style is set
                 try {
@@ -31495,7 +31715,7 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     console.warn(`[Swarm] TextFormatter error for ${char.name}:`, e);
                 }
 
-                return prose;
+                return { prose, thinking };
             },
 
             // ── MAIN ENTRY POINT ──────────────────────────────────────────────────────
@@ -31583,13 +31803,19 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 if (primarySpeaker.is_narrator) {
                     console.log(`%c[Swarm Phase 0.5] Narrator selected (${primarySpeaker.name}). Bypassing thoughts and director.`, "color: #f59e0b; font-weight: bold;");
                     const prompt = PromptBuilder.buildPrompt(primarySpeaker.id, false);
-                    this.RUNTIME.lastPromptDetails = {
+                    const promptDetails = {
                         prompt: prompt,
                         model: state.apiProvider,
                         charId: primarySpeaker.id,
                         timestamp: new Date().toISOString()
                     };
-                    const raw = await APIService.callAI(prompt, false, signal);
+                    if (this.RUNTIME) this.RUNTIME.lastPromptDetails = promptDetails;
+                    if (typeof NarrativeController !== 'undefined' && NarrativeController.RUNTIME) {
+                        NarrativeController.RUNTIME.lastPromptDetails = promptDetails;
+                    }
+                    const genResult = await APIService.callAI(prompt, false, signal, { returnMeta: true });
+                    const raw = (typeof genResult === 'object' && genResult !== null) ? genResult.text : genResult;
+                    const thinking = (typeof genResult === 'object' && genResult !== null) ? genResult.thinking : (APIService.getLastThinking() || null);
                     if (!raw || !raw.trim()) throw new Error('Narrator returned empty response.');
 
                     let prose = raw.trim();
@@ -31597,7 +31823,7 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     else if (state.responseStyle === 'roleplay' && window.TextFormatter) prose = window.TextFormatter.toStrictRoleplay(prose, primarySpeaker.name);
 
                     return {
-                        charResponses: [{ char: primarySpeaker, prose }],
+                        charResponses: [{ char: primarySpeaker, prose, thinking }],
                         winners: [],
                         agentResults: [],
                         vacuumTriggered: false
@@ -31630,8 +31856,10 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 const primaryScratchpad = agentResults.find(r => r.char.id === primarySpeaker.id)?.result || null;
                 try {
                     if (typeof UIManager !== 'undefined') UIManager.showTypingIndicator(primarySpeaker.id, 'is speaking...');
-                    const prose = await this._executeDirective(primarySpeaker, directive, userAction, state, signal, primaryScratchpad, objectiveDescription);
-                    charResponses.push({ char: primarySpeaker, prose });
+                    const execResult = await this._executeDirective(primarySpeaker, directive, userAction, state, signal, primaryScratchpad, objectiveDescription);
+                    const prose = (typeof execResult === 'object' && execResult !== null) ? execResult.prose : execResult;
+                    const thinking = (typeof execResult === 'object' && execResult !== null) ? execResult.thinking : (APIService.getLastThinking() || null);
+                    charResponses.push({ char: primarySpeaker, prose, thinking });
                 } catch (e) {
                     if (e.name === 'AbortError') throw e;
                     console.warn(`[Swarm] ${primarySpeaker.name} response failed:`, e.message);
@@ -32708,8 +32936,8 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     // Commit each character response as a separate chat bubble, in order.
                     let lastCharId = null;
                     let lastIndex = -1;
-                    for (const { char, prose } of result.charResponses) {
-                        this.startStreamingResponse(char.id, prose, 'neutral', targetMessageIndex, []);
+                    for (const { char, prose, thinking } of result.charResponses) {
+                        this.startStreamingResponse(char.id, prose, 'neutral', targetMessageIndex, [], thinking || null);
                         lastCharId = char.id;
                         lastIndex = (targetMessageIndex !== null) ? targetMessageIndex : (state.chat_history.length - 1);
                     }
@@ -32853,7 +33081,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
              * @param {string} emotion - The emotion of the character.
              * @param {number|null} targetMessageIndex - If set, updates an existing message (Versioning support).
              */
-            startStreamingResponse(charId, fullText, emotion, targetMessageIndex = null, images = []) {
+            startStreamingResponse(charId, fullText, emotion, targetMessageIndex = null, images = [], thinking = null) {
                 if (this.RUNTIME.streamingInterval) clearInterval(this.RUNTIME.streamingInterval);
                 this.RUNTIME.streamingInterval = null;
 
@@ -32874,17 +33102,18 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
 
                     // Initialize versions if missing
                     if (!newMessage.versions) {
-                        newMessage.versions = [{ content: newMessage.content, emotion: newMessage.emotion }];
+                        newMessage.versions = [{ content: newMessage.content, emotion: newMessage.emotion, thinking: newMessage.thinking || null }];
                         newMessage.currentVersion = 0;
                     }
 
                     // Push NEW version immediately
-                    newMessage.versions.push({ content: fullText, emotion: emotion });
+                    newMessage.versions.push({ content: fullText, emotion: emotion, thinking: thinking || null });
                     newMessage.currentVersion = newMessage.versions.length - 1;
 
                     // Update main display fields
                     newMessage.content = fullText;
                     newMessage.emotion = emotion;
+                    newMessage.thinking = thinking || null;
                     newMessage.timestamp = new Date().toISOString();
                     newMessage.isNew = false;
                 } else {
@@ -32896,9 +33125,10 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         content: fullText,
                         type: 'chat',
                         emotion: emotion,
+                        thinking: thinking || null,
                         timestamp: new Date().toISOString(),
                         isNew: true,
-                        versions: [{ content: fullText, emotion: emotion }],
+                        versions: [{ content: fullText, emotion: emotion, thinking: thinking || null }],
                         currentVersion: 0,
                         images: images || []
                     };
@@ -33172,11 +33402,13 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         // if (targetIdx === -1) targetIdx = null;
 
                         // Execute directive and write it
-                        const newProse = await SwarmOrchestrator._executeDirective(
+                        const execResult = await SwarmOrchestrator._executeDirective(
                             primarySpeaker, directive, lastUserContent, state,
                             this.RUNTIME.activeRequestAbortController.signal
                         );
-                        this.startStreamingResponse(primarySpeaker.id, newProse, 'neutral', targetIdx, lastAiMsg.images || []);
+                        const newProse = (typeof execResult === 'object' && execResult !== null) ? execResult.prose : execResult;
+                        const newThinking = (typeof execResult === 'object' && execResult !== null) ? execResult.thinking : (APIService.getLastThinking() || null);
+                        this.startStreamingResponse(primarySpeaker.id, newProse, 'neutral', targetIdx, lastAiMsg.images || [], newThinking);
 
                     } catch (error) {
                         UIManager.hideTypingIndicator();
@@ -33265,6 +33497,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 msg.currentVersion = nextVer;
                 msg.content = msg.versions[nextVer].content;
                 msg.emotion = msg.versions[nextVer].emotion;
+                msg.thinking = msg.versions[nextVer].thinking || null;
                 await ReactiveStore.forceSave();
                 UIManager.RUNTIME.suppressChatRender = false;
 
@@ -33307,7 +33540,29 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         hintEl.className = "text-[10px] text-gray-500 ml-2 select-none self-center"; // Ensure visibility
                     }
 
-                    // 3. Flash Effect on Bubble Body
+                    // 3. Update Thinking Elements
+                    const thoughtBadgeEl = document.getElementById(`thought-badge-${index}`);
+                    const menuViewThinkingEl = document.getElementById(`menu-view-thinking-${index}`);
+                    const nextThinking = msg.versions[nextVer].thinking;
+                    const hasNextThinking = Boolean(nextThinking && nextThinking.trim());
+                    if (thoughtBadgeEl) {
+                        if (hasNextThinking) {
+                            thoughtBadgeEl.classList.remove('hidden');
+                        } else {
+                            thoughtBadgeEl.classList.add('hidden');
+                        }
+                    }
+                    if (menuViewThinkingEl) {
+                        if (hasNextThinking) {
+                            menuViewThinkingEl.classList.remove('hidden');
+                            menuViewThinkingEl.classList.add('flex');
+                        } else {
+                            menuViewThinkingEl.classList.add('hidden');
+                            menuViewThinkingEl.classList.remove('flex');
+                        }
+                    }
+
+                    // 4. Flash Effect on Bubble Body
                     const bubbleBody = bubbleContainer.querySelector('.bubble-body');
                     if (bubbleBody) {
                         bubbleBody.classList.remove('flash-outline');
@@ -33765,10 +34020,97 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         btn.innerHTML = `<span class="text-xs text-green-400 font-bold">Copied!</span>`;
                         setTimeout(() => btn.innerHTML = original, 1500);
                     }
+                    this.closeAllMessageMenus();
                 }).catch(err => {
                     console.error('Failed to copy text: ', err);
                     alert("Failed to copy to clipboard.");
                 });
+            },
+
+            /**
+             * Opens the thinking / reasoning modal for a specific message.
+             * @param {number} index - The index of the message.
+             */
+            openThinkingModal(index) {
+                const state = ReactiveStore.state;
+                const msg = state.chat_history[index];
+                if (!msg) return;
+
+                const currentVer = msg.currentVersion || 0;
+                const thinkingText = (msg.versions && msg.versions[currentVer] && msg.versions[currentVer].thinking)
+                    ? msg.versions[currentVer].thinking
+                    : (msg.thinking || '');
+
+                if (!thinkingText || !thinkingText.trim()) {
+                    AppController.showNotification("No thinking data recorded for this message.", "info");
+                    return;
+                }
+
+                const speaker = ReactiveStore.getCharacter(msg.character_id);
+                const speakerName = speaker ? speaker.name : (msg.character_id === 'user' ? 'User' : 'Assistant');
+                const modalTitle = document.getElementById('thinking-modal-title');
+                const modalSubtitle = document.getElementById('thinking-modal-subtitle');
+                const modalContent = document.getElementById('thinking-modal-content');
+                const modalStats = document.getElementById('thinking-modal-stats');
+
+                if (modalTitle) modalTitle.textContent = `${speakerName}'s Reasoning`;
+                if (modalSubtitle) {
+                    const verStr = (msg.versions && msg.versions.length > 1) ? ` (Version ${currentVer + 1}/${msg.versions.length})` : '';
+                    modalSubtitle.textContent = `Internal scratchpad & thought process${verStr}`;
+                }
+                if (modalContent) modalContent.textContent = thinkingText.trim();
+                if (modalStats) {
+                    const words = thinkingText.trim().split(/\s+/).filter(Boolean).length;
+                    const chars = thinkingText.length;
+                    modalStats.textContent = `${words} words · ${chars} characters`;
+                }
+
+                this.closeAllMessageMenus();
+                AppController.openModal('thinking-modal');
+            },
+
+            /**
+             * Copies the text from the open thinking modal to clipboard.
+             */
+            copyThinkingModalText() {
+                const contentEl = document.getElementById('thinking-modal-content');
+                const text = contentEl ? contentEl.textContent : '';
+                if (!text) return;
+                navigator.clipboard.writeText(text).then(() => {
+                    AppController.showNotification("Thinking copied to clipboard!", "info");
+                }).catch(err => {
+                    console.error("Failed to copy thinking: ", err);
+                    alert("Failed to copy thinking to clipboard.");
+                });
+            },
+
+            /**
+             * Toggles the message dropdown menu for a specific message.
+             * @param {number} index - The index of the message.
+             * @param {Event} event - The triggering click event.
+             */
+            toggleMessageMenu(index, event) {
+                if (event) {
+                    event.stopPropagation();
+                }
+                const targetMenu = document.getElementById(`message-menu-${index}`);
+                if (!targetMenu) return;
+                const isCurrentlyOpen = !targetMenu.classList.contains('hidden');
+
+                // Close all open message dropdowns first
+                this.closeAllMessageMenus();
+
+                if (!isCurrentlyOpen) {
+                    targetMenu.classList.remove('hidden');
+                }
+            },
+
+            /**
+             * Closes all currently open message dropdown menus.
+             */
+            closeAllMessageMenus() {
+                const openMenus = document.querySelectorAll('.message-dropdown-menu:not(.hidden)');
+                openMenus.forEach(m => m.classList.add('hidden'));
             },
 
             /**
@@ -33778,6 +34120,8 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
             openEditModal(index) {
                 const message = ReactiveStore.state.chat_history[index];
                 if (!message) return;
+
+                this.closeAllMessageMenus();
 
                 const input = document.getElementById('edit-modal-input');
                 input.value = message.content;
@@ -33797,9 +34141,13 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 }
 
                 newBtn.onclick = () => {
-                    ReactiveStore.state.chat_history[index].content = input.value;
+                    const targetMsg = ReactiveStore.state.chat_history[index];
+                    targetMsg.content = input.value;
+                    if (targetMsg.versions && targetMsg.versions[targetMsg.currentVersion || 0]) {
+                        targetMsg.versions[targetMsg.currentVersion || 0].content = input.value;
+                    }
                     if (typeof InventoryController !== 'undefined') {
-                        InventoryController.processStateUpdates(ReactiveStore.state.chat_history[index]);
+                        InventoryController.processStateUpdates(targetMsg);
                     }
                     UIManager.renderChat();
                     AppController.closeModal('edit-response-modal');
@@ -34086,10 +34434,12 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         timestamp: new Date().toISOString()
                     };
 
-                    const textGenPromise = APIService.callAI(prompt, false, this.RUNTIME.activeRequestAbortController.signal);
+                    const textGenPromise = APIService.callAI(prompt, false, this.RUNTIME.activeRequestAbortController.signal, { returnMeta: true });
 
                     // Await Text Generation First
-                    let responseText = await textGenPromise;
+                    const genResult = await textGenPromise;
+                    let responseText = (typeof genResult === 'object' && genResult !== null) ? genResult.text : genResult;
+                    const thinkingText = (typeof genResult === 'object' && genResult !== null) ? genResult.thinking : (APIService.getLastThinking() || null);
 
                     // Clean up leaked Event Master instructions if the model hallucinated them
                     const leakMatch = responseText.match(/(?:---|###|\[|\n)?\s*SECRET EVENT MASTER INSTRUCTION/i);
@@ -34111,7 +34461,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     // 6. Stream Result IMMEDIATELY (Non-blocking display)
                     UIManager.hideTypingIndicator();
                     // Display with neutral emotion first to avoid blocking text display
-                    this.startStreamingResponse(targetId, responseText, 'neutral', targetMessageIndex, []);
+                    this.startStreamingResponse(targetId, responseText, 'neutral', targetMessageIndex, [], thinkingText);
 
                     // 7. Analyze combined interaction (Post-Display Concurrency)
                     // We don't await this so the text shows up instantly. 
@@ -36287,8 +36637,9 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 const state = ReactiveStore.state;
 
                 // [NEW] Check for cached prompt first
-                if (this.RUNTIME.lastPromptDetails) {
-                    const cached = this.RUNTIME.lastPromptDetails;
+                const runtime = (this && this.RUNTIME) ? this.RUNTIME : (typeof NarrativeController !== 'undefined' ? NarrativeController.RUNTIME : null);
+                if (runtime && runtime.lastPromptDetails) {
+                    const cached = runtime.lastPromptDetails;
                     const rawText = UTILITY.resolvePromptText(cached.prompt);
                     const images = (typeof cached.prompt === 'object' && cached.prompt && Array.isArray(cached.prompt.images)) ? cached.prompt.images : [];
 
@@ -39813,6 +40164,9 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 ActionHandler.register('chat-copy', (ds) => NarrativeController.copyMessage(ds.index));
                 ActionHandler.register('chat-edit', (ds) => NarrativeController.openEditModal(ds.index));
                 ActionHandler.register('chat-delete', (ds) => NarrativeController.deleteMessage(ds.index));
+                ActionHandler.register('view-message-thinking', (ds) => NarrativeController.openThinkingModal(parseInt(ds.index, 10)));
+                ActionHandler.register('toggle-message-menu', (ds, val, e) => NarrativeController.toggleMessageMenu(parseInt(ds.index, 10), e));
+                ActionHandler.register('copy-thinking-modal-text', () => NarrativeController.copyThinkingModalText());
                 ActionHandler.register('quick-create-character', () => NarrativeController.quickCreateCharacter());
                 ActionHandler.register('skip-typewriter', () => {
                     if (UIManager.RUNTIME.skipTypewriter) UIManager.RUNTIME.skipTypewriter();
@@ -40487,6 +40841,17 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                             aiDropdown.classList.add('hidden');
                         }
                     }
+
+                    // Message Dropdown Menu Logic
+                    const openMsgMenus = document.querySelectorAll('.message-dropdown-menu:not(.hidden)');
+                    if (openMsgMenus.length > 0) {
+                        openMsgMenus.forEach(m => {
+                            const anchor = m.closest('.message-menu-anchor');
+                            if (!anchor || !anchor.contains(e.target)) {
+                                m.classList.add('hidden');
+                            }
+                        });
+                    }
                 });
 
                 // Mobile Title Fade Logic
@@ -40807,8 +41172,11 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                             Model</label>
                         <select id="onboarding-gemini-model-selector"
                             class="w-full bg-black/40 border border-gray-600 rounded-md p-2 text-sm focus:border-indigo-500">
-                            <option value="gemini-flash-latest">Gemini Flash (Fast/Cheap)</option>
-                            <option value="gemini-pro-latest">Gemini Pro (High Intelligence)</option>
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fast/Reasoning)</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro (Deep Reasoning)</option>
+                            <option value="gemini-2.0-flash">Gemini 2.0 Flash (Fast/Multimodal)</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Balanced)</option>
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (High Intelligence)</option>
                         </select>
                     </div>
                 </div>

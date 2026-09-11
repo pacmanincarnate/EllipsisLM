@@ -317,15 +317,81 @@ test('stripThinking: removes <think>...</think> blocks', () => {
     assert.equal(r, 'hello  world');
 });
 
-test('stripThinking: removes [REASONING]...[/REASONING] blocks', () => {
-    const r = UTILITY.stripThinking('foo [REASONING]secret[/REASONING] bar');
-    assert.equal(r, 'foo  bar');
+test('stripThinking: removes <thought>, <thinking>, <reasoning>, <scratchpad>, [THOUGHTS], [REASONING], [THINK] blocks', () => {
+    assert.equal(UTILITY.stripThinking('a <thought>t1</thought> b'), 'a  b');
+    assert.equal(UTILITY.stripThinking('a <thinking>t2</thinking> b'), 'a  b');
+    assert.equal(UTILITY.stripThinking('a <reasoning>t3</reasoning> b'), 'a  b');
+    assert.equal(UTILITY.stripThinking('a <scratchpad>t4</scratchpad> b'), 'a  b');
+    assert.equal(UTILITY.stripThinking('a [THOUGHTS]t5[/THOUGHTS] b'), 'a  b');
+    assert.equal(UTILITY.stripThinking('a [REASONING]t6[/REASONING] b'), 'a  b');
+    assert.equal(UTILITY.stripThinking('a [THINK]t7[/THINK] b'), 'a  b');
+});
+
+test('stripThinking: removes unclosed <think> tag at end of string', () => {
+    assert.equal(UTILITY.stripThinking('Here is the start <think>cut off midway'), 'Here is the start');
+    assert.equal(UTILITY.stripThinking('<think>all cut off'), '');
 });
 
 test('stripThinking: passes through non-strings unchanged', () => {
     assert.equal(UTILITY.stripThinking(null), null);
     assert.equal(UTILITY.stripThinking(undefined), undefined);
 });
+
+// ─── extractThinking ──────────────────────────────────────────────────────
+
+test('extractThinking: extracts thoughts and cleans content', () => {
+    const res = UTILITY.extractThinking('Hello <think>analyzing character persona...</think>world!');
+    assert.equal(res.thinking, 'analyzing character persona...');
+    assert.equal(res.content, 'Hello world!');
+});
+
+test('extractThinking: handles <thought>, <thinking>, <reasoning>, <scratchpad>, and bracket tags', () => {
+    const res1 = UTILITY.extractThinking('<thought>deep reflection</thought>Greetings.');
+    assert.equal(res1.thinking, 'deep reflection');
+    assert.equal(res1.content, 'Greetings.');
+
+    const res2 = UTILITY.extractThinking('<thinking>evaluating move</thinking>I strike!');
+    assert.equal(res2.thinking, 'evaluating move');
+    assert.equal(res2.content, 'I strike!');
+
+    const res3 = UTILITY.extractThinking('<scratchpad>internal plot planning</scratchpad>The story unfolds.');
+    assert.equal(res3.thinking, 'internal plot planning');
+    assert.equal(res3.content, 'The story unfolds.');
+
+    const res4 = UTILITY.extractThinking('<reasoning>deductive reasoning</reasoning> elementary.');
+    assert.equal(res4.thinking, 'deductive reasoning');
+    assert.equal(res4.content, 'elementary.');
+
+    const res5 = UTILITY.extractThinking('[THOUGHTS]bracket thoughts[/THOUGHTS]Response.');
+    assert.equal(res5.thinking, 'bracket thoughts');
+    assert.equal(res5.content, 'Response.');
+
+    const res6 = UTILITY.extractThinking('[REASONING]bracket reasoning[/REASONING]Response 2.');
+    assert.equal(res6.thinking, 'bracket reasoning');
+    assert.equal(res6.content, 'Response 2.');
+
+    const res7 = UTILITY.extractThinking('<think>only thoughts here</think>');
+    assert.equal(res7.thinking, 'only thoughts here');
+    assert.equal(res7.content, '');
+});
+
+test('extractThinking: handles unclosed think tag at end of text', () => {
+    const res = UTILITY.extractThinking('Leading text <think>incomplete thought tokens');
+    assert.equal(res.thinking, 'incomplete thought tokens');
+    assert.equal(res.content, 'Leading text');
+});
+
+test('extractThinking: returns empty thinking when no tags present', () => {
+    const res = UTILITY.extractThinking('Plain dialogue without thoughts.');
+    assert.equal(res.thinking, '');
+    assert.equal(res.content, 'Plain dialogue without thoughts.');
+});
+
+test('extractThinking: handles null or non-string inputs safely', () => {
+    deepEq(UTILITY.extractThinking(null), { thinking: '', content: '' });
+    deepEq(UTILITY.extractThinking(undefined), { thinking: '', content: '' });
+});
+
 
 // ─── hex color math ───────────────────────────────────────────────────────
 
