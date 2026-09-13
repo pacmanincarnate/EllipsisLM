@@ -20053,7 +20053,8 @@ Write only the character's message.`;
              * Renders a single character card specifically for the Scenario Cast editor.
              */
             ScenarioCharacterTile(char, isActive, isSpeaker, isScenarioUser) {
-                const portraitSrc = (char.base_image_id && window.characterImages?.[char.base_image_id]) ||
+                const portraitSrc = (isScenarioUser && char.player_portrait) ||
+                    (char.base_image_id && window.characterImages?.[char.base_image_id]) ||
                     (UIManager.RUNTIME.characterImageCache[char.id]) ||
                     (char.image_url && !char.image_url.startsWith('local_') ? char.image_url : '');
 
@@ -20744,6 +20745,7 @@ Write only the character's message.`;
                     preview.src = dataUrl;
                     preview.hidden = false;
                     status.textContent = 'Portrait ready. Save to apply it.';
+                    if (prefix === 'scenario-player') LibraryController.renderScenarioCast();
                 } catch (error) {
                     if (form.isConnected) status.textContent = error.message || 'Could not load this image.';
                 } finally {
@@ -20801,6 +20803,8 @@ Write only the character's message.`;
                 state.playerCharacter = sheet;
                 state.characters = UTILITY.applyPlayerCharacter(state.characters, sheet);
                 await ReactiveStore.forceSave();
+                this.renderCharacters();
+                this.updateAICharacterSelector();
                 this.renderChat();
                 AppController.closeModal('player-sheet-modal');
                 this.showNotification('Player character saved.');
@@ -31872,6 +31876,7 @@ Write only the descriptive paragraphs.`;
             // --- SCENARIO EDITING STATE ---
             currentEditScenario: null,
             currentEditScenarioStoryId: null,
+            currentEditScenarioCharacters: [],
             selectedScenarioStaticId: null,
             selectedScenarioDynamicId: null,
 
@@ -31896,6 +31901,7 @@ Write only the descriptive paragraphs.`;
                     activeBtn.classList.add('border-indigo-500', 'text-white');
                 }
 
+                if (tabId === 'cast') this.renderScenarioCast();
                 if (tabId === 'static') this.renderScenarioStaticDetails();
                 if (tabId === 'dynamic') this.renderScenarioDynamicDetails();
             },
@@ -31910,6 +31916,7 @@ Write only the descriptive paragraphs.`;
                 // Deep clone for isolated editing
                 this.currentEditScenario = JSON.parse(JSON.stringify(scenario));
                 this.currentEditScenarioStoryId = storyId;
+                this.currentEditScenarioCharacters = story.characters;
 
                 // Migrate legacy scenario_knowledge to static entries if needed
                 if (this.currentEditScenario.scenario_knowledge && (!this.currentEditScenario.static_entries || this.currentEditScenario.static_entries.length === 0)) {
@@ -31955,11 +31962,15 @@ Write only the descriptive paragraphs.`;
                 AppController.openModal('edit-scenario-modal');
             },
 
-            renderScenarioCast(allCharacters) {
+            renderScenarioCast(allCharacters = this.currentEditScenarioCharacters) {
                 const container = document.getElementById('edit-scenario-characters');
-                if (!container) return;
+                if (!container || !this.currentEditScenario) return;
+                this.currentEditScenarioCharacters = allCharacters;
+                const playerForm = document.querySelector('[data-player-form="scenario-player"]');
+                if (playerForm) this.currentEditScenario.playerCharacter = UIManager.readPlayerSheet('scenario-player', this.currentEditScenario.playerCharacter);
+                const cast = UTILITY.applyPlayerCharacter(allCharacters, this.currentEditScenario.playerCharacter);
 
-                const html = allCharacters.map(char => {
+                const html = cast.map(char => {
                     const isActive = this.currentEditScenario.active_character_ids.includes(char.id);
                     const isSpeaker = this.currentEditScenario.opening_character_id === char.id;
                     const isScenarioUser = this.currentEditScenario.user_character_id === char.id;
@@ -32005,7 +32016,6 @@ Write only the descriptive paragraphs.`;
 
                 DBService.getStory(this.currentEditScenarioStoryId).then(story => {
                     if (story) {
-                        this.renderScenarioCast(story.characters);
                         const previous = UIManager.readPlayerSheet('scenario-player', this.currentEditScenario.playerCharacter);
                         const selected = story.characters.find(c => c.id === charId);
                         this.currentEditScenario.playerCharacter = UTILITY.normalizePlayerCharacter({ ...previous, characterId: charId,
@@ -32013,6 +32023,7 @@ Write only the descriptive paragraphs.`;
                             backstory: selected.description || '', appearance: selected.appearance || selected.short_description || '' }, selected);
                         document.getElementById('scenario-player-form').innerHTML = UIComponents.PlayerSheetForm('scenario-player', this.currentEditScenario.playerCharacter);
                         UIManager.renderPlayerPortrait('scenario-player', this.currentEditScenario.playerCharacter, selected);
+                        this.renderScenarioCast(story.characters);
                     }
                 });
             },
