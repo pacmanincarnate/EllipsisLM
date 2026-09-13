@@ -226,6 +226,8 @@ test('pending checks: ignore hidden requests, resolved checks, later player acti
     const request = { id: 'a', character_id: 'npc', type: 'chat', playerCheck: { ability: 'dexterity', dc: 15, reason: 'Hide' } };
     const state = { playerCharacter: { diceEnabled: true }, characters: [{ id: 'u', is_user: true }], chat_history: [request] };
     assert.equal(UTILITY.getPendingPlayerCheck(state).check.dc, 15);
+    request.type = 'player_check';
+    assert.equal(UTILITY.getPendingPlayerCheck(state)?.check.dc, 15);
     state.chat_history.push({ type: 'system_event', playerRoll: { die: 12 } });
     assert.equal(UTILITY.getPendingPlayerCheck(state), null);
     state.chat_history.pop();

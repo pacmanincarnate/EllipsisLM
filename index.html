@@ -2713,7 +2713,47 @@
         .inventory-panel > .inventory-panel-tabs { flex-shrink: 0; flex-wrap: wrap; }
         .inventory-panel > .inventory-panel-tabs button { padding: 0.375rem 0.5rem; }
         #scenario-settings-btn { font-size: 0.65rem; line-height: 1rem; }
-        #player-check-container { color: var(--chat-text-color, #fff); max-height: 30vh; overflow-y: auto; }
+        #chat-input-container { flex-wrap: wrap; }
+        #chat-input-area { min-width: 0; min-height: 9rem; }
+        #chat-input-container.cyoa-shrunk #chat-input-area { min-height: unset; }
+        #chat-input-container.cyoa-shrunk #player-dice-dock { display: none; }
+        #chat-control-cluster { order: -1; flex: 0 0 100%; min-width: 0; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.4rem; padding: 0 0 0.5rem; border-bottom: 1px solid var(--border-primary); }
+        #chat-control-cluster > button { width: auto; padding: 0.4rem 0.65rem; font-size: 0.7rem; }
+        #chat-control-cluster #ai-character-selector-wrapper { width: 6rem; margin-left: auto; order: 1; }
+        #chat-control-cluster .composer-icon-controls { display: flex; align-items: center; gap: 0.2rem; order: 2; margin-top: 0; }
+        #chat-control-cluster #music-indicator { order: 3; }
+        #player-dice-dock { flex: 0 0 8rem; align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; border-left: 1px solid var(--border-primary); color: var(--brand-color); }
+        #player-dice-dock.hidden { display: none; }
+        .player-die { width: 6rem; height: 6rem; overflow: visible; filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--brand-color) 25%, transparent)); }
+        .die-shell { fill: color-mix(in srgb, var(--brand-color) 18%, var(--surface-overlay)); stroke: currentColor; stroke-width: 1.5; }
+        .die-facets { fill: none; stroke: currentColor; stroke-width: 0.8; opacity: 0.6; }
+        .die-face { fill: var(--chat-text-color, #fff); font-size: 23px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+        .die-caption { font-size: 0.65rem; color: var(--text-secondary); letter-spacing: 0.04em; text-align: center; }
+        .dice-rolling .player-die { animation: player-die-tumble 0.55s linear infinite; }
+        .dice-success { color: #4ade80 !important; }
+        .dice-failure { color: #fb7185 !important; }
+        #player-check-container { position: absolute; inset: 0; padding: 0.7rem; display: flex; flex-direction: column; justify-content: center; gap: 0.55rem; overflow-y: auto; color: var(--chat-text-color, #fff); }
+        #player-check-container.hidden { display: none; }
+        .dice-active #chat-input-area > :not(#player-check-container) { visibility: hidden; }
+        .dice-check-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--brand-color); }
+        .dice-check-reason { font-size: 1rem; font-weight: 600; line-height: 1.4; }
+        .dice-check-math { font-size: 0.8rem; color: var(--text-secondary); }
+        .dice-check-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .dice-check-actions button { padding: 0.4rem 0.7rem; border: 1px solid var(--border-primary); border-radius: 0.5rem; font-size: 0.75rem; }
+        .dice-result-card { display: flex; align-items: center; gap: 0.8rem; width: fit-content; max-width: 100%; margin: 0.8rem auto; padding: 0.75rem 1rem; border: 1px solid currentColor; border-radius: 0.8rem; background: var(--surface-overlay); color: var(--brand-color); text-align: left; }
+        .dice-result-card .player-die { flex: 0 0 3rem; width: 3rem; height: 3rem; }
+        .dice-result-card > div { min-width: 0; overflow-wrap: anywhere; }
+        .dice-result-card strong { font-size: 0.8rem; }
+        .dice-result-card p { color: var(--chat-text-color); font-size: 0.8rem; margin: 0.2rem 0; }
+        @keyframes player-die-tumble { 0% { transform: translateY(0) rotate(-15deg) scale(0.85); } 35% { transform: translateY(-9px) rotate(120deg) scale(1); } 70% { transform: translateY(2px) rotate(260deg) scale(0.9); } 100% { transform: translateY(0) rotate(345deg) scale(0.85); } }
+        @media (prefers-reduced-motion: reduce) { .dice-rolling .player-die { animation: none; } }
+        @media (max-width: 540px) {
+            #player-dice-dock { flex-basis: 5.5rem; }
+            #player-dice-dock .player-die { width: 4.5rem; height: 4.5rem; }
+            #chat-control-cluster #ai-character-selector-wrapper { margin-left: 0; }
+            #chat-control-cluster .composer-icon-controls { margin-left: auto; }
+            .dice-check-reason { font-size: 0.85rem; }
+        }
         @media (min-width: 640px) { .player-abilities-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
         body.layout-horizontal #inventory-panel-container:not(.hidden) {
@@ -3822,7 +3862,6 @@
                 </button>
             </div>
 
-            <div id="player-check-container" class="hidden p-3 rounded-xl bg-gray-800 border border-gray-600 flex-shrink-0" aria-live="polite"></div>
             <!-- Response Options Container -->
             <div id="response-options-container" class="relative z-20 hidden"></div>
             <!-- Chat Input & Controls -->
@@ -3836,7 +3875,8 @@
                     title="Drag to resize / Double-click to reset"></div>
 
                 <!-- The "Unboxed" Input Area -->
-                <div class="flex-1 relative flex flex-col">
+                <div id="chat-input-area" class="flex-1 relative flex flex-col">
+                    <div id="player-check-container" class="hidden" aria-live="polite"></div>
                     <!-- Image Preview Container -->
                     <div id="image-preview-container">
                         <div class="flex items-start gap-3">
@@ -3889,8 +3929,8 @@
                 </div>
 
                 <!-- The Control Cluster (Notice the border-l here) -->
-                <div id="chat-control-cluster" class="flex flex-col gap-2 p-2 border-l border-white/10"
-                    style="width: 7.5rem; min-width: 7.5rem;">
+                <div id="player-dice-dock" class="hidden" aria-label="Twenty-sided die"></div>
+                <div id="chat-control-cluster">
                     <!-- Dropdown -->
                     <div class="relative w-full" id="ai-character-selector-wrapper">
                         <button id="ai-character-selector-btn"
@@ -3926,7 +3966,7 @@
                         class="hidden bg-white/5 hover:bg-white/10 border border-white/5 text-gray-300 py-1 px-2 rounded-md cursor-pointer transition-colors font-medium w-full">Scenario Settings</button>
 
                     <!-- Icon Button Cluster: 2x2 so a fourth button fits the fixed 7.5rem column -->
-                    <div class="grid grid-cols-2 gap-1 justify-items-center mt-auto">
+                    <div class="composer-icon-controls">
                         <!-- Primary Action -->
                         <button id="primary-action-btn"
                             class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
@@ -13560,7 +13600,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     const message = history[i];
                     if (!message || message.isHidden) continue;
                     if (message.playerRoll) return null;
-                    if (message.type !== 'chat') continue;
+                    if (message.type !== 'chat' && message.type !== 'player_check') continue;
                     if (userIds.has(message.character_id) || message.character_id === 'user') return null;
                     const check = message.playerCheck;
                     const validated = check && this.parsePlayerCheck(`[CHECK: ${check.ability}|${check.dc}|${check.reason}]`);
@@ -15835,7 +15875,8 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     context += 'These are player-maintained stats. Do not invent changes to HP or scores.\n';
                 }
                 if (!sheet.diceEnabled || !allowChecks) return context + 'Dice checks are disabled for this response. Do not request or simulate rolls. Resolve actions through the story.\n';
-                context += `### OPTIONAL D20 CHECKS\nRequest a check ONLY when the player has attempted an action with both an uncertain outcome and a meaningful consequence. Most turns need NO check. Never roll for routine conversation, trivial actions, automatic successes, or impossible actions. Hiding from an actively searching guard may call for dexterity; casually standing in an empty room does not.\nBefore an uncertain outcome, describe the stakes, then END the response with exactly one marker: [CHECK: ability|DC|short action description]. Ability must be strength, dexterity, constitution, intelligence, wisdom, charisma, or none. DC is an integer from 1 to 30 (10 easy, 15 moderate, 20 hard). Choose the DC BEFORE seeing a result. Example: [CHECK: dexterity|15|Hide from the searching guard]\nStop at the request. Do not narrate success or failure, invent dice results, roll for the user, or add a check every turn. The application rolls a real d20 on the player's click${sheet.statsEnabled ? ' and adds the relevant ability modifier' : ' without a modifier because stats are disabled'}. Total >= DC succeeds. A natural 1 or 20 is not an automatic outcome for these ability checks. This is a lightweight ability-check system, not a full combat rules engine.\n`;
+                context += `### OPTIONAL D20 CHECKS\nRequest a check ONLY when the player has attempted an action with both an uncertain outcome and a meaningful consequence. Never roll for routine conversation, trivial actions, automatic successes, or impossible actions. Hiding from an actively searching guard may call for dexterity; casually standing in an empty room does not.\nBefore an uncertain outcome, describe the stakes, then END the response with exactly one marker: [CHECK: ability|DC|short action description]. Ability must be strength, dexterity, constitution, intelligence, wisdom, charisma, or none. DC is an integer from 1 to 30 (10 easy, 15 moderate, 20 hard). Choose the DC BEFORE seeing a result. Example: [CHECK: dexterity|15|Hide from the searching guard]\nStop at the request. Do not narrate success or failure, invent dice results, roll for the user, or add a check every turn. The application automatically animates and rolls a real d20 when a check is requested${sheet.statsEnabled ? ' and adds the relevant ability modifier' : ' without a modifier because stats are disabled'}. Total >= DC succeeds. A natural 1 or 20 is not an automatic outcome for these ability checks. This is a lightweight ability-check system, not a full combat rules engine.\n`;
+                context += 'Dice are central to resolving attempted actions when enabled. Before resolving meaningful persuasion, deception, intimidation, investigation, deduction, perception, stealth, physical feats, or endurance, require the appropriate ability check whenever the outcome is uncertain and matters. Use charisma for social influence, intelligence for reasoning and investigation, wisdom for awareness and insight, dexterity for stealth and precision, strength for force, and constitution for endurance. Do not narrate the outcome before the application records the roll. Routine conversation and trivial actions still need no check. A successful intelligence check cannot grant knowledge the character has never learned or had any way to infer.\n';
                 const latestRoll = [...(state.chat_history || [])].reverse().find(m => m.playerRoll && !m.isHidden);
                 if (latestRoll) context += `Latest application-recorded check (historical context, not a new action): ${latestRoll.content}\nHonor this result when resolving that action; never reroll it or change its DC. If skipped, resolve without dice. Only a new risky action may prompt another check.\n`;
                 return context;
@@ -19464,6 +19505,19 @@ Write only the character's message.`;
                 }).join('')}</div>`;
             },
 
+            PlayerDie(face = '20') {
+                return `<svg class="player-die" viewBox="0 0 100 110" aria-hidden="true"><path class="die-shell" d="M50 4 94 29 94 80 50 106 6 80 6 29Z"/><path class="die-facets" d="M50 4 28 38 6 29M50 4 72 38 94 29M6 29 28 38 6 80 50 86 94 80 72 38 94 29M28 38 72 38 50 86ZM6 80 28 38M94 80 72 38M50 86 50 106"/><text class="die-face" x="50" y="56" data-die-face>${UTILITY.escapeHTML(String(face))}</text></svg>`;
+            },
+
+            PlayerRollCard(message) {
+                const roll = message.playerRoll;
+                const outcome = roll.skipped ? 'Skipped' : roll.success ? 'Success' : 'Failure';
+                const modifier = `${roll.modifier >= 0 ? '+' : '−'} ${Math.abs(roll.modifier || 0)}`;
+                const math = roll.skipped ? 'Resolved without dice' : `${roll.die} ${modifier} = ${roll.total} · Target ${roll.dc}`;
+                return `<div class="dice-result-card ${roll.skipped ? '' : roll.success ? 'dice-success' : 'dice-failure'}" data-roll-request="${UTILITY.escapeHTML(roll.requestId || '')}">
+                    ${this.PlayerDie(roll.skipped ? '—' : roll.die)}<div><strong>${outcome} · ${UTILITY.escapeHTML(roll.ability === 'none' ? 'D20' : roll.ability)}</strong><p>${UTILITY.escapeHTML(roll.reason)}</p><span class="dice-check-math">${UTILITY.escapeHTML(math)}</span></div></div>`;
+            },
+
             PlayerSheetForm(prefix, sheet, section = 'all') {
                 const e = value => UTILITY.escapeHTML(String(value));
                 const field = (key, label, type = 'text', bounds = '') => `<label for="${prefix}-${key}">${label}<input id="${prefix}-${key}" type="${type}" value="${e(sheet[key])}" ${bounds}></label>`;
@@ -20222,6 +20276,8 @@ Write only the character's message.`;
                         </div>`;
                 }
 
+                if (msg.type === 'player_check') return '';
+                if (msg.playerRoll) return UIComponents.PlayerRollCard(msg);
                 if (msg.type === 'system_event') {
                     return DOM.html`<div class="w-full text-center my-2"><p class="text-sm italic text-gray-400">${msg.content}</p></div>`;
                 }
@@ -20834,13 +20890,13 @@ Write only the character's message.`;
                 if (owner.dataset.narrativeId !== (state.narrativeId || '')) return;
                 if (form.dataset.portraitLoading === 'true') { this.showNotification('Wait for the portrait to finish loading.', 'warning'); return; }
                 if ([...form.querySelectorAll('input')].some(input => !input.reportValidity())) return;
-                if (NarrativeController.RUNTIME.activeRequestAbortController) {
+                if (NarrativeController.RUNTIME.activeRequestAbortController || NarrativeController.RUNTIME.playerRolling) {
                     this.showNotification('Wait for the current response before changing your player sheet.', 'warning');
                     return;
                 }
                 const player = state.characters.find(c => c.is_user);
                 const sheet = this.readPlayerSheet(prefix, UTILITY.normalizePlayerCharacter(state.playerCharacter, player));
-                if (!sheet.diceEnabled && UTILITY.getPendingPlayerCheck(state)) await NarrativeController.resolvePendingPlayerCheck(true);
+                if (!sheet.diceEnabled && UTILITY.getPendingPlayerCheck(state)) await NarrativeController.resolvePendingPlayerCheck(true, false);
                 state.playerCharacter = sheet;
                 state.characters = UTILITY.applyPlayerCharacter(state.characters, sheet);
                 await ReactiveStore.forceSave();
@@ -20879,19 +20935,60 @@ Write only the character's message.`;
                         <div id="player-survival-meters" class="player-hud-popover ${this.RUNTIME.survivalExpanded ? '' : 'hidden'}">${UIComponents.PlayerSurvivalMeters(sheet)}</div>` : '';
                 }
                 document.getElementById('player-status-hud')?.classList.toggle('hidden', !loaded || (clockContainer.classList.contains('hidden') && survivalContainer.classList.contains('hidden')));
+                this.renderDiceComposer();
+            },
+
+            renderDiceComposer() {
+                const state = ReactiveStore.state;
+                const enabled = !!state?.chat_history && state.playerCharacter?.diceEnabled === true && !TextModeController.isActive();
+                const dock = document.getElementById('player-dice-dock');
                 const container = document.getElementById('player-check-container');
-                if (!container) return;
-                const pending = loaded && UTILITY.getPendingPlayerCheck(state);
-                container.classList.toggle('hidden', !pending);
-                if (!pending) { container.innerHTML = ''; return; }
+                const composer = document.getElementById('chat-input-container');
+                if (!dock || !container || !composer) return;
+                const pending = enabled && UTILITY.getPendingPlayerCheck(state);
+                const presentation = enabled && this.RUNTIME.dicePresentation?.state === state ? this.RUNTIME.dicePresentation : null;
+                const check = presentation?.check || pending?.check;
+                const roll = presentation?.roll;
+                const phase = presentation?.phase || (pending ? 'ready' : 'idle');
+                const active = enabled && phase !== 'idle';
+                dock.classList.toggle('hidden', !enabled);
+                dock.classList.toggle('dice-rolling', phase === 'rolling');
+                dock.classList.toggle('dice-success', phase === 'result' && roll?.success === true);
+                dock.classList.toggle('dice-failure', phase === 'result' && roll?.success === false);
+                composer.classList.toggle('dice-active', active);
+                container.classList.toggle('hidden', !active);
+                if (active) composer.classList.remove('cyoa-shrunk');
+                const face = phase === 'result' ? (roll?.skipped ? '—' : roll?.die) : '20';
+                const caption = { idle: 'D20 · Ready', assessing: 'Checking action', ready: 'Ability check', rolling: 'Rolling…', result: roll?.skipped ? 'Skipped' : roll?.success ? 'Success' : 'Failure' }[phase];
+                dock.innerHTML = enabled ? `${UIComponents.PlayerDie(face)}<span class="die-caption">${caption}</span>` : '';
+                if (!active) { container.innerHTML = ''; return; }
+                if (!check) {
+                    container.innerHTML = '<span class="dice-check-label">Ability check</span><strong class="dice-check-reason">Assessing your action…</strong>';
+                    return;
+                }
                 const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter);
-                const { check } = pending;
                 const modifier = sheet.statsEnabled && check.ability !== 'none' ? UTILITY.playerAbilityModifier(sheet.abilities[check.ability]) : 0;
-                container.innerHTML = DOM.html`<div class="flex flex-wrap items-center justify-between gap-2">
-                    <div><strong>${check.reason}</strong><div class="text-sm">${check.ability === 'none' ? 'Straight d20' : check.ability[0].toUpperCase() + check.ability.slice(1)} · Target ${check.dc} · d20 ${modifier >= 0 ? '+' : '−'} ${Math.abs(modifier)}</div></div>
-                    <div class="flex gap-2"><button data-action="roll-player-check" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 px-4 rounded-lg">Roll d20</button>
-                    <button data-action="skip-player-check" class="bg-white/5 hover:bg-white/10 py-2 px-3 rounded-lg">Skip check</button></div>
-                </div>`;
+                const ability = check.ability === 'none' ? 'D20' : check.ability[0].toUpperCase() + check.ability.slice(1);
+                const math = phase === 'result' && !roll.skipped ? `${roll.die} ${modifier >= 0 ? '+' : '−'} ${Math.abs(modifier)} = ${roll.total} · Target ${check.dc}` : `Target ${check.dc} · d20 ${modifier >= 0 ? '+' : '−'} ${Math.abs(modifier)}`;
+                container.innerHTML = DOM.html`<span class="dice-check-label">${ability} check</span><strong class="dice-check-reason">${check.reason}</strong><span class="dice-check-math">${math}</span>`;
+                if (phase === 'ready') container.innerHTML += '<div class="dice-check-actions"><button data-action="roll-player-check">Roll d20</button><button data-action="skip-player-check">Skip check</button></div>';
+                if (phase === 'result') container.innerHTML += DOM.html`<strong class="${roll.skipped ? '' : roll.success ? 'dice-success' : 'dice-failure'}">${caption}</strong>`;
+            },
+
+            async animatePlayerDie(signal) {
+                const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                await new Promise((resolve, reject) => {
+                    let tick = 0;
+                    const interval = reduced ? null : setInterval(() => {
+                        const face = document.querySelector('#player-dice-dock [data-die-face]');
+                        if (face) face.textContent = String((++tick * 7) % 20 + 1);
+                    }, 70);
+                    const finish = () => { clearInterval(interval); clearTimeout(timer); signal.removeEventListener('abort', abort); };
+                    const abort = () => { finish(); reject(new DOMException('Roll stopped', 'AbortError')); };
+                    const timer = setTimeout(() => { finish(); resolve(); }, reduced ? 120 : 1100);
+                    signal.addEventListener('abort', abort, { once: true });
+                    if (signal.aborted) abort();
+                });
             },
 
             RUNTIME: {
@@ -35276,12 +35373,57 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 return true;
             },
 
-            async resolvePendingPlayerCheck(skip = false) {
+            async preparePlayerActionCheck(speakerId, signal) {
+                const state = ReactiveStore.state;
+                if (state.playerCharacter?.diceEnabled !== true) return false;
+                const latestAction = () => state.chat_history.findLast(message => !message.isHidden && (message.type === 'chat' || message.playerRoll));
+                const action = latestAction();
+                if (!action || action.playerRoll || action.playerCheckAssessed || !ReactiveStore.getCharacter(action.character_id)?.is_user) return false;
+                const speaker = ReactiveStore.getCharacter(speakerId) || state.characters.find(char => !char.is_user && char.is_active);
+                if (!speaker || speaker.is_user) return false;
+                const instruction = `You are adjudicating the player's latest declared action BEFORE its outcome is narrated. Dice checks are enabled and are the main resolution system for uncertain actions with meaningful stakes. Use the full scene context to decide whether this action requires a check.\nRequire charisma for attempts to persuade an unwilling or uncertain NPC, deceive, intimidate, negotiate, or win trust; intelligence for investigation, deduction, deciphering, solving puzzles, or recalling knowledge the player could possess; wisdom for noticing danger, reading motives, tracking, or situational awareness; dexterity for stealth, balance, dodging, or precision; strength for force, climbing, or grappling; constitution for endurance, poison, or physical strain. Select the ability that actually fits the approach.\nDo not roll for greetings, ordinary conversation, routine movement, trivial or already-settled actions, out-of-character instructions, or actions with no meaningful uncertainty. An impossible action cannot succeed by rolling. A good roll never grants knowledge the character cannot have. Describing a desire or hypothetical plan is not attempting it.\nSet a fair target before rolling: 5 very easy, 10 easy, 15 moderate, 20 hard, 25 very hard, 30 nearly impossible. Judge difficulty from the situation, not the player's score.\nOutput exactly [CHECK: ability|DC|short action description] if a check is needed, or [NO_CHECK] otherwise. Do not narrate, roll, or decide success/failure.\nLatest player action: ${action.content}`;
+                UIManager.RUNTIME.dicePresentation = { state, phase: 'assessing' };
+                UIManager.renderDiceComposer();
+                try {
+                    const response = await APIService.callAI(PromptBuilder.buildPrompt(speaker.id, false, null, instruction), false, signal);
+                    if (signal.aborted || ReactiveStore.state !== state || latestAction()?.id !== action.id) return true;
+                    const text = UTILITY.stripThinking(typeof response === 'string' ? response : response?.text || '').trim();
+                    const check = UTILITY.parsePlayerCheck(text);
+                    if (!check && !/^\s*\[NO_CHECK\]\s*$/i.test(text)) throw new Error('The action check could not be read. Try continuing again.');
+                    action.playerCheckAssessed = true;
+                    if (!check) return false;
+                    state.chat_history.push({ id: UTILITY.uuid(), type: 'player_check', character_id: speaker.id,
+                        content: `Check requested: ${check.reason} (${check.ability}, target ${check.dc}).`, playerCheck: check,
+                        timestamp: new Date().toISOString() });
+                    UIManager.renderChat();
+                    await ReactiveStore.forceSave();
+                    return true;
+                } finally {
+                    UIManager.RUNTIME.dicePresentation = null;
+                    UIManager.renderDiceComposer();
+                }
+            },
+
+            queuePlayerCheckRoll() {
+                const state = ReactiveStore.state;
+                const pending = UTILITY.getPendingPlayerCheck(state);
+                if (!pending || this.RUNTIME.playerRolling || this.RUNTIME.activeRequestAbortController) return;
+                clearTimeout(this.RUNTIME.autoCheckTimer);
+                this.RUNTIME.autoCheckTimer = setTimeout(() => {
+                    if (ReactiveStore.state === state && UTILITY.getPendingPlayerCheck(state)?.message.id === pending.message.id) {
+                        this.resolvePendingPlayerCheck().catch(error => UIManager.showNotification(error.message, 'error'));
+                    }
+                }, 250);
+            },
+
+            async resolvePendingPlayerCheck(skip = false, continueStory = true) {
                 if (this.RUNTIME.playerRolling || this.RUNTIME.activeRequestAbortController) return;
                 const state = ReactiveStore.state;
                 const pending = UTILITY.getPendingPlayerCheck(state);
                 if (!pending) return;
                 this.RUNTIME.playerRolling = true;
+                clearTimeout(this.RUNTIME.autoCheckTimer);
+                const rollController = new AbortController();
                 try {
                     const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter);
                     const { check, message } = pending;
@@ -35292,15 +35434,46 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                         const modifier = sheet.statsEnabled && check.ability !== 'none' ? UTILITY.playerAbilityModifier(sheet.abilities[check.ability]) : 0;
                         result = UTILITY.resolvePlayerCheck(sample[0] % 20 + 1, modifier, check.dc);
                     }
+                    if (continueStory) {
+                        this.RUNTIME.activeRequestAbortController = rollController;
+                        UIManager.setButtonToStopMode();
+                        UIManager.RUNTIME.dicePresentation = { state, check, phase: skip ? 'result' : 'rolling', roll: result };
+                        UIManager.renderDiceComposer();
+                        if (!skip) await UIManager.animatePlayerDie(rollController.signal);
+                        if (rollController.signal.aborted || ReactiveStore.state !== state || UTILITY.getPendingPlayerCheck(state)?.message.id !== message.id) return;
+                    }
                     const roll = { ...result, ...check, requestId: message.id, requestVersion: message.currentVersion || 0 };
                     const content = skip ? `Check skipped: ${check.reason}. Continue this action without a dice result.`
                         : `D20 check — ${check.reason}: ${result.die} ${result.modifier >= 0 ? '+' : '−'} ${Math.abs(result.modifier)} = ${result.total} vs target ${check.dc}: ${result.success ? 'Success' : 'Failure'}.`;
-                    state.chat_history.push({ id: UTILITY.uuid(), type: 'system_event', character_id: 'system',
+                    const resultId = UTILITY.uuid();
+                    state.chat_history.push({ id: resultId, type: 'system_event', character_id: 'system',
                         content, playerRoll: roll, timestamp: new Date().toISOString() });
                     UIManager.renderChat();
                     await ReactiveStore.forceSave();
+                    if (continueStory) {
+                        UIManager.RUNTIME.dicePresentation = { state, check, phase: 'result', roll: result };
+                        UIManager.renderDiceComposer();
+                        await new Promise(resolve => setTimeout(resolve, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 120 : 850));
+                        if (rollController.signal.aborted) return;
+                        if (this.RUNTIME.activeRequestAbortController === rollController) this.RUNTIME.activeRequestAbortController = null;
+                    }
+                    if (!continueStory || ReactiveStore.state !== state || state.chat_history.at(-1)?.id !== resultId || this.RUNTIME.activeRequestAbortController) return;
+                    const speaker = ReactiveStore.getCharacter(message.character_id);
+                    const speakerId = speaker && !speaker.is_user ? speaker.id : null;
+                    const instruction = `[DIRECTIVE]: Continue the interrupted action immediately after this recorded check. Narrate the consequences of its outcome and continue the scene. Do not repeat the setup, reroll, change the result, or request another check for the same action. If skipped, resolve the action without dice.\n${content}`;
+                    if (state.swarmMode && typeof SwarmOrchestrator !== 'undefined') {
+                        await this._executeSwarmTurn(instruction, speakerId, null, [], { resolvedPlayerCheck: true });
+                    } else {
+                        await this.triggerAIResponse(speakerId, instruction, false, null, null, [], { resolvedPlayerCheck: true });
+                    }
+                } catch (error) {
+                    if (error.name !== 'AbortError') throw error;
                 } finally {
+                    if (this.RUNTIME.activeRequestAbortController === rollController) this.RUNTIME.activeRequestAbortController = null;
                     this.RUNTIME.playerRolling = false;
+                    UIManager.RUNTIME.dicePresentation = null;
+                    UIManager.renderDiceComposer();
+                    if (!this.RUNTIME.activeRequestAbortController) UIManager.setButtonToSendMode();
                 }
             },
 
@@ -35417,7 +35590,7 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 const isFocused = document.activeElement === chatInput;
                 const hasText = chatInput.value.trim().length > 0;
 
-                const shouldShrink = hasOptions && !isFocused && !hasText;
+                const shouldShrink = hasOptions && !isFocused && !hasText && !container.classList.contains('dice-active');
 
                 if (shouldShrink) {
                     if (!container.classList.contains('cyoa-shrunk')) {
@@ -36336,7 +36509,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
              * Called from both sendMessage() (text present) and handlePrimaryAction() (empty input pass-turn).
              * @param {string} userMessage - The user's input text (may be empty string for a pass-turn).
              */
-            async _executeSwarmTurn(userMessage, forcedCharId = null, targetMessageIndex = null, userImages = []) {
+            async _executeSwarmTurn(userMessage, forcedCharId = null, targetMessageIndex = null, userImages = [], turnOptions = {}) {
                 if (targetMessageIndex === null && this.playerCheckBlocksTurn()) return;
                 const state = ReactiveStore.state;
                 if (!this._isModelConfigured(state)) {
@@ -36361,10 +36534,12 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 }
 
                 UIManager.setButtonToStopMode();
-                this.RUNTIME.activeRequestAbortController = new AbortController();
+                const turnController = new AbortController();
+                this.RUNTIME.activeRequestAbortController = turnController;
 
                 try {
                     // Run Visual Master (Concurrent)
+                    if (targetMessageIndex === null && !turnOptions.resolvedPlayerCheck && await this.preparePlayerActionCheck(forcedCharId, this.RUNTIME.activeRequestAbortController.signal)) return;
                     if (typeof VisualMaster !== 'undefined') {
                         VisualMaster.checkTrigger();
                     }
@@ -36383,12 +36558,12 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     // Commit each character response as a separate chat bubble, in order.
                     let lastCharId = null;
                     let lastIndex = -1;
-                    const hasCheck = state.playerCharacter?.diceEnabled === true && result.charResponses.some(r => UTILITY.parsePlayerCheck(r.prose));
+                    const hasCheck = !turnOptions.resolvedPlayerCheck && state.playerCharacter?.diceEnabled === true && result.charResponses.some(r => UTILITY.parsePlayerCheck(r.prose));
                     const sceneEffects = UTILITY.parsePlayerTurnEffects(result.charResponses.map(r => r.prose).join('\n'));
                     let timeCommitted = false;
                     for (const { char, prose, thinking } of result.charResponses) {
                         this.startStreamingResponse(char.id, prose, 'neutral', targetMessageIndex, [], thinking || null,
-                            { advance: !hasCheck && !timeCommitted, effects: sceneEffects });
+                            { advance: !hasCheck && !timeCommitted, effects: sceneEffects, allowChecks: !turnOptions.resolvedPlayerCheck });
                         if (targetMessageIndex === null && state.chat_history.at(-1)?.playerTurn) timeCommitted = true;
                         if (UTILITY.getPendingPlayerCheck(state)) break;
                         lastCharId = char.id;
@@ -36430,6 +36605,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     UIManager.setButtonToSendMode();
                     this.RUNTIME.activeRequestAbortController = null;
                     UIManager.hideTypingIndicator();
+                    if (!turnController.signal.aborted && !turnOptions.resolvedPlayerCheck) this.queuePlayerCheckRoll();
                 }
             },
 
@@ -36566,7 +36742,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 const state = ReactiveStore.state;
                 const effects = turnOptions.effects || UTILITY.parsePlayerTurnEffects(fullText);
                 fullText = fullText.replace(/\[(?:TIME|RECOVER):[^\]\r\n]*\]/gi, '').trim();
-                const playerCheck = state.playerCharacter?.diceEnabled === true && !ReactiveStore.getCharacter(charId)?.is_user
+                const playerCheck = turnOptions.allowChecks !== false && state.playerCharacter?.diceEnabled === true && !ReactiveStore.getCharacter(charId)?.is_user
                     ? UTILITY.parsePlayerCheck(fullText) : null;
                 if (playerCheck) {
                     fullText = fullText.slice(0, fullText.search(/\[CHECK:/i)).trim()
@@ -37770,6 +37946,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     const targetMsg = ReactiveStore.state.chat_history[index];
                     targetMsg.content = input.value;
                     targetMsg.playerCheck = null;
+                    targetMsg.playerCheckAssessed = false;
                     if (targetMsg.versions && targetMsg.versions[targetMsg.currentVersion || 0]) {
                         targetMsg.versions[targetMsg.currentVersion || 0].content = input.value;
                         targetMsg.versions[targetMsg.currentVersion || 0].playerCheck = null;
@@ -37964,7 +38141,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
              * @param {number|null} targetMessageIndex - Index of message to overwrite (regen/versioning).
              * @param {Promise|null} visualBlockerPromise - Optional promise from Visual Master to await before displaying.
              */
-            async triggerAIResponse(charIdOrPromise = null, userMessage = '', isAfterMove = false, targetMessageIndex = null, visualBlockerPromise = null, userImages = []) {
+            async triggerAIResponse(charIdOrPromise = null, userMessage = '', isAfterMove = false, targetMessageIndex = null, visualBlockerPromise = null, userImages = [], turnOptions = {}) {
                 if (targetMessageIndex === null && this.playerCheckBlocksTurn()) return;
                 const state = ReactiveStore.state;
 
@@ -38064,7 +38241,8 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 }
 
                 UIManager.setButtonToStopMode();
-                this.RUNTIME.activeRequestAbortController = new AbortController();
+                const turnController = new AbortController();
+                this.RUNTIME.activeRequestAbortController = turnController;
 
                 try {
                     // 4. Generate Response (Parallel Execution Start)
@@ -38099,6 +38277,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                             directiveCustomInstruction += `\n\n${detail}`;
                         }
                     }
+                    if (targetMessageIndex === null && !turnOptions.resolvedPlayerCheck && await this.preparePlayerActionCheck(targetId, this.RUNTIME.activeRequestAbortController.signal)) return;
                     const prompt = PromptBuilder.buildPrompt(targetId, false, historyOverride, directiveCustomInstruction);
 
                     // START REQUEST (Do not await yet if there might be other parallel work, but here we await basic text first)
@@ -38139,7 +38318,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     // 6. Stream Result IMMEDIATELY (Non-blocking display)
                     UIManager.hideTypingIndicator();
                     // Display with neutral emotion first to avoid blocking text display
-                    this.startStreamingResponse(targetId, responseText, 'neutral', targetMessageIndex, [], thinkingText);
+                    this.startStreamingResponse(targetId, responseText, 'neutral', targetMessageIndex, [], thinkingText, { allowChecks: !turnOptions.resolvedPlayerCheck });
 
                     // Directives are otherwise one-shot: read from the input, used once,
                     // never stored. Regenerating the message then quietly dropped the
@@ -38283,6 +38462,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     UIManager.setButtonToSendMode();
                     this.RUNTIME.activeRequestAbortController = null;
                     UIManager.hideTypingIndicator();
+                    if (!turnController.signal.aborted && !turnOptions.resolvedPlayerCheck) this.queuePlayerCheckRoll();
                 }
             },
 
