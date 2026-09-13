@@ -10421,6 +10421,9 @@
                         gameState: JSON.parse(JSON.stringify(currentState.gameState || null)),
                         npcProgression: JSON.parse(JSON.stringify(currentState.npcProgression || {})),
                         playerCharacter: currentState.playerCharacter ? UTILITY.normalizePlayerCharacter({ ...currentState.playerCharacter,
+                            equipment: currentState.gameState?.resources ?? currentState.playerCharacter.equipment,
+                            age: rawCharacters.find(c => c.is_user)?.age ?? currentState.playerCharacter.age,
+                            height: rawCharacters.find(c => c.is_user)?.height ?? currentState.playerCharacter.height,
                             name: rawCharacters.find(c => c.is_user)?.name || currentState.playerCharacter.name,
                             backstory: rawCharacters.find(c => c.is_user)?.description ?? currentState.playerCharacter.backstory,
                             personality: rawCharacters.find(c => c.is_user)?.personality ?? currentState.playerCharacter.personality,
@@ -10460,7 +10463,7 @@
                             if (!original) return char;
                             const restored = { ...char, is_user: original.is_user };
                             if (char.id === currentState.playerCharacter.characterId) {
-                                for (const key of ['name', 'description', 'appearance', 'short_description', 'gender', 'pronouns']) restored[key] = original[key];
+                                for (const key of ['name', 'description', 'personality', 'appearance', 'short_description', 'gender', 'pronouns', 'age', 'height', 'equipment']) restored[key] = original[key];
                                 delete restored.player_portrait;
                             }
                             return restored;
@@ -10951,7 +10954,7 @@
                         static_entries: (scenario.static_entries && scenario.static_entries.length > 0) ? JSON.parse(JSON.stringify(scenario.static_entries)) : [{ id: UTILITY.uuid(), title: "World Overview", content: "The world." }],
                         worldMap: scenario.worldMap ? JSON.parse(JSON.stringify(scenario.worldMap)) : { grid: UTILITY.createDefaultMapGrid(), currentLocation: { x: 4, y: 4 }, destination: { x: null, y: null }, path: [] },
                         gameState: {
-                            resources: [],
+                            resources: playerCharacter.equipment.map(item => ({ ...item, id: UTILITY.uuid() })),
                             relationships: [],
                             journal: []
                         },
@@ -13781,7 +13784,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 const constitution = this.playerAbilityModifier(abilities.constitution);
                 const hp = Math.max(4, role.hitDie + constitution + (level - 1) * (Math.ceil(role.hitDie / 2) + 1 + constitution));
                 const personality = [pick(role.traits), pick(['Generous', 'Blunt', 'Cautious', 'Warm', 'Dry-humored', 'Proud', 'Loyal', 'Restless', 'Skeptical', 'Optimistic', 'Private', 'Stubborn'])];
-                return { seed: initialSeed, job, level, abilities, hp, maxHp: hp,
+                return { seed: initialSeed, job, age: '', height: '', level, abilities, hp, maxHp: hp,
                     armorClass: Math.max(8, role.armor + Math.min(2, this.playerAbilityModifier(abilities.dexterity))),
                     personality: [...new Set(personality)].join(', '),
                     temperament: pick(['Calm under pressure', 'Slow to trust', 'Quick to laugh', 'Easily frustrated', 'Quietly confident', 'Careful with strangers']),
@@ -13791,7 +13794,63 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
 
             npcProfileDescription(profile, source = '') {
                 return [source && `Known details: ${source}`, `Occupation: ${profile.job}`, `Personality: ${profile.personality}`,
+                    profile.age && `Age: ${profile.age}`, profile.height && `Height: ${profile.height}`,
                     `Temperament: ${profile.temperament}`, `Motivation: ${profile.motivation}`, `Mannerism: ${profile.mannerism}`].filter(Boolean).join('\n');
+            },
+
+            characterMeasurement(value) {
+                return typeof value === 'string' ? value.trim().slice(0, 80)
+                    : typeof value === 'number' && Number.isFinite(value) && value >= 0 ? String(value) : '';
+            },
+
+            normalizeEquipment(value) {
+                const entries = typeof value === 'string' ? value.split(/\r?\n/) : Array.isArray(value) ? value : [];
+                const items = new Map();
+                for (const entry of entries) {
+                    let item;
+                    if (typeof entry === 'string') {
+                        const line = entry.trim().replace(/^[-*•]\s+/, '');
+                        const prefix = line.match(/^(\d+(?:\.\d+)?)\s*[x×]\s+(.+)$/i);
+                        const suffix = line.match(/^(.+?)\s+[x×]\s*(\d+(?:\.\d+)?)$/i);
+                        item = { name: prefix ? prefix[2] : suffix ? suffix[1] : line, value: prefix ? Number(prefix[1]) : suffix ? Number(suffix[2]) : 1 };
+                    } else if (entry && typeof entry === 'object' && !Array.isArray(entry)) item = { ...entry, value: entry.value ?? entry.quantity ?? 1 };
+                    else continue;
+                    if (typeof item.name !== 'string') continue;
+                    const name = item.name.trim().replace(/\s+/g, ' ');
+                    const quantity = Number(item.value);
+                    if (!name || !Number.isFinite(quantity) || quantity <= 0 || quantity > Number.MAX_SAFE_INTEGER) continue;
+                    const key = name.toLowerCase();
+                    if (items.has(key)) items.get(key).value = Math.min(Number.MAX_SAFE_INTEGER, items.get(key).value + quantity);
+                    else items.set(key, { ...item, name, value: quantity });
+                }
+                return [...items.values()];
+            },
+
+            formatEquipment(value) {
+                return this.normalizeEquipment(value).map(item => `${item.value} × ${item.name}`).join('\n');
+            },
+
+            reconcileEquipment(current, submitted, baseline) {
+                const previous = this.normalizeEquipment(current);
+                const desired = this.normalizeEquipment(submitted);
+                const byName = new Map(previous.map(item => [item.name.toLowerCase(), item]));
+                if (baseline === undefined) return desired.map(item => ({ ...byName.get(item.name.toLowerCase()), ...item }));
+                const original = new Map(this.normalizeEquipment(baseline).map(item => [item.name.toLowerCase(), item]));
+                const next = new Map(desired.map(item => [item.name.toLowerCase(), item]));
+                for (const key of new Set([...original.keys(), ...next.keys()])) {
+                    if (original.get(key)?.value === next.get(key)?.value) continue;
+                    if (next.has(key)) byName.set(key, { ...byName.get(key), ...next.get(key) });
+                    else byName.delete(key);
+                }
+                return [...byName.values()];
+            },
+
+            getCharacterEquipment(state, characterId = null) {
+                const playerId = state?.playerCharacter?.characterId || state?.characters?.find(char => char.is_user)?.id;
+                if (!characterId || characterId === playerId) return this.normalizeEquipment(state?.gameState?.resources ?? state?.playerCharacter?.equipment);
+                if (Object.prototype.hasOwnProperty.call(state?.gameState?.characterResources || {}, characterId)) return this.normalizeEquipment(state.gameState.characterResources[characterId]);
+                const character = [...(state?.characters || []), ...(state?.worldMap?.grid || []).flatMap(tile => tile.characters || [])].find(char => char.id === characterId);
+                return this.normalizeEquipment(character?.equipment ?? character?.npc_profile?.equipment);
             },
 
             playerAbilities: ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'],
@@ -13832,6 +13891,8 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 return {
                     characterId: string(data.characterId, character.id || ''),
                     name: string(data.name, character.name || 'You'),
+                    age: this.characterMeasurement(data.age ?? character.age), height: this.characterMeasurement(data.height ?? character.height),
+                    equipment: this.normalizeEquipment(data.equipment ?? character.equipment),
                     gender: string(data.gender, character.gender || ''),
                     pronouns: string(data.pronouns, character.pronouns || ''),
                     portrait: typeof data.portrait === 'string' && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(data.portrait) ? data.portrait : null,
@@ -14028,6 +14089,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 const sheet = this.normalizePlayerCharacter(profile, player);
                 return characters.map(c => c.id === player?.id ? { ...c, is_user: true, is_active: true,
                     name: sheet.name, gender: sheet.gender, pronouns: sheet.pronouns, player_portrait: sheet.portrait,
+                    age: sheet.age, height: sheet.height, equipment: this.normalizeEquipment(sheet.equipment),
                     description: sheet.backstory, personality: sheet.personality, appearance: sheet.appearance, short_description: sheet.appearance
                 } : { ...c, is_user: false });
             },
@@ -16102,6 +16164,9 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
             migrateGameState(rawGs) {
                 const result = { resources: [], relationships: [], journal: [] };
                 if (!rawGs || typeof rawGs !== 'object') return result;
+                if (rawGs.characterResources && typeof rawGs.characterResources === 'object' && !Array.isArray(rawGs.characterResources)) {
+                    result.characterResources = Object.fromEntries(Object.entries(rawGs.characterResources).map(([id, items]) => [id, this.normalizeEquipment(items)]));
+                }
 
                 if (Array.isArray(rawGs.resources)) {
                     result.resources = rawGs.resources.map(r => {
@@ -16334,14 +16399,23 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 return context + instructions;
             },
 
-            buildNpcContext(state) {
-                const characters = (state.characters || []).filter(char => (char.npc_profile || state.playerCharacter?.progression?.enabled) && !char.is_user && !char.is_narrator);
+            buildNpcContext(state, includeTracking = true, actorId = null) {
+                const characters = (state.characters || []).filter(char => (char.npc_profile || char.personality || char.age || char.height || char.equipment?.length || state.gameState?.characterResources?.[char.id]?.length || state.playerCharacter?.progression?.enabled) && !char.is_user && !char.is_narrator && (!actorId || char.id === actorId));
+                let behavior = '### NPC PERSONALITIES\nKeep each NPC\'s saved personality, temperament, motivations, and speech habits consistent across scenes. Use these traits to shape their initial reactions, trust, romantic interest, and how they express agreement or refusal. Do not replace their personality just to mirror the player\'s wishes. A successful interaction changes that interaction or relationship, not their entire personality.\n';
+                behavior += state.playerCharacter?.diceEnabled && includeTracking
+                    ? 'For attempted persuasion, including romance, personality affects difficulty but is not an automatic veto. An unwilling, guarded, proud, or normally uninterested NPC can still be persuaded with a sufficiently high charisma result. Set a fair DC within 1–30 from their disposition, the approach, and the scene BEFORE rolling; never increase it to cancel a high player score. Do not declare a social attempt impossible or skip its roll solely because of personality or reluctance. If the recorded total meets the DC, honor that success even when it overcomes their usual tendencies; show a believable reason and an in-character reaction. Resolve only the stated stakes of that roll, not unrelated demands. Ordinary conversation and genuinely impossible actions for reasons independent of personality still need no roll.\n'
+                    : 'Dice are disabled: use the NPC\'s personality and the developing relationship to resolve social interactions naturally, without requesting or inventing rolls.\n';
                 const introductions = 'Track named characters with two hidden flags in this SAME story response. Only valid flags create roster entries; prose alone does not. The name field must contain ONLY the person’s name, never dialogue, pronouns, an introduction such as “I’m Lira”, or an unnamed role. For “I’m Lira, a hunter”, the name is Lira. Emit at most one flag per person per response; prefer NPC_MET if both meeting and discussing them. Do not flag the player or narrator. For a named person the PLAYER actually meets or directly observes, use [NPC_MET: name|occupation|physical description]. At their first meeting, or when their saved description is missing, write 2–4 concise sentences describing their visible face, hair, eyes, build, clothing, and distinctive features, consistent with the scene. Do not invent hidden history or secrets. For someone only talked about, remembered, or rumored, use [NPC_MENTION: name|occupation] with NO description. Never treat an unintelligible word, command, threat, or title as a name. Compare against the saved roster: reuse the exact existing name for the same person, including a previously mentioned person now met. Distinguish different people with similar names. Existing descriptions and player edits take precedence; leave the description field empty when one is already saved. Use established occupations only, or leave blank. Never flag intentions to meet someone as an actual meeting. The app matches names and generates stats locally; no extra AI call is needed.\n';
-                if (!characters.length) return introductions;
-                return introductions + '### KNOWN CHARACTER SHEETS\nThese profiles are already generated and saved by the game. Use them consistently when a character participates in the scene. Being listed here does not mean a character is present or knows the player. Explicit story facts and player edits take precedence over generated tendencies; do not rewrite established relationships or history to fit them. Ability scores can inform relevant opposed checks and difficulty; they do not decide a player outcome before the actual roll.\n' + characters.map(char => {
+                const preamble = behavior + (includeTracking ? introductions : 'Do not output NPC tracking flags in this private conversation.\n');
+                if (!characters.length) return preamble;
+                return preamble + '### KNOWN CHARACTER SHEETS\nThese profiles are already generated and saved by the game. Use them consistently when a character participates in the scene. Being listed here does not mean a character is present or knows the player. Explicit story facts and player edits take precedence over generated tendencies; do not rewrite established relationships or history to fit them. Ability scores can inform relevant opposed checks and difficulty; they do not decide a player outcome before the actual roll.\n' + characters.map(char => {
                     const profile = NarrativeController.getNpcProfile(char);
-                    if (char.encounter?.status === 'mentioned') return `${char.name} — MENTIONED ONLY, NOT MET. Occupation: ${profile.job}. Level ${profile.level}. Reported details: ${profile.knownDetails || 'None'}. Do not assume presence or personal acquaintance. If actually met, use NPC_MET with a physical description to update this existing entry.\n`;
-                    return `${char.name} — ${char.encounter?.status === 'met' ? 'MET' : 'Meeting not yet classified'}\n${UTILITY.npcProfileDescription(profile, profile.knownDetails)}\nCurrent appearance: ${char.appearance || 'MISSING: include a description in NPC_MET when actually met'}\nLevel ${profile.level}; HP ${profile.hp}/${profile.maxHp}; Armor class ${profile.armorClass}\n${UTILITY.playerAbilities.map(ability => `${ability}: ${profile.abilities[ability]}`).join(', ')}`;
+                    const age = UTILITY.characterMeasurement(profile?.age ?? char.age) || 'Unknown';
+                    const height = UTILITY.characterMeasurement(profile?.height ?? char.height) || 'Unknown';
+                    const equipment = UTILITY.formatEquipment(UTILITY.getCharacterEquipment(state, char.id)).replace(/\n/g, '; ') || 'None recorded';
+                    if (!profile) return `${char.name}\nAge: ${age}\nHeight: ${height}\nPersonality: ${char.personality || 'Use their established description'}\nEquipment belonging to ${char.name}: ${equipment}\n`;
+                    if (char.encounter?.status === 'mentioned') return `${char.name} — MENTIONED ONLY, NOT MET. Occupation: ${profile.job}. Level ${profile.level}. Reported age: ${age}; height: ${height}; equipment: ${equipment}. Reported details: ${profile.knownDetails || 'None'}. Do not assume presence or personal acquaintance.${includeTracking ? ' If actually met, use NPC_MET with a physical description to update this existing entry.' : ''}\n`;
+                    return `${char.name} — ${char.encounter?.status === 'met' ? 'MET' : 'Meeting not yet classified'}\n${UTILITY.npcProfileDescription({ ...profile, age, height }, profile.knownDetails)}\nCurrent appearance: ${char.appearance || 'MISSING: include a description in NPC_MET when actually met'}\nEquipment belonging to ${char.name}: ${equipment}. These items are not in the player's inventory.\nLevel ${profile.level}; HP ${profile.hp}/${profile.maxHp}; Armor class ${profile.armorClass}\n${UTILITY.playerAbilities.map(ability => `${ability}: ${profile.abilities[ability]}`).join(', ')}`;
                 }).join('\n\n');
             },
 
@@ -16351,6 +16425,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter, user);
                 let context = `### PLAYER CHARACTER\nName: ${sheet.name}\nGender: ${sheet.gender}\nPronouns: ${sheet.pronouns}\nAncestry: ${sheet.ancestry}\nClass / role: ${sheet.characterClass}\nBackstory: ${sheet.backstory}\nCurrent appearance: ${sheet.appearance}\nThis sheet describes the player's CURRENT identity and body, including any transformations. If older backstory or messages conflict with these fields, use the current fields. The player controls this character's decisions. Treat backstory as context, not knowledge every NPC automatically possesses.\n`;
                 if (sheet.personality.trim()) context += `Personality: ${sheet.personality}\nWhen drafting the player's dialogue or suggesting actions, use this personality to guide their voice, motives, and reactions. Offer different plausible choices within these traits rather than forcing contradictory behavior for variety. Respect the player's explicitly chosen actions; personality does not authorize narrating decisions on their behalf.\n`;
+                context += `Age: ${sheet.age || 'Unknown'}\nHeight: ${sheet.height || 'Unknown'}\nCurrent player equipment / inventory: ${UTILITY.formatEquipment(UTILITY.getCharacterEquipment(state)).replace(/\n/g, '; ') || 'None recorded'}. Use these current quantities over starting possessions mentioned in backstory. Do not restore lost or consumed items or treat NPC equipment as the player's. Equipment does not automatically change the saved ability scores or armor class.\n`;
                 if (sheet.currentState.form) context += `Current physical form: ${sheet.currentState.form}. This overrides any older body or species description.\n`;
                 if (sheet.currentState.conditions.length) context += 'Current injuries / ongoing effects: ' + sheet.currentState.conditions.join('; ') + '. Respect their practical effects without inventing numeric stat penalties.\n';
                 context += 'NPCs can notice visible physical changes and injuries, but do not automatically know the cause or recognize a transformed player. Identity recognition does not grant knowledge of the player\'s secrets or backstory. Only established witnesses or people explicitly told know what happened.\n';
@@ -16700,7 +16775,7 @@ JSON Schema:
                 const replacer = this._getReplacer(charToAct);
                 let modelInstructions = charToAct.model_instructions || state.system_prompt;
                 modelInstructions = this.buildPlayerContext(state, !isDirectMessage && !charToAct.is_user) + '\n\n' + modelInstructions;
-                if (!isDirectMessage && !charToAct.is_user) modelInstructions = this.buildNpcContext(state) + '\n\n' + modelInstructions;
+                if (!charToAct.is_user) modelInstructions = this.buildNpcContext(state, !isDirectMessage, isDirectMessage ? charToAct.id : null) + '\n\n' + modelInstructions;
                 if (!isDirectMessage && !charToAct.is_user) modelInstructions = this.buildAtlasContext(state) + '\n\n' + modelInstructions;
                 if (state.gameState && state.enableJournal !== false) {
                     const gameStateXml = this.buildGameStateXml(state.gameState);
@@ -20045,10 +20120,10 @@ Write only the character's message.`;
             },
 
             NpcCharacterSheet(char) {
-                const e = value => UTILITY.escapeHTML(String(value ?? ''));
+                const e = value => UTILITY.escapeHTML(String(value ?? '')).replace(/"/g, '&quot;');
                 const profile = NarrativeController.getNpcProfile(char);
                 if (!profile) return `<button data-action="create-local-npc-profile" data-id="${e(char.id)}" class="btn-primary px-4 py-2 rounded-lg">Create Character Sheet</button>`;
-                const field = (key, label, type = 'text', bounds = '') => `<label>${label}<input type="${type}" ${bounds} ${key === 'level' && profile.rpgProgression ? 'disabled' : ''} data-action-change="update-npc-profile" data-id="${e(char.id)}" data-field="${key}" value="${e(profile[key])}"></label>`;
+                const field = (key, label, type = 'text', bounds = '') => `<label>${label}<input type="${type}" ${bounds} ${key === 'level' && profile.rpgProgression ? 'disabled' : ''} data-action-change="update-npc-profile" data-id="${e(char.id)}" data-field="${key}" value="${e(profile[key] ?? char[key])}"></label>`;
                 const portrait = UIManager.getPortraitSrc(char);
                 return `<div class="player-sheet-form npc-character-sheet">
                     <div class="player-portrait-picker">
@@ -20059,6 +20134,8 @@ Write only the character's message.`;
                         </div>
                     </div>
                     <label>Description<textarea rows="4" maxlength="1600" data-action-change="update-npc-profile" data-id="${e(char.id)}" data-field="appearance" placeholder="${char.encounter?.status === 'mentioned' ? 'Not met yet' : 'Description will be added when you meet this character'}">${e(char.appearance)}</textarea></label>
+                    <div class="player-sheet-grid">${field('age', 'Age', 'text', 'maxlength="80" placeholder="Unknown"')}${field('height', 'Height', 'text', 'maxlength="80" placeholder="e.g. 178 cm"')}</div>
+                    ${this.EquipmentField('npc', UTILITY.getCharacterEquipment(ReactiveStore.state, char.id), char.id)}
                     ${profile.rpgProgression ? `<div class="text-sm text-teal-300">RPG progression · Level ${profile.level} · ${UTILITY.rpgPointBudget(profile.level, profile.rpgProgression)} attribute points allocated · Base 8 per attribute</div>` : ''}
                     <div class="npc-sheet-columns"><div class="player-sheet-form">${field('job', 'Occupation')}
                     <div class="player-sheet-grid">${field('level', 'Level', 'number', 'min="1" max="20"')}${field('armorClass', 'Armor class', 'number', 'min="0" max="40"')}${field('hp', 'Current HP', 'number', 'min="0" max="9999"')}${field('maxHp', 'Maximum HP', 'number', 'min="1" max="9999"')}</div>
@@ -20129,8 +20206,15 @@ Write only the character's message.`;
                     </fieldset>${editable ? '<button data-action="save-player-stats" class="bg-teal-600 text-white rounded-lg px-4 py-2">Save stats</button>' : ''}</div>`;
             },
 
+            EquipmentField(prefix, equipment, characterId = null) {
+                const e = value => UTILITY.escapeHTML(String(value)).replace(/"/g, '&quot;');
+                const items = UTILITY.normalizeEquipment(equipment);
+                const baseline = JSON.stringify(items.map(({ name, value }) => ({ name, value })));
+                return `<label for="${prefix}-equipment">${prefix === 'scenario-player' ? 'Starting equipment' : 'Equipment'}<textarea id="${prefix}-equipment" rows="4" data-equipment-baseline="${e(baseline)}" ${characterId ? `data-action-change="update-npc-equipment" data-id="${e(characterId)}" data-narrative-id="${e(ReactiveStore.state.narrativeId || '')}"` : ''} placeholder="Work boots&#10;2 × Torches">${e(UTILITY.formatEquipment(items))}</textarea></label>`;
+            },
+
             PlayerSheetForm(prefix, sheet, section = 'all') {
-                const e = value => UTILITY.escapeHTML(String(value));
+                const e = value => UTILITY.escapeHTML(String(value)).replace(/"/g, '&quot;');
                 const field = (key, label, type = 'text', bounds = '') => `<label for="${prefix}-${key}">${label}<input id="${prefix}-${key}" type="${type}" value="${e(sheet[key])}" ${bounds}></label>`;
                 return `<div class="player-sheet-form" data-player-form="${prefix}">
                     ${section !== 'mechanics' ? `
@@ -20147,11 +20231,13 @@ Write only the character's message.`;
                         </div>
                     </div>
                     ${field('name', 'Name')}
+                    <div class="player-sheet-grid">${field('age', 'Age', 'text', 'maxlength="80" placeholder="e.g. 29 years"')}${field('height', 'Height', 'text', 'maxlength="80" placeholder="e.g. 178 cm"')}</div>
                     <div class="player-sheet-grid">${field('gender', 'Gender')}${field('pronouns', 'Pronouns')}</div>
                     <div class="player-sheet-grid">${field('ancestry', 'Ancestry / species')}${field('characterClass', 'Class / role')}</div>
                     <label for="${prefix}-personality">Personality<textarea id="${prefix}-personality" rows="3" placeholder="Traits, values, habits, and how they speak.">${e(sheet.personality || '')}</textarea></label>
                     <label for="${prefix}-backstory">Backstory<textarea id="${prefix}-backstory" rows="5">${e(sheet.backstory)}</textarea></label>
                     <label for="${prefix}-appearance">Current appearance<textarea id="${prefix}-appearance" rows="4" placeholder="Describe their face, hair, eyes, body, height, clothing, and any current transformations.">${e(sheet.appearance)}</textarea></label>
+                    ${this.EquipmentField(prefix, sheet.equipment)}
                     ${this.PlayerConditionEditor(prefix, sheet)}
                     ` : ''}
                     ${section !== 'identity' ? `
@@ -20497,6 +20583,7 @@ Write only the character's message.`;
              * @returns {string} HTML string.
              */
             InventoryPanel(gameState, activeTab = 'inventory', playerSheet = null, journalEnabled = true) {
+                const attribute = value => UTILITY.escapeHTML(String(value ?? '')).replace(/"/g, '&quot;');
                 const resources = (gameState && gameState.resources) || [];
                 const relationships = (gameState && gameState.relationships) || [];
                 const journal = (gameState && gameState.journal) || [];
@@ -20527,9 +20614,9 @@ Write only the character's message.`;
                                     <span class="text-[10px] text-gray-400 font-medium">Qty: ${item.value}</span>
                                 </div>
                                 <div class="flex items-center space-x-1.5 opacity-60 group-hover/item:opacity-100 transition-opacity">
-                                    <button onclick="InventoryController.addResource('${UTILITY.escapeHTML(item.name.replace(/'/g, "\\'"))}', -1)" class="w-6 h-6 rounded-md bg-black/40 hover:bg-red-900/60 border border-white/5 text-gray-300 hover:text-white flex items-center justify-center text-xs font-bold cursor-pointer transition-colors shadow-sm" title="Decrease Qty">-</button>
-                                    <button onclick="InventoryController.addResource('${UTILITY.escapeHTML(item.name.replace(/'/g, "\\'"))}', 1)" class="w-6 h-6 rounded-md bg-black/40 hover:bg-emerald-900/60 border border-white/5 text-gray-300 hover:text-white flex items-center justify-center text-xs font-bold cursor-pointer transition-colors shadow-sm" title="Increase Qty">+</button>
-                                    <button onclick="InventoryController.removeResource('${item.id}')" class="w-6 h-6 rounded-md bg-black/40 hover:bg-red-600/80 border border-white/5 text-red-400 hover:text-white flex items-center justify-center text-xs cursor-pointer transition-colors shadow-sm" title="Delete Item">&times;</button>
+                                    <button data-action="adjust-inventory-resource" data-id="${attribute(item.id)}" data-delta="-1" class="w-6 h-6 rounded-md bg-black/40 hover:bg-red-900/60 border border-white/5 text-gray-300 hover:text-white flex items-center justify-center text-xs font-bold cursor-pointer transition-colors shadow-sm" title="Decrease Qty">-</button>
+                                    <button data-action="adjust-inventory-resource" data-id="${attribute(item.id)}" data-delta="1" class="w-6 h-6 rounded-md bg-black/40 hover:bg-emerald-900/60 border border-white/5 text-gray-300 hover:text-white flex items-center justify-center text-xs font-bold cursor-pointer transition-colors shadow-sm" title="Increase Qty">+</button>
+                                    <button data-action="remove-inventory-resource" data-id="${attribute(item.id)}" class="w-6 h-6 rounded-md bg-black/40 hover:bg-red-600/80 border border-white/5 text-red-400 hover:text-white flex items-center justify-center text-xs cursor-pointer transition-colors shadow-sm" title="Delete Item">&times;</button>
                                 </div>
                             </div>
                         `).join('');
@@ -20662,8 +20749,8 @@ Write only the character's message.`;
                         <div class="inventory-panel-tabs flex bg-black/30 border border-white/5 p-1 rounded-xl gap-1">
                             <button onclick="UIManager.switchInventoryTab('player')" class="${tabClass(isPlayer)} flex-1 text-center">Player</button>
                             <button data-action="open-player-stats" class="${tabClass(isStats)} flex-1 text-center ${playerSheet && (playerSheet.statsEnabled || playerSheet.survivalEnabled) ? '' : 'hidden'}">Stats</button>
-                            ${journalEnabled ? `
                             <button onclick="UIManager.switchInventoryTab('inventory')" class="${tabClass(isInv)} flex-1 text-center">Inventory</button>
+                            ${journalEnabled ? `
                             <button onclick="UIManager.switchInventoryTab('quests')" class="${tabClass(isQst)} flex-1 text-center">Quests</button>
                             <button onclick="UIManager.switchInventoryTab('relationships')" class="${tabClass(isRel)} flex-1 text-center">Relations</button>
                             ` : ''}
@@ -21457,7 +21544,8 @@ Write only the character's message.`;
                 const data = UTILITY.normalizePlayerCharacter(previous);
                 const value = (key, fallback) => document.getElementById(`${prefix}-${key}`)?.value ?? fallback;
                 const checked = (key, fallback) => document.getElementById(`${prefix}-${key}`)?.checked ?? fallback;
-                for (const key of ['name', 'gender', 'pronouns', 'portrait', 'backstory', 'personality', 'appearance', 'ancestry', 'characterClass', 'level', 'hp', 'maxHp', 'armorClass']) data[key] = value(key, data[key]);
+                for (const key of ['name', 'age', 'height', 'gender', 'pronouns', 'portrait', 'backstory', 'personality', 'appearance', 'ancestry', 'characterClass', 'level', 'hp', 'maxHp', 'armorClass']) data[key] = value(key, data[key]);
+                data.equipment = UTILITY.reconcileEquipment(data.equipment, value('equipment', data.equipment));
                 for (const key of ['statsEnabled', 'diceEnabled', 'survivalEnabled']) data[key] = checked(key, data[key]);
                 for (const key of UTILITY.playerAbilities) data.abilities[key] = value(key, data.abilities[key]);
                 for (const key of ['water', 'sleep', 'food']) {
@@ -21599,6 +21687,9 @@ Write only the character's message.`;
                 }
                 const player = state.characters.find(c => c.is_user);
                 const sheet = this.readPlayerSheet(prefix, UTILITY.normalizePlayerCharacter(state.playerCharacter, player));
+                const equipmentInput = section === 'identity' ? document.getElementById('live-player-equipment') : null;
+                sheet.equipment = equipmentInput ? InventoryController.readEquipmentEditor(null, equipmentInput) : UTILITY.getCharacterEquipment(state);
+                if (equipmentInput) InventoryController.setEquipment(null, sheet.equipment);
                 if (!sheet.diceEnabled && UTILITY.getPendingPlayerCheck(state)) await NarrativeController.resolvePendingPlayerCheck(true, false);
                 state.playerCharacter = sheet;
                 state.characters = UTILITY.applyPlayerCharacter(state.characters, sheet);
@@ -21731,7 +21822,7 @@ Write only the character's message.`;
              */
             toggleInventoryPanel(tab) {
                 const state = StateManager.getState();
-                if (tab && !['player', 'stats'].includes(tab) && state?.enableJournal === false) return;
+                if (tab && !['player', 'stats', 'inventory'].includes(tab) && state?.enableJournal === false) return;
                 const container = document.getElementById('inventory-panel-container');
                 if (container) {
                     const wasHidden = container.classList.contains('hidden');
@@ -21791,7 +21882,7 @@ Write only the character's message.`;
                     activeTab = this.RUNTIME.activeInventoryTab = 'player';
                     this.RUNTIME.playerStatsOverride = false;
                 }
-                if (!state?.chat_history || (!['player', 'stats'].includes(activeTab) && state.enableJournal === false)) {
+                if (!state?.chat_history || (!['player', 'stats', 'inventory'].includes(activeTab) && state.enableJournal === false)) {
                     container.classList.add('hidden');
                     container.innerHTML = '';
                     return;
@@ -21799,14 +21890,25 @@ Write only the character's message.`;
 
                 if (container.dataset.narrativeId !== (state.narrativeId || '')) this.RUNTIME.playerStatsOverride = false;
                 if (activeTab === 'player' && container.querySelector('[data-player-form="live-player"]') && container.dataset.narrativeId === (state.narrativeId || '')) {
+                    this.refreshEquipmentEditor(document.getElementById('live-player-equipment'), UTILITY.getCharacterEquipment(state));
                     container.querySelector('[data-action="open-player-stats"]')?.classList.toggle('hidden', !(state.playerCharacter?.statsEnabled || state.playerCharacter?.survivalEnabled));
                     return;
                 }
                 if (activeTab === 'stats' && this.RUNTIME.playerStatsOverride && container.querySelector('[data-player-form="live-stats"] fieldset:not(:disabled)') && container.dataset.narrativeId === (state.narrativeId || '')) return;
                 const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter, state.characters.find(c => c.is_user));
+                sheet.equipment = UTILITY.getCharacterEquipment(state);
                 container.dataset.narrativeId = state.narrativeId || '';
                 container.innerHTML = UIComponents.InventoryPanel(state.gameState, activeTab, sheet, state.enableJournal !== false);
                 if (activeTab === 'player') this.renderPlayerPortrait('live-player', sheet);
+            },
+
+            refreshEquipmentEditor(input, equipment) {
+                if (!input) return;
+                let baseline;
+                try { baseline = JSON.parse(input.dataset.equipmentBaseline); } catch { return; }
+                if (UTILITY.formatEquipment(input.value) !== UTILITY.formatEquipment(baseline)) return;
+                input.value = UTILITY.formatEquipment(equipment);
+                input.dataset.equipmentBaseline = JSON.stringify(UTILITY.normalizeEquipment(equipment).map(({ name, value }) => ({ name, value })));
             },
 
             /**
@@ -24091,12 +24193,10 @@ Write only the character's message.`;
 
                 const invBtn = document.getElementById('inventory-toggle-btn');
                 if (invBtn) {
-                    if (state.enableJournal !== false) {
-                        invBtn.classList.remove('hidden');
-                    } else {
-                        invBtn.classList.add('hidden');
+                    invBtn.classList.remove('hidden');
+                    if (state.enableJournal === false) {
                         const container = document.getElementById('inventory-panel-container');
-                        if (container && !container.classList.contains('hidden') && !['player', 'stats'].includes(this.RUNTIME.activeInventoryTab)) {
+                        if (container && !container.classList.contains('hidden') && !['player', 'stats', 'inventory'].includes(this.RUNTIME.activeInventoryTab)) {
                             container.classList.add('hidden');
                         }
                     }
@@ -32994,7 +33094,7 @@ Write only the descriptive paragraphs.`;
                         const previous = UIManager.readPlayerSheet('scenario-player', this.currentEditScenario.playerCharacter);
                         const selected = story.characters.find(c => c.id === charId);
                         this.currentEditScenario.playerCharacter = UTILITY.normalizePlayerCharacter({ ...previous, characterId: charId,
-                            name: selected.name, gender: selected.gender || '', pronouns: selected.pronouns || '', portrait: null,
+                            name: selected.name, age: selected.age ?? '', height: selected.height ?? '', equipment: selected.equipment ?? [], gender: selected.gender || '', pronouns: selected.pronouns || '', portrait: null,
                             backstory: selected.description || '', personality: selected.personality || '', appearance: selected.appearance || selected.short_description || '' }, selected);
                         document.getElementById('scenario-player-form').innerHTML = UIComponents.PlayerSheetForm('scenario-player', this.currentEditScenario.playerCharacter);
                         UIManager.renderPlayerPortrait('scenario-player', this.currentEditScenario.playerCharacter, selected);
@@ -36135,7 +36235,7 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 if (!character || character.is_user || character.is_narrator || !state?.playerCharacter?.progression?.enabled) return character?.npc_profile;
                 if (!state.npcProgression) state.npcProgression = {};
                 const entry = state.npcProgression[character.id];
-                const base = character.npc_profile || entry?.baseProfile || { ...UTILITY.createNpcProfile(character.name, 'Unknown', state.narrativeId), knownDetails: character.description || '', editedFields: [] };
+                const base = character.npc_profile || entry?.baseProfile || { ...UTILITY.createNpcProfile(character.name, 'Unknown', state.narrativeId), age: UTILITY.characterMeasurement(character.age), height: UTILITY.characterMeasurement(character.height), ...(character.personality ? { personality: character.personality } : {}), knownDetails: character.description || '', editedFields: [] };
                 const rules = UTILITY.normalizeRpgProgression(state.playerCharacter.progression);
                 let progression = UTILITY.normalizeRpgProgression({ ...rules, initialized: true, levelOverride: false, attributeAdjustments: {}, level: entry?.progression?.level ?? character.encounter?.initialLevel ?? base.level,
                     xp: entry?.progression?.xp || 0, allocations: entry?.progression?.allocations || {} });
@@ -36223,6 +36323,7 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                                 const description = profile.generatedDescription;
                                 const updated = UTILITY.createNpcProfile(character.encounter.seedName || character.encounter.originalName, candidate.job, character.encounter.seedKey);
                                 for (const field of Object.keys(updated)) {
+                                    if (['age', 'height', 'personality', 'temperament', 'motivation', 'mannerism'].includes(field) && profile[field]) continue;
                                     if (field === 'abilities') {
                                         for (const ability of UTILITY.playerAbilities) if (!(profile.editedFields || []).includes(ability)) profile.abilities[ability] = updated.abilities[ability];
                                     } else if (!(profile.editedFields || []).includes(field)) profile[field] = updated[field];
@@ -36281,6 +36382,9 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 if (!character || character.is_user || character.is_narrator || character.npc_profile) return;
                 const role = UTILITY.extractNamedCharacters(`${character.name}, ${character.short_description || ''}. ${character.description || ''}`).find(entry => UTILITY.npcNameKey(entry.name) === UTILITY.npcNameKey(character.name))?.job || 'Unknown';
                 character.npc_profile = UTILITY.createNpcProfile(character.name, role, ReactiveStore.state.narrativeId);
+                character.npc_profile.age = UTILITY.characterMeasurement(character.age);
+                character.npc_profile.height = UTILITY.characterMeasurement(character.height);
+                if (character.personality) character.npc_profile.personality = character.personality;
                 character.npc_profile.knownDetails = character.description || '';
                 character.npc_profile.editedFields = [];
                 window.activeCharTab = 'tab-character-sheet';
@@ -36298,6 +36402,7 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 const bounds = { level: [1, 20], hp: [0, 9999], maxHp: [1, 9999], armorClass: [0, 40] };
                 const oldDescription = profile.generatedDescription;
                 if (field === 'appearance') character.appearance = String(value).slice(0, 1600);
+                else if (field === 'age' || field === 'height') profile[field] = UTILITY.characterMeasurement(value);
                 else if (textFields.includes(field)) profile[field] = String(value).slice(0, field === 'knownDetails' ? 5000 : 1000);
                 else if (UTILITY.playerAbilities.includes(field)) profile.abilities[field] = Math.max(1, Math.min(30, Math.round(Number(value) || 10)));
                 else if (bounds[field]) profile[field] = Math.max(bounds[field][0], Math.min(bounds[field][1], Math.round(Number(value) || bounds[field][0])));
@@ -45315,6 +45420,33 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
          * =================================================================================================
          */
         const InventoryController = {
+            readEquipmentEditor(characterId, input) {
+                const current = UTILITY.getCharacterEquipment(ReactiveStore.state, characterId);
+                let baseline;
+                try { baseline = JSON.parse(input.dataset.equipmentBaseline); } catch { baseline = current; }
+                return UTILITY.reconcileEquipment(current, input.value, baseline);
+            },
+
+            setEquipment(characterId, equipment) {
+                const state = ReactiveStore.state;
+                if (!state.gameState) state.gameState = { resources: [], relationships: [], journal: [] };
+                const playerId = state.playerCharacter?.characterId || state.characters?.find(char => char.is_user)?.id;
+                const items = UTILITY.reconcileEquipment(UTILITY.getCharacterEquipment(state, characterId), equipment).map(item => ({ ...item, id: item.id || UTILITY.uuid() }));
+                if (characterId && characterId !== playerId) {
+                    state.gameState.characterResources = { ...(state.gameState.characterResources || {}), [characterId]: items };
+                } else state.gameState.resources = items;
+                return items;
+            },
+
+            updateNpcEquipment(characterId, input) {
+                const state = ReactiveStore.state;
+                const character = ReactiveStore.getCharacter(characterId);
+                if (!character || character.is_user || character.is_narrator || input.dataset.narrativeId !== (state.narrativeId || '')) return;
+                const items = this.setEquipment(characterId, this.readEquipmentEditor(characterId, input));
+                input.value = UTILITY.formatEquipment(items);
+                input.dataset.equipmentBaseline = JSON.stringify(items.map(({ name, value }) => ({ name, value })));
+            },
+
             /**
              * Processes all [STATE: ...] instructions found in a newly generated or modified message,
              * updates state.gameState, and displays notifications to the user.
@@ -45457,25 +45589,23 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
             /**
              * Directly adds/removes resources via UI modal actions.
              */
-            addResource(name, value) {
-                const state = ReactiveStore.state;
-                if (!state.gameState) state.gameState = { resources: [], relationships: [], journal: [] };
-
-                let res = state.gameState.resources.find(r => r.name.toLowerCase() === name.toLowerCase());
+            addResource(name, value, characterId = null) {
+                if (typeof name !== 'string' || !name.trim() || !Number.isFinite(value)) return;
+                name = name.trim().replace(/\s+/g, ' ');
+                const items = UTILITY.getCharacterEquipment(ReactiveStore.state, characterId);
+                let res = items.find(r => r.name.toLowerCase() === name.toLowerCase());
                 if (res) {
                     res.value = Math.max(0, res.value + value);
                 } else if (value > 0) {
-                    state.gameState.resources.push({ id: UTILITY.uuid(), name, value });
+                    items.push({ id: UTILITY.uuid(), name, value });
                 }
 
                 // Clean up zero-value resources
-                state.gameState.resources = state.gameState.resources.filter(r => r.value > 0);
+                this.setEquipment(characterId, items.filter(r => r.value > 0));
             },
 
-            removeResource(id) {
-                const state = ReactiveStore.state;
-                if (!state.gameState) return;
-                state.gameState.resources = state.gameState.resources.filter(r => r.id !== id);
+            removeResource(id, characterId = null) {
+                this.setEquipment(characterId, UTILITY.getCharacterEquipment(ReactiveStore.state, characterId).filter(r => r.id !== id));
             },
 
             /**
@@ -45732,6 +45862,12 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 ActionHandler.register('close-modal', (ds) => AppController.closeModal(ds.id));
                 ActionHandler.register('toggle-mobile-menu', () => AppController.toggleMobileMenu());
                 ActionHandler.register('open-player-inventory', () => UIManager.toggleInventoryPanel('inventory'));
+                ActionHandler.register('update-npc-equipment', (ds, val, event) => InventoryController.updateNpcEquipment(ds.id, event.target));
+                ActionHandler.register('adjust-inventory-resource', ds => {
+                    const item = UTILITY.getCharacterEquipment(ReactiveStore.state).find(item => item.id === ds.id);
+                    if (item) InventoryController.addResource(item.name, Number(ds.delta));
+                });
+                ActionHandler.register('remove-inventory-resource', ds => InventoryController.removeResource(ds.id));
                 ActionHandler.register('close-inventory-panel', () => UIManager.closeInventoryPanel());
                 ActionHandler.register('open-scenario-settings', () => UIManager.openScenarioSettings());
                 ActionHandler.register('save-scenario-settings', () => UIManager.savePlayerSheet('mechanics'));
@@ -46405,6 +46541,8 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                     ReactiveStore.subscribe('playerCharacter', () => { UIManager.renderPlayerControls(); UIManager.renderInventoryPanel(); });
                     ReactiveStore.subscribe('gameState', () => {
                         UIManager.renderInventoryPanel();
+                        const equipmentInput = document.getElementById('npc-equipment');
+                        if (equipmentInput) UIManager.refreshEquipmentEditor(equipmentInput, UTILITY.getCharacterEquipment(ReactiveStore.state, equipmentInput.dataset.id));
                     });
 
                     ReactiveStore.subscribe('selectedStaticEntryId', () => { UIManager.renderStaticEntries(); UIManager.renderStaticEntryDetails(); });
