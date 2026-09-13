@@ -7,12 +7,18 @@
   "scripts": {
     "start": "electron .",
     "test": "node test.js && node tools/check-map.test.js",
+    "test:player-ui": "node tools/player-ui.test.js",
+    "test:time-ui": "node tools/time-ui.test.js",
+    "test:player-customization": "node tools/player-customization.test.js",
     "dist": "electron-builder --win --publish never",
     "dist:mac": "electron-builder --mac --publish never",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
     "acorn": "^8.15.0",
+    "jszip": "^3.10.1",
+    "marked": "^17.0.5",
+    "pako": "^2.1.0",
     "electron": "^30.5.1",
     "electron-builder": "^24.13.3",
     "tailwindcss": "3.4"

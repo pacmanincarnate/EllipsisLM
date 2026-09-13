@@ -2651,6 +2651,61 @@
             z-index: 60;
         }
 
+        .player-sheet-form { display: grid; gap: 1rem; }
+        .player-sheet-form, .player-sheet-form label { min-width: 0; }
+        .player-portrait-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+        .player-portrait-preview { width: 6rem; height: 7.5rem; object-fit: cover; border-radius: 0.75rem; border: 1px solid var(--border-primary); background: var(--surface-overlay); }
+        .player-portrait-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .player-portrait-actions button { padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: var(--surface-overlay); border: 1px solid var(--border-primary); }
+        #edit-scenario-modal .scenario-lore-layout:not(.hidden) { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(16rem, 1fr); min-width: 0; min-height: 0; }
+        #edit-scenario-modal .scenario-lore-layout > div { width: auto; min-width: 0; min-height: 0; height: auto; }
+        #edit-scenario-modal .scenario-lore-layout > div:first-child { max-height: 12rem; }
+        .scenario-lore-heading { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+        .scenario-lore-heading > input { flex: 1 1 12rem; width: 100%; min-width: 0; }
+        .scenario-lore-heading > div { max-width: 100%; }
+        .scenario-lore-heading select { min-width: 0; max-width: 100%; }
+        #scenario-static-entry-details textarea { min-height: 8rem; }
+        @media (min-width: 768px) {
+            #edit-scenario-modal .scenario-lore-layout:not(.hidden) { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); grid-template-rows: minmax(0, 1fr); }
+            #edit-scenario-modal .scenario-lore-layout > div:first-child { max-height: none; }
+        }
+        .player-sheet-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+        .player-sheet-form label { display: grid; gap: 0.35rem; font-size: 0.875rem; }
+        .player-sheet-form input:not([type="checkbox"]), .player-sheet-form textarea, .player-sheet-form select {
+            width: 100%; min-width: 0; padding: 0.6rem; border: 1px solid #4b5563; border-radius: 0.5rem;
+            color: var(--chat-text-color, #fff); background: rgba(0, 0, 0, 0.3);
+        }
+        .player-sheet-form .player-sheet-toggle { display: flex; align-items: center; gap: 0.6rem; }
+        .player-sheet-form input[type="checkbox"] { accent-color: var(--brand-color); }
+        .player-sheet-form fieldset { min-width: 0; }
+        .player-sheet-form fieldset:disabled { opacity: 0.45; }
+        #player-survival-container { flex-shrink: 0; color: var(--chat-text-color, #fff); }
+        #player-clock-container { flex-shrink: 0; color: var(--chat-text-color, #fff); }
+        .player-clock { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 1rem; width: 100%; padding: 0.4rem 0.65rem; border: 1px solid var(--border-primary); border-radius: 0.65rem; background: var(--surface-overlay); text-align: left; font-size: 0.8rem; }
+        .player-clock:hover { background: var(--surface-card); }
+        .player-clock:focus-visible { outline: 2px solid var(--brand-color); outline-offset: 2px; }
+        .player-clock-detail { font-size: 0.7rem; opacity: 0.75; }
+        .survival-meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; padding: 0.35rem 0; }
+        .survival-meter {
+            min-width: 0; padding: 0.5rem 0.65rem; text-align: left; border-radius: 0.75rem;
+            border: 1px solid var(--border-primary); background: var(--surface-overlay);
+            cursor: pointer; transition: background 0.2s; --survival-color: var(--brand-color);
+        }
+        .survival-meter:hover { background: var(--surface-card); }
+        .survival-meter:focus-visible { outline: 2px solid var(--brand-color); outline-offset: 2px; }
+        .survival-meter[data-need="water"] { --survival-color: #38bdf8; }
+        .survival-meter[data-need="sleep"] { --survival-color: #a78bfa; }
+        .survival-meter[data-need="food"] { --survival-color: #4ade80; }
+        .survival-meter[data-status="low"] { --survival-color: #fbbf24; }
+        .survival-meter[data-status="critical"] { --survival-color: #fb7185; }
+        .survival-meter-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 0.5rem; font-size: 0.8rem; font-weight: 600; }
+        .survival-meter-value { font-variant-numeric: tabular-nums; }
+        .survival-track { display: block; overflow: hidden; height: 0.35rem; margin: 0.35rem 0; border-radius: 1rem; background: color-mix(in srgb, var(--chat-text-color) 15%, transparent); }
+        .survival-fill { display: block; height: 100%; background: var(--survival-color); border-radius: inherit; }
+        .survival-condition { display: block; font-size: 0.65rem; color: var(--survival-color); }
+        #player-check-container { color: var(--chat-text-color, #fff); max-height: 30vh; overflow-y: auto; }
+        @media (min-width: 640px) { .player-abilities-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
         body.layout-horizontal #inventory-panel-container:not(.hidden) {
             position: absolute;
             bottom: 0;
@@ -3736,13 +3791,6 @@
                     STATS
                 </button>
 
-                <!-- Inventory/Journal Toggle Button -->
-                <button id="inventory-toggle-btn" onclick="UIManager.toggleInventoryPanel()"
-                    class="absolute right-24 bottom-2 hidden z-50 inventory-toggle-btn hover:opacity-100 transition-opacity"
-                    style="opacity: 0.35; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: var(--chat-text-color); cursor: pointer; pointer-events: auto;">
-                    JOURNAL
-                </button>
-
                 <!-- Scroll to Bottom Button (Inside container for proper alignment above input bar) -->
                 <button id="scroll-to-bottom-btn" data-action="scroll-to-bottom"
                     class="hidden p-3 rounded-full bg-gray-800/80 backdrop-blur-md border border-gray-700/50 text-white shadow-xl"
@@ -3755,6 +3803,9 @@
                 </button>
             </div>
 
+            <div id="player-clock-container" class="hidden" aria-live="polite"></div>
+            <div id="player-survival-container" class="hidden" role="group" aria-label="Player survival status"></div>
+            <div id="player-check-container" class="hidden p-3 rounded-xl bg-gray-800 border border-gray-600 flex-shrink-0" aria-live="polite"></div>
             <!-- Response Options Container -->
             <div id="response-options-container" class="relative z-20 hidden"></div>
             <!-- Chat Input & Controls -->
@@ -3843,6 +3894,17 @@
                             </div>
                         </div>
                     </div>
+
+                    <button id="player-sheet-btn" data-action="open-player-sheet" title="Edit your player character, portrait, appearance, and stats" aria-label="Edit player character" aria-controls="player-sheet-modal"
+                        class="hidden bg-indigo-600 hover:bg-indigo-500 border border-indigo-500 text-xs text-white py-2 px-2 rounded-md cursor-pointer transition-colors font-semibold w-full">
+                        Player
+                    </button>
+                    <button id="inventory-toggle-btn" data-action="open-player-inventory"
+                        aria-label="Player inventory" aria-controls="inventory-panel-container"
+                        title="Player Inventory"
+                        class="hidden bg-white/5 hover:bg-white/10 border border-white/5 text-xs text-gray-300 py-2 px-2 rounded-md cursor-pointer transition-colors font-medium w-full">
+                        Inventory
+                    </button>
 
                     <!-- Icon Button Cluster: 2x2 so a fourth button fits the fixed 7.5rem column -->
                     <div class="grid grid-cols-2 gap-1 justify-items-center mt-auto">
@@ -4949,6 +5011,8 @@
                     class="px-4 py-3 font-semibold border-b-2 border-indigo-500 text-white whitespace-nowrap transition-colors">Setup</button>
                 <button id="scenario-tab-btn-cast" onclick="LibraryController.switchScenarioTab('cast')"
                     class="px-4 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap transition-colors">Cast</button>
+                <button id="scenario-tab-btn-player" data-action="scenario-player-tab"
+                    class="px-4 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap transition-colors">Player</button>
                 <button id="scenario-tab-btn-static" onclick="LibraryController.switchScenarioTab('static')"
                     class="px-4 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap transition-colors">Static
                     Lore</button>
@@ -4958,7 +5022,7 @@
             </div>
 
             <!-- Tab Contents -->
-            <div class="p-4 md:p-6 overflow-y-auto flex-grow flex flex-col relative bg-gray-800">
+            <div class="p-4 md:p-6 overflow-y-auto flex-grow flex flex-col relative bg-gray-800 min-w-0 min-h-0">
 
                 <!-- Setup Tab -->
                 <div id="scenario-tab-setup" class="space-y-5 flex flex-col h-full animate-fade-in">
@@ -4987,7 +5051,10 @@
                     </div>
                 </div>
 
-                <!-- Cast Tab -->
+                <div id="scenario-tab-player" class="hidden animate-fade-in">
+                    <p class="text-sm text-gray-400 mb-4">Your character for this scenario. Stats and dice are optional and can be changed during play. Each new playthrough gets its own copy.</p>
+                    <div id="scenario-player-form"></div>
+                </div>
                 <div id="scenario-tab-cast" class="hidden h-full flex flex-col animate-fade-in">
                     <p class="text-xs text-gray-400 mb-4 bg-gray-900/50 p-3 rounded-lg border border-gray-700">
                         Click a character card's <strong>Include</strong> toggle to include them in this scenario. Click
@@ -4998,7 +5065,7 @@
                 </div>
 
                 <!-- Static Lore Tab -->
-                <div id="scenario-tab-static" class="hidden h-full flex flex-col md:flex-row gap-4 animate-fade-in">
+                <div id="scenario-tab-static" class="scenario-lore-layout hidden h-full flex flex-col md:flex-row gap-4 animate-fade-in">
                     <div class="w-full md:w-1/3 flex flex-col h-1/3 md:h-full">
                         <button onclick="LibraryController.addScenarioStaticEntry()"
                             class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded mb-2 shadow transition-colors text-sm flex items-center justify-center gap-2 flex-shrink-0">
@@ -5018,7 +5085,7 @@
                 </div>
 
                 <!-- Dynamic Lore Tab -->
-                <div id="scenario-tab-dynamic" class="hidden h-full flex flex-col md:flex-row gap-4 animate-fade-in">
+                <div id="scenario-tab-dynamic" class="scenario-lore-layout hidden h-full flex flex-col md:flex-row gap-4 animate-fade-in">
                     <div class="w-full md:w-1/3 flex flex-col h-1/3 md:h-full">
                         <button onclick="LibraryController.addScenarioDynamicEntry()"
                             class="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded mb-2 shadow transition-colors text-sm flex items-center justify-center gap-2 flex-shrink-0">
@@ -5036,6 +5103,23 @@
                         <div class="text-gray-400 flex items-center justify-center h-full">Select a dynamic entry.</div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="player-sheet-modal" class="fixed inset-0 z-50 items-center justify-center hidden" role="dialog" aria-modal="true" aria-labelledby="player-sheet-title">
+        <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="player-sheet-modal"></div>
+        <div class="bg-gray-800 rounded-xl shadow-xl w-11/12 max-w-2xl relative flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h2 id="player-sheet-title" class="text-xl font-bold">Player Character</h2>
+                <button data-action="close-modal" data-id="player-sheet-modal" class="p-2 rounded-lg hover:bg-white/10" aria-label="Close player sheet">Close</button>
+            </div>
+            <div class="p-4 overflow-y-auto min-h-0">
+                <p class="text-sm text-gray-400 mb-4">Update your portrait, identity, and current appearance as the story changes. Changes apply to this playthrough. Turning a system off preserves your saved scores.</p>
+                <div id="live-player-form"></div>
+            </div>
+            <div class="p-4 border-t border-gray-700 flex justify-end">
+                <button data-action="save-player-sheet" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 px-4 rounded-lg">Save Player</button>
             </div>
         </div>
     </div>
@@ -10220,6 +10304,11 @@
                         evolved_characters: JSON.parse(JSON.stringify(currentState.evolved_characters || {})),
                         livingPersonaCounters: JSON.parse(JSON.stringify(currentState.livingPersonaCounters || {})),
                         gameState: JSON.parse(JSON.stringify(currentState.gameState || null)),
+                        playerCharacter: currentState.playerCharacter ? UTILITY.normalizePlayerCharacter({ ...currentState.playerCharacter,
+                            name: rawCharacters.find(c => c.is_user)?.name || currentState.playerCharacter.name,
+                            backstory: rawCharacters.find(c => c.is_user)?.description ?? currentState.playerCharacter.backstory,
+                            appearance: rawCharacters.find(c => c.is_user)?.appearance ?? currentState.playerCharacter.appearance
+                        }) : null,
                         gm_rules: JSON.parse(JSON.stringify(currentState.gm_rules || [])),
                         gm_ledger: JSON.parse(JSON.stringify(currentState.gm_ledger || [])),
 
@@ -10248,7 +10337,17 @@
 
 
                         // Sync Structures
-                        freshStory.characters = sanitizedCharacters;
+                        freshStory.characters = sanitizedCharacters.map(char => {
+                            if (!currentState.playerCharacter) return char;
+                            const original = freshStory.characters.find(c => c.id === char.id);
+                            if (!original) return char;
+                            const restored = { ...char, is_user: original.is_user };
+                            if (char.id === currentState.playerCharacter.characterId) {
+                                for (const key of ['name', 'description', 'appearance', 'short_description', 'gender', 'pronouns']) restored[key] = original[key];
+                                delete restored.player_portrait;
+                            }
+                            return restored;
+                        });
                         freshStory.dynamic_entries = safeDynamicEntries;
                         freshStory.static_entries = safeStaticEntries; // Sync Knowledge
 
@@ -10706,11 +10805,15 @@
                 if (scenario.dynamic_entries) story.dynamic_entries = JSON.parse(JSON.stringify(scenario.dynamic_entries));
                 if (scenario.prompts) Object.assign(story, scenario.prompts);
 
-                if (scenario.user_character_id) {
-                    story.characters.forEach(c => {
-                        c.is_user = (c.id === scenario.user_character_id);
-                    });
+                let player = story.characters.find(c => c.id === scenario.user_character_id) || story.characters.find(c => c.is_user);
+                if (!player) {
+                    player = { id: UTILITY.uuid(), name: 'You', description: '', is_user: true, is_active: true, extra_portraits: [] };
+                    story.characters.push(player);
                 }
+                const playerCharacter = UTILITY.normalizePlayerCharacter(scenario.playerCharacter, player);
+                playerCharacter.characterId = player.id;
+                playerCharacter.clock.elapsedMinutes = 0;
+                playerCharacter.clock.turns = 0;
 
                 const activeIDs = scenario.active_character_ids || story.characters.map(c => c.id);
 
@@ -10720,6 +10823,7 @@
                     last_modified: new Date().toISOString(),
                     active_character_ids: activeIDs,
                     state: {
+                        playerCharacter,
                         chat_history: [],
                         messageCounter: 0,
                         static_entries: (scenario.static_entries && scenario.static_entries.length > 0) ? JSON.parse(JSON.stringify(scenario.static_entries)) : [{ id: UTILITY.uuid(), title: "World Overview", content: "The world." }],
@@ -10748,13 +10852,13 @@
                 if (firstMessage) {
                     let firstSpeaker = null;
                     if (scenario.opening_character_id) {
-                        firstSpeaker = story.characters.find(c => c.id === scenario.opening_character_id);
+                        firstSpeaker = story.characters.find(c => c.id === scenario.opening_character_id && c.id !== player.id);
                     }
                     if (!firstSpeaker) {
-                        firstSpeaker = story.characters.find(c => !c.is_user && activeIDs.includes(c.id));
+                        firstSpeaker = story.characters.find(c => c.id !== player.id && !c.is_user && activeIDs.includes(c.id));
                     }
                     if (!firstSpeaker) {
-                        firstSpeaker = story.characters.find(c => !c.is_user);
+                        firstSpeaker = story.characters.find(c => c.id !== player.id && !c.is_user);
                     }
 
                     if (firstSpeaker) {
@@ -11064,7 +11168,7 @@
                             ? new Set((activeStory.characters || []).map(c => c.id))
                             : new Set(idList);
 
-                        const hydratedCharacters = (activeStory.characters || []).map(char => ({
+                        const hydratedCharacters = UTILITY.applyPlayerCharacter(activeStory.characters || [], activeNarrative.state.playerCharacter).map(char => ({
                             ...char,
                             is_active: char.is_user || activeIDs.has(char.id)
                         }));
@@ -13327,6 +13431,127 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
          * =================================================================================================
          */
         const UTILITY = {
+            playerAbilities: ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'],
+
+            normalizePlayerCharacter(value, character = {}) {
+                const data = value && typeof value === 'object' ? value : {};
+                const number = (n, fallback, min, max) => n === '' || n == null || !Number.isFinite(Number(n))
+                    ? fallback : Math.max(min, Math.min(max, Math.trunc(Number(n))));
+                const level = (n, fallback, max = 100) => n === '' || n == null || !Number.isFinite(Number(n))
+                    ? fallback : Math.round(Math.max(0, Math.min(max, Number(n))) * 1000000) / 1000000;
+                const string = (n, fallback = '') => typeof n === 'string' ? n : fallback;
+                const maxHp = number(data.maxHp, 10, 1, 9999);
+                return {
+                    characterId: string(data.characterId, character.id || ''),
+                    name: string(data.name, character.name || 'You'),
+                    gender: string(data.gender, character.gender || ''),
+                    pronouns: string(data.pronouns, character.pronouns || ''),
+                    portrait: typeof data.portrait === 'string' && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(data.portrait) ? data.portrait : null,
+                    backstory: string(data.backstory, character.description || ''),
+                    appearance: string(data.appearance, character.appearance || character.short_description || ''),
+                    ancestry: string(data.ancestry), characterClass: string(data.characterClass),
+                    level: number(data.level, 1, 1, 20),
+                    statsEnabled: data.statsEnabled === true, diceEnabled: data.diceEnabled === true,
+                    survivalEnabled: data.survivalEnabled === true,
+                    survival: Object.fromEntries(['water', 'sleep', 'food'].map(key => [key, level(data.survival?.[key], 100)])),
+                    survivalRates: { water: level(data.survivalRates?.water, 4), sleep: level(data.survivalRates?.sleep, 5), food: level(data.survivalRates?.food, 3) },
+                    clock: {
+                        enabled: data.clock?.enabled !== false,
+                        minutesPerTurn: number(data.clock?.minutesPerTurn, 15, 1, 1440),
+                        startHour: number(data.clock?.startHour, 8, 0, 23),
+                        elapsedMinutes: number(data.clock?.elapsedMinutes, 0, 0, 525600000),
+                        turns: number(data.clock?.turns, 0, 0, 525600000)
+                    },
+                    hp: number(data.hp, maxHp, 0, maxHp), maxHp, armorClass: number(data.armorClass, 10, 0, 40),
+                    abilities: Object.fromEntries(this.playerAbilities.map(key => [key, number(data.abilities?.[key], 10, 1, 30)]))
+                };
+            },
+
+            advancePlayerTime(player, effects = {}) {
+                const next = this.normalizePlayerCharacter(player);
+                if (!next.clock.enabled) return next;
+                const minutes = Number.isInteger(effects.minutes) && effects.minutes > 0 && effects.minutes <= 10080
+                    ? effects.minutes : next.clock.minutesPerTurn;
+                next.clock.elapsedMinutes += minutes;
+                next.clock.turns++;
+                if (next.survivalEnabled) {
+                    for (const key of ['water', 'sleep', 'food']) {
+                        const amount = Number(effects.recovery?.[key]);
+                        const recovery = Number.isFinite(amount) && amount > 0 && amount <= 100 ? amount : 0;
+                        const loss = key === 'sleep' && recovery > 0 ? 0 : next.survivalRates[key] * minutes / 60;
+                        next.survival[key] = Math.max(0, Math.min(100, next.survival[key] - loss + recovery));
+                    }
+                }
+                return this.normalizePlayerCharacter(next);
+            },
+
+            describePlayerTime(player) {
+                const { clock } = this.normalizePlayerCharacter(player);
+                const absolute = clock.startHour * 60 + clock.elapsedMinutes;
+                const hour = Math.floor(absolute / 60) % 24;
+                return { day: Math.floor(absolute / 1440) + 1,
+                    time: `${String(hour).padStart(2, '0')}:${String(absolute % 60).padStart(2, '0')}`,
+                    elapsed: `${Math.floor(clock.elapsedMinutes / 1440)}d ${Math.floor(clock.elapsedMinutes / 60) % 24}h ${clock.elapsedMinutes % 60}m`,
+                    turns: clock.turns };
+            },
+
+            parsePlayerTurnEffects(text) {
+                const effects = { minutes: null, recovery: { water: 0, sleep: 0, food: 0 } };
+                if (typeof text !== 'string') return effects;
+                for (const match of text.matchAll(/\[TIME:\s*(\d{1,5})\s*\]/gi)) {
+                    const minutes = Number(match[1]);
+                    if (minutes > 0 && minutes <= 10080) effects.minutes = Math.max(effects.minutes || 0, minutes);
+                }
+                for (const match of text.matchAll(/\[RECOVER:\s*(water|sleep|food)\s*\|\s*(\d{1,3}(?:\.\d{1,2})?)\s*\]/gi)) {
+                    const value = Number(match[2]), key = match[1].toLowerCase();
+                    if (value > 0 && value <= 100) effects.recovery[key] = Math.max(effects.recovery[key], value);
+                }
+                return effects;
+            },
+
+            playerAbilityModifier(score) {
+                return Math.floor((Number(score) - 10) / 2);
+            },
+
+            applyPlayerCharacter(characters, profile) {
+                if (!profile) return characters.map(c => ({ ...c }));
+                const player = characters.find(c => c.id === profile.characterId) || characters.find(c => c.is_user);
+                const sheet = this.normalizePlayerCharacter(profile, player);
+                return characters.map(c => c.id === player?.id ? { ...c, is_user: true, is_active: true,
+                    name: sheet.name, gender: sheet.gender, pronouns: sheet.pronouns, player_portrait: sheet.portrait,
+                    description: sheet.backstory, appearance: sheet.appearance, short_description: sheet.appearance
+                } : { ...c, is_user: false });
+            },
+
+            resolvePlayerCheck(die, modifier, dc) {
+                if (!Number.isInteger(die) || die < 1 || die > 20 || !Number.isInteger(modifier)
+                    || !Number.isInteger(dc) || dc < 1 || dc > 30) throw new Error('Invalid d20 check');
+                return { die, modifier, dc, total: die + modifier, success: die + modifier >= dc };
+            },
+
+            parsePlayerCheck(text) {
+                const match = typeof text === 'string' && text.match(/\[CHECK:\s*(strength|dexterity|constitution|intelligence|wisdom|charisma|none)\s*\|\s*(\d{1,2})\s*\|\s*([^\]\r\n]{1,200})\]/i);
+                if (!match || !match[3].trim() || +match[2] < 1 || +match[2] > 30) return null;
+                return { ability: match[1].toLowerCase(), dc: +match[2], reason: match[3].trim() };
+            },
+
+            getPendingPlayerCheck(state) {
+                if (state?.playerCharacter?.diceEnabled !== true) return null;
+                const history = state.chat_history || [];
+                const userIds = new Set((state.characters || []).filter(c => c.is_user).map(c => c.id));
+                for (let i = history.length - 1; i >= 0; i--) {
+                    const message = history[i];
+                    if (!message || message.isHidden) continue;
+                    if (message.playerRoll) return null;
+                    if (message.type !== 'chat') continue;
+                    if (userIds.has(message.character_id) || message.character_id === 'user') return null;
+                    const check = message.playerCheck;
+                    const validated = check && this.parsePlayerCheck(`[CHECK: ${check.ability}|${check.dc}|${check.reason}]`);
+                    if (validated) return { message, check: validated };
+                }
+                return null;
+            },
+
             activePromptResolver: null,
 
             /**
@@ -15571,6 +15796,34 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
          * =================================================================================================
          */
         const PromptBuilder = {
+            buildPlayerContext(state, allowChecks = true) {
+                const user = (state.characters || []).find(c => c.is_user);
+                if (!state.playerCharacter && !user) return '';
+                const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter, user);
+                let context = `### PLAYER CHARACTER\nName: ${sheet.name}\nGender: ${sheet.gender}\nPronouns: ${sheet.pronouns}\nAncestry: ${sheet.ancestry}\nClass / role: ${sheet.characterClass}\nBackstory: ${sheet.backstory}\nCurrent appearance: ${sheet.appearance}\nThis sheet describes the player's CURRENT identity and body, including any transformations. If older backstory or messages conflict with these fields, use the current fields. The player controls this character's decisions. Treat backstory as context, not knowledge every NPC automatically possesses.\n`;
+                if (sheet.survivalEnabled) {
+                    context += `Survival levels (0 depleted, 100 full): water ${sheet.survival.water}/100, sleep ${sheet.survival.sleep}/100, food ${sheet.survival.food}/100. Values at or below 25 are low; at or below 10 are critical. Reflect these needs where relevant. The app automatically deducts ${sheet.survivalRates.water} water, ${sheet.survivalRates.food} food, and ${sheet.survivalRates.sleep} rest points per awake in-game hour. Do not invent additional depletion, HP/stat penalties, or extra dice checks.\n`;
+                }
+                if (sheet.clock.enabled) {
+                    const clock = UTILITY.describePlayerTime(sheet);
+                    context += `### GAME TIME\nCurrent time: Day ${clock.day}, ${clock.time}. Elapsed: ${clock.elapsed}; ${clock.turns} completed turns. Each completed main-story turn automatically advances ${sheet.clock.minutesPerTurn} minutes. Align the scene with this clock.\n`;
+                    if (allowChecks) {
+                        context += 'For an explicitly completed time skip (travel, waiting, sleep), append [TIME: minutes] with the TOTAL minutes this turn, from 1 to 10080. This replaces the default turn duration; do not add it twice. Omit for ordinary turns. Never emit time or recovery markers for intentions, hypothetical actions, NPC needs, or an unresolved check.\n';
+                        if (sheet.survivalEnabled) context += 'When the PLAYER actually finishes drinking, eating, or sleeping in this response, append [RECOVER: water|25] for a normal drink, [RECOVER: food|35] for a meal, or [RECOVER: sleep|points] for sleep (12.5 points per hour, capped at 100). Scale food/water recovery to the amount consumed, up to 100. Sleep must also include [TIME: total_minutes_slept]. Example after eight completed hours: [TIME: 480] [RECOVER: sleep|100]. Do not claim that a supply exists or has been consumed if the story does not establish it. Do not repeat recovery for a meal/drink/rest already recorded in history. The app applies these changes automatically once.\n';
+                    } else context += 'Do not emit TIME or RECOVER markers in this response.\n';
+                } else context += 'Game time and automatic survival changes are paused. Do not emit TIME or RECOVER markers.\n';
+                if (sheet.statsEnabled) {
+                    context += `Player stats: level ${sheet.level}, HP ${sheet.hp}/${sheet.maxHp}, armor class ${sheet.armorClass}.\n`;
+                    context += UTILITY.playerAbilities.map(key => `${key}: ${sheet.abilities[key]} (modifier ${UTILITY.playerAbilityModifier(sheet.abilities[key])})`).join(', ') + '\n';
+                    context += 'These are player-maintained stats. Do not invent changes to HP or scores.\n';
+                }
+                if (!sheet.diceEnabled || !allowChecks) return context + 'Dice checks are disabled for this response. Do not request or simulate rolls. Resolve actions through the story.\n';
+                context += `### OPTIONAL D20 CHECKS\nRequest a check ONLY when the player has attempted an action with both an uncertain outcome and a meaningful consequence. Most turns need NO check. Never roll for routine conversation, trivial actions, automatic successes, or impossible actions. Hiding from an actively searching guard may call for dexterity; casually standing in an empty room does not.\nBefore an uncertain outcome, describe the stakes, then END the response with exactly one marker: [CHECK: ability|DC|short action description]. Ability must be strength, dexterity, constitution, intelligence, wisdom, charisma, or none. DC is an integer from 1 to 30 (10 easy, 15 moderate, 20 hard). Choose the DC BEFORE seeing a result. Example: [CHECK: dexterity|15|Hide from the searching guard]\nStop at the request. Do not narrate success or failure, invent dice results, roll for the user, or add a check every turn. The application rolls a real d20 on the player's click${sheet.statsEnabled ? ' and adds the relevant ability modifier' : ' without a modifier because stats are disabled'}. Total >= DC succeeds. A natural 1 or 20 is not an automatic outcome for these ability checks. This is a lightweight ability-check system, not a full combat rules engine.\n`;
+                const latestRoll = [...(state.chat_history || [])].reverse().find(m => m.playerRoll && !m.isHidden);
+                if (latestRoll) context += `Latest application-recorded check (historical context, not a new action): ${latestRoll.content}\nHonor this result when resolving that action; never reroll it or change its DC. If skipped, resolve without dice. Only a new risky action may prompt another check.\n`;
+                return context;
+            },
+
             buildGameStateXml(gameState) {
                 if (!gameState) return "";
                 const lines = [];
@@ -15877,6 +16130,7 @@ JSON Schema:
 
                 const replacer = this._getReplacer(charToAct);
                 let modelInstructions = charToAct.model_instructions || state.system_prompt;
+                modelInstructions = this.buildPlayerContext(state, !isDirectMessage && !charToAct.is_user) + '\n\n' + modelInstructions;
                 if (state.gameState && state.enableJournal !== false) {
                     const gameStateXml = this.buildGameStateXml(state.gameState);
                     if (gameStateXml) {
@@ -17100,6 +17354,7 @@ Write only the character's message.`;
                 let prompt = "### SYSTEM INSTRUCTION\n" + systemPrompt + "\n\n";
 
                 // 2. DIRECTOR INSTRUCTION
+                prompt += this.buildPlayerContext(state, !char.is_user) + '\n\n';
                 prompt += "### SCENE DIRECTION\n" + directive + "\n\n";
 
                 // 3. PERSONA
@@ -19177,6 +19432,74 @@ Write only the character's message.`;
          * =================================================================================================
          */
         const UIComponents = {
+            PlayerSurvivalMeters(sheet) {
+                const labels = { water: 'Water', sleep: 'Sleep', food: 'Food' };
+                const full = { water: 'Hydrated', sleep: 'Rested', food: 'Fed' };
+                return `<div class="survival-meters">${Object.entries(labels).map(([key, label]) => {
+                    const value = Math.round(sheet.survival[key] * 100) / 100;
+                    const status = value <= 10 ? 'critical' : value <= 25 ? 'low' : 'good';
+                    const condition = status === 'critical' ? 'Critical' : status === 'low' ? 'Low' : full[key];
+                    return `<button type="button" class="survival-meter" data-action="open-player-survival" data-need="${key}" data-status="${status}"
+                        aria-label="${label}: ${value} out of 100. ${condition}. Edit ${label.toLowerCase()} level." title="Edit ${label.toLowerCase()} level">
+                        <span class="survival-meter-heading"><span>${label}</span><span class="survival-meter-value">${value}%</span></span>
+                        <span class="survival-track" aria-hidden="true"><span class="survival-fill" style="width: ${value}%"></span></span>
+                        <span class="survival-condition">${condition}</span>
+                    </button>`;
+                }).join('')}</div>`;
+            },
+
+            PlayerSheetForm(prefix, sheet) {
+                const e = value => UTILITY.escapeHTML(String(value));
+                const field = (key, label, type = 'text', bounds = '') => `<label for="${prefix}-${key}">${label}<input id="${prefix}-${key}" type="${type}" value="${e(sheet[key])}" ${bounds}></label>`;
+                return `<div class="player-sheet-form" data-player-form="${prefix}">
+                    <div class="player-portrait-picker">
+                        <img id="${prefix}-portrait-preview" class="player-portrait-preview" alt="Player portrait" hidden>
+                        <div>
+                            <div class="font-semibold mb-2">Portrait</div>
+                            <input id="${prefix}-portrait" type="hidden" value="${e(sheet.portrait || '')}">
+                            <input id="${prefix}-portrait-file" type="file" accept="image/*" data-action-change="upload-player-portrait" data-prefix="${prefix}" hidden>
+                            <div class="player-portrait-actions">
+                                <button type="button" data-action="choose-player-portrait" data-prefix="${prefix}">Choose portrait</button>
+                                <button type="button" data-action="reset-player-portrait" data-prefix="${prefix}" data-character-id="${e(sheet.characterId)}">Use character portrait</button>
+                            </div>
+                            <p id="${prefix}-portrait-status" class="text-xs text-gray-400 mt-2" role="status">Choose an image from your device. Maximum 5 MB.</p>
+                        </div>
+                    </div>
+                    ${field('name', 'Name')}
+                    <div class="player-sheet-grid">${field('gender', 'Gender')}${field('pronouns', 'Pronouns')}</div>
+                    <div class="player-sheet-grid">${field('ancestry', 'Ancestry / species')}${field('characterClass', 'Class / role')}</div>
+                    <label for="${prefix}-backstory">Backstory<textarea id="${prefix}-backstory" rows="5">${e(sheet.backstory)}</textarea></label>
+                    <label for="${prefix}-appearance">Current appearance<textarea id="${prefix}-appearance" rows="4" placeholder="Describe their face, hair, eyes, body, height, clothing, and any current transformations.">${e(sheet.appearance)}</textarea></label>
+                    <label class="player-sheet-toggle"><input type="checkbox" id="${prefix}-statsEnabled" data-action="toggle-player-stats" data-prefix="${prefix}" ${sheet.statsEnabled ? 'checked' : ''}> Enable player stats</label>
+                    <p class="text-xs text-gray-400">Six ability scores, health, and armor. A check adds the ability modifier: (score − 10) ÷ 2, rounded down.</p>
+                    <fieldset id="${prefix}-stats" class="player-sheet-form" ${sheet.statsEnabled ? '' : 'disabled'}>
+                        <legend class="sr-only">Player stats</legend>
+                        <div class="player-sheet-grid">${field('level', 'Level', 'number', 'min="1" max="20" step="1"')}${field('armorClass', 'Armor class', 'number', 'min="0" max="40" step="1"')}${field('hp', 'Current HP', 'number', 'min="0" max="9999" step="1"')}${field('maxHp', 'Maximum HP', 'number', 'min="1" max="9999" step="1"')}</div>
+                        <div class="player-sheet-grid player-abilities-grid">${UTILITY.playerAbilities.map(key => {
+                            const mod = UTILITY.playerAbilityModifier(sheet.abilities[key]);
+                            return `<label for="${prefix}-${key}">${key[0].toUpperCase() + key.slice(1)}<input id="${prefix}-${key}" data-action-change="update-player-modifier" data-player-ability="${key}" data-prefix="${prefix}" type="number" min="1" max="30" step="1" value="${sheet.abilities[key]}"><span id="${prefix}-${key}-modifier" class="text-xs text-gray-400">Modifier ${mod >= 0 ? '+' : ''}${mod}</span></label>`;
+                        }).join('')}</div>
+                    </fieldset>
+                    <label class="player-sheet-toggle"><input type="checkbox" id="${prefix}-diceEnabled" ${sheet.diceEnabled ? 'checked' : ''}> Enable d20 checks</label>
+                    <p class="text-xs text-gray-400">Roll only for risky, uncertain actions, such as hiding from a searching guard. Routine actions and conversation need no roll. The narrator sets the target before you roll. Without stats, use the d20 alone.</p>
+                    <label class="player-sheet-toggle"><input type="checkbox" id="${prefix}-clock-enabled" data-action="toggle-player-clock" data-prefix="${prefix}" ${sheet.clock.enabled ? 'checked' : ''}> Automatic game time</label>
+                    <p class="text-xs text-gray-400">Each completed story turn advances time once. Narrated travel, waiting, or sleep can advance it further. Retries, dice requests, private texts, and time spent away do not count. Turning this off pauses time and survival changes.</p>
+                    <fieldset id="${prefix}-clock" class="player-sheet-grid" ${sheet.clock.enabled ? '' : 'disabled'}>
+                        <legend class="sr-only">Game time settings</legend>
+                        <label for="${prefix}-clock-minutesPerTurn">Minutes per turn<input id="${prefix}-clock-minutesPerTurn" type="number" min="1" max="1440" step="1" value="${sheet.clock.minutesPerTurn}"></label>
+                        <label for="${prefix}-clock-startHour">Starting hour (0–23)<input id="${prefix}-clock-startHour" type="number" min="0" max="23" step="1" value="${sheet.clock.startHour}"></label>
+                    </fieldset>
+                    <label class="player-sheet-toggle"><input type="checkbox" id="${prefix}-survivalEnabled" data-action="toggle-player-survival" data-prefix="${prefix}" ${sheet.survivalEnabled ? 'checked' : ''}> Enable survival stats</label>
+                    <p class="text-xs text-gray-400">Water, sleep, and food decrease automatically as game time passes. Completed drinks, meals, and sleep can restore them. 100 is full; 0 is depleted. You can correct the levels below. Survival works independently of abilities and dice.</p>
+                    <fieldset id="${prefix}-survival" class="player-sheet-form" ${sheet.survivalEnabled ? '' : 'disabled'}>
+                        <legend class="sr-only">Survival levels</legend>
+                        <div class="player-sheet-grid player-abilities-grid">${['water', 'sleep', 'food'].map(key => `<label for="${prefix}-survival-${key}">${key[0].toUpperCase() + key.slice(1)} (%)<input id="${prefix}-survival-${key}" type="number" min="0" max="100" step="any" value="${sheet.survival[key]}"></label>`).join('')}</div>
+                        <p class="text-xs text-gray-400">Loss per in-game hour (percentage points). Set a rate to 0 to stop that meter declining.</p>
+                        <div class="player-sheet-grid player-abilities-grid">${['water', 'sleep', 'food'].map(key => `<label for="${prefix}-rate-${key}">${key[0].toUpperCase() + key.slice(1)} loss/hour<input id="${prefix}-rate-${key}" type="number" min="0" max="100" step="any" value="${sheet.survivalRates[key]}"></label>`).join('')}</div>
+                    </fieldset>
+                </div>`;
+            },
+
             /**
              * Renders a Character Hub result card.
              * @param {Object} char - The character search result object.
@@ -20386,6 +20709,151 @@ Write only the character's message.`;
          * =================================================================================================
          */
         const UIManager = {
+            async renderPlayerPortrait(prefix, sheet, character = null) {
+                const preview = document.getElementById(`${prefix}-portrait-preview`);
+                if (!preview) return;
+                const player = character || (StateManager.getState()?.characters || []).find(c => c.id === sheet.characterId);
+                const original = player ? { ...player, player_portrait: null } : { id: sheet.characterId, is_user: true };
+                const src = sheet.portrait || await this.resolveImageSource(original.image_url || original.id) || this.getPortraitSrc(original);
+                if (!preview.isConnected || document.getElementById(`${prefix}-portrait`)?.value !== (sheet.portrait || '')) return;
+                if (src) preview.src = src;
+                else preview.removeAttribute('src');
+                preview.hidden = !src;
+            },
+
+            async uploadPlayerPortrait(event, prefix) {
+                const input = event.target;
+                const file = input.files?.[0];
+                const form = input.closest('[data-player-form]');
+                if (!file || !form || form.dataset.portraitLoading === 'true') return;
+                const status = document.getElementById(`${prefix}-portrait-status`);
+                const portrait = document.getElementById(`${prefix}-portrait`);
+                const preview = document.getElementById(`${prefix}-portrait-preview`);
+                const buttons = form.querySelectorAll('.player-portrait-actions button');
+                try {
+                    if (file.size > 5 * 1024 * 1024) throw new Error('Choose an image smaller than 5 MB.');
+                    if (file.type && !file.type.startsWith('image/')) throw new Error('Choose an image file.');
+                    form.dataset.portraitLoading = 'true';
+                    buttons.forEach(button => button.disabled = true);
+                    status.textContent = 'Loading portrait…';
+                    const blob = await ImageProcessor.processImageAsBlob(file, 512);
+                    const dataUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(new Error('Could not read this image.'));
+                        reader.readAsDataURL(blob);
+                    });
+                    if (!form.isConnected) return;
+                    portrait.value = dataUrl;
+                    preview.src = dataUrl;
+                    preview.hidden = false;
+                    status.textContent = 'Portrait ready. Save to apply it.';
+                } catch (error) {
+                    if (form.isConnected) status.textContent = error.message || 'Could not load this image.';
+                } finally {
+                    form.dataset.portraitLoading = 'false';
+                    buttons.forEach(button => button.disabled = false);
+                    input.value = '';
+                }
+            },
+
+            async resetPlayerPortrait(prefix, characterId) {
+                const input = document.getElementById(`${prefix}-portrait`);
+                if (!input) return;
+                input.value = '';
+                const story = prefix === 'scenario-player' ? await DBService.getStory(LibraryController.currentEditScenarioStoryId) : null;
+                if (!input.isConnected || input.value) return;
+                await this.renderPlayerPortrait(prefix, { characterId, portrait: null }, story?.characters?.find(c => c.id === characterId));
+                if (input.isConnected) document.getElementById(`${prefix}-portrait-status`).textContent = 'Using the character’s original portrait. Save to apply it.';
+            },
+
+            readPlayerSheet(prefix, previous = {}) {
+                const value = key => document.getElementById(`${prefix}-${key}`).value;
+                const data = { ...previous, abilities: {} };
+                for (const key of ['name', 'gender', 'pronouns', 'portrait', 'backstory', 'appearance', 'ancestry', 'characterClass', 'level', 'hp', 'maxHp', 'armorClass']) data[key] = value(key);
+                for (const key of ['statsEnabled', 'diceEnabled', 'survivalEnabled']) data[key] = document.getElementById(`${prefix}-${key}`).checked;
+                for (const key of UTILITY.playerAbilities) data.abilities[key] = value(key);
+                data.survival = Object.fromEntries(['water', 'sleep', 'food'].map(key => [key, value(`survival-${key}`)]));
+                data.survivalRates = Object.fromEntries(['water', 'sleep', 'food'].map(key => [key, value(`rate-${key}`)]));
+                data.clock = { ...previous.clock,
+                    enabled: document.getElementById(`${prefix}-clock-enabled`).checked,
+                    minutesPerTurn: value('clock-minutesPerTurn'), startHour: value('clock-startHour') };
+                data.name = data.name.trim() || 'You';
+                return UTILITY.normalizePlayerCharacter(data);
+            },
+
+            openPlayerSheet(survivalKey = null) {
+                const state = StateManager.getState();
+                if (!state?.chat_history) return;
+                const player = state.characters.find(c => c.is_user);
+                const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter, player);
+                document.getElementById('live-player-form').innerHTML = UIComponents.PlayerSheetForm('live-player', sheet);
+                this.renderPlayerPortrait('live-player', sheet);
+                AppController.openModal('player-sheet-modal');
+                if (['water', 'sleep', 'food', 'clock'].includes(survivalKey)) {
+                    requestAnimationFrame(() => {
+                        const input = document.getElementById(survivalKey === 'clock' ? 'live-player-clock-minutesPerTurn' : `live-player-survival-${survivalKey}`);
+                        input?.scrollIntoView({ block: 'center' });
+                        input?.focus({ preventScroll: true });
+                    });
+                }
+            },
+
+            async savePlayerSheet() {
+                const state = ReactiveStore.state;
+                if (!state?.chat_history) return;
+                const form = document.querySelector('[data-player-form="live-player"]');
+                if (form.dataset.portraitLoading === 'true') { this.showNotification('Wait for the portrait to finish loading.', 'warning'); return; }
+                if ([...form.querySelectorAll('input')].some(input => !input.reportValidity())) return;
+                if (NarrativeController.RUNTIME.activeRequestAbortController) {
+                    this.showNotification('Wait for the current response before changing your player sheet.', 'warning');
+                    return;
+                }
+                const player = state.characters.find(c => c.is_user);
+                const sheet = this.readPlayerSheet('live-player', UTILITY.normalizePlayerCharacter(state.playerCharacter, player));
+                if (!sheet.diceEnabled && UTILITY.getPendingPlayerCheck(state)) await NarrativeController.resolvePendingPlayerCheck(true);
+                state.playerCharacter = sheet;
+                state.characters = UTILITY.applyPlayerCharacter(state.characters, sheet);
+                await ReactiveStore.forceSave();
+                this.renderChat();
+                AppController.closeModal('player-sheet-modal');
+                this.showNotification('Player character saved.');
+            },
+
+            renderPlayerControls() {
+                const state = StateManager.getState();
+                const loaded = !!state?.chat_history;
+                document.getElementById('player-sheet-btn')?.classList.toggle('hidden', !loaded);
+                const clockContainer = document.getElementById('player-clock-container');
+                if (clockContainer) {
+                    const player = loaded ? UTILITY.normalizePlayerCharacter(state.playerCharacter) : null;
+                    clockContainer.classList.toggle('hidden', !player?.clock.enabled);
+                    const clock = player && UTILITY.describePlayerTime(player);
+                    clockContainer.innerHTML = player?.clock.enabled ? DOM.html`<button type="button" class="player-clock" data-action="open-player-clock" title="Game time settings">
+                        <strong>Day ${clock.day} · ${clock.time}</strong><span class="player-clock-detail">${clock.elapsed} elapsed · ${clock.turns} turns</span>
+                    </button>` : '';
+                }
+                const survivalContainer = document.getElementById('player-survival-container');
+                if (survivalContainer) {
+                    const enabled = loaded && state.playerCharacter?.survivalEnabled === true;
+                    survivalContainer.classList.toggle('hidden', !enabled);
+                    survivalContainer.innerHTML = enabled ? UIComponents.PlayerSurvivalMeters(UTILITY.normalizePlayerCharacter(state.playerCharacter)) : '';
+                }
+                const container = document.getElementById('player-check-container');
+                if (!container) return;
+                const pending = loaded && UTILITY.getPendingPlayerCheck(state);
+                container.classList.toggle('hidden', !pending);
+                if (!pending) { container.innerHTML = ''; return; }
+                const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter);
+                const { check } = pending;
+                const modifier = sheet.statsEnabled && check.ability !== 'none' ? UTILITY.playerAbilityModifier(sheet.abilities[check.ability]) : 0;
+                container.innerHTML = DOM.html`<div class="flex flex-wrap items-center justify-between gap-2">
+                    <div><strong>${check.reason}</strong><div class="text-sm">${check.ability === 'none' ? 'Straight d20' : check.ability[0].toUpperCase() + check.ability.slice(1)} · Target ${check.dc} · d20 ${modifier >= 0 ? '+' : '−'} ${Math.abs(modifier)}</div></div>
+                    <div class="flex gap-2"><button data-action="roll-player-check" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 px-4 rounded-lg">Roll d20</button>
+                    <button data-action="skip-player-check" class="bg-white/5 hover:bg-white/10 py-2 px-3 rounded-lg">Skip check</button></div>
+                </div>`;
+            },
+
             RUNTIME: {
                 streamingInterval: null,
                 titleTimeout: null,
@@ -20412,16 +20880,18 @@ Write only the character's message.`;
             },
 
             /**
-             * Toggles the Journal & Inventory panel collapsed/expanded state.
+             * Toggles the journal panel; a requested tab opens directly even from another tab.
              */
-            toggleInventoryPanel() {
+            toggleInventoryPanel(tab) {
                 const state = StateManager.getState();
                 if (state && state.enableJournal === false) return;
                 const container = document.getElementById('inventory-panel-container');
                 if (container) {
                     const wasHidden = container.classList.contains('hidden');
-                    container.classList.toggle('hidden');
-                    if (wasHidden) {
+                    const switchingTab = tab && this.RUNTIME.activeInventoryTab !== tab;
+                    if (tab) this.RUNTIME.activeInventoryTab = tab;
+                    container.classList.toggle('hidden', !wasHidden && !switchingTab);
+                    if (wasHidden || switchingTab) {
                         this.renderInventoryPanel();
                     }
                 }
@@ -22710,6 +23180,7 @@ Write only the character's message.`;
             renderChat() {
                 // Hardened check to prevent blinking during streaming updates
                 if (this.RUNTIME.suppressChatRender) return;
+                this.renderPlayerControls();
 
                 // Reset VN history index to latest on standard chat updates
                 this.RUNTIME.vnHistoryIndex = null;
@@ -22827,7 +23298,7 @@ Write only the character's message.`;
                     const userChar = (state.characters || []).find(c => c.is_user);
                     let playerChipHTML = '';
                     if (userChar) {
-                        const portraitUrl = UIManager.RUNTIME.characterImageCache[userChar.id] || null;
+                        const portraitUrl = UIManager.getPortraitSrc(userChar);
                         const avatarStyle = portraitUrl
                             ? DOM.unsafe(`background-image: url('${UTILITY.safeStyleUrl(portraitUrl)}');`)
                             : '';
@@ -22840,7 +23311,7 @@ Write only the character's message.`;
                         playerChipHTML = DOM.html`
                             <div class="scenario-banner-divider"></div>
                             <div class="scenario-banner-player">
-                                <div class="scenario-banner-player-avatar" data-action="open-character-detail" data-id="${userChar.id}" style="${avatarStyle}; cursor: pointer;" title="View character sheet">${avatarFallback}</div>
+                                <button type="button" class="scenario-banner-player-avatar" data-action="open-player-sheet" style="${avatarStyle}; cursor: pointer;" title="Edit player character" aria-label="Edit player character">${avatarFallback}</button>
                                 <div class="scenario-banner-player-info">
                                     <span class="scenario-banner-player-role">You are playing</span>
                                     <span class="scenario-banner-player-name">${userChar.name}</span>
@@ -24293,6 +24764,7 @@ Write only the character's message.`;
              * @returns {string|null} - The image URL or null.
              */
             getPortraitSrc(character, mood) {
+                if (character.is_user && character.player_portrait) return character.player_portrait;
                 const cache = UIManager.RUNTIME.characterImageCache || {};
 
                 // By default, most messages pass 'neutral'. If there's an explicit extra_portrait for 'neutral', 
@@ -31418,7 +31890,7 @@ Write only the descriptive paragraphs.`;
             selectedScenarioDynamicId: null,
 
             switchScenarioTab(tabId) {
-                const tabs = ['setup', 'cast', 'static', 'dynamic'];
+                const tabs = ['setup', 'cast', 'player', 'static', 'dynamic'];
                 tabs.forEach(t => {
                     const tabEl = document.getElementById(`scenario-tab-${t}`);
                     if (tabEl) tabEl.classList.add('hidden');
@@ -31484,6 +31956,10 @@ Write only the descriptive paragraphs.`;
                 document.getElementById('edit-scenario-id').value = scenarioId;
                 document.getElementById('edit-scenario-name').value = this.currentEditScenario.name || '';
                 document.getElementById('edit-scenario-message').value = this.currentEditScenario.message || '';
+                const player = story.characters.find(c => c.id === this.currentEditScenario.user_character_id) || story.characters.find(c => c.is_user);
+                this.currentEditScenario.playerCharacter = UTILITY.normalizePlayerCharacter(this.currentEditScenario.playerCharacter, player);
+                document.getElementById('scenario-player-form').innerHTML = UIComponents.PlayerSheetForm('scenario-player', this.currentEditScenario.playerCharacter);
+                UIManager.renderPlayerPortrait('scenario-player', this.currentEditScenario.playerCharacter, player);
 
                 this.switchScenarioTab('setup');
                 this.renderScenarioCast(story.characters);
@@ -31542,7 +32018,16 @@ Write only the descriptive paragraphs.`;
                 }
 
                 DBService.getStory(this.currentEditScenarioStoryId).then(story => {
-                    if (story) this.renderScenarioCast(story.characters);
+                    if (story) {
+                        this.renderScenarioCast(story.characters);
+                        const previous = UIManager.readPlayerSheet('scenario-player', this.currentEditScenario.playerCharacter);
+                        const selected = story.characters.find(c => c.id === charId);
+                        this.currentEditScenario.playerCharacter = UTILITY.normalizePlayerCharacter({ ...previous, characterId: charId,
+                            name: selected.name, gender: selected.gender || '', pronouns: selected.pronouns || '', portrait: null,
+                            backstory: selected.description || '', appearance: selected.appearance || selected.short_description || '' }, selected);
+                        document.getElementById('scenario-player-form').innerHTML = UIComponents.PlayerSheetForm('scenario-player', this.currentEditScenario.playerCharacter);
+                        UIManager.renderPlayerPortrait('scenario-player', this.currentEditScenario.playerCharacter, selected);
+                    }
                 });
             },
 
@@ -31607,7 +32092,7 @@ Write only the descriptive paragraphs.`;
 
                 container.innerHTML = DOM.unsafe(`
                     <div class="flex flex-col gap-2 mb-4 h-full">
-                        <div class="flex items-center gap-2">
+                        <div class="scenario-lore-heading">
                             <input type="text" value="${entry.title}" oninput="LibraryController.updateScenarioStaticEntry('title', this.value)" onblur="LibraryController.renderScenarioStaticEntries()" class="text-xl font-bold bg-black/30 p-2 rounded focus:ring-1 focus:ring-indigo-500 border-none flex-grow text-white">
                             <div class="flex items-center gap-1.5 flex-shrink-0 bg-black/30 p-1.5 rounded border border-gray-700">
                                 <label class="text-xs font-semibold text-gray-400">Category:</label>
@@ -31767,6 +32252,15 @@ Write only the descriptive paragraphs.`;
                 if (!scenario) return;
 
                 // Sync UI fields into the deep clone
+                const playerForm = document.querySelector('[data-player-form="scenario-player"]');
+                if (playerForm.dataset.portraitLoading === 'true') { UIManager.showNotification('Wait for the portrait to finish loading.', 'warning'); return; }
+                const invalidPlayerField = [...playerForm.querySelectorAll('input')].find(input => !input.checkValidity());
+                if (invalidPlayerField) {
+                    this.switchScenarioTab('player');
+                    invalidPlayerField.reportValidity();
+                    return;
+                }
+                this.currentEditScenario.playerCharacter = UIManager.readPlayerSheet('scenario-player', this.currentEditScenario.playerCharacter);
                 this.currentEditScenario.name = name;
                 this.currentEditScenario.message = message;
 
@@ -32661,6 +33155,8 @@ Write only the descriptive paragraphs.`;
                     const newScenario = {
                         id: UTILITY.uuid(),
                         name: `${narrative.name} (Scenario)`,
+                        playerCharacter: narrative.state.playerCharacter ? UTILITY.normalizePlayerCharacter(narrative.state.playerCharacter) : null,
+                        user_character_id: narrative.state.playerCharacter?.characterId || story.characters.find(c => c.is_user)?.id,
                         message: firstMessage ? firstMessage.content : "The story continues...",
                         static_entries: JSON.parse(JSON.stringify(narrative.state.static_entries || [])),
                         worldMap: JSON.parse(JSON.stringify(narrative.state.worldMap || {})),
@@ -34662,6 +35158,76 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
          * =================================================================================================
          */
         const NarrativeController = {
+            advanceTimeForMessage(message, effects) {
+                const state = ReactiveStore.state;
+                if (message.playerTurn) return;
+                const before = UTILITY.normalizePlayerCharacter(state.playerCharacter, state.characters.find(c => c.is_user));
+                if (!before.clock.enabled) return;
+                const after = UTILITY.advancePlayerTime(before, effects);
+                message.playerTurn = {
+                    before: { clock: { ...before.clock }, survival: { ...before.survival } },
+                    after: { clock: { ...after.clock }, survival: { ...after.survival } }
+                };
+                state.playerCharacter = after;
+            },
+
+            rewindPlayerTime(removed) {
+                const state = ReactiveStore.state;
+                if (!state.playerCharacter) return;
+                const ids = new Set((removed || []).filter(Boolean).map(m => m.id));
+                const turns = (state.chat_history || []).filter(m => m.playerTurn);
+                const latest = turns.at(-1);
+                if (!latest || !ids.has(latest.id)) return;
+                let first = turns.length - 1;
+                while (first > 0 && ids.has(turns[first - 1].id)) first--;
+                const before = turns[first].playerTurn.before;
+                const after = latest.playerTurn.after;
+                const player = UTILITY.normalizePlayerCharacter(state.playerCharacter);
+                if (player.clock.elapsedMinutes === after.clock.elapsedMinutes && player.clock.turns === after.clock.turns) {
+                    player.clock.elapsedMinutes = before.clock.elapsedMinutes;
+                    player.clock.turns = before.clock.turns;
+                }
+                for (const key of ['water', 'sleep', 'food']) {
+                    if (player.survival[key] === after.survival[key]) player.survival[key] = before.survival[key];
+                }
+                state.playerCharacter = player;
+            },
+
+            playerCheckBlocksTurn() {
+                if (!UTILITY.getPendingPlayerCheck(ReactiveStore.state)) return false;
+                UIManager.renderPlayerControls();
+                UIManager.showNotification('Roll or skip the pending check before continuing the story.', 'warning');
+                return true;
+            },
+
+            async resolvePendingPlayerCheck(skip = false) {
+                if (this.RUNTIME.playerRolling || this.RUNTIME.activeRequestAbortController) return;
+                const state = ReactiveStore.state;
+                const pending = UTILITY.getPendingPlayerCheck(state);
+                if (!pending) return;
+                this.RUNTIME.playerRolling = true;
+                try {
+                    const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter);
+                    const { check, message } = pending;
+                    let result = { skipped: true };
+                    if (!skip) {
+                        const sample = new Uint32Array(1);
+                        do { crypto.getRandomValues(sample); } while (sample[0] >= 4294967280);
+                        const modifier = sheet.statsEnabled && check.ability !== 'none' ? UTILITY.playerAbilityModifier(sheet.abilities[check.ability]) : 0;
+                        result = UTILITY.resolvePlayerCheck(sample[0] % 20 + 1, modifier, check.dc);
+                    }
+                    const roll = { ...result, ...check, requestId: message.id, requestVersion: message.currentVersion || 0 };
+                    const content = skip ? `Check skipped: ${check.reason}. Continue this action without a dice result.`
+                        : `D20 check — ${check.reason}: ${result.die} ${result.modifier >= 0 ? '+' : '−'} ${Math.abs(result.modifier)} = ${result.total} vs target ${check.dc}: ${result.success ? 'Success' : 'Failure'}.`;
+                    state.chat_history.push({ id: UTILITY.uuid(), type: 'system_event', character_id: 'system',
+                        content, playerRoll: roll, timestamp: new Date().toISOString() });
+                    UIManager.renderChat();
+                    await ReactiveStore.forceSave();
+                } finally {
+                    this.RUNTIME.playerRolling = false;
+                }
+            },
+
             CONSTANTS: {
                 CHARACTER_COLORS: [
                     { base: '#334155', bold: '#94a3b8' }, // Slate
@@ -35695,6 +36261,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
              * @param {string} userMessage - The user's input text (may be empty string for a pass-turn).
              */
             async _executeSwarmTurn(userMessage, forcedCharId = null, targetMessageIndex = null, userImages = []) {
+                if (targetMessageIndex === null && this.playerCheckBlocksTurn()) return;
                 const state = ReactiveStore.state;
                 if (!this._isModelConfigured(state)) {
                     this.addSystemMessageToHistory('AI model not configured. Check Settings.');
@@ -35740,8 +36307,14 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     // Commit each character response as a separate chat bubble, in order.
                     let lastCharId = null;
                     let lastIndex = -1;
+                    const hasCheck = state.playerCharacter?.diceEnabled === true && result.charResponses.some(r => UTILITY.parsePlayerCheck(r.prose));
+                    const sceneEffects = UTILITY.parsePlayerTurnEffects(result.charResponses.map(r => r.prose).join('\n'));
+                    let timeCommitted = false;
                     for (const { char, prose, thinking } of result.charResponses) {
-                        this.startStreamingResponse(char.id, prose, 'neutral', targetMessageIndex, [], thinking || null);
+                        this.startStreamingResponse(char.id, prose, 'neutral', targetMessageIndex, [], thinking || null,
+                            { advance: !hasCheck && !timeCommitted, effects: sceneEffects });
+                        if (targetMessageIndex === null && state.chat_history.at(-1)?.playerTurn) timeCommitted = true;
+                        if (UTILITY.getPendingPlayerCheck(state)) break;
                         lastCharId = char.id;
                         lastIndex = (targetMessageIndex !== null) ? targetMessageIndex : (state.chat_history.length - 1);
                     }
@@ -35785,6 +36358,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
             },
 
             async sendMessage() {
+                if (this.playerCheckBlocksTurn()) return;
                 if (this.RUNTIME.activeRequestAbortController) {
                     this.stopGeneration();
                 }
@@ -35909,11 +36483,21 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
              * @param {string} emotion - The emotion of the character.
              * @param {number|null} targetMessageIndex - If set, updates an existing message (Versioning support).
              */
-            startStreamingResponse(charId, fullText, emotion, targetMessageIndex = null, images = [], thinking = null) {
+            startStreamingResponse(charId, fullText, emotion, targetMessageIndex = null, images = [], thinking = null, turnOptions = {}) {
                 if (this.RUNTIME.streamingInterval) clearInterval(this.RUNTIME.streamingInterval);
                 this.RUNTIME.streamingInterval = null;
 
                 const state = ReactiveStore.state;
+                const effects = turnOptions.effects || UTILITY.parsePlayerTurnEffects(fullText);
+                fullText = fullText.replace(/\[(?:TIME|RECOVER):[^\]\r\n]*\]/gi, '').trim();
+                const playerCheck = state.playerCharacter?.diceEnabled === true && !ReactiveStore.getCharacter(charId)?.is_user
+                    ? UTILITY.parsePlayerCheck(fullText) : null;
+                if (playerCheck) {
+                    fullText = fullText.slice(0, fullText.search(/\[CHECK:/i)).trim()
+                        + `\n\nCheck requested: ${playerCheck.reason} (${playerCheck.ability}, target ${playerCheck.dc}).`;
+                } else {
+                    fullText = fullText.replace(/\[CHECK:[^\]\r\n]*\]/gi, '').trim();
+                }
 
                 // 1. LOCK THE DB (Prevent intermediate saves during state mutation)
                 if (typeof ReactiveStore.pauseSaving === 'function') {
@@ -35930,12 +36514,12 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
 
                     // Initialize versions if missing
                     if (!newMessage.versions) {
-                        newMessage.versions = [{ content: newMessage.content, emotion: newMessage.emotion, thinking: newMessage.thinking || null }];
+                        newMessage.versions = [{ content: newMessage.content, emotion: newMessage.emotion, thinking: newMessage.thinking || null, playerCheck: newMessage.playerCheck || null }];
                         newMessage.currentVersion = 0;
                     }
 
                     // Push NEW version immediately
-                    newMessage.versions.push({ content: fullText, emotion: emotion, thinking: thinking || null });
+                    newMessage.versions.push({ content: fullText, emotion: emotion, thinking: thinking || null, playerCheck });
                     newMessage.currentVersion = newMessage.versions.length - 1;
 
                     // Update main display fields
@@ -35956,7 +36540,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         thinking: thinking || null,
                         timestamp: new Date().toISOString(),
                         isNew: true,
-                        versions: [{ content: fullText, emotion: emotion, thinking: thinking || null }],
+                        versions: [{ content: fullText, emotion: emotion, thinking: thinking || null, playerCheck }],
                         currentVersion: 0,
                         images: images || []
                     };
@@ -35978,6 +36562,11 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 }
 
                 // Process [STATE: ...] updates in the message content
+                newMessage.playerCheck = playerCheck;
+                if (targetMessageIndex === null && !playerCheck && turnOptions.advance !== false
+                    && fullText.trim() && ReactiveStore.getCharacter(charId) && !ReactiveStore.getCharacter(charId).is_user) {
+                    this.advanceTimeForMessage(newMessage, effects);
+                }
                 if (typeof InventoryController !== 'undefined') {
                     InventoryController.processStateUpdates(newMessage);
                 }
@@ -36030,6 +36619,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
              * Generates 4 response options for the user based on the last AI message.
              */
             async generateResponseOptions() {
+                if (UTILITY.getPendingPlayerCheck(ReactiveStore.state)) { this._clearResponseOptions(); return; }
                 const state = ReactiveStore.state;
                 if (!state.enableResponseOptions) return;
                 if (!this._isModelConfigured(state)) return;
@@ -36339,10 +36929,12 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 UIManager.RUNTIME.suppressChatRender = true;
                 msg.currentVersion = nextVer;
                 msg.content = msg.versions[nextVer].content;
+                msg.playerCheck = msg.versions[nextVer].playerCheck || null;
                 msg.emotion = msg.versions[nextVer].emotion;
                 msg.thinking = msg.versions[nextVer].thinking || null;
                 await ReactiveStore.forceSave();
                 UIManager.RUNTIME.suppressChatRender = false;
+                UIManager.renderPlayerControls();
 
                 // Optimized Update: Direct DOM manipulation to avoid full re-render
                 const bubbleContainer = document.querySelector(`.chat-bubble-container[data-message-index="${index}"]`);
@@ -36702,6 +37294,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         this.restoreLoreIndicesForRemovedMessages([msg, nextMsg]);
                     }
 
+                    this.rewindPlayerTime([msg]);
                     if (msg && msg.type === 'chat') state.messageCounter--;
                     state.chat_history.splice(index, 1);
 
@@ -36744,6 +37337,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         state.messageCounter = Math.max(0, state.messageCounter - chatCount);
 
                         // Perform truncate
+                        this.rewindPlayerTime(removed);
                         state.chat_history.splice(index);
                     }
                 }
@@ -36776,6 +37370,8 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     return;
                 }
 
+                const rewindStart = history.findLastIndex(m => m.type === 'chat');
+                if (rewindStart >= 0) this.rewindPlayerTime(history.slice(rewindStart));
                 const deletedIds = [];
                 const removedMessages = [];
                 let removedChatMessage = false;
@@ -37097,8 +37693,10 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 newBtn.onclick = () => {
                     const targetMsg = ReactiveStore.state.chat_history[index];
                     targetMsg.content = input.value;
+                    targetMsg.playerCheck = null;
                     if (targetMsg.versions && targetMsg.versions[targetMsg.currentVersion || 0]) {
                         targetMsg.versions[targetMsg.currentVersion || 0].content = input.value;
+                        targetMsg.versions[targetMsg.currentVersion || 0].playerCheck = null;
                     }
                     if (typeof InventoryController !== 'undefined') {
                         InventoryController.processStateUpdates(targetMsg);
@@ -37291,6 +37889,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
              * @param {Promise|null} visualBlockerPromise - Optional promise from Visual Master to await before displaying.
              */
             async triggerAIResponse(charIdOrPromise = null, userMessage = '', isAfterMove = false, targetMessageIndex = null, visualBlockerPromise = null, userImages = []) {
+                if (targetMessageIndex === null && this.playerCheckBlocksTurn()) return;
                 const state = ReactiveStore.state;
 
                 // handleDirectCharacter passes its instruction in through userMessage, and
@@ -43679,6 +44278,31 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 ActionHandler.register('import-hub-character', (ds, val) => HubController.importCharacter(val));
                 ActionHandler.register('close-modal', (ds) => AppController.closeModal(ds.id));
                 ActionHandler.register('toggle-mobile-menu', () => AppController.toggleMobileMenu());
+                ActionHandler.register('open-player-inventory', () => UIManager.toggleInventoryPanel('inventory'));
+                ActionHandler.register('scenario-player-tab', () => LibraryController.switchScenarioTab('player'));
+                ActionHandler.register('open-player-sheet', () => UIManager.openPlayerSheet());
+                ActionHandler.register('choose-player-portrait', ds => document.getElementById(`${ds.prefix}-portrait-file`)?.click());
+                ActionHandler.register('upload-player-portrait', (ds, value, event) => UIManager.uploadPlayerPortrait(event, ds.prefix));
+                ActionHandler.register('reset-player-portrait', ds => UIManager.resetPlayerPortrait(ds.prefix, ds.characterId));
+                ActionHandler.register('open-player-survival', ds => UIManager.openPlayerSheet(ds.need));
+                ActionHandler.register('open-player-clock', () => UIManager.openPlayerSheet('clock'));
+                ActionHandler.register('toggle-player-clock', ds => {
+                    document.getElementById(`${ds.prefix}-clock`).disabled = !document.getElementById(`${ds.prefix}-clock-enabled`).checked;
+                });
+                ActionHandler.register('save-player-sheet', () => UIManager.savePlayerSheet());
+                ActionHandler.register('toggle-player-survival', ds => {
+                    document.getElementById(`${ds.prefix}-survival`).disabled = !document.getElementById(`${ds.prefix}-survivalEnabled`).checked;
+                });
+                ActionHandler.register('toggle-player-stats', ds => {
+                    document.getElementById(`${ds.prefix}-stats`).disabled = !document.getElementById(`${ds.prefix}-statsEnabled`).checked;
+                });
+                ActionHandler.register('update-player-modifier', ds => {
+                    const score = document.getElementById(`${ds.prefix}-${ds.playerAbility}`).value;
+                    const modifier = UTILITY.playerAbilityModifier(score);
+                    document.getElementById(`${ds.prefix}-${ds.playerAbility}-modifier`).textContent = `Modifier ${modifier >= 0 ? '+' : ''}${modifier}`;
+                });
+                ActionHandler.register('roll-player-check', () => NarrativeController.resolvePendingPlayerCheck());
+                ActionHandler.register('skip-player-check', () => NarrativeController.resolvePendingPlayerCheck(true));
 
                 // --- TextModeController (Private text threads) ---
                 ActionHandler.register('open-dm-thread', (ds) => TextModeController.open(ds.id));
@@ -44284,6 +44908,7 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                         }
                     });
 
+                    ReactiveStore.subscribe('playerCharacter', () => UIManager.renderPlayerControls());
                     ReactiveStore.subscribe('gameState', () => {
                         UIManager.renderInventoryPanel();
                     });

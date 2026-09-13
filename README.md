@@ -67,6 +67,11 @@ We use a tiered structure to manage complex, branching narratives without clutte
 This hierarchy allows you to start multiple "runs" of the same scenario without overwriting your progress in either.
 
 - **Scenario Editor**: Customize scenarios with specific notes, active character rosters, and scenario-specific lore. Create new blank scenarios or edit existing templates directly from the UI.
+- **Player Tab**: Choose a portrait and set your character's name, gender, pronouns, backstory, current appearance, ancestry, and class/role when editing a scenario. Each playthrough starts with its own copy. Use **Player** beside the chat input to edit the current character during play.
+- **Optional Player Stats**: Enable six ability scores (Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma), level, HP, and armor class. Stats are off by default and are maintained by the player. Turning them off keeps your saved values.
+- **Automatic Game Time**: A visible clock tracks the current day, time of day, total elapsed days/hours, and completed turns. By default, a new playthrough begins on **Day 1 at 08:00**, and each completed story turn advances **15 minutes**. Click the clock or open **Player** to change the pace, starting hour, or pause time. Existing playthroughs begin tracking from their next completed turn. A multi-character response counts once; retries, message edits, dice requests/results, private texts, failed generations, and idle time do not advance the clock. Rewinding the latest story turns restores their time.
+- **Optional Survival Stats**: Enable water, sleep, and food in the scenario's **Player** tab or the live **Player Sheet**. Three meters stay visible above the chat input, with percentages and low/critical indicators. Enabled meters decline automatically with in-game time: by default, water loses **4**, food **3**, and rest **5 percentage points per hour**. Change these game pacing rates or correct a level in the sheet. The narrator can report completed meals, drinks, sleep, and longer time skips; the app applies those changes once. Recovery and time skips depend on your model following the narrator instructions; ordinary turn progression and depletion run locally. Survival is off by default, works independently of abilities, dice, and the journal, and preserves its values when disabled. Pausing game time also pauses automatic survival changes.
+- **Optional d20 Checks**: Enable dice separately from stats. The narrator can request a check for a risky, uncertain action—such as hiding from a searching guard—and waits for **Roll d20** or **Skip check**. Routine actions and conversation need no roll. The app records the die, modifier, target, and outcome in the chat; then use Send with an empty input to continue the story. With stats off, roll a straight d20. This is a lightweight ability-check system, inspired by the [D&D basic rules](https://www.dndbeyond.com/sources/dnd/br-2024/playing-the-game), rather than a full combat implementation.
 
 ### Organization
 - **Folders**: Manage large libraries by grouping stories into global folders. The UI includes full filtering, searching, and sorting capabilities to help you find specific characters or universes instantly.
@@ -104,6 +109,7 @@ EllipsisLM supports unlimited characters in any given story.
 ![8x8 Navigation Grid](assets/screenshots/world_map.png)
 
 - **Character State Tracking**: Agents periodically deduce the current feelings, internal states, and "stats" of characters to drive long-term consistency.
+- **Player Inventory**: Open your items directly with the **Inventory** button beside the chat input on desktop or mobile. Quests and relationships are available in the same panel when journal tracking is enabled.
 
 ![Character Stats and State Tracking](assets/screenshots/stats_panel.png)
 
