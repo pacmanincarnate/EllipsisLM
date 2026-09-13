@@ -726,7 +726,7 @@
 
         #main-header {
             position: relative;
-            z-index: 10;
+            z-index: 45;
         }
 
         body.layout-vertical #main-header {
@@ -2680,15 +2680,21 @@
         .player-sheet-form input[type="checkbox"] { accent-color: var(--brand-color); }
         .player-sheet-form fieldset { min-width: 0; }
         .player-sheet-form fieldset:disabled { opacity: 0.45; }
-        #player-survival-container { flex-shrink: 0; color: var(--chat-text-color, #fff); }
-        #player-clock-container { flex-shrink: 0; color: var(--chat-text-color, #fff); }
-        .player-clock { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 1rem; width: 100%; padding: 0.4rem 0.65rem; border: 1px solid var(--border-primary); border-radius: 0.65rem; background: var(--surface-overlay); text-align: left; font-size: 0.8rem; }
-        .player-clock:hover { background: var(--surface-card); }
-        .player-clock:focus-visible { outline: 2px solid var(--brand-color); outline-offset: 2px; }
-        .player-clock-detail { font-size: 0.7rem; opacity: 0.75; }
-        .survival-meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; padding: 0.35rem 0; }
+        #player-status-hud { position: relative; display: flex; align-items: center; gap: 0.75rem; min-height: 1.5rem; padding: 0 0.25rem; flex-shrink: 0; z-index: 45; pointer-events: auto; color: var(--chat-text-color, #fff); }
+        #player-status-hud.hidden { display: none; }
+        #story-title-group { min-width: 0; }
+        #story-title-group input { max-width: 100%; }
+        #mobile-player-status-slot { margin-right: auto; }
+        #scenario-settings-modal { z-index: 70; }
+        .player-hud-toggle { display: flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0; font-size: 0.65rem; line-height: 1rem; opacity: 0.75; white-space: nowrap; }
+        .player-hud-toggle:hover { opacity: 1; }
+        .player-hud-toggle:focus-visible { outline: 2px solid var(--brand-color); outline-offset: 2px; }
+        .player-hud-popover { position: absolute; top: 100%; left: 0.5rem; width: min(21rem, calc(100vw - 2rem)); padding: 0.6rem; border: 1px solid var(--border-primary); border-radius: 0.65rem; background: var(--surface-overlay); backdrop-filter: blur(20px); box-shadow: 0 8px 24px #0006; }
+        .player-clock-detail { font-size: 0.7rem; }
+        .player-hud-settings { display: block; margin-top: 0.5rem; font-size: 0.7rem; color: var(--brand-color); }
+        .survival-meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; }
         .survival-meter {
-            min-width: 0; padding: 0.5rem 0.65rem; text-align: left; border-radius: 0.75rem;
+            min-width: 0; padding: 0.35rem 0.4rem; text-align: left; border-radius: 0.5rem;
             border: 1px solid var(--border-primary); background: var(--surface-overlay);
             cursor: pointer; transition: background 0.2s; --survival-color: var(--brand-color);
         }
@@ -2699,11 +2705,14 @@
         .survival-meter[data-need="food"] { --survival-color: #4ade80; }
         .survival-meter[data-status="low"] { --survival-color: #fbbf24; }
         .survival-meter[data-status="critical"] { --survival-color: #fb7185; }
-        .survival-meter-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 0.5rem; font-size: 0.8rem; font-weight: 600; }
+        .survival-meter-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem; font-size: 0.65rem; font-weight: 500; }
         .survival-meter-value { font-variant-numeric: tabular-nums; }
-        .survival-track { display: block; overflow: hidden; height: 0.35rem; margin: 0.35rem 0; border-radius: 1rem; background: color-mix(in srgb, var(--chat-text-color) 15%, transparent); }
+        .survival-track { display: block; overflow: hidden; height: 0.2rem; margin-top: 0.3rem; border-radius: 1rem; background: color-mix(in srgb, var(--chat-text-color) 15%, transparent); }
         .survival-fill { display: block; height: 100%; background: var(--survival-color); border-radius: inherit; }
-        .survival-condition { display: block; font-size: 0.65rem; color: var(--survival-color); }
+        .player-panel-footer { flex-shrink: 0; display: flex; justify-content: flex-end; padding-top: 0.5rem; border-top: 1px solid var(--border-primary); }
+        .inventory-panel > .inventory-panel-tabs { flex-shrink: 0; flex-wrap: wrap; }
+        .inventory-panel > .inventory-panel-tabs button { padding: 0.375rem 0.5rem; }
+        #scenario-settings-btn { font-size: 0.65rem; line-height: 1rem; }
         #player-check-container { color: var(--chat-text-color, #fff); max-height: 30vh; overflow-y: auto; }
         @media (min-width: 640px) { .player-abilities-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
@@ -3501,9 +3510,17 @@
                         </svg>
                     </button>
 
-                    <input type="text" id="story-title-input" aria-label="Story Title"
-                        class="text-2xl font-bold bg-transparent text-white p-1 rounded focus:outline-none focus:bg-black/20 w-96"
-                        style="color: var(--chat-text-color);font-weight: 100; font-family: var(--chat-font-family);">
+                    <div id="story-title-group">
+                        <input type="text" id="story-title-input" aria-label="Story Title"
+                            class="text-2xl font-bold bg-transparent text-white p-1 rounded focus:outline-none focus:bg-black/20 w-96"
+                            style="color: var(--chat-text-color);font-weight: 100; font-family: var(--chat-font-family);">
+                        <div id="desktop-player-status-slot">
+                            <div id="player-status-hud" class="hidden">
+                                <div id="player-clock-container" class="hidden" aria-live="polite"></div>
+                                <div id="player-survival-container" class="hidden" role="group" aria-label="Player survival status"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex space-x-2">
@@ -3576,6 +3593,7 @@
 
             <!-- Mobile Header -->
             <div id="mobile-header" class="justify-end items-center w-full">
+                <div id="mobile-player-status-slot"></div>
                 <div class="relative" id="hamburger-menu-button-container">
                     <button id="hamburger-menu-button" data-action="toggle-mobile-menu" aria-label="Toggle Menu"
                         class="bg-gray-700/80 hover:bg-gray-600/80 text-white p-2 rounded-lg">
@@ -3804,8 +3822,6 @@
                 </button>
             </div>
 
-            <div id="player-clock-container" class="hidden" aria-live="polite"></div>
-            <div id="player-survival-container" class="hidden" role="group" aria-label="Player survival status"></div>
             <div id="player-check-container" class="hidden p-3 rounded-xl bg-gray-800 border border-gray-600 flex-shrink-0" aria-live="polite"></div>
             <!-- Response Options Container -->
             <div id="response-options-container" class="relative z-20 hidden"></div>
@@ -3896,7 +3912,7 @@
                         </div>
                     </div>
 
-                    <button id="player-sheet-btn" data-action="open-player-sheet" title="Edit your player character, portrait, appearance, and stats" aria-label="Edit player character" aria-controls="player-sheet-modal"
+                    <button id="player-sheet-btn" data-action="open-player-sheet" title="Edit your player character" aria-label="Edit player character" aria-controls="inventory-panel-container"
                         class="hidden bg-indigo-600 hover:bg-indigo-500 border border-indigo-500 text-xs text-white py-2 px-2 rounded-md cursor-pointer transition-colors font-semibold w-full">
                         Player
                     </button>
@@ -3906,6 +3922,8 @@
                         class="hidden bg-white/5 hover:bg-white/10 border border-white/5 text-xs text-gray-300 py-2 px-2 rounded-md cursor-pointer transition-colors font-medium w-full">
                         Inventory
                     </button>
+                    <button id="scenario-settings-btn" data-action="open-scenario-settings" title="Scenario Settings" aria-controls="scenario-settings-modal"
+                        class="hidden bg-white/5 hover:bg-white/10 border border-white/5 text-gray-300 py-1 px-2 rounded-md cursor-pointer transition-colors font-medium w-full">Scenario Settings</button>
 
                     <!-- Icon Button Cluster: 2x2 so a fourth button fits the fixed 7.5rem column -->
                     <div class="grid grid-cols-2 gap-1 justify-items-center mt-auto">
@@ -5107,19 +5125,18 @@
         </div>
     </div>
 
-    <div id="player-sheet-modal" class="fixed inset-0 z-50 items-center justify-center hidden" role="dialog" aria-modal="true" aria-labelledby="player-sheet-title">
-        <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="player-sheet-modal"></div>
+    <div id="scenario-settings-modal" class="fixed inset-0 z-[70] items-center justify-center hidden" role="dialog" aria-modal="true" aria-labelledby="scenario-settings-title">
+        <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="scenario-settings-modal"></div>
         <div class="bg-gray-800 rounded-xl shadow-xl w-11/12 max-w-2xl relative flex flex-col max-h-[90vh]">
             <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-                <h2 id="player-sheet-title" class="text-xl font-bold">Player Character</h2>
-                <button data-action="close-modal" data-id="player-sheet-modal" class="p-2 rounded-lg hover:bg-white/10" aria-label="Close player sheet">Close</button>
+                <h2 id="scenario-settings-title" class="text-xl font-bold">Scenario Settings</h2>
+                <button data-action="close-modal" data-id="scenario-settings-modal" class="p-2 rounded-lg hover:bg-white/10" aria-label="Close scenario settings">Close</button>
             </div>
             <div class="p-4 overflow-y-auto min-h-0">
-                <p class="text-sm text-gray-400 mb-4">Update your portrait, identity, and current appearance as the story changes. Changes apply to this playthrough. Turning a system off preserves your saved scores.</p>
-                <div id="live-player-form"></div>
+                <div id="live-settings-form"></div>
             </div>
             <div class="p-4 border-t border-gray-700 flex justify-end">
-                <button data-action="save-player-sheet" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 px-4 rounded-lg">Save Player</button>
+                <button data-action="save-scenario-settings" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 px-4 rounded-lg">Save Settings</button>
             </div>
         </div>
     </div>
@@ -19443,15 +19460,15 @@ Write only the character's message.`;
                         aria-label="${label}: ${value} out of 100. ${condition}. Edit ${label.toLowerCase()} level." title="Edit ${label.toLowerCase()} level">
                         <span class="survival-meter-heading"><span>${label}</span><span class="survival-meter-value">${value}%</span></span>
                         <span class="survival-track" aria-hidden="true"><span class="survival-fill" style="width: ${value}%"></span></span>
-                        <span class="survival-condition">${condition}</span>
                     </button>`;
                 }).join('')}</div>`;
             },
 
-            PlayerSheetForm(prefix, sheet) {
+            PlayerSheetForm(prefix, sheet, section = 'all') {
                 const e = value => UTILITY.escapeHTML(String(value));
                 const field = (key, label, type = 'text', bounds = '') => `<label for="${prefix}-${key}">${label}<input id="${prefix}-${key}" type="${type}" value="${e(sheet[key])}" ${bounds}></label>`;
                 return `<div class="player-sheet-form" data-player-form="${prefix}">
+                    ${section !== 'mechanics' ? `
                     <div class="player-portrait-picker">
                         <img id="${prefix}-portrait-preview" class="player-portrait-preview" alt="Player portrait" hidden>
                         <div>
@@ -19469,8 +19486,9 @@ Write only the character's message.`;
                     <div class="player-sheet-grid">${field('ancestry', 'Ancestry / species')}${field('characterClass', 'Class / role')}</div>
                     <label for="${prefix}-backstory">Backstory<textarea id="${prefix}-backstory" rows="5">${e(sheet.backstory)}</textarea></label>
                     <label for="${prefix}-appearance">Current appearance<textarea id="${prefix}-appearance" rows="4" placeholder="Describe their face, hair, eyes, body, height, clothing, and any current transformations.">${e(sheet.appearance)}</textarea></label>
+                    ` : ''}
+                    ${section !== 'identity' ? `
                     <label class="player-sheet-toggle"><input type="checkbox" id="${prefix}-statsEnabled" data-action="toggle-player-stats" data-prefix="${prefix}" ${sheet.statsEnabled ? 'checked' : ''}> Enable player stats</label>
-                    <p class="text-xs text-gray-400">Six ability scores, health, and armor. A check adds the ability modifier: (score − 10) ÷ 2, rounded down.</p>
                     <fieldset id="${prefix}-stats" class="player-sheet-form" ${sheet.statsEnabled ? '' : 'disabled'}>
                         <legend class="sr-only">Player stats</legend>
                         <div class="player-sheet-grid">${field('level', 'Level', 'number', 'min="1" max="20" step="1"')}${field('armorClass', 'Armor class', 'number', 'min="0" max="40" step="1"')}${field('hp', 'Current HP', 'number', 'min="0" max="9999" step="1"')}${field('maxHp', 'Maximum HP', 'number', 'min="1" max="9999" step="1"')}</div>
@@ -19490,9 +19508,9 @@ Write only the character's message.`;
                     <fieldset id="${prefix}-survival" class="player-sheet-form" ${sheet.survivalEnabled ? '' : 'disabled'}>
                         <legend class="sr-only">Survival levels</legend>
                         <div class="player-sheet-grid player-abilities-grid">${['water', 'sleep', 'food'].map(key => `<label for="${prefix}-survival-${key}">${key[0].toUpperCase() + key.slice(1)} (%)<input id="${prefix}-survival-${key}" type="number" min="0" max="100" step="any" value="${sheet.survival[key]}"></label>`).join('')}</div>
-                        <p class="text-xs text-gray-400">Loss per in-game hour (percentage points). Set a rate to 0 to stop that meter declining.</p>
                         <div class="player-sheet-grid player-abilities-grid">${['water', 'sleep', 'food'].map(key => `<label for="${prefix}-rate-${key}">${key[0].toUpperCase() + key.slice(1)} loss/hour<input id="${prefix}-rate-${key}" type="number" min="0" max="100" step="any" value="${sheet.survivalRates[key]}"></label>`).join('')}</div>
                     </fieldset>
+                    ` : ''}
                 </div>`;
             },
 
@@ -19809,7 +19827,7 @@ Write only the character's message.`;
              * @param {string} activeTab - The currently active tab: 'inventory', 'quests', 'relationships'.
              * @returns {string} HTML string.
              */
-            InventoryPanel(gameState, activeTab = 'inventory') {
+            InventoryPanel(gameState, activeTab = 'inventory', playerSheet = null, journalEnabled = true) {
                 const resources = (gameState && gameState.resources) || [];
                 const relationships = (gameState && gameState.relationships) || [];
                 const journal = (gameState && gameState.journal) || [];
@@ -19818,6 +19836,7 @@ Write only the character's message.`;
                 const isInv = activeTab === 'inventory';
                 const isQst = activeTab === 'quests';
                 const isRel = activeTab === 'relationships';
+                const isPlayer = activeTab === 'player';
 
                 const tabClass = (active) => active
                     ? "px-3 py-1.5 text-xs font-bold rounded-lg bg-teal-600 text-white shadow-sm border border-teal-500/50 transition-all cursor-pointer"
@@ -19825,6 +19844,7 @@ Write only the character's message.`;
 
                 // 2. Tab Contents
                 let contentHTML = '';
+                if (isPlayer && playerSheet) contentHTML = `<div id="live-player-form">${this.PlayerSheetForm('live-player', playerSheet, 'identity')}</div>`;
 
                 if (isInv) {
                     const itemsHTML = resources.length === 0
@@ -19960,24 +19980,28 @@ Write only the character's message.`;
                         <div class="flex justify-between items-center border-b border-white/5 pb-2.5">
                             <div class="flex items-center gap-2 text-teal-400 font-bold text-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                                Journal & Inventory
+                                ${isPlayer ? 'Player Character' : 'Journal & Inventory'}
                             </div>
-                            <button onclick="UIManager.toggleInventoryPanel()" class="bg-white/5 hover:bg-white/10 border border-white/5 text-gray-400 hover:text-white p-1.5 rounded-xl cursor-pointer transition-all shadow-sm">
+                            <button data-action="close-inventory-panel" aria-label="Close player and inventory panel" class="bg-white/5 hover:bg-white/10 border border-white/5 text-gray-400 hover:text-white p-1.5 rounded-xl cursor-pointer transition-all shadow-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
                         </div>
 
                         <!-- Tab Selectors -->
-                        <div class="flex bg-black/30 border border-white/5 p-1 rounded-xl gap-1">
+                        <div class="inventory-panel-tabs flex bg-black/30 border border-white/5 p-1 rounded-xl gap-1">
+                            <button onclick="UIManager.switchInventoryTab('player')" class="${tabClass(isPlayer)} flex-1 text-center">Player</button>
+                            ${journalEnabled ? `
                             <button onclick="UIManager.switchInventoryTab('inventory')" class="${tabClass(isInv)} flex-1 text-center">Inventory</button>
                             <button onclick="UIManager.switchInventoryTab('quests')" class="${tabClass(isQst)} flex-1 text-center">Quests</button>
                             <button onclick="UIManager.switchInventoryTab('relationships')" class="${tabClass(isRel)} flex-1 text-center">Relations</button>
+                            ` : ''}
                         </div>
 
                         <!-- Content Area -->
                         <div class="flex-1 min-h-0 overflow-y-auto pr-1">
                             ${contentHTML}
                         </div>
+                        ${isPlayer ? '<div class="player-panel-footer"><button data-action="save-player-sheet" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 px-4 rounded-lg">Save Player</button></div>' : ''}
                     </div>
                 `);
             },
@@ -20756,41 +20780,58 @@ Write only the character's message.`;
             },
 
             readPlayerSheet(prefix, previous = {}) {
-                const value = key => document.getElementById(`${prefix}-${key}`).value;
-                const data = { ...previous, abilities: {} };
-                for (const key of ['name', 'gender', 'pronouns', 'portrait', 'backstory', 'appearance', 'ancestry', 'characterClass', 'level', 'hp', 'maxHp', 'armorClass']) data[key] = value(key);
-                for (const key of ['statsEnabled', 'diceEnabled', 'survivalEnabled']) data[key] = document.getElementById(`${prefix}-${key}`).checked;
-                for (const key of UTILITY.playerAbilities) data.abilities[key] = value(key);
-                data.survival = Object.fromEntries(['water', 'sleep', 'food'].map(key => [key, value(`survival-${key}`)]));
-                data.survivalRates = Object.fromEntries(['water', 'sleep', 'food'].map(key => [key, value(`rate-${key}`)]));
-                data.clock = { ...previous.clock,
-                    enabled: document.getElementById(`${prefix}-clock-enabled`).checked,
-                    minutesPerTurn: value('clock-minutesPerTurn'), startHour: value('clock-startHour') };
+                const data = UTILITY.normalizePlayerCharacter(previous);
+                const value = (key, fallback) => document.getElementById(`${prefix}-${key}`)?.value ?? fallback;
+                const checked = (key, fallback) => document.getElementById(`${prefix}-${key}`)?.checked ?? fallback;
+                for (const key of ['name', 'gender', 'pronouns', 'portrait', 'backstory', 'appearance', 'ancestry', 'characterClass', 'level', 'hp', 'maxHp', 'armorClass']) data[key] = value(key, data[key]);
+                for (const key of ['statsEnabled', 'diceEnabled', 'survivalEnabled']) data[key] = checked(key, data[key]);
+                for (const key of UTILITY.playerAbilities) data.abilities[key] = value(key, data.abilities[key]);
+                for (const key of ['water', 'sleep', 'food']) {
+                    data.survival[key] = value(`survival-${key}`, data.survival[key]);
+                    data.survivalRates[key] = value(`rate-${key}`, data.survivalRates[key]);
+                }
+                data.clock = { ...data.clock, enabled: checked('clock-enabled', data.clock.enabled),
+                    minutesPerTurn: value('clock-minutesPerTurn', data.clock.minutesPerTurn), startHour: value('clock-startHour', data.clock.startHour) };
                 data.name = data.name.trim() || 'You';
                 return UTILITY.normalizePlayerCharacter(data);
             },
 
-            openPlayerSheet(survivalKey = null) {
+            openPlayerSheet() {
                 const state = StateManager.getState();
                 if (!state?.chat_history) return;
+                this.RUNTIME.activeInventoryTab = 'player';
+                document.getElementById('inventory-panel-container').classList.remove('hidden');
+                this.renderInventoryPanel();
+            },
+
+            openScenarioSettings(survivalKey = null) {
+                const state = StateManager.getState();
+                if (!state?.chat_history) return;
+                this.RUNTIME.clockExpanded = false;
+                this.RUNTIME.survivalExpanded = false;
+                this.renderPlayerControls();
                 const player = state.characters.find(c => c.is_user);
                 const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter, player);
-                document.getElementById('live-player-form').innerHTML = UIComponents.PlayerSheetForm('live-player', sheet);
-                this.renderPlayerPortrait('live-player', sheet);
-                AppController.openModal('player-sheet-modal');
+                document.getElementById('live-settings-form').innerHTML = UIComponents.PlayerSheetForm('live-settings', sheet, 'mechanics');
+                document.getElementById('live-settings-form').dataset.narrativeId = state.narrativeId || '';
+                AppController.openModal('scenario-settings-modal');
                 if (['water', 'sleep', 'food', 'clock'].includes(survivalKey)) {
                     requestAnimationFrame(() => {
-                        const input = document.getElementById(survivalKey === 'clock' ? 'live-player-clock-minutesPerTurn' : `live-player-survival-${survivalKey}`);
+                        const input = document.getElementById(survivalKey === 'clock' ? 'live-settings-clock-minutesPerTurn' : `live-settings-survival-${survivalKey}`);
                         input?.scrollIntoView({ block: 'center' });
                         input?.focus({ preventScroll: true });
                     });
                 }
             },
 
-            async savePlayerSheet() {
+            async savePlayerSheet(section = 'identity') {
                 const state = ReactiveStore.state;
                 if (!state?.chat_history) return;
-                const form = document.querySelector('[data-player-form="live-player"]');
+                const prefix = section === 'mechanics' ? 'live-settings' : 'live-player';
+                const form = document.querySelector(`[data-player-form="${prefix}"]`);
+                if (!form) return;
+                const owner = section === 'mechanics' ? document.getElementById('live-settings-form') : document.getElementById('inventory-panel-container');
+                if (owner.dataset.narrativeId !== (state.narrativeId || '')) return;
                 if (form.dataset.portraitLoading === 'true') { this.showNotification('Wait for the portrait to finish loading.', 'warning'); return; }
                 if ([...form.querySelectorAll('input')].some(input => !input.reportValidity())) return;
                 if (NarrativeController.RUNTIME.activeRequestAbortController) {
@@ -20798,7 +20839,7 @@ Write only the character's message.`;
                     return;
                 }
                 const player = state.characters.find(c => c.is_user);
-                const sheet = this.readPlayerSheet('live-player', UTILITY.normalizePlayerCharacter(state.playerCharacter, player));
+                const sheet = this.readPlayerSheet(prefix, UTILITY.normalizePlayerCharacter(state.playerCharacter, player));
                 if (!sheet.diceEnabled && UTILITY.getPendingPlayerCheck(state)) await NarrativeController.resolvePendingPlayerCheck(true);
                 state.playerCharacter = sheet;
                 state.characters = UTILITY.applyPlayerCharacter(state.characters, sheet);
@@ -20806,29 +20847,38 @@ Write only the character's message.`;
                 this.renderCharacters();
                 this.updateAICharacterSelector();
                 this.renderChat();
-                AppController.closeModal('player-sheet-modal');
-                this.showNotification('Player character saved.');
+                if (section === 'mechanics') AppController.closeModal('scenario-settings-modal');
+                else this.closeInventoryPanel();
+                this.showNotification(section === 'mechanics' ? 'Scenario settings saved.' : 'Player character saved.');
             },
 
             renderPlayerControls() {
                 const state = StateManager.getState();
                 const loaded = !!state?.chat_history;
                 document.getElementById('player-sheet-btn')?.classList.toggle('hidden', !loaded);
+                document.getElementById('scenario-settings-btn')?.classList.toggle('hidden', !loaded);
                 const clockContainer = document.getElementById('player-clock-container');
                 if (clockContainer) {
                     const player = loaded ? UTILITY.normalizePlayerCharacter(state.playerCharacter) : null;
                     clockContainer.classList.toggle('hidden', !player?.clock.enabled);
                     const clock = player && UTILITY.describePlayerTime(player);
-                    clockContainer.innerHTML = player?.clock.enabled ? DOM.html`<button type="button" class="player-clock" data-action="open-player-clock" title="Game time settings">
-                        <strong>Day ${clock.day} · ${clock.time}</strong><span class="player-clock-detail">${clock.elapsed} elapsed · ${clock.turns} turns</span>
-                    </button>` : '';
+                    clockContainer.innerHTML = player?.clock.enabled ? DOM.html`<button id="player-clock-toggle" type="button" class="player-hud-toggle player-clock" data-action="toggle-clock-display" aria-expanded="${!!this.RUNTIME.clockExpanded}" aria-controls="player-clock-details" title="Game time">
+                        <span>Day ${clock.day} · ${clock.time}</span><span aria-hidden="true">${this.RUNTIME.clockExpanded ? '▴' : '▾'}</span>
+                    </button><div id="player-clock-details" class="player-hud-popover ${this.RUNTIME.clockExpanded ? '' : 'hidden'}">
+                        <div class="player-clock-detail">${clock.elapsed} elapsed · ${clock.turns} turns</div>
+                        <button type="button" class="player-hud-settings" data-action="open-player-clock">Time settings</button>
+                    </div>` : '';
                 }
                 const survivalContainer = document.getElementById('player-survival-container');
                 if (survivalContainer) {
                     const enabled = loaded && state.playerCharacter?.survivalEnabled === true;
                     survivalContainer.classList.toggle('hidden', !enabled);
-                    survivalContainer.innerHTML = enabled ? UIComponents.PlayerSurvivalMeters(UTILITY.normalizePlayerCharacter(state.playerCharacter)) : '';
+                    const sheet = enabled ? UTILITY.normalizePlayerCharacter(state.playerCharacter) : null;
+                    const low = sheet && Object.values(sheet.survival).some(value => value <= 25);
+                    survivalContainer.innerHTML = enabled ? `<button id="player-survival-toggle" type="button" class="player-hud-toggle" data-action="toggle-survival-display" aria-expanded="${!!this.RUNTIME.survivalExpanded}" aria-controls="player-survival-meters">Survival${low ? ' · Low' : ''} <span aria-hidden="true">${this.RUNTIME.survivalExpanded ? '▴' : '▾'}</span></button>
+                        <div id="player-survival-meters" class="player-hud-popover ${this.RUNTIME.survivalExpanded ? '' : 'hidden'}">${UIComponents.PlayerSurvivalMeters(sheet)}</div>` : '';
                 }
+                document.getElementById('player-status-hud')?.classList.toggle('hidden', !loaded || (clockContainer.classList.contains('hidden') && survivalContainer.classList.contains('hidden')));
                 const container = document.getElementById('player-check-container');
                 if (!container) return;
                 const pending = loaded && UTILITY.getPendingPlayerCheck(state);
@@ -20845,6 +20895,8 @@ Write only the character's message.`;
             },
 
             RUNTIME: {
+                clockExpanded: false,
+                survivalExpanded: false,
                 streamingInterval: null,
                 titleTimeout: null,
                 lastCinematicImageUrl: null,
@@ -20874,13 +20926,14 @@ Write only the character's message.`;
              */
             toggleInventoryPanel(tab) {
                 const state = StateManager.getState();
-                if (state && state.enableJournal === false) return;
+                if (tab && tab !== 'player' && state?.enableJournal === false) return;
                 const container = document.getElementById('inventory-panel-container');
                 if (container) {
                     const wasHidden = container.classList.contains('hidden');
                     const switchingTab = tab && this.RUNTIME.activeInventoryTab !== tab;
                     if (tab) this.RUNTIME.activeInventoryTab = tab;
-                    container.classList.toggle('hidden', !wasHidden && !switchingTab);
+                    if (!wasHidden && !switchingTab) { this.closeInventoryPanel(); return; }
+                    container.classList.remove('hidden');
                     if (wasHidden || switchingTab) {
                         this.renderInventoryPanel();
                     }
@@ -20896,6 +20949,24 @@ Write only the character's message.`;
                 this.renderInventoryPanel();
             },
 
+            closeInventoryPanel() {
+                const container = document.getElementById('inventory-panel-container');
+                container.classList.add('hidden');
+                container.innerHTML = '';
+            },
+
+            togglePlayerHud(section) {
+                if (section === 'survival') {
+                    this.RUNTIME.survivalExpanded = !this.RUNTIME.survivalExpanded;
+                    this.RUNTIME.clockExpanded = false;
+                } else {
+                    this.RUNTIME.clockExpanded = !this.RUNTIME.clockExpanded;
+                    this.RUNTIME.survivalExpanded = false;
+                }
+                this.renderPlayerControls();
+                document.getElementById(section === 'survival' ? 'player-survival-toggle' : 'player-clock-toggle')?.focus({ preventScroll: true });
+            },
+
             /**
              * Renders the Journal & Inventory panel into the DOM.
              */
@@ -20903,15 +20974,23 @@ Write only the character's message.`;
                 const state = StateManager.getState();
                 const container = document.getElementById('inventory-panel-container');
                 if (!container) return;
-
-                if (!state || !state.gameState || state.enableJournal === false) {
-                    container.classList.add('hidden');
+                if (container.classList.contains('hidden')) {
                     container.innerHTML = '';
                     return;
                 }
 
                 const activeTab = this.RUNTIME.activeInventoryTab || 'inventory';
-                container.innerHTML = UIComponents.InventoryPanel(state.gameState, activeTab);
+                if (!state?.chat_history || (activeTab !== 'player' && state.enableJournal === false)) {
+                    container.classList.add('hidden');
+                    container.innerHTML = '';
+                    return;
+                }
+
+                if (activeTab === 'player' && container.querySelector('[data-player-form="live-player"]') && container.dataset.narrativeId === (state.narrativeId || '')) return;
+                const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter, state.characters.find(c => c.is_user));
+                container.dataset.narrativeId = state.narrativeId || '';
+                container.innerHTML = UIComponents.InventoryPanel(state.gameState, activeTab, sheet, state.enableJournal !== false);
+                if (activeTab === 'player') this.renderPlayerPortrait('live-player', sheet);
             },
 
             /**
@@ -23201,7 +23280,7 @@ Write only the character's message.`;
                     } else {
                         invBtn.classList.add('hidden');
                         const container = document.getElementById('inventory-panel-container');
-                        if (container && !container.classList.contains('hidden')) {
+                        if (container && !container.classList.contains('hidden') && this.RUNTIME.activeInventoryTab !== 'player') {
                             container.classList.add('hidden');
                         }
                     }
@@ -44276,12 +44355,17 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 ActionHandler.register('close-modal', (ds) => AppController.closeModal(ds.id));
                 ActionHandler.register('toggle-mobile-menu', () => AppController.toggleMobileMenu());
                 ActionHandler.register('open-player-inventory', () => UIManager.toggleInventoryPanel('inventory'));
+                ActionHandler.register('close-inventory-panel', () => UIManager.closeInventoryPanel());
+                ActionHandler.register('open-scenario-settings', () => UIManager.openScenarioSettings());
+                ActionHandler.register('save-scenario-settings', () => UIManager.savePlayerSheet('mechanics'));
+                ActionHandler.register('toggle-clock-display', () => UIManager.togglePlayerHud('clock'));
+                ActionHandler.register('toggle-survival-display', () => UIManager.togglePlayerHud('survival'));
                 ActionHandler.register('scenario-player-tab', () => LibraryController.switchScenarioTab('player'));
                 ActionHandler.register('open-player-sheet', () => UIManager.openPlayerSheet());
                 ActionHandler.register('choose-player-portrait', ds => document.getElementById(`${ds.prefix}-portrait-file`)?.click());
                 ActionHandler.register('upload-player-portrait', (ds, value, event) => UIManager.uploadPlayerPortrait(event, ds.prefix));
-                ActionHandler.register('open-player-survival', ds => UIManager.openPlayerSheet(ds.need));
-                ActionHandler.register('open-player-clock', () => UIManager.openPlayerSheet('clock'));
+                ActionHandler.register('open-player-survival', ds => UIManager.openScenarioSettings(ds.need));
+                ActionHandler.register('open-player-clock', () => UIManager.openScenarioSettings('clock'));
                 ActionHandler.register('toggle-player-clock', ds => {
                     document.getElementById(`${ds.prefix}-clock`).disabled = !document.getElementById(`${ds.prefix}-clock-enabled`).checked;
                 });
@@ -45406,6 +45490,9 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                     document.body.classList.add('layout-horizontal');
                     document.body.classList.remove('layout-vertical');
                 }
+                const playerHud = document.getElementById('player-status-hud');
+                const playerHudSlot = document.getElementById(isVertical ? 'mobile-player-status-slot' : 'desktop-player-status-slot');
+                if (playerHud && playerHudSlot && playerHud.parentElement !== playerHudSlot) playerHudSlot.appendChild(playerHud);
                 UIManager.updateSidePortrait();
 
                 // Force a chat render on layout changes (essential for orientation shifts between Portrait and Visual Novel Landscape)
