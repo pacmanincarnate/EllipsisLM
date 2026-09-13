@@ -2653,6 +2653,41 @@
 
         .player-sheet-form { display: grid; gap: 1rem; }
         .player-sheet-form, .player-sheet-form label { min-width: 0; }
+        .npc-sheet-columns { display: grid; gap: 1.5rem; min-width: 0; }
+        .atlas-shell { display: flex; flex-direction: column; min-height: 65vh; max-height: 90vh; color: var(--chat-text-color, #e5e7eb); }
+        .atlas-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-primary); display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between; }
+        .atlas-heading, .atlas-navigation { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+        .atlas-navigation { flex-wrap: wrap; }
+        .atlas-tabs, .atlas-breadcrumbs, .atlas-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+        .atlas-tabs button, .atlas-actions button, .atlas-actions label { padding: 0.5rem 0.8rem; border-radius: 0.5rem; border: 1px solid var(--border-primary); background: var(--surface-overlay); font-size: 0.85rem; cursor: pointer; }
+        .atlas-tabs button[aria-selected="true"] { background: var(--brand-color, #0f766e); color: white; }
+        .atlas-body { padding: 1.25rem; overflow-y: auto; min-height: 0; }
+        .atlas-breadcrumbs { font-size: 0.8rem; color: #9ca3af; margin-bottom: 1rem; }
+        .atlas-breadcrumbs button:hover { color: #5eead4; }
+        .atlas-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1rem; align-items: start; }
+        .atlas-region { border: 1px solid var(--border-primary); border-radius: 0.9rem; padding: 1rem; background: rgba(0,0,0,0.15); min-width: 0; }
+        .atlas-branch { margin: 0.6rem 0 0 0.4rem; padding-left: 0.8rem; border-left: 1px solid #47615b; }
+        .atlas-node { display: flex; width: 100%; align-items: center; gap: 0.6rem; text-align: left; border-radius: 0.4rem; padding: 0.5rem; min-width: 0; }
+        .atlas-node:hover { background: rgba(20,184,166,0.12); }
+        .atlas-node[aria-current="location"] { color: #5eead4; background: rgba(20,184,166,0.1); }
+        .atlas-node span { overflow-wrap: anywhere; }
+        .atlas-kind { color: #9ca3af; font-size: 0.7rem; text-transform: capitalize; }
+        .atlas-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
+        .atlas-card { border: 1px solid var(--border-primary); border-radius: 0.75rem; text-align: left; overflow: hidden; min-width: 0; background: rgba(0,0,0,0.15); }
+        .atlas-card:hover { border-color: var(--brand-color); }
+        .atlas-card-copy { padding: 0.8rem; }
+        .atlas-card-copy h3 { font-weight: 600; overflow-wrap: anywhere; }
+        .atlas-card-copy p { color: #9ca3af; font-size: 0.8rem; margin-top: 0.4rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .atlas-picture { width: 100%; aspect-ratio: 16 / 9; background: rgba(0,0,0,0.2); position: relative; overflow: hidden; border-radius: 0.6rem; }
+        .atlas-picture img { width: 100%; height: 100%; object-fit: cover; }
+        .atlas-detail { display: grid; gap: 1.25rem; min-width: 0; }
+        .atlas-detail > div { min-width: 0; }
+        .atlas-events { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
+        .atlas-event { padding: 0.8rem; border-left: 2px solid var(--brand-color); background: rgba(0,0,0,0.15); font-size: 0.85rem; overflow-wrap: anywhere; }
+        .atlas-empty { color: #9ca3af; padding: 2rem 0.5rem; text-align: center; }
+        @media (min-width: 900px) { .atlas-detail { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+        .player-sheet-form .npc-portrait-upload { display: inline-flex; padding: 0.5rem 0.75rem; border: 1px solid var(--border-primary); border-radius: 0.5rem; background: var(--surface-overlay); cursor: pointer; }
+        @media (min-width: 900px) { .npc-sheet-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         .player-portrait-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
         .player-portrait-preview { width: 6rem; height: 7.5rem; object-fit: cover; border-radius: 0.75rem; border: 1px solid var(--border-primary); background: var(--surface-overlay); }
         .player-portrait-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
@@ -2680,6 +2715,19 @@
         .player-sheet-form input[type="checkbox"] { accent-color: var(--brand-color); }
         .player-sheet-form fieldset { min-width: 0; }
         .player-sheet-form fieldset:disabled { opacity: 0.45; }
+        .player-sheet-form .player-stats-readonly:disabled { opacity: 1; }
+        .rpg-attribute-step { min-width: 2rem; min-height: 2rem; border: 1px solid var(--brand-color); border-radius: 0.4rem; background: color-mix(in srgb, var(--brand-color) 25%, transparent); color: var(--chat-text-color, #fff); font-weight: 700; }
+        .rpg-attribute-step:disabled { opacity: 0.3; cursor: default; }
+        .rpg-xp { appearance: none; width: 100%; height: 0.4rem; border: 0; border-radius: 1rem; overflow: hidden; }
+        .rpg-xp::-webkit-progress-bar { background: var(--border-primary); }
+        .rpg-xp::-webkit-progress-value { background: var(--brand-color); }
+        .rpg-xp::-moz-progress-bar { background: var(--brand-color); }
+        .player-sheet-form[hidden] { display: none; }
+        .player-recognition-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 0.5rem; border-top: 1px solid var(--border-primary); padding-top: 0.75rem; }
+        .player-recognition-row > label:last-child { grid-column: 1 / -1; }
+        @media (max-width: 640px) { .player-recognition-row { grid-template-columns: minmax(0, 1fr); } }
+        .dice-cost-warning { border: 1px solid #ef4444; border-radius: 0.6rem; background: #450a0a; color: #fecaca; padding: 0.65rem 0.8rem; font-size: 0.85rem; line-height: 1.5; }
+        .dice-cost-warning strong { color: #fca5a5; }
         #player-status-hud { position: relative; display: flex; align-items: center; gap: 0.75rem; min-height: 1.5rem; padding: 0 0.25rem; flex-shrink: 0; z-index: 45; pointer-events: auto; color: var(--chat-text-color, #fff); }
         #player-status-hud.hidden { display: none; }
         #story-title-group { min-width: 0; }
@@ -10335,6 +10383,8 @@
                     active_character_ids: sanitizedCharacters.filter(c => c.is_active).map(c => c.id),
                     state: {
                         chat_history: safeChatHistory,
+                        encounteredCharacters: sanitizedCharacters.filter(char => char.encounter),
+                        ignoredCharacterNames: JSON.parse(JSON.stringify(currentState.ignoredCharacterNames || [])),
                         messageCounter: currentState.messageCounter,
                         static_entries: safeStaticEntries,
                         worldMap: safeWorldMap,
@@ -10361,6 +10411,7 @@
                         evolved_characters: JSON.parse(JSON.stringify(currentState.evolved_characters || {})),
                         livingPersonaCounters: JSON.parse(JSON.stringify(currentState.livingPersonaCounters || {})),
                         gameState: JSON.parse(JSON.stringify(currentState.gameState || null)),
+                        npcProgression: JSON.parse(JSON.stringify(currentState.npcProgression || {})),
                         playerCharacter: currentState.playerCharacter ? UTILITY.normalizePlayerCharacter({ ...currentState.playerCharacter,
                             name: rawCharacters.find(c => c.is_user)?.name || currentState.playerCharacter.name,
                             backstory: rawCharacters.find(c => c.is_user)?.description ?? currentState.playerCharacter.backstory,
@@ -10394,7 +10445,7 @@
 
 
                         // Sync Structures
-                        freshStory.characters = sanitizedCharacters.map(char => {
+                        freshStory.characters = sanitizedCharacters.filter(char => !char.encounter).map(char => {
                             if (!currentState.playerCharacter) return char;
                             const original = freshStory.characters.find(c => c.id === char.id);
                             if (!original) return char;
@@ -10868,6 +10919,10 @@
                     story.characters.push(player);
                 }
                 const playerCharacter = UTILITY.normalizePlayerCharacter(scenario.playerCharacter, player);
+                if (playerCharacter.progression.enabled) {
+                    playerCharacter.progression = UTILITY.normalizeRpgProgression({ ...playerCharacter.progression, level: playerCharacter.progression.startingLevel, xp: 0 });
+                    Object.assign(playerCharacter, UTILITY.normalizePlayerCharacter(playerCharacter));
+                }
                 playerCharacter.characterId = player.id;
                 playerCharacter.clock.elapsedMinutes = 0;
                 playerCharacter.clock.turns = 0;
@@ -10881,6 +10936,7 @@
                     active_character_ids: activeIDs,
                     state: {
                         playerCharacter,
+                        npcProgression: {},
                         chat_history: [],
                         messageCounter: 0,
                         static_entries: (scenario.static_entries && scenario.static_entries.length > 0) ? JSON.parse(JSON.stringify(scenario.static_entries)) : [{ id: UTILITY.uuid(), title: "World Overview", content: "The world." }],
@@ -11225,7 +11281,9 @@
                             ? new Set((activeStory.characters || []).map(c => c.id))
                             : new Set(idList);
 
-                        const hydratedCharacters = UTILITY.applyPlayerCharacter(activeStory.characters || [], activeNarrative.state.playerCharacter).map(char => ({
+                        const encounteredCharacters = Array.isArray(activeNarrative.state.encounteredCharacters) ? activeNarrative.state.encounteredCharacters : [];
+                        const roster = [...(activeStory.characters || []), ...encounteredCharacters.filter(char => char?.encounter && !(activeStory.characters || []).some(existing => existing.id === char.id))];
+                        const hydratedCharacters = UTILITY.applyPlayerCharacter(roster, activeNarrative.state.playerCharacter).map(char => ({
                             ...char,
                             is_active: char.is_user || activeIDs.has(char.id)
                         }));
@@ -13488,7 +13546,248 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
          * =================================================================================================
          */
         const UTILITY = {
+            atlasKinds: ['region', 'kingdom', 'province', 'city', 'town', 'village', 'settlement', 'forest', 'mountain', 'valley', 'island', 'wilderness', 'area', 'district', 'inn', 'tavern', 'shop', 'market', 'gate', 'castle', 'temple', 'ruins', 'cave', 'bridge', 'road', 'harbor', 'port', 'tower', 'keep', 'camp', 'square', 'library', 'dungeon'],
+
+            atlasNameKey(value) {
+                return String(value || '').normalize('NFKC').trim().replace(/^(?:the|a|an)\s+/i, '').replace(/[’‘]/g, "'").replace(/\s+/g, ' ').toLowerCase();
+            },
+
+            atlasKindRank(kind) {
+                return ['region', 'kingdom', 'province'].includes(kind) ? 0 : ['city', 'town', 'village', 'settlement', 'forest', 'mountain', 'valley', 'island', 'wilderness'].includes(kind) ? 1 : 2;
+            },
+
+            parseAtlasMarkers(value) {
+                const text = typeof value === 'string' ? this.stripThinking(value).replace(/```[\s\S]*?```/g, '') : '';
+                const places = [];
+                const validName = name => name.length >= 2 && name.length <= 80 && !/[<>\[\]\r\n]/.test(name);
+                for (const match of text.matchAll(/\[PLACE:\s*([^|\]\r\n]+)\|\s*([^|\]\r\n]+)(?:\|\s*([^\]\r\n]*))?\]/gi)) {
+                    const name = match[1].trim(), kind = match[2].trim().toLowerCase(), parentName = (match[3] || '').trim();
+                    if (validName(name) && this.atlasKinds.includes(kind) && (!parentName || validName(parentName))) places.push({ name, kind, parentName });
+                }
+                const arrival = [...text.matchAll(/\[AT:\s*([^\]\r\n]+)\]/gi)].at(-1)?.[1].trim() || '';
+                return { places, arrival: validName(arrival) ? arrival : '' };
+            },
+
+            extractAtlasPlaces(value) {
+                if (typeof value !== 'string') return [];
+                const markers = this.parseAtlasMarkers(value);
+                const text = this.stripThinking(value).replace(/```[\s\S]*?```/g, ' ').replace(/\[[^\]\r\n]*\]/g, ' ').replace(/<[^>]*>/g, ' ').replace(/[*_]/g, '');
+                const token = "[\\p{Lu}][\\p{L}\\p{M}'’-]*";
+                const name = `${token}(?:[ \\t]+(?:(?:of|the|de)[ \\t]+)?${token}){0,3}`;
+                const kinds = this.atlasKinds.join('|');
+                const suffixes = this.atlasKinds.map(kind => kind[0].toUpperCase() + kind.slice(1)).join('|');
+                const found = new Map();
+                const add = (raw, kind, index = 0, parentName = '') => {
+                    const clean = raw.trim().replace(/^(?:The|A|An)\s+/, '');
+                    if (!clean || /^(?:You|Your|He|She|They|His|Her|Their|This|That|Old|Ancient|Unnamed|Unknown)$/i.test(clean)) return;
+                    const key = this.atlasNameKey(clean);
+                    const description = this.atlasDescription(text, clean);
+                    const previous = found.get(key);
+                    found.set(key, { name: clean, kind, parentName: parentName || previous?.parentName || '', description: previous?.description || description });
+                };
+                for (const match of text.matchAll(new RegExp(`\\b(${kinds})\\s+(?:(?:named|called|of)\\s+)(${name})`, 'gu'))) add(match[2], match[1], match.index);
+                for (const match of text.matchAll(new RegExp(`(${name})\\s+(${suffixes})\\b`, 'gu'))) add(`${match[1]} ${match[2]}`, match[2].toLowerCase(), match.index);
+                for (const place of markers.places) {
+                    const index = text.toLowerCase().indexOf(place.name.toLowerCase());
+                    add(place.name, place.kind, Math.max(0, index), place.parentName);
+                }
+                for (const place of found.values()) {
+                    if (place.parentName) continue;
+                    const escaped = place.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const parent = text.match(new RegExp(`${escaped}\\s+(?:in|within|inside|of)\\s+(?:the\\s+)?(?:(?:${kinds})\\s+(?:of\\s+)?)?(${name})`, 'u'))?.[1];
+                    if (parent && this.atlasNameKey(parent) !== this.atlasNameKey(place.name)) place.parentName = parent;
+                }
+                return [...found.values()];
+            },
+
+            atlasDescription(value, name) {
+                const text = this.stripThinking(String(value || '')).replace(/```[\s\S]*?```/g, ' ').replace(/\[[^\]\r\n]*\]/g, '').replace(/<[^>]*>/g, '').trim();
+                const paragraph = text.split(/\n\s*\n/).find(part => part.toLowerCase().includes(String(name).toLowerCase()));
+                if (!paragraph) return '';
+                const sentences = paragraph.replace(/([.!?])\s+/g, '$1\n').split('\n');
+                const index = sentences.findIndex(sentence => sentence.toLowerCase().includes(String(name).toLowerCase()));
+                return sentences.slice(index, index + 3).join(' ').slice(0, 360);
+            },
+
+            detectAtlasArrival(value, places) {
+                const text = String(value || '').replace(/"[^"\n]*"|“[^”\n]*”/g, '');
+                let arrival = null, lastIndex = -1;
+                for (const place of places) {
+                    const names = [place.name, ...(place.aliases || [])];
+                    for (const name of names) {
+                        const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const pattern = new RegExp(`(?:\\b[Yy]ou\\s+|\\band\\s+)(?:(?:finally|now|have|just)\\s+){0,2}(?:arrive(?:d)?\\s+(?:in|at)|enter(?:ed)?|reach(?:ed)?|step(?:ped)?\\s+(?:into|inside)|stand\\s+(?:in|inside|at)|wake\\s+(?:in|inside)|find yourself\\s+(?:in|inside|at))\\s+(?:the\\s+)?(?:(?:${this.atlasKinds.join('|')})\\s+of\\s+)?${escaped}(?![\\p{L}\\p{M}])`, 'gu');
+                        for (const match of text.matchAll(pattern)) if (match.index >= lastIndex) { arrival = place.id; lastIndex = match.index; }
+                    }
+                }
+                return arrival;
+            },
+
+            atlasAncestry(places, id) {
+                const result = [], seen = new Set();
+                let place = places.find(entry => entry.id === id);
+                while (place && !seen.has(place.id)) { seen.add(place.id); result.unshift(place); place = places.find(entry => entry.id === place.parentId); }
+                return result;
+            },
+
+            npcArchetypes: [
+                { jobs: 'guard|soldier|captain|commander|knight|watchman|warrior|mercenary|veteran', boosts: [3, 0, 2, 0, 1, 0], hitDie: 10, armor: 14, traits: ['Watchful', 'Disciplined', 'Practical', 'Steadfast'] },
+                { jobs: 'mage|wizard|witch|sorcerer|sorceress|warlock|enchanter', boosts: [0, 0, 0, 3, 2, 1], hitDie: 6, armor: 10, traits: ['Inquisitive', 'Reflective', 'Imaginative', 'Methodical'] },
+                { jobs: 'scholar|scribe|alchemist|librarian|professor|researcher', boosts: [0, 1, 0, 3, 2, 0], hitDie: 6, armor: 10, traits: ['Curious', 'Precise', 'Analytical', 'Patient'] },
+                { jobs: 'healer|priest|priestess|cleric|herbalist|physician|doctor|monk|nun', boosts: [0, 0, 1, 1, 3, 1], hitDie: 8, armor: 10, traits: ['Attentive', 'Compassionate', 'Composed', 'Patient'] },
+                { jobs: 'merchant|trader|innkeeper|barkeep|bartender|shopkeeper|peddler|tavernkeeper', boosts: [0, 1, 0, 1, 1, 3], hitDie: 6, armor: 10, traits: ['Observant', 'Sociable', 'Pragmatic', 'Persuasive'] },
+                { jobs: 'scout|ranger|hunter|huntress|archer|tracker|guide', boosts: [0, 3, 1, 0, 2, 0], hitDie: 8, armor: 11, traits: ['Resourceful', 'Alert', 'Independent', 'Careful'] },
+                { jobs: 'rogue|thief|assassin|smuggler|spy|bandit|pirate', boosts: [0, 3, 0, 1, 0, 2], hitDie: 8, armor: 11, traits: ['Adaptable', 'Discreet', 'Quick-witted', 'Wary'] },
+                { jobs: 'blacksmith|smith|farmer|miller|carpenter|miner|laborer|labourer|sailor|fisherman|fisherwoman|baker|cook', boosts: [2, 1, 3, 0, 0, 0], hitDie: 8, armor: 10, traits: ['Practical', 'Persistent', 'Grounded', 'Diligent'] },
+                { jobs: 'noble|lord|lady|baron|baroness|duke|duchess|prince|princess|king|queen|count|countess', boosts: [0, 0, 0, 1, 2, 3], hitDie: 8, armor: 10, traits: ['Poised', 'Diplomatic', 'Self-assured', 'Deliberate'] },
+                { jobs: 'bard|performer|musician|singer|dancer|actor|actress', boosts: [0, 2, 0, 1, 0, 3], hitDie: 6, armor: 10, traits: ['Expressive', 'Perceptive', 'Playful', 'Inventive'] },
+                { jobs: 'villager|traveler|traveller|adventurer|servant|apprentice|messenger|commoner|unknown', boosts: [0, 0, 0, 0, 0, 0], hitDie: 6, armor: 10, traits: ['Reserved', 'Friendly', 'Thoughtful', 'Practical'] }
+            ],
+
+            npcNameKey(name) {
+                const titles = 'sir|dame|master|mistress|father|mother|brother|sister|' + this.npcArchetypes.map(role => role.jobs).join('|');
+                return String(name || '').normalize('NFKC').replace(new RegExp(`^(?:(?:the|${titles})\\s+)+`, 'i'), '')
+                    .replace(/[’‘]/g, "'").replace(/\s+/g, ' ').trim().replace(/'s$/i, '').toLocaleLowerCase();
+            },
+
+            findNamedCharacter(characters, name) {
+                const key = this.npcNameKey(name);
+                if (!key) return null;
+                const exact = (characters || []).filter(char => this.npcNameKey(char.name) === key || (char.encounter?.aliases || []).some(alias => this.npcNameKey(alias) === key));
+                if (exact.length === 1) return exact[0];
+                if (exact.length) return null;
+                const short = (characters || []).filter(char => this.npcNameKey(char.name).split(' ')[0] === key.split(' ')[0]);
+                return short.length === 1 && (!key.includes(' ') || !this.npcNameKey(short[0].name).includes(' ')) ? short[0] : null;
+            },
+
+            parseNpcMarkers(value) {
+                if (typeof value !== 'string') return [];
+                const text = this.stripThinking(value).replace(/```[\s\S]*?```/g, '');
+                const markers = [];
+                for (const match of text.matchAll(/\[(NPC_MET|NPC_MENTION|NPC):\s*([^\]]{1,2200})\]/gi)) {
+                    const [rawName, rawJob, ...details] = match[2].split('|');
+                    const name = rawName.trim(), job = (rawJob || '').trim();
+                    if (rawJob === undefined || name.length < 2 || name.length > 70 || job.length > 60 || /[<>\[\]\r\n]/.test(name + job)) continue;
+                    const type = match[1].toUpperCase();
+                    const levelText = (type === 'NPC_MET' && details.length > 1) || type === 'NPC_MENTION' ? details.at(-1)?.trim() : '';
+                    const level = /^\d+$/.test(levelText || '') && Number.isSafeInteger(Number(levelText)) && Number(levelText) > 0 ? Number(details.pop().trim()) : null;
+                    markers.push({ name, job: job || 'Unknown', encounterType: type === 'NPC_MET' ? 'met' : type === 'NPC_MENTION' ? 'mentioned' : 'unknown',
+                        description: type === 'NPC_MET' ? details.join('|').trim().slice(0, 1600) : '', ...(level ? { level } : {}) });
+                    if (markers.length === 30) break;
+                }
+                return markers;
+            },
+
+            extractNamedCharacters(value, previousMessage = '') {
+                if (typeof value !== 'string') return [];
+                const text = this.stripThinking(value).replace(/```[\s\S]*?```/g, ' ').replace(/\[[^\]\r\n]*\]/g, ' ')
+                    .replace(/<[^>]*>/g, ' ').replace(/[*_]/g, '').replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+                const words = this.npcArchetypes.map(role => role.jobs).join('|');
+                const roles = words.split('|').filter(word => word !== 'unknown').map(word => `[${word[0].toUpperCase()}${word[0]}]${word.slice(1)}`).join('|');
+                const token = "[\\p{Lu}][\\p{L}\\p{M}'-]*";
+                const name = `${token}(?:[ \\t]+(?:(?:de|van|von)[ \\t]+)?${token}){0,2}`;
+                const person = `(?:${roles}|[Mm]an|[Ww]oman|[Gg]irl|[Bb]oy|[Ee]lf|[Dd]warf|[Oo]rc|[Hh]alfling|[Gg]oblin|[Ss]tranger|[Ff]igure|[Pp]erson|[Cc]hild|[Yy]outh)`;
+                const blocked = new Set(('the a an you your yours i me my we our he she they his her their it its this that these those there here ' +
+                    'yes no hello thanks thank please welcome goodbye what why who where when how if then but and or not never ' +
+                    'strength dexterity constitution intelligence wisdom charisma health armor hp level name appearance backstory personality ' +
+                    'day night dawn dusk noon morning evening north south east west winter spring summer autumn moon sun sky ' +
+                    'road river bridge gate castle tower temple tavern inn village city town kingdom sword blade shield ship forest mountain ' +
+                    'chapter scene narrator unknown hungry tired sorry fine ready alone afraid').split(' '));
+                const found = new Map();
+                const add = (rawName, job, index) => {
+                    const key = this.npcNameKey(rawName);
+                    const parts = key.split(' ');
+                    if (key.length < 2 || key.length > 70 || parts.some(part => blocked.has(part)) || !/\p{Lu}/u.test(rawName)) return;
+                    const start = Math.max(text.lastIndexOf('.', index - 1), text.lastIndexOf('!', index - 1), text.lastIndexOf('?', index - 1), text.lastIndexOf('\n', index - 1)) + 1;
+                    const tail = text.slice(index).search(/[.!?\n]/);
+                    const source = text.slice(start, tail < 0 ? text.length : index + tail + 1).trim().slice(0, 500);
+                    if (/\b(?:imaginary|fictional)\s+(?:\w+\s+){0,2}(?:named|called)\b/i.test(source)) return;
+                    const displayName = rawName.replace(new RegExp(`^(?:(?:[Tt]he|${roles}|[Ss]ir|[Dd]ame)\\s+)+`, 'u'), '').trim().replace(/'s$/i, '');
+                    const role = job ? job[0].toUpperCase() + job.slice(1).toLowerCase() : 'Unknown';
+                    const previous = found.get(key);
+                    if (!previous || (previous.job === 'Unknown' && role !== 'Unknown')) found.set(key, { name: displayName, job: role, source });
+                };
+                for (const match of text.matchAll(new RegExp(`\\b(${person})\\s+(?:(?:is|was)\\s+)?(?:named|called|known as)\\s+(${name})`, 'gu'))) {
+                    const job = new RegExp(`^(?:${roles})$`, 'u').test(match[1]) ? match[1] : null;
+                    add(match[2], job, match.index);
+                }
+                for (const match of text.matchAll(new RegExp(`(?:(?:[Mm]y|[Hh]is|[Hh]er|[Tt]heir) name (?:is|was)|I am|I'm|[Cc]all me|[Tt]hey call me|[Nn]ame's|introduces? (?:himself|herself|themselves) as)\\s+(${name})`, 'gu'))) add(match[1], null, match.index);
+                for (const match of text.matchAll(new RegExp(`\\b(${roles})\\s+(${name})`, 'gu'))) add(match[2], match[1], match.index);
+                for (const match of text.matchAll(new RegExp(`(${name}),?\\s+(?:(?:is|was),?\\s+)?(?:a|an|the)\\s+(?:[a-z-]+\\s+){0,3}(${roles})\\b`, 'gu'))) add(match[1], match[2], match.index);
+                for (const match of text.matchAll(new RegExp(`(${name})\\s+(?:says|said|asks|asked|replies|replied|whispers|whispered|mutters|muttered|shouts|shouted|nods|nodded|smiles|smiled|grins|grinned|bows|bowed|kneels|knelt|steps|stepped|greets|greeted|introduces|chuckles|laughs)\\b`, 'gu'))) add(match[1], null, match.index);
+                for (const match of text.matchAll(new RegExp(`(?:^|\\n)\\s*(${name}):[ \\t]*["']`, 'gu'))) add(match[1], null, match.index);
+                for (const match of text.matchAll(new RegExp(`(?:gives? (?:his|her|their) name as|[Hh]e is called|[Ss]he is called)\\s+(${name})`, 'gu'))) add(match[1], null, match.index);
+                const ambiguousReply = /\b(?:doesn['’]t|does not|didn['’]t|did not|won['’]t|will not|refuses? to)\s+(?:answer|give|share|tell|offer)[^.!?]*\bname\b|\b(?:gibberish|unintelligible|alien syllables)\b|\bwhether\b[^.!?]*\b(?:order|threat|title|command)\b[^.!?]*\b(?:cannot|can['’]t) tell\b/i.test(text);
+                if (!ambiguousReply && /\b(?:your|his|her|their)\s+name\b|\bwho (?:are you|is he|is she)\b|\bask(?:ed)?\b[^.!?]*\bname\b/i.test(previousMessage)) {
+                    const reply = text.match(new RegExp(`(?:^\\s*["']?|["']|it['’]s\\s+)(${name})(?=[,.'"!?\\n]|$)`, 'u'));
+                    if (reply) {
+                        const job = text.match(new RegExp(`\\b(${roles})\\b`, 'u'))?.[1] || String(previousMessage).match(new RegExp(`\\b(${roles})\\b`, 'u'))?.[1];
+                        add(reply[1], job, reply.index);
+                    }
+                }
+                for (const marker of this.parseNpcMarkers(value)) {
+                    add(marker.name, marker.job, Math.max(0, text.indexOf(marker.name)));
+                    const character = found.get(this.npcNameKey(marker.name));
+                    if (character && (character.encounterType !== 'met' || marker.encounterType === 'met')) {
+                        character.encounterType = marker.encounterType;
+                        character.description = marker.description || character.description || '';
+                        if (marker.level) character.level = marker.level;
+                    }
+                }
+                return [...found.values()];
+            },
+
+            createNpcProfile(name, job = 'Unknown', seedKey = '') {
+                let seed = 2166136261;
+                for (const character of `${seedKey}|${this.npcNameKey(name)}`) seed = Math.imul(seed ^ character.charCodeAt(0), 16777619) >>> 0;
+                const initialSeed = seed;
+                const random = () => {
+                    let value = seed += 0x6d2b79f5;
+                    value = Math.imul(value ^ value >>> 15, value | 1);
+                    value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+                    return ((value ^ value >>> 14) >>> 0) / 4294967296;
+                };
+                const pick = values => values[Math.floor(random() * values.length)];
+                const role = this.npcArchetypes.find(entry => new RegExp(`\\b(?:${entry.jobs})\\b`, 'i').test(job)) || this.npcArchetypes.at(-1);
+                const abilities = {};
+                this.playerAbilities.forEach((ability, index) => { abilities[ability] = Math.min(18, 6 + Math.floor(random() * 10) + role.boosts[index]); });
+                const level = /captain|commander|veteran|king|queen|duke|duchess/i.test(job) ? 4 + Math.floor(random() * 3) : 1 + Math.floor(random() * 3);
+                const constitution = this.playerAbilityModifier(abilities.constitution);
+                const hp = Math.max(4, role.hitDie + constitution + (level - 1) * (Math.ceil(role.hitDie / 2) + 1 + constitution));
+                const personality = [pick(role.traits), pick(['Generous', 'Blunt', 'Cautious', 'Warm', 'Dry-humored', 'Proud', 'Loyal', 'Restless', 'Skeptical', 'Optimistic', 'Private', 'Stubborn'])];
+                return { seed: initialSeed, job, level, abilities, hp, maxHp: hp,
+                    armorClass: Math.max(8, role.armor + Math.min(2, this.playerAbilityModifier(abilities.dexterity))),
+                    personality: [...new Set(personality)].join(', '),
+                    temperament: pick(['Calm under pressure', 'Slow to trust', 'Quick to laugh', 'Easily frustrated', 'Quietly confident', 'Careful with strangers']),
+                    motivation: pick(['Protect the people they care about', 'Earn lasting security', 'Become respected for their work', 'Keep their independence', 'Find a place to belong', 'Repay a personal debt', 'Discover something worth remembering']),
+                    mannerism: pick(['Pauses before answering difficult questions', 'Keeps their hands busy while thinking', 'Notices small changes in their surroundings', 'Speaks plainly and avoids embellishment', 'Uses dry humor to ease tension', 'Listens fully before offering an opinion']) };
+            },
+
+            npcProfileDescription(profile, source = '') {
+                return [source && `Known details: ${source}`, `Occupation: ${profile.job}`, `Personality: ${profile.personality}`,
+                    `Temperament: ${profile.temperament}`, `Motivation: ${profile.motivation}`, `Mannerism: ${profile.mannerism}`].filter(Boolean).join('\n');
+            },
+
             playerAbilities: ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'],
+
+            normalizePlayerCondition(value) {
+                const data = value && typeof value === 'object' ? value : {};
+                const conditions = [];
+                for (const entry of Array.isArray(data.conditions) ? data.conditions : []) {
+                    if (typeof entry !== 'string') continue;
+                    const condition = entry.trim().slice(0, 300);
+                    if (condition && !conditions.some(item => item.toLocaleLowerCase() === condition.toLocaleLowerCase())) conditions.push(condition);
+                    if (conditions.length === 32) break;
+                }
+                const recognition = new Map();
+                for (const entry of Array.isArray(data.recognition) ? data.recognition : []) {
+                    if (!entry || typeof entry.characterId !== 'string' || !entry.characterId.trim()) continue;
+                    recognition.set(entry.characterId, { characterId: entry.characterId,
+                        status: ['yes', 'no', 'uncertain'].includes(entry.status) ? entry.status : 'unknown', witnessed: entry.witnessed === true });
+                    if (recognition.size === 200) break;
+                }
+                return { form: typeof data.form === 'string' ? data.form.trim().slice(0, 200) : '', conditions, recognition: [...recognition.values()] };
+            },
 
             normalizePlayerCharacter(value, character = {}) {
                 const data = value && typeof value === 'object' ? value : {};
@@ -13498,6 +13797,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     ? fallback : Math.round(Math.max(0, Math.min(max, Number(n))) * 1000000) / 1000000;
                 const string = (n, fallback = '') => typeof n === 'string' ? n : fallback;
                 const maxHp = number(data.maxHp, 10, 1, 9999);
+                const progression = this.normalizeRpgProgression(data.progression);
                 return {
                     characterId: string(data.characterId, character.id || ''),
                     name: string(data.name, character.name || 'You'),
@@ -13506,9 +13806,11 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     portrait: typeof data.portrait === 'string' && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(data.portrait) ? data.portrait : null,
                     backstory: string(data.backstory, character.description || ''),
                     appearance: string(data.appearance, character.appearance || character.short_description || ''),
+                    currentState: this.normalizePlayerCondition(data.currentState),
                     ancestry: string(data.ancestry), characterClass: string(data.characterClass),
-                    level: number(data.level, 1, 1, 20),
-                    statsEnabled: data.statsEnabled === true, diceEnabled: data.diceEnabled === true,
+                    progression,
+                    level: progression.enabled ? progression.level : number(data.level, 1, 1, progression.initialized ? Number.MAX_SAFE_INTEGER : 20),
+                    statsEnabled: progression.enabled || data.statsEnabled === true, diceEnabled: data.diceEnabled === true,
                     survivalEnabled: data.survivalEnabled === true,
                     survival: Object.fromEntries(['water', 'sleep', 'food'].map(key => [key, level(data.survival?.[key], 100)])),
                     survivalRates: { water: level(data.survivalRates?.water, 4), sleep: level(data.survivalRates?.sleep, 5), food: level(data.survivalRates?.food, 3) },
@@ -13520,8 +13822,81 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                         turns: number(data.clock?.turns, 0, 0, 525600000)
                     },
                     hp: number(data.hp, maxHp, 0, maxHp), maxHp, armorClass: number(data.armorClass, 10, 0, 40),
-                    abilities: Object.fromEntries(this.playerAbilities.map(key => [key, number(data.abilities?.[key], 10, 1, 30)]))
+                    abilities: Object.fromEntries(this.playerAbilities.map(key => [key, progression.enabled ? 8 + progression.allocations[key] : number(data.abilities?.[key], 10, 1, progression.initialized ? Number.MAX_SAFE_INTEGER : 30)]))
                 };
+            },
+
+            rpgInteger(value, fallback = 0, minimum = 0) {
+                return value === '' || value == null || !Number.isFinite(Number(value)) ? fallback
+                    : Math.max(minimum, Math.min(Number.MAX_SAFE_INTEGER - 100, Math.trunc(Number(value))));
+            },
+
+            rpgPointBudget(level, rules) {
+                return Math.min(Number.MAX_SAFE_INTEGER - 100, this.rpgInteger(rules?.startingPoints, 12)
+                    + (this.rpgInteger(level, 1, 1) - 1) * this.rpgInteger(rules?.pointsPerLevel, 2));
+            },
+
+            distributeRpgPoints(weights, budget) {
+                const points = this.rpgInteger(budget);
+                const values = this.playerAbilities.map(key => this.rpgInteger(weights?.[key]));
+                if (!values.some(Boolean)) values.fill(1);
+                const total = values.reduce((sum, value) => sum + value, 0);
+                const shares = values.map(value => points * (value / total));
+                const assigned = shares.map(Math.floor);
+                let remainder = points - assigned.reduce((sum, value) => sum + value, 0);
+                const order = shares.map((value, index) => index).sort((a, b) => (shares[b] - assigned[b]) - (shares[a] - assigned[a]) || a - b);
+                for (const index of order) {
+                    if (remainder <= 0) break;
+                    assigned[index]++; remainder--;
+                }
+                if (remainder) assigned[order[0]] += remainder;
+                return Object.fromEntries(this.playerAbilities.map((key, index) => [key, assigned[index]]));
+            },
+
+            normalizeRpgProgression(value) {
+                const data = value && typeof value === 'object' ? value : {};
+                const maxLevel = data.maxLevel === '' || data.maxLevel == null || Number(data.maxLevel) === 0 ? null : this.rpgInteger(data.maxLevel, null, 1);
+                const startingLevel = Math.min(this.rpgInteger(data.startingLevel, 1, 1), maxLevel || Number.MAX_SAFE_INTEGER);
+                const rules = { enabled: data.enabled === true, startingLevel, maxLevel,
+                    startingPoints: this.rpgInteger(data.startingPoints, 12), pointsPerLevel: this.rpgInteger(data.pointsPerLevel, 2) };
+                const level = Math.min(data.initialized === true ? this.rpgInteger(data.level, startingLevel, 1) : startingLevel, maxLevel || Number.MAX_SAFE_INTEGER);
+                let allocations = Object.fromEntries(this.playerAbilities.map(key => [key, this.rpgInteger(data.allocations?.[key])]));
+                const budget = this.rpgPointBudget(level, rules);
+                if (Object.values(allocations).reduce((sum, points) => sum + points, 0) > budget) allocations = this.distributeRpgPoints(allocations, budget);
+                return { ...rules, initialized: data.initialized === true || rules.enabled, level,
+                    xp: maxLevel !== null && level >= maxLevel ? 0 : this.rpgInteger(data.xp), allocations };
+            },
+
+            rpgAvailablePoints(progression) {
+                const data = this.normalizeRpgProgression(progression);
+                return Math.max(0, this.rpgPointBudget(data.level, data) - Object.values(data.allocations).reduce((sum, points) => sum + points, 0));
+            },
+
+            rpgRollXp(roll) {
+                if (!roll || roll.skipped || !Number.isInteger(roll.die) || roll.die < 1 || roll.die > 20 || !Number.isInteger(roll.dc) || roll.dc < 1 || roll.dc > 30
+                    || !Number.isInteger(roll.modifier) || roll.total !== roll.die + roll.modifier || roll.success !== (roll.total >= roll.dc)) return 0;
+                return roll.success ? roll.dc * 10 : 5;
+            },
+
+            awardRpgXp(progression, roll) {
+                const data = this.normalizeRpgProgression(progression);
+                const xpGained = data.enabled && !(data.maxLevel !== null && data.level >= data.maxLevel) ? this.rpgRollXp(roll) : 0;
+                if (!xpGained) return { progression: data, xpGained: 0, levelsGained: 0 };
+                const xp = Math.min(Number.MAX_SAFE_INTEGER - 100, data.xp + xpGained);
+                const b = 2 * data.level - 1;
+                let levels = Math.max(0, Math.floor((2 * xp / 50) / (Math.sqrt(b * b + 4 * xp / 50) + b)));
+                const cost = count => 50 * count * (2 * data.level + count - 1);
+                if (cost(levels + 1) <= xp) levels++;
+                if (cost(levels) > xp) levels--;
+                if (data.maxLevel !== null) levels = Math.min(levels, data.maxLevel - data.level);
+                const level = data.level + levels;
+                return { progression: this.normalizeRpgProgression({ ...data, level, xp: xp - cost(levels) }), xpGained, levelsGained: levels };
+            },
+
+            spendRpgPoint(progression, ability) {
+                const data = this.normalizeRpgProgression(progression);
+                if (data.enabled && this.playerAbilities.includes(ability) && this.rpgAvailablePoints(data) > 0) data.allocations[ability]++;
+                return data;
             },
 
             advancePlayerTime(player, effects = {}) {
@@ -13568,6 +13943,26 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
 
             playerAbilityModifier(score) {
                 return Math.floor((Number(score) - 10) / 2);
+            },
+
+            playerSurvivalPenalties(player) {
+                const sheet = this.normalizePlayerCharacter(player);
+                if (!sheet.statsEnabled || !sheet.survivalEnabled) return [];
+                return [
+                    { need: 'water', label: 'Thirst', abilities: this.playerAbilities.slice() },
+                    { need: 'sleep', label: 'Fatigue', abilities: ['dexterity', 'intelligence', 'wisdom', 'charisma'] },
+                    { need: 'food', label: 'Hunger', abilities: ['strength', 'dexterity', 'constitution'] }
+                ].map(penalty => ({ ...penalty, modifier: sheet.survival[penalty.need] <= 0 ? -3 : sheet.survival[penalty.need] <= 10 ? -2 : sheet.survival[penalty.need] <= 25 ? -1 : 0 }))
+                    .filter(penalty => penalty.modifier !== 0);
+            },
+
+            playerCheckModifier(player, ability) {
+                const sheet = this.normalizePlayerCharacter(player);
+                const validAbility = this.playerAbilities.includes(ability);
+                const base = sheet.statsEnabled && validAbility ? this.playerAbilityModifier(sheet.abilities[ability]) : 0;
+                const penalties = validAbility ? this.playerSurvivalPenalties(sheet).filter(penalty => penalty.abilities.includes(ability)) : [];
+                const survival = penalties.reduce((total, penalty) => total + penalty.modifier, 0);
+                return { base, survival, total: base + survival, penalties };
             },
 
             applyPlayerCharacter(characters, profile) {
@@ -15853,13 +16248,53 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
          * =================================================================================================
          */
         const PromptBuilder = {
+            buildAtlasContext(state) {
+                const atlas = state.worldMap?.atlas;
+                const current = atlas?.places.find(place => place.id === atlas.currentId);
+                const instructions = 'For newly introduced named places only, append [PLACE: name|kind|parent name] to the same story response. Use region, city, town, village, forest, area, district, inn, tavern, shop, gate, temple, cave, or another ordinary place type. Leave parent empty if unknown; never invent a hierarchy. Put descriptions in the story prose, not in tags. Only after the PLAYER actually arrives, append [AT: exact place name]. Never use AT for plans, mentions, or NPC travel. Omit repeated PLACE tags for known places.\n';
+                if (!atlas?.places.length) return '### WORLD ORIENTATION\nNo places established yet.\n' + instructions;
+                const ancestry = current ? UTILITY.atlasAncestry(atlas.places, current.id) : [];
+                const recentText = (state.chat_history || []).filter(message => !message.isHidden && message.type === 'chat').slice(-3).map(message => message.content).join(' ').toLowerCase();
+                const relevant = atlas.places.filter(place => place.id === current?.id || ancestry.some(parent => parent.id === place.id) || (current && place.parentId === current.id) || recentText.includes(place.name.toLowerCase()));
+                let context = `### WORLD ORIENTATION\nCurrent: ${ancestry.length ? ancestry.map(place => place.name).join(' > ') : 'Not established'}\n`;
+                context += relevant.map(place => `${place.name} (${place.kind}${place.parentId ? '; within ' + (atlas.places.find(parent => parent.id === place.parentId)?.name || 'unknown') : ''}): ${place.description || ''}${place.id === current?.id && place.details ? '\nLocal lore: ' + place.details : ''}`).join('\n') + '\n';
+                if (current) {
+                    context += 'Recent events here: ' + (current.events || []).slice(-3).map(event => event.text.slice(0, 240)).join(' / ') + '\n';
+                    const roster = [...state.characters, ...(state.worldMap.grid || []).flatMap(tile => tile.characters || [])];
+                    const names = roster.filter(char => (current.characterIds || []).includes(char.id)).map(char => char.name);
+                    if (names.length) context += 'Characters associated with this place (not proof of current presence): ' + names.join(', ') + '\n';
+                }
+                return context + instructions;
+            },
+
+            buildNpcContext(state) {
+                const characters = (state.characters || []).filter(char => (char.npc_profile || state.playerCharacter?.progression?.enabled) && !char.is_user && !char.is_narrator);
+                const introductions = 'Track named characters with two hidden flags in this SAME story response. For a named person the PLAYER actually meets or directly observes, use [NPC_MET: name|occupation|physical description]. At their first meeting, or when their saved description is missing, write 2–4 concise sentences describing their visible face, hair, eyes, build, clothing, and distinctive features, consistent with the scene. Do not invent hidden history or secrets. For someone only talked about, remembered, or rumored, use [NPC_MENTION: name|occupation] with NO description. Never treat an unintelligible word, command, threat, or title as a name. Compare against the saved roster: reuse the exact existing name for the same person, including a previously mentioned person now met. Distinguish different people with similar names. Existing descriptions and player edits take precedence; leave the description field empty when one is already saved. Use established occupations only, or leave blank. Never flag intentions to meet someone as an actual meeting. The app matches names and generates stats locally; no extra AI call is needed.\n';
+                if (!characters.length) return introductions;
+                return introductions + '### KNOWN CHARACTER SHEETS\nThese profiles are already generated and saved by the game. Use them consistently when a character participates in the scene. Being listed here does not mean a character is present or knows the player. Explicit story facts and player edits take precedence over generated tendencies; do not rewrite established relationships or history to fit them. Ability scores can inform relevant opposed checks and difficulty; they do not decide a player outcome before the actual roll.\n' + characters.map(char => {
+                    const profile = NarrativeController.getNpcProfile(char);
+                    if (char.encounter?.status === 'mentioned') return `${char.name} — MENTIONED ONLY, NOT MET. Occupation: ${profile.job}. Level ${profile.level}. Reported details: ${profile.knownDetails || 'None'}. Do not assume presence or personal acquaintance. If actually met, use NPC_MET with a physical description to update this existing entry.\n`;
+                    return `${char.name} — ${char.encounter?.status === 'met' ? 'MET' : 'Meeting not yet classified'}\n${UTILITY.npcProfileDescription(profile, profile.knownDetails)}\nCurrent appearance: ${char.appearance || 'MISSING: include a description in NPC_MET when actually met'}\nLevel ${profile.level}; HP ${profile.hp}/${profile.maxHp}; Armor class ${profile.armorClass}\n${UTILITY.playerAbilities.map(ability => `${ability}: ${profile.abilities[ability]}`).join(', ')}`;
+                }).join('\n\n');
+            },
+
             buildPlayerContext(state, allowChecks = true) {
                 const user = (state.characters || []).find(c => c.is_user);
                 if (!state.playerCharacter && !user) return '';
                 const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter, user);
                 let context = `### PLAYER CHARACTER\nName: ${sheet.name}\nGender: ${sheet.gender}\nPronouns: ${sheet.pronouns}\nAncestry: ${sheet.ancestry}\nClass / role: ${sheet.characterClass}\nBackstory: ${sheet.backstory}\nCurrent appearance: ${sheet.appearance}\nThis sheet describes the player's CURRENT identity and body, including any transformations. If older backstory or messages conflict with these fields, use the current fields. The player controls this character's decisions. Treat backstory as context, not knowledge every NPC automatically possesses.\n`;
+                if (sheet.currentState.form) context += `Current physical form: ${sheet.currentState.form}. This overrides any older body or species description.\n`;
+                if (sheet.currentState.conditions.length) context += 'Current injuries / ongoing effects: ' + sheet.currentState.conditions.join('; ') + '. Respect their practical effects without inventing numeric stat penalties.\n';
+                context += 'NPCs can notice visible physical changes and injuries, but do not automatically know the cause or recognize a transformed player. Identity recognition does not grant knowledge of the player\'s secrets or backstory. Only established witnesses or people explicitly told know what happened.\n';
+                for (const knowledge of sheet.currentState.recognition) {
+                    const character = (state.characters || []).find(char => char.id === knowledge.characterId && !char.is_user && !char.is_narrator);
+                    if (!character) continue;
+                    const status = { yes: 'recognizes the player in their current form', no: 'does not recognize the player in their current form', uncertain: 'suspects the player\'s identity but is not certain', unknown: 'recognition has not been established; do not assume it' }[knowledge.status];
+                    context += `${character.name}: ${status}; ${knowledge.witnessed ? 'witnessed the current change' : 'has not been recorded as a witness; do not assume knowledge of the cause'}.\n`;
+                }
                 if (sheet.survivalEnabled) {
-                    context += `Survival levels (0 depleted, 100 full): water ${sheet.survival.water}/100, sleep ${sheet.survival.sleep}/100, food ${sheet.survival.food}/100. Values at or below 25 are low; at or below 10 are critical. Reflect these needs where relevant. The app automatically deducts ${sheet.survivalRates.water} water, ${sheet.survivalRates.food} food, and ${sheet.survivalRates.sleep} rest points per awake in-game hour. Do not invent additional depletion, HP/stat penalties, or extra dice checks.\n`;
+                    context += `Survival levels (0 depleted, 100 full): water ${sheet.survival.water}/100, sleep ${sheet.survival.sleep}/100, food ${sheet.survival.food}/100. Values at or below 25 are low; at or below 10 are critical. Reflect these needs where relevant. The app automatically deducts ${sheet.survivalRates.water} water, ${sheet.survivalRates.food} food, and ${sheet.survivalRates.sleep} rest points per awake in-game hour. Do not invent additional depletion, HP damage, or extra dice checks.\n`;
+                    if (sheet.statsEnabled) context += 'Survival applies local ability-check penalties: each need gives -1 at 25 or below, -2 at 10 or below, -3 at 0. Thirst affects all six abilities; hunger affects strength/dexterity/constitution; fatigue affects dexterity/intelligence/wisdom/charisma. Applicable penalties stack and clear as needs recover. Base scores, HP and armor are unchanged. The app applies penalties to the roll: do not also raise DC, subtract them again, or invent other numeric penalties.\n';
                 }
                 if (sheet.clock.enabled) {
                     const clock = UTILITY.describePlayerTime(sheet);
@@ -15870,8 +16305,12 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     } else context += 'Do not emit TIME or RECOVER markers in this response.\n';
                 } else context += 'Game time and automatic survival changes are paused. Do not emit TIME or RECOVER markers.\n';
                 if (sheet.statsEnabled) {
+                    if (sheet.progression.enabled) context += `RPG progression is enabled for the player and EVERY NPC. Attributes start at 8; each character has exactly ${sheet.progression.startingPoints} starting points plus ${sheet.progression.pointsPerLevel} per level above level 1, with ${sheet.progression.maxLevel === null ? 'no level cap' : `a maximum level of ${sheet.progression.maxLevel}`}. Player level ${sheet.level}, XP ${sheet.progression.xp}/${100 * sheet.level}, unspent points ${UTILITY.rpgAvailablePoints(sheet.progression)}. The app awards DC × 10 XP for successful actual rolls and 5 XP for failures, with 100 × current level XP needed to level up. Skips earn none. Do not invent XP, levels, stat increases, or NPC attribute points. Use saved NPC levels/stats. Only when first establishing a NEW NPC's level, append it as a final field: [NPC_MET: name|occupation|description|level] or [NPC_MENTION: name|occupation|level]. The app enforces the same point budget and cap. Existing NPC levels cannot be changed by repeating a flag. These numeric RPG stats override older descriptions or free-form stat claims; occupation does not grant extra attribute points.\n`;
                     context += `Player stats: level ${sheet.level}, HP ${sheet.hp}/${sheet.maxHp}, armor class ${sheet.armorClass}.\n`;
-                    context += UTILITY.playerAbilities.map(key => `${key}: ${sheet.abilities[key]} (modifier ${UTILITY.playerAbilityModifier(sheet.abilities[key])})`).join(', ') + '\n';
+                    context += UTILITY.playerAbilities.map(key => {
+                        const modifier = UTILITY.playerCheckModifier(sheet, key);
+                        return `${key}: ${sheet.abilities[key]} (base modifier ${modifier.base}, survival ${modifier.survival}, effective modifier ${modifier.total})`;
+                    }).join(', ') + '\n';
                     context += 'These are player-maintained stats. Do not invent changes to HP or scores.\n';
                 }
                 if (!sheet.diceEnabled || !allowChecks) return context + 'Dice checks are disabled for this response. Do not request or simulate rolls. Resolve actions through the story.\n';
@@ -16189,6 +16628,8 @@ JSON Schema:
                 const replacer = this._getReplacer(charToAct);
                 let modelInstructions = charToAct.model_instructions || state.system_prompt;
                 modelInstructions = this.buildPlayerContext(state, !isDirectMessage && !charToAct.is_user) + '\n\n' + modelInstructions;
+                if (!isDirectMessage && !charToAct.is_user) modelInstructions = this.buildNpcContext(state) + '\n\n' + modelInstructions;
+                if (!isDirectMessage && !charToAct.is_user) modelInstructions = this.buildAtlasContext(state) + '\n\n' + modelInstructions;
                 if (state.gameState && state.enableJournal !== false) {
                     const gameStateXml = this.buildGameStateXml(state.gameState);
                     if (gameStateXml) {
@@ -16197,7 +16638,7 @@ JSON Schema:
                 }
 
                 let locationContext = '';
-                if (state.worldMap && state.worldMap.grid.length > 0) {
+                if (state.worldMap && state.worldMap.grid.length > 0 && !state.worldMap.atlas?.currentId) {
                     const { grid, currentLocation, path } = state.worldMap;
                     const currentLoc = grid.find(l => l.coords.x === currentLocation.x && l.coords.y === currentLocation.y);
 
@@ -17413,6 +17854,8 @@ Write only the character's message.`;
 
                 // 2. DIRECTOR INSTRUCTION
                 prompt += this.buildPlayerContext(state, !char.is_user) + '\n\n';
+                if (!char.is_user) prompt += this.buildNpcContext(state) + '\n\n';
+                if (!char.is_user) prompt += this.buildAtlasContext(state) + '\n\n';
                 prompt += "### SCENE DIRECTION\n" + directive + "\n\n";
 
                 // 3. PERSONA
@@ -19307,6 +19750,8 @@ Write only the character's message.`;
              * @returns {Array} List of active location characters.
              */
             getActiveLocationCharacters() {
+                const atlas = this.state?.worldMap?.atlas;
+                if (atlas?.currentId && !atlas.places.find(place => place.id === atlas.currentId)?.legacyCoords) return [];
                 if (!this.state || !this.state.worldMap || !this.state.worldMap.currentLocation || !this.state.worldMap.grid) {
                     return [];
                 }
@@ -19493,14 +19938,17 @@ Write only the character's message.`;
             PlayerSurvivalMeters(sheet) {
                 const labels = { water: 'Water', sleep: 'Sleep', food: 'Food' };
                 const full = { water: 'Hydrated', sleep: 'Rested', food: 'Fed' };
+                const penalties = UTILITY.playerSurvivalPenalties(sheet);
                 return `<div class="survival-meters">${Object.entries(labels).map(([key, label]) => {
                     const value = Math.round(sheet.survival[key] * 100) / 100;
                     const status = value <= 10 ? 'critical' : value <= 25 ? 'low' : 'good';
                     const condition = status === 'critical' ? 'Critical' : status === 'low' ? 'Low' : full[key];
+                    const penalty = penalties.find(entry => entry.need === key);
                     return `<button type="button" class="survival-meter" data-action="open-player-survival" data-need="${key}" data-status="${status}"
-                        aria-label="${label}: ${value} out of 100. ${condition}. Edit ${label.toLowerCase()} level." title="Edit ${label.toLowerCase()} level">
+                        aria-label="${label}: ${value} out of 100. ${condition}.${penalty ? ` ${penalty.label} penalty ${penalty.modifier} to ${penalty.abilities.join(', ')} checks.` : ''} View stats." title="View stats${penalty ? `: ${penalty.label} ${penalty.modifier}` : ''}">
                         <span class="survival-meter-heading"><span>${label}</span><span class="survival-meter-value">${value}%</span></span>
                         <span class="survival-track" aria-hidden="true"><span class="survival-fill" style="width: ${value}%"></span></span>
+                        ${penalty ? `<span class="text-xs text-red-300">${penalty.label} ${penalty.modifier}</span>` : ''}
                     </button>`;
                 }).join('')}</div>`;
             },
@@ -19515,7 +19963,92 @@ Write only the character's message.`;
                 const modifier = `${roll.modifier >= 0 ? '+' : '−'} ${Math.abs(roll.modifier || 0)}`;
                 const math = roll.skipped ? 'Resolved without dice' : `${roll.die} ${modifier} = ${roll.total} · Target ${roll.dc}`;
                 return `<div class="dice-result-card ${roll.skipped ? '' : roll.success ? 'dice-success' : 'dice-failure'}" data-roll-request="${UTILITY.escapeHTML(roll.requestId || '')}">
-                    ${this.PlayerDie(roll.skipped ? '—' : roll.die)}<div><strong>${outcome} · ${UTILITY.escapeHTML(roll.ability === 'none' ? 'D20' : roll.ability)}</strong><p>${UTILITY.escapeHTML(roll.reason)}</p><span class="dice-check-math">${UTILITY.escapeHTML(math)}</span></div></div>`;
+                    ${this.PlayerDie(roll.skipped ? '—' : roll.die)}<div><strong>${outcome} · ${UTILITY.escapeHTML(roll.ability === 'none' ? 'D20' : roll.ability)}</strong><p>${UTILITY.escapeHTML(roll.reason)}</p><span class="dice-check-math">${UTILITY.escapeHTML(math)}</span>${!roll.skipped && roll.survivalModifier ? `<span class="block text-xs text-red-300">Base ${UTILITY.escapeHTML(String(roll.baseModifier))} · Survival ${UTILITY.escapeHTML(String(roll.survivalModifier))}</span>` : ''}${message.rpgAward ? `<span class="block text-xs text-teal-300">+${UTILITY.escapeHTML(String(message.rpgAward.xp))} XP${message.rpgAward.levels ? ` · Level ${UTILITY.escapeHTML(String(message.rpgAward.after.level))} reached` : ''}</span>` : ''}</div></div>`;
+            },
+
+            NpcCharacterSheet(char) {
+                const e = value => UTILITY.escapeHTML(String(value ?? ''));
+                const profile = NarrativeController.getNpcProfile(char);
+                if (!profile) return `<button data-action="create-local-npc-profile" data-id="${e(char.id)}" class="btn-primary px-4 py-2 rounded-lg">Create Character Sheet</button>`;
+                const field = (key, label, type = 'text', bounds = '') => `<label>${label}<input type="${type}" ${bounds} ${key === 'level' && profile.rpgProgression ? 'disabled' : ''} data-action-change="update-npc-profile" data-id="${e(char.id)}" data-field="${key}" value="${e(profile[key])}"></label>`;
+                const portrait = UIManager.getPortraitSrc(char);
+                return `<div class="player-sheet-form npc-character-sheet">
+                    <div class="player-portrait-picker">
+                        ${portrait ? `<img class="player-portrait-preview" src="${e(portrait)}" alt="${e(char.name)} portrait">` : ''}
+                        <div class="min-w-0"><h3 class="text-xl font-semibold break-words">${e(char.name)}</h3>
+                            ${char.encounter ? `<span class="text-xs text-gray-400">${char.encounter.status === 'mentioned' ? 'Mentioned · Not met' : char.encounter.status === 'met' ? 'Met' : 'Known character'}</span>` : ''}
+                            <label class="npc-portrait-upload mt-2 text-sm">${portrait ? 'Change portrait' : 'Choose portrait'}<input type="file" accept="image/*" data-action-change="upload-local-image" data-id="${e(char.id)}" hidden></label>
+                        </div>
+                    </div>
+                    <label>Description<textarea rows="4" maxlength="1600" data-action-change="update-npc-profile" data-id="${e(char.id)}" data-field="appearance" placeholder="${char.encounter?.status === 'mentioned' ? 'Not met yet' : 'Description will be added when you meet this character'}">${e(char.appearance)}</textarea></label>
+                    ${profile.rpgProgression ? `<div class="text-sm text-teal-300">RPG progression · Level ${profile.level} · ${UTILITY.rpgPointBudget(profile.level, profile.rpgProgression)} attribute points allocated · Base 8 per attribute</div>` : ''}
+                    <div class="npc-sheet-columns"><div class="player-sheet-form">${field('job', 'Occupation')}
+                    <div class="player-sheet-grid">${field('level', 'Level', 'number', 'min="1" max="20"')}${field('armorClass', 'Armor class', 'number', 'min="0" max="40"')}${field('hp', 'Current HP', 'number', 'min="0" max="9999"')}${field('maxHp', 'Maximum HP', 'number', 'min="1" max="9999"')}</div>
+                    <div class="player-sheet-grid player-abilities-grid">${UTILITY.playerAbilities.map(key => `<label>${key[0].toUpperCase() + key.slice(1)}<input type="number" min="1" ${profile.rpgProgression ? 'disabled' : 'max="30"'} data-action-change="update-npc-profile" data-id="${e(char.id)}" data-field="${key}" value="${e(profile.abilities[key])}"><span id="npc-modifier-${e(char.id)}-${key}" class="text-xs text-gray-400">Modifier ${UTILITY.playerAbilityModifier(profile.abilities[key]) >= 0 ? '+' : ''}${UTILITY.playerAbilityModifier(profile.abilities[key])}</span></label>`).join('')}</div>
+                    </div><div class="player-sheet-form">${field('personality', 'Personality')}${field('temperament', 'Temperament')}${field('motivation', 'Motivation')}${field('mannerism', 'Mannerism')}
+                    <label>Known details<textarea rows="4" data-action-change="update-npc-profile" data-id="${e(char.id)}" data-field="knownDetails">${e(profile.knownDetails)}</textarea></label>
+                    </div></div>
+                    ${(char.encounter?.observations || []).length ? `<details class="text-sm"><summary class="cursor-pointer text-gray-400">Encounters</summary><div class="space-y-3 mt-3">${char.encounter.observations.map(observation => `<p class="text-gray-300 break-words">${e(observation.text)}</p>`).join('')}</div></details>` : ''}
+                </div>`;
+            },
+
+            PlayerConditionEditor(prefix, sheet) {
+                const e = value => UTILITY.escapeHTML(String(value));
+                const current = sheet.currentState;
+                const characters = prefix === 'live-player' ? (ReactiveStore.state?.characters || []).filter(char => !char.is_user && !char.is_narrator) : [];
+                return `<div><button type="button" data-action="toggle-player-condition" data-prefix="${prefix}" aria-expanded="false" aria-controls="${prefix}-condition-editor" class="bg-teal-600 text-white py-2 px-4 rounded-lg">Update character</button>
+                    ${current.form || current.conditions.length ? `<p class="text-sm text-gray-300 mt-2">${e([current.form, ...current.conditions].filter(Boolean).join(' · '))}</p>` : ''}</div>
+                    <div id="${prefix}-condition-editor" class="player-sheet-form" hidden>
+                        <label>Current form<input id="${prefix}-current-form" maxlength="200" data-action-change="change-player-form" data-prefix="${prefix}" data-previous-form="${e(current.form)}" value="${e(current.form)}" placeholder="Human, frog, or another current form"></label>
+                        <label>Injuries / ongoing effects<textarea id="${prefix}-conditions" rows="3" placeholder="One per line, e.g. burned left arm">${e(current.conditions.join('\n'))}</textarea></label>
+                        ${characters.length ? `<div class="font-semibold">Who knows?</div>${characters.map(char => {
+                            const knowledge = current.recognition.find(entry => entry.characterId === char.id) || { status: 'unknown', witnessed: false };
+                            return `<div class="player-recognition-row"><span>${e(char.name)}</span><select aria-label="${e(char.name)} recognition" data-recognition-id="${e(char.id)}">${Object.entries({ unknown: 'Not established', yes: 'Recognizes you', no: 'Does not recognize you', uncertain: 'Suspects it is you' }).map(([status, label]) => `<option value="${status}" ${knowledge.status === status ? 'selected' : ''}>${label}</option>`).join('')}</select><label class="player-sheet-toggle"><input type="checkbox" data-witness-id="${e(char.id)}" ${knowledge.witnessed ? 'checked' : ''}> Saw the change</label></div>`;
+                        }).join('')}` : ''}
+                    </div>`;
+            },
+
+            RpgAllocationPanel(sheet, prefix, live = false) {
+                const progression = sheet.progression;
+                if (!progression.enabled) return '';
+                const remaining = UTILITY.rpgAvailablePoints(progression);
+                const capped = progression.maxLevel !== null && progression.level >= progression.maxLevel;
+                return `<div class="player-sheet-form"><div class="flex flex-wrap justify-between gap-2"><strong>Level ${progression.level}${progression.maxLevel !== null ? ` / ${progression.maxLevel}` : ''}</strong><span>${capped ? 'Maximum level' : `${progression.xp} / ${100 * progression.level} XP`}</span></div>
+                    <progress aria-label="Level progress" class="rpg-xp" max="${100 * progression.level}" value="${capped ? 100 * progression.level : progression.xp}"></progress>
+                    <strong class="text-teal-300" data-rpg-points>${remaining} attribute points available</strong>
+                    <div class="player-sheet-grid">${UTILITY.playerAbilities.map(ability => {
+                        const modifier = UTILITY.playerCheckModifier(sheet, ability);
+                        return `<div class="min-w-0"><div class="text-sm">${ability[0].toUpperCase() + ability.slice(1)}</div><div class="flex items-center gap-2"><strong class="flex-1" data-rpg-score="${ability}">${sheet.abilities[ability]}</strong>${!live || UIManager.RUNTIME.playerStatsOverride ? `<button type="button" data-action="refund-rpg-point" data-prefix="${prefix}" data-ability="${ability}" aria-label="Refund ${ability} point" class="rpg-attribute-step" ${progression.allocations[ability] ? '' : 'disabled'}>−</button>` : ''}<button type="button" data-action="spend-rpg-point" data-prefix="${prefix}" data-ability="${ability}" aria-label="Increase ${ability}" class="rpg-attribute-step" ${remaining ? '' : 'disabled'}>+</button></div><span data-effective-ability="${ability}" class="text-xs ${modifier.survival ? 'text-red-300' : 'text-gray-400'}">Modifier ${modifier.total >= 0 ? '+' : ''}${modifier.total}${modifier.survival ? ` · Survival ${modifier.survival}` : ''}</span></div>`;
+                    }).join('')}</div></div>`;
+            },
+
+            RpgSettings(prefix, sheet, section) {
+                const p = sheet.progression;
+                const e = value => UTILITY.escapeHTML(String(value));
+                return `<label class="player-sheet-toggle"><input id="${prefix}-rpg-enabled" type="checkbox" data-action-change="refresh-rpg-settings" data-prefix="${prefix}" ${p.enabled ? 'checked' : ''}> Enable RPG progression</label>
+                    <fieldset id="${prefix}-rpg-settings" class="player-sheet-form ${p.enabled ? '' : 'hidden'}" ${p.enabled ? '' : 'disabled'}><legend class="sr-only">RPG progression settings</legend>
+                        <div class="player-sheet-grid"><label>Starting level<input id="${prefix}-rpg-startingLevel" type="number" min="1" step="1" value="${p.startingLevel}" data-action-change="refresh-rpg-settings" data-prefix="${prefix}" ${section === 'mechanics' && p.initialized ? 'disabled' : ''}></label><label>Maximum level (optional)<input id="${prefix}-rpg-maxLevel" type="number" min="1" step="1" value="${p.maxLevel ?? ''}" placeholder="Unlimited" data-action-change="refresh-rpg-settings" data-prefix="${prefix}"></label><label>Starting attribute points<input id="${prefix}-rpg-startingPoints" type="number" min="0" step="1" value="${p.startingPoints}" data-action-change="refresh-rpg-settings" data-prefix="${prefix}"></label><label>Points per level up<input id="${prefix}-rpg-pointsPerLevel" type="number" min="0" step="1" value="${p.pointsPerLevel}" data-action-change="refresh-rpg-settings" data-prefix="${prefix}"></label></div>
+                        <div class="text-xs text-gray-400">Base 8 per attribute. The same point budget applies to every NPC. Leave maximum level blank for unlimited progression.</div>
+                        <input id="${prefix}-rpg-allocations" type="hidden" value="${e(JSON.stringify(p.allocations))}">
+                        ${section === 'all' ? `<div id="${prefix}-rpg-allocation">${this.RpgAllocationPanel(sheet, prefix)}</div>` : ''}
+                    </fieldset>`;
+            },
+
+            PlayerStatsPanel(sheet) {
+                const editable = UIManager.RUNTIME.playerStatsOverride === true;
+                const prefix = 'live-stats';
+                const penalties = UTILITY.playerSurvivalPenalties(sheet);
+                const number = (key, label, value, min, max) => `<label>${label}<input id="${prefix}-${key}" type="number" min="${min}" max="${max}" ${key === 'level' && sheet.progression.enabled ? 'disabled' : ''} step="${key.startsWith('survival-') ? 'any' : '1'}" value="${value}"></label>`;
+                return `<div class="player-sheet-form" data-player-form="live-stats"><label class="player-sheet-toggle"><input type="checkbox" data-action-change="override-player-stats" ${editable ? 'checked' : ''}> Override stats</label>
+                    ${penalties.length ? `<div class="text-sm text-red-300 player-survival-penalties"><strong>Survival penalties</strong>${penalties.map(penalty => `<div>${penalty.label} ${penalty.modifier} · ${penalty.abilities.length === 6 ? 'All abilities' : penalty.abilities.map(ability => ability.slice(0, 3).toUpperCase()).join(', ')}</div>`).join('')}</div>` : ''}
+                    ${sheet.progression.enabled ? `<div id="${prefix}-rpg-allocation">${this.RpgAllocationPanel(sheet, prefix, true)}</div>` : ''}
+                    <fieldset class="player-sheet-form player-stats-readonly" ${editable ? '' : 'disabled'}><legend class="sr-only">Player stats</legend>
+                    ${sheet.statsEnabled ? `<div class="player-sheet-grid">${sheet.progression.enabled ? '' : number('level', 'Level', sheet.level, 1, sheet.progression.initialized ? Number.MAX_SAFE_INTEGER : 20)}${number('armorClass', 'Armor class', sheet.armorClass, 0, 40)}${number('hp', 'Current HP', sheet.hp, 0, 9999)}${number('maxHp', 'Maximum HP', sheet.maxHp, 1, 9999)}</div><div class="player-sheet-grid player-abilities-grid">${(sheet.progression.enabled ? [] : UTILITY.playerAbilities).map(key => {
+                        const modifier = UTILITY.playerCheckModifier(sheet, key);
+                        return `<div>${number(key, key[0].toUpperCase() + key.slice(1), sheet.abilities[key], 1, sheet.progression.initialized ? Number.MAX_SAFE_INTEGER : 30)}<span data-effective-ability="${key}" class="text-xs ${modifier.survival ? 'text-red-300' : 'text-gray-400'}">Modifier ${modifier.total >= 0 ? '+' : ''}${modifier.total}${modifier.survival ? `<br>Base ${modifier.base >= 0 ? '+' : ''}${modifier.base} · Survival ${modifier.survival}` : ''}</span></div>`;
+                    }).join('')}</div>` : ''}
+                    ${sheet.survivalEnabled ? `<div class="player-sheet-grid player-abilities-grid">${['water', 'sleep', 'food'].map(key => number(`survival-${key}`, key[0].toUpperCase() + key.slice(1) + ' (%)', sheet.survival[key], 0, 100)).join('')}</div>` : ''}
+                    </fieldset>${editable ? '<button data-action="save-player-stats" class="bg-teal-600 text-white rounded-lg px-4 py-2">Save stats</button>' : ''}</div>`;
             },
 
             PlayerSheetForm(prefix, sheet, section = 'all') {
@@ -19540,18 +20073,21 @@ Write only the character's message.`;
                     <div class="player-sheet-grid">${field('ancestry', 'Ancestry / species')}${field('characterClass', 'Class / role')}</div>
                     <label for="${prefix}-backstory">Backstory<textarea id="${prefix}-backstory" rows="5">${e(sheet.backstory)}</textarea></label>
                     <label for="${prefix}-appearance">Current appearance<textarea id="${prefix}-appearance" rows="4" placeholder="Describe their face, hair, eyes, body, height, clothing, and any current transformations.">${e(sheet.appearance)}</textarea></label>
+                    ${this.PlayerConditionEditor(prefix, sheet)}
                     ` : ''}
                     ${section !== 'identity' ? `
+                    ${this.RpgSettings(prefix, sheet, section)}
                     <label class="player-sheet-toggle"><input type="checkbox" id="${prefix}-statsEnabled" data-action="toggle-player-stats" data-prefix="${prefix}" ${sheet.statsEnabled ? 'checked' : ''}> Enable player stats</label>
-                    <fieldset id="${prefix}-stats" class="player-sheet-form" ${sheet.statsEnabled ? '' : 'disabled'}>
+                    ${section === 'all' ? `<fieldset id="${prefix}-stats" class="player-sheet-form" ${sheet.statsEnabled ? '' : 'disabled'}>
                         <legend class="sr-only">Player stats</legend>
-                        <div class="player-sheet-grid">${field('level', 'Level', 'number', 'min="1" max="20" step="1"')}${field('armorClass', 'Armor class', 'number', 'min="0" max="40" step="1"')}${field('hp', 'Current HP', 'number', 'min="0" max="9999" step="1"')}${field('maxHp', 'Maximum HP', 'number', 'min="1" max="9999" step="1"')}</div>
-                        <div class="player-sheet-grid player-abilities-grid">${UTILITY.playerAbilities.map(key => {
+                        <div class="player-sheet-grid">${field('level', 'Level', 'number', `min="1" max="${sheet.progression.initialized ? Number.MAX_SAFE_INTEGER : 20}" step="1"`)}${field('armorClass', 'Armor class', 'number', 'min="0" max="40" step="1"')}${field('hp', 'Current HP', 'number', 'min="0" max="9999" step="1"')}${field('maxHp', 'Maximum HP', 'number', 'min="1" max="9999" step="1"')}</div>
+                        <div id="${prefix}-legacy-abilities" class="player-sheet-grid player-abilities-grid ${sheet.progression.enabled ? 'hidden' : ''}">${UTILITY.playerAbilities.map(key => {
                             const mod = UTILITY.playerAbilityModifier(sheet.abilities[key]);
-                            return `<label for="${prefix}-${key}">${key[0].toUpperCase() + key.slice(1)}<input id="${prefix}-${key}" data-action-change="update-player-modifier" data-player-ability="${key}" data-prefix="${prefix}" type="number" min="1" max="30" step="1" value="${sheet.abilities[key]}"><span id="${prefix}-${key}-modifier" class="text-xs text-gray-400">Modifier ${mod >= 0 ? '+' : ''}${mod}</span></label>`;
+                            return `<label for="${prefix}-${key}">${key[0].toUpperCase() + key.slice(1)}<input id="${prefix}-${key}" data-action-change="update-player-modifier" data-player-ability="${key}" data-prefix="${prefix}" type="number" min="1" max="${sheet.progression.initialized ? Number.MAX_SAFE_INTEGER : 30}" step="1" value="${sheet.abilities[key]}"><span id="${prefix}-${key}-modifier" class="text-xs text-gray-400">Modifier ${mod >= 0 ? '+' : ''}${mod}</span></label>`;
                         }).join('')}</div>
-                    </fieldset>
+                    </fieldset>` : ''}
                     <label class="player-sheet-toggle"><input type="checkbox" id="${prefix}-diceEnabled" ${sheet.diceEnabled ? 'checked' : ''}> Enable d20 checks</label>
+                    <div class="dice-cost-warning" role="note"><strong>Extra AI call — additional token cost.</strong><br>When enabled, checking your action uses an extra AI call before narration, even if no roll is needed. The dice and animation run locally. A check requested during narration needs another response to continue.</div>
                     <label class="player-sheet-toggle"><input type="checkbox" id="${prefix}-clock-enabled" data-action="toggle-player-clock" data-prefix="${prefix}" ${sheet.clock.enabled ? 'checked' : ''}> Automatic game time</label>
                     <fieldset id="${prefix}-clock" class="player-sheet-grid" ${sheet.clock.enabled ? '' : 'disabled'}>
                         <legend class="sr-only">Game time settings</legend>
@@ -19561,7 +20097,7 @@ Write only the character's message.`;
                     <label class="player-sheet-toggle"><input type="checkbox" id="${prefix}-survivalEnabled" data-action="toggle-player-survival" data-prefix="${prefix}" ${sheet.survivalEnabled ? 'checked' : ''}> Enable survival stats</label>
                     <fieldset id="${prefix}-survival" class="player-sheet-form" ${sheet.survivalEnabled ? '' : 'disabled'}>
                         <legend class="sr-only">Survival levels</legend>
-                        <div class="player-sheet-grid player-abilities-grid">${['water', 'sleep', 'food'].map(key => `<label for="${prefix}-survival-${key}">${key[0].toUpperCase() + key.slice(1)} (%)<input id="${prefix}-survival-${key}" type="number" min="0" max="100" step="any" value="${sheet.survival[key]}"></label>`).join('')}</div>
+                        ${section === 'all' ? `<div class="player-sheet-grid player-abilities-grid">${['water', 'sleep', 'food'].map(key => `<label for="${prefix}-survival-${key}">${key[0].toUpperCase() + key.slice(1)} (%)<input id="${prefix}-survival-${key}" type="number" min="0" max="100" step="any" value="${sheet.survival[key]}"></label>`).join('')}</div>` : ''}
                         <div class="player-sheet-grid player-abilities-grid">${['water', 'sleep', 'food'].map(key => `<label for="${prefix}-rate-${key}">${key[0].toUpperCase() + key.slice(1)} loss/hour<input id="${prefix}-rate-${key}" type="number" min="0" max="100" step="any" value="${sheet.survivalRates[key]}"></label>`).join('')}</div>
                     </fieldset>
                     ` : ''}
@@ -19891,6 +20427,7 @@ Write only the character's message.`;
                 const isQst = activeTab === 'quests';
                 const isRel = activeTab === 'relationships';
                 const isPlayer = activeTab === 'player';
+                const isStats = activeTab === 'stats';
 
                 const tabClass = (active) => active
                     ? "px-3 py-1.5 text-xs font-bold rounded-lg bg-teal-600 text-white shadow-sm border border-teal-500/50 transition-all cursor-pointer"
@@ -19899,6 +20436,7 @@ Write only the character's message.`;
                 // 2. Tab Contents
                 let contentHTML = '';
                 if (isPlayer && playerSheet) contentHTML = `<div id="live-player-form">${this.PlayerSheetForm('live-player', playerSheet, 'identity')}</div>`;
+                if (isStats && playerSheet) contentHTML = this.PlayerStatsPanel(playerSheet);
 
                 if (isInv) {
                     const itemsHTML = resources.length === 0
@@ -20034,7 +20572,7 @@ Write only the character's message.`;
                         <div class="flex justify-between items-center border-b border-white/5 pb-2.5">
                             <div class="flex items-center gap-2 text-teal-400 font-bold text-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                                ${isPlayer ? 'Player Character' : 'Journal & Inventory'}
+                                ${isPlayer ? 'Player Character' : isStats ? 'Player Stats' : 'Journal & Inventory'}
                             </div>
                             <button data-action="close-inventory-panel" aria-label="Close player and inventory panel" class="bg-white/5 hover:bg-white/10 border border-white/5 text-gray-400 hover:text-white p-1.5 rounded-xl cursor-pointer transition-all shadow-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -20044,6 +20582,7 @@ Write only the character's message.`;
                         <!-- Tab Selectors -->
                         <div class="inventory-panel-tabs flex bg-black/30 border border-white/5 p-1 rounded-xl gap-1">
                             <button onclick="UIManager.switchInventoryTab('player')" class="${tabClass(isPlayer)} flex-1 text-center">Player</button>
+                            <button data-action="open-player-stats" class="${tabClass(isStats)} flex-1 text-center ${playerSheet && (playerSheet.statsEnabled || playerSheet.survivalEnabled) ? '' : 'hidden'}">Stats</button>
                             ${journalEnabled ? `
                             <button onclick="UIManager.switchInventoryTab('inventory')" class="${tabClass(isInv)} flex-1 text-center">Inventory</button>
                             <button onclick="UIManager.switchInventoryTab('quests')" class="${tabClass(isQst)} flex-1 text-center">Quests</button>
@@ -20848,13 +21387,79 @@ Write only the character's message.`;
                 }
                 data.clock = { ...data.clock, enabled: checked('clock-enabled', data.clock.enabled),
                     minutesPerTurn: value('clock-minutesPerTurn', data.clock.minutesPerTurn), startHour: value('clock-startHour', data.clock.startHour) };
+                if (document.getElementById(`${prefix}-rpg-enabled`)) {
+                    data.progression.enabled = checked('rpg-enabled', false);
+                    for (const key of ['startingLevel', 'maxLevel', 'startingPoints', 'pointsPerLevel']) data.progression[key] = value(`rpg-${key}`, data.progression[key]);
+                    try { data.progression.allocations = JSON.parse(value('rpg-allocations', '{}')); } catch { data.progression.allocations = previous.progression?.allocations || {}; }
+                    if (prefix === 'scenario-player' && data.progression.enabled) {
+                        data.progression.level = data.progression.startingLevel;
+                        data.progression.xp = 0;
+                    }
+                }
+                if (document.getElementById(`${prefix}-condition-editor`)) {
+                    data.currentState.form = value('current-form', data.currentState.form);
+                    data.currentState.conditions = value('conditions', data.currentState.conditions.join('\n')).split('\n');
+                    const editor = document.getElementById(`${prefix}-condition-editor`);
+                    const updated = [...editor.querySelectorAll('[data-recognition-id]')].map(select => ({ characterId: select.dataset.recognitionId,
+                        status: select.value, witnessed: [...editor.querySelectorAll('[data-witness-id]')].find(input => input.dataset.witnessId === select.dataset.recognitionId)?.checked === true }));
+                    data.currentState.recognition = [...data.currentState.recognition.filter(entry => !updated.some(item => item.characterId === entry.characterId)), ...updated];
+                }
                 data.name = data.name.trim() || 'You';
                 return UTILITY.normalizePlayerCharacter(data);
+            },
+
+            refreshRpgSettings(prefix) {
+                const previous = prefix === 'scenario-player' ? LibraryController.currentEditScenario.playerCharacter : ReactiveStore.state.playerCharacter;
+                const sheet = this.readPlayerSheet(prefix, previous);
+                const enabled = sheet.progression.enabled;
+                document.getElementById(`${prefix}-rpg-settings`).disabled = !enabled;
+                document.getElementById(`${prefix}-rpg-settings`).classList.toggle('hidden', !enabled);
+                const statsToggle = document.getElementById(`${prefix}-statsEnabled`);
+                if (enabled) statsToggle.checked = true;
+                statsToggle.disabled = enabled;
+                const stats = document.getElementById(`${prefix}-stats`);
+                if (stats) stats.disabled = !statsToggle.checked;
+                document.getElementById(`${prefix}-legacy-abilities`)?.classList.toggle('hidden', enabled);
+                const level = document.getElementById(`${prefix}-level`);
+                if (level) { level.disabled = enabled; level.value = sheet.level; level.max = sheet.progression.initialized ? Number.MAX_SAFE_INTEGER : 20; }
+                for (const ability of UTILITY.playerAbilities) {
+                    const input = document.getElementById(`${prefix}-${ability}`);
+                    if (input) { input.disabled = enabled; input.max = sheet.progression.initialized ? Number.MAX_SAFE_INTEGER : 30; }
+                }
+                document.getElementById(`${prefix}-rpg-allocations`).value = JSON.stringify(sheet.progression.allocations);
+                const panel = document.getElementById(`${prefix}-rpg-allocation`);
+                if (panel) panel.innerHTML = UIComponents.RpgAllocationPanel(sheet, prefix);
+            },
+
+            async changeRpgAllocation(prefix, ability, delta) {
+                if (!UTILITY.playerAbilities.includes(ability) || ![1, -1].includes(delta)) return;
+                if (prefix === 'scenario-player') {
+                    const sheet = this.readPlayerSheet(prefix, LibraryController.currentEditScenario.playerCharacter);
+                    if (!sheet.progression.enabled) return;
+                    if (delta > 0) sheet.progression = UTILITY.spendRpgPoint(sheet.progression, ability);
+                    else sheet.progression.allocations[ability] = Math.max(0, sheet.progression.allocations[ability] - 1);
+                    document.getElementById(`${prefix}-rpg-allocations`).value = JSON.stringify(sheet.progression.allocations);
+                    this.refreshRpgSettings(prefix);
+                    return;
+                }
+                const state = ReactiveStore.state;
+                const container = document.getElementById('inventory-panel-container');
+                if (prefix !== 'live-stats' || this.RUNTIME.activeInventoryTab !== 'stats' || container.dataset.narrativeId !== (state.narrativeId || '')
+                    || NarrativeController.RUNTIME.activeRequestAbortController || NarrativeController.RUNTIME.playerRolling) return;
+                const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter);
+                if (!sheet.progression.enabled || (delta < 0 && !this.RUNTIME.playerStatsOverride)) return;
+                if (delta > 0) sheet.progression = UTILITY.spendRpgPoint(sheet.progression, ability);
+                else sheet.progression.allocations[ability] = Math.max(0, sheet.progression.allocations[ability] - 1);
+                state.playerCharacter = UTILITY.normalizePlayerCharacter(sheet);
+                const panel = document.getElementById('live-stats-rpg-allocation');
+                if (panel) panel.innerHTML = UIComponents.RpgAllocationPanel(state.playerCharacter, prefix, true);
+                await ReactiveStore.forceSave();
             },
 
             openPlayerSheet() {
                 const state = StateManager.getState();
                 if (!state?.chat_history) return;
+                this.RUNTIME.playerStatsOverride = false;
                 this.RUNTIME.activeInventoryTab = 'player';
                 document.getElementById('inventory-panel-container').classList.remove('hidden');
                 this.renderInventoryPanel();
@@ -20866,9 +21471,16 @@ Write only the character's message.`;
                 this.RUNTIME.clockExpanded = false;
                 this.RUNTIME.survivalExpanded = false;
                 this.renderPlayerControls();
+                if (['water', 'sleep', 'food'].includes(survivalKey)) {
+                    document.getElementById('inventory-panel-container').classList.remove('hidden');
+                    this.switchInventoryTab('stats');
+                    document.getElementById(`live-stats-survival-${survivalKey}`)?.scrollIntoView({ block: 'center' });
+                    return;
+                }
                 const player = state.characters.find(c => c.is_user);
                 const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter, player);
                 document.getElementById('live-settings-form').innerHTML = UIComponents.PlayerSheetForm('live-settings', sheet, 'mechanics');
+                this.refreshRpgSettings('live-settings');
                 document.getElementById('live-settings-form').dataset.narrativeId = state.narrativeId || '';
                 AppController.openModal('scenario-settings-modal');
                 if (['water', 'sleep', 'food', 'clock'].includes(survivalKey)) {
@@ -20883,7 +21495,8 @@ Write only the character's message.`;
             async savePlayerSheet(section = 'identity') {
                 const state = ReactiveStore.state;
                 if (!state?.chat_history) return;
-                const prefix = section === 'mechanics' ? 'live-settings' : 'live-player';
+                if (section === 'stats' && (this.RUNTIME.playerStatsOverride !== true || !(state.playerCharacter?.statsEnabled || state.playerCharacter?.survivalEnabled))) return;
+                const prefix = section === 'mechanics' ? 'live-settings' : section === 'stats' ? 'live-stats' : 'live-player';
                 const form = document.querySelector(`[data-player-form="${prefix}"]`);
                 if (!form) return;
                 const owner = section === 'mechanics' ? document.getElementById('live-settings-form') : document.getElementById('inventory-panel-container');
@@ -20899,13 +21512,15 @@ Write only the character's message.`;
                 if (!sheet.diceEnabled && UTILITY.getPendingPlayerCheck(state)) await NarrativeController.resolvePendingPlayerCheck(true, false);
                 state.playerCharacter = sheet;
                 state.characters = UTILITY.applyPlayerCharacter(state.characters, sheet);
+                NarrativeController.syncRpgNpcs();
                 await ReactiveStore.forceSave();
                 this.renderCharacters();
                 this.updateAICharacterSelector();
                 this.renderChat();
-                if (section === 'mechanics') AppController.closeModal('scenario-settings-modal');
+                if (section === 'stats') { this.RUNTIME.playerStatsOverride = false; this.renderInventoryPanel(); }
+                else if (section === 'mechanics') { AppController.closeModal('scenario-settings-modal'); this.renderInventoryPanel(); }
                 else this.closeInventoryPanel();
-                this.showNotification(section === 'mechanics' ? 'Scenario settings saved.' : 'Player character saved.');
+                this.showNotification(section === 'mechanics' ? 'Scenario settings saved.' : section === 'stats' ? 'Stats saved.' : 'Player character saved.');
             },
 
             renderPlayerControls() {
@@ -20967,10 +21582,13 @@ Write only the character's message.`;
                     return;
                 }
                 const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter);
-                const modifier = sheet.statsEnabled && check.ability !== 'none' ? UTILITY.playerAbilityModifier(sheet.abilities[check.ability]) : 0;
+                const breakdown = phase === 'result' && !roll.skipped && Number.isFinite(roll.baseModifier)
+                    ? { base: roll.baseModifier, survival: roll.survivalModifier || 0, total: roll.modifier } : UTILITY.playerCheckModifier(sheet, check.ability);
+                const modifier = phase === 'result' && !roll.skipped ? roll.modifier : breakdown.total;
                 const ability = check.ability === 'none' ? 'D20' : check.ability[0].toUpperCase() + check.ability.slice(1);
                 const math = phase === 'result' && !roll.skipped ? `${roll.die} ${modifier >= 0 ? '+' : '−'} ${Math.abs(modifier)} = ${roll.total} · Target ${check.dc}` : `Target ${check.dc} · d20 ${modifier >= 0 ? '+' : '−'} ${Math.abs(modifier)}`;
                 container.innerHTML = DOM.html`<span class="dice-check-label">${ability} check</span><strong class="dice-check-reason">${check.reason}</strong><span class="dice-check-math">${math}</span>`;
+                if (breakdown.survival) container.innerHTML += DOM.html`<span class="text-xs text-red-300">Base ${breakdown.base >= 0 ? '+' : ''}${breakdown.base} · Survival ${breakdown.survival}</span>`;
                 if (phase === 'ready') container.innerHTML += '<div class="dice-check-actions"><button data-action="roll-player-check">Roll d20</button><button data-action="skip-player-check">Skip check</button></div>';
                 if (phase === 'result') container.innerHTML += DOM.html`<strong class="${roll.skipped ? '' : roll.success ? 'dice-success' : 'dice-failure'}">${caption}</strong>`;
             },
@@ -21023,7 +21641,7 @@ Write only the character's message.`;
              */
             toggleInventoryPanel(tab) {
                 const state = StateManager.getState();
-                if (tab && tab !== 'player' && state?.enableJournal === false) return;
+                if (tab && !['player', 'stats'].includes(tab) && state?.enableJournal === false) return;
                 const container = document.getElementById('inventory-panel-container');
                 if (container) {
                     const wasHidden = container.classList.contains('hidden');
@@ -21042,11 +21660,13 @@ Write only the character's message.`;
              * @param {string} tab - The tab name ('inventory', 'quests', 'relationships').
              */
             switchInventoryTab(tab) {
+                this.RUNTIME.playerStatsOverride = false;
                 this.RUNTIME.activeInventoryTab = tab;
                 this.renderInventoryPanel();
             },
 
             closeInventoryPanel() {
+                this.RUNTIME.playerStatsOverride = false;
                 const container = document.getElementById('inventory-panel-container');
                 container.classList.add('hidden');
                 container.innerHTML = '';
@@ -21076,14 +21696,23 @@ Write only the character's message.`;
                     return;
                 }
 
-                const activeTab = this.RUNTIME.activeInventoryTab || 'inventory';
-                if (!state?.chat_history || (activeTab !== 'player' && state.enableJournal === false)) {
+                let activeTab = this.RUNTIME.activeInventoryTab || 'inventory';
+                if (activeTab === 'stats' && !(state?.playerCharacter?.statsEnabled || state?.playerCharacter?.survivalEnabled)) {
+                    activeTab = this.RUNTIME.activeInventoryTab = 'player';
+                    this.RUNTIME.playerStatsOverride = false;
+                }
+                if (!state?.chat_history || (!['player', 'stats'].includes(activeTab) && state.enableJournal === false)) {
                     container.classList.add('hidden');
                     container.innerHTML = '';
                     return;
                 }
 
-                if (activeTab === 'player' && container.querySelector('[data-player-form="live-player"]') && container.dataset.narrativeId === (state.narrativeId || '')) return;
+                if (container.dataset.narrativeId !== (state.narrativeId || '')) this.RUNTIME.playerStatsOverride = false;
+                if (activeTab === 'player' && container.querySelector('[data-player-form="live-player"]') && container.dataset.narrativeId === (state.narrativeId || '')) {
+                    container.querySelector('[data-action="open-player-stats"]')?.classList.toggle('hidden', !(state.playerCharacter?.statsEnabled || state.playerCharacter?.survivalEnabled));
+                    return;
+                }
+                if (activeTab === 'stats' && this.RUNTIME.playerStatsOverride && container.querySelector('[data-player-form="live-stats"] fieldset:not(:disabled)') && container.dataset.narrativeId === (state.narrativeId || '')) return;
                 const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter, state.characters.find(c => c.is_user));
                 container.dataset.narrativeId = state.narrativeId || '';
                 container.innerHTML = UIComponents.InventoryPanel(state.gameState, activeTab, sheet, state.enableJournal !== false);
@@ -23377,7 +24006,7 @@ Write only the character's message.`;
                     } else {
                         invBtn.classList.add('hidden');
                         const container = document.getElementById('inventory-panel-container');
-                        if (container && !container.classList.contains('hidden') && this.RUNTIME.activeInventoryTab !== 'player') {
+                        if (container && !container.classList.contains('hidden') && !['player', 'stats'].includes(this.RUNTIME.activeInventoryTab)) {
                             container.classList.add('hidden');
                         }
                     }
@@ -24475,7 +25104,70 @@ Write only the character's message.`;
              * Renders the World Map modal content.
              * Handles both "Move" and "World Map" (Edit) tabs.
              */
+            atlasPicture(place) {
+                const e = value => UTILITY.escapeHTML(String(value || ''));
+                const key = place.imageKey;
+                const cache = this.RUNTIME.worldImageCache ||= {};
+                let src = key && (/^(https?:|data:|blob:)/.test(key) ? key : cache[key]);
+                if (key && !src) {
+                    const loading = this.RUNTIME.atlasImageLoading ||= new Set();
+                    if (!loading.has(key)) {
+                        loading.add(key);
+                        DBService.getImage(key).then(blob => {
+                            if (!blob) return;
+                            cache[key] = URL.createObjectURL(blob);
+                            document.querySelectorAll(`[data-atlas-image="${CSS.escape(place.id)}"]`).forEach(img => { img.src = cache[key]; img.hidden = false; });
+                        }).finally(() => loading.delete(key));
+                    }
+                }
+                return `<div class="atlas-picture"><img data-atlas-image="${e(place.id)}" ${src ? `src="${e(src)}"` : 'hidden'} alt="${e(place.name)}"></div>`;
+            },
+
             renderWorldMapModal() {
+                const atlas = WorldController.ensureAtlas();
+                if (!atlas) return;
+                const runtime = WorldController.RUNTIME;
+                if (runtime.atlasTab === 'grid') { this.renderLegacyWorldMapModal(); return; }
+                const tab = runtime.atlasTab || 'world';
+                const selected = atlas.places.find(place => place.id === runtime.atlasSelectedId);
+                const current = atlas.places.find(place => place.id === atlas.currentId);
+                const e = value => UTILITY.escapeHTML(String(value ?? ''));
+                const open = place => `data-action="open-atlas-place" data-id="${e(place.id)}"`;
+                const card = place => `<button class="atlas-card" ${open(place)}>${this.atlasPicture(place)}<div class="atlas-card-copy"><span class="atlas-kind">${e(place.kind)}${place.id === atlas.currentId ? ' · Current location' : ''}</span><h3>${e(place.name)}</h3><p>${e(place.description)}</p></div></button>`;
+                const ancestry = selected ? UTILITY.atlasAncestry(atlas.places, selected.id) : [];
+                const crumbs = `<div class="atlas-breadcrumbs"><button data-action="atlas-tab" data-tab="world">World</button>${ancestry.map(place => `<span>›</span><button ${open(place)}>${e(place.name)}</button>`).join('')}</div>`;
+                let content = '';
+                if (tab === 'world') {
+                    const renderNode = (place, seen = new Set()) => {
+                        if (seen.has(place.id)) return '';
+                        const nextSeen = new Set([...seen, place.id]);
+                        const children = atlas.places.filter(child => child.parentId === place.id);
+                        return `<button class="atlas-node" ${open(place)} ${place.id === atlas.currentId ? 'aria-current="location"' : ''}><span>◇</span><span>${e(place.name)} <span class="atlas-kind">${e(place.kind)}</span></span></button>${children.length ? `<div class="atlas-branch">${children.map(child => renderNode(child, nextSeen)).join('')}</div>` : ''}`;
+                    };
+                    const roots = atlas.places.filter(place => !place.parentId || !atlas.places.some(parent => parent.id === place.parentId));
+                    content = `<div class="atlas-overview">${roots.map(place => `<section class="atlas-region">${renderNode(place)}</section>`).join('')}</div>`;
+                } else {
+                    let places;
+                    if (tab === 'places') places = atlas.places.filter(place => selected ? place.parentId === selected.id : UTILITY.atlasKindRank(place.kind) < 2);
+                    else places = atlas.places.filter(place => UTILITY.atlasKindRank(place.kind) === 2 && (!selected || place.parentId === selected.id));
+                    if (selected) {
+                        const field = (key, label, multiline = false) => `<label>${label}${multiline ? `<textarea rows="${key === 'details' ? 4 : 3}" data-action-change="update-atlas-place" data-id="${e(selected.id)}" data-field="${key}">${e(selected[key])}</textarea>` : `<input value="${e(selected[key])}" data-action-change="update-atlas-place" data-id="${e(selected.id)}" data-field="${key}">`}</label>`;
+                        const parents = atlas.places.filter(place => place.id !== selected.id && !UTILITY.atlasAncestry(atlas.places, place.id).some(parent => parent.id === selected.id));
+                        const characters = (selected.characterIds || []).map(id => ReactiveStore.getCharacter(id)).filter(Boolean);
+                        content += `<div class="atlas-detail"><div>${this.atlasPicture(selected)}<div class="atlas-actions mt-3"><label>Upload picture<input type="file" accept="image/*" data-action-change="upload-atlas-image" data-id="${e(selected.id)}" hidden></label><button data-action="generate-atlas-image" data-id="${e(selected.id)}" ${runtime.generatingImages.has(selected.id) ? 'disabled' : ''}>${runtime.generatingImages.has(selected.id) ? 'Generating…' : 'Generate picture'}</button><button data-action="set-atlas-current" data-id="${e(selected.id)}">${current?.id === selected.id ? 'Current location' : 'Set current location'}</button></div>
+                            <div class="mt-4"><h4 class="font-semibold">Characters mentioned here</h4><div class="atlas-actions mt-2">${characters.length ? characters.map(char => `<button data-action="open-character-detail" data-id="${e(char.id)}">${e(char.name)}</button>`).join('') : '<span class="atlas-kind">None recorded yet</span>'}</div></div>
+                        </div><div class="player-sheet-form">${field('name', 'Name')}<div class="player-sheet-grid"><label>Type<select data-action-change="update-atlas-place" data-id="${e(selected.id)}" data-field="kind">${UTILITY.atlasKinds.map(kind => `<option ${kind === selected.kind ? 'selected' : ''}>${kind}</option>`).join('')}</select></label><label>Within<select data-action-change="update-atlas-place" data-id="${e(selected.id)}" data-field="parentId"><option value="">World</option>${parents.map(parent => `<option value="${e(parent.id)}" ${parent.id === selected.parentId ? 'selected' : ''}>${e(parent.name)}</option>`).join('')}</select></label></div>${field('description', 'Description', true)}${field('details', 'Lore and notes', true)}</div></div>`;
+                        const events = [...(selected.events || [])].reverse();
+                        content += `<details class="mt-5"><summary class="cursor-pointer font-semibold">Events (${events.length})</summary><div class="atlas-events">${events.map(event => `<article class="atlas-event"><div class="atlas-kind mb-1">Day ${e(event.day || 1)}</div>${e(event.text)}</article>`).join('') || '<p class="atlas-kind">No events recorded yet.</p>'}</div></details>`;
+                    }
+                    if (places.length) content += `<h3 class="text-lg font-semibold my-4">${selected ? 'Places within ' + e(selected.name) : tab === 'areas' ? 'Local areas' : 'Regions and settlements'}</h3><div class="atlas-card-grid">${places.map(card).join('')}</div>`;
+                    else if (!selected) content = `<div class="atlas-empty">${tab === 'areas' ? 'No local areas discovered yet.' : 'No regions or settlements discovered yet.'}</div>`;
+                }
+                if (!atlas.places.length) content = '<div class="atlas-empty">Named places will appear as the story introduces them.</div>';
+                document.getElementById('world-map-modal-content').innerHTML = `<div class="atlas-shell"><div class="atlas-header"><div class="atlas-heading"><div><h2 class="text-xl font-semibold">World map</h2><div class="atlas-kind mt-1">${current ? e(UTILITY.atlasAncestry(atlas.places, current.id).map(place => place.name).join(' › ')) : 'Current location not established'} · ${atlas.places.length} known places</div></div><button data-action="close-modal" data-id="world-map-modal" class="text-xl p-2" aria-label="Close map">×</button></div><div class="atlas-navigation"><div class="atlas-tabs" role="tablist">${[['world', 'World map'], ['places', 'Places'], ['areas', 'Local areas']].map(([key, label]) => `<button role="tab" aria-selected="${tab === key}" data-action="atlas-tab" data-tab="${key}">${label}</button>`).join('')}</div><div class="atlas-actions"><label><input type="checkbox" data-action-change="atlas-auto-images" ${atlas.autoImages !== false ? 'checked' : ''}> Auto pictures</label><button data-action="atlas-tab" data-tab="grid">Grid editor</button></div></div></div><div class="atlas-body">${crumbs}${content}</div></div>`;
+            },
+
+            renderLegacyWorldMapModal() {
                 const state = StateManager.getState();
                 const activeWorldMapTab = (typeof WorldController !== 'undefined') ? WorldController.RUNTIME.activeWorldMapTab : 'move';
                 const pendingMove = (typeof WorldController !== 'undefined') ? WorldController.RUNTIME.pendingMove : null;
@@ -24625,6 +25317,7 @@ Write only the character's message.`;
                 const headerHTML = DOM.html`
                 <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-black/40 flex-shrink-0">
                      <div class="flex space-x-4">
+                        <button data-action="atlas-tab" data-tab="world" class="text-teal-400">Atlas</button>
                         <button onclick="UIManager.switchWorldMapTab('move')" class="pb-2 text-lg font-bold border-b-2 ${activeWorldMapTab === 'move' ? 'border-teal-500 text-white' : 'border-transparent text-gray-400 hover:text-white'} transition-colors">Move</button>
                         <button onclick="UIManager.switchWorldMapTab('worldmap')" class="pb-2 text-lg font-bold border-b-2 ${activeWorldMapTab === 'worldmap' ? 'border-teal-500 text-white' : 'border-transparent text-gray-400 hover:text-white'} transition-colors">Edit Map</button>
                      </div>
@@ -24919,6 +25612,18 @@ Write only the character's message.`;
                     img.classList.remove("animate-pulse");
                     console.error("Failed to hydrate message image:", e);
                     img.alt = "[Error]";
+                }
+            },
+
+            async hydrateEncounteredPortraits(characters) {
+                const cache = this.RUNTIME.characterImageCache;
+                for (const character of characters.filter(char => char.encounter)) {
+                    const baseKeys = [character.id, ...(character.extra_portraits || []).map(portrait => `${character.id}::emotion::${(portrait.emotion || 'neutral').toLowerCase()}`)];
+                    await Promise.all(baseKeys.flatMap(key => [key, `${key}::alpha_masked`]).map(async key => {
+                        if (cache[key]) return;
+                        const blob = await DBService.getImage(key);
+                        if (blob) cache[key] = URL.createObjectURL(blob);
+                    }));
                 }
             },
 
@@ -25429,6 +26134,7 @@ Write only the character's message.`;
                 <!-- Tab Navigation Bar -->
                 <div class="flex flex-row space-x-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
                     <button onclick="window.switchCharTab(this, 'tab-identity')" data-tab="tab-identity" class="character-tab-btn border-b-2 border-teal-500 text-teal-400 px-4 py-3 font-semibold text-sm transition-colors hover:text-teal-300 flex-shrink-0 tracking-wide uppercase">Identity</button>
+                    ${!char.is_user && !char.is_narrator ? DOM.html`<button onclick="window.switchCharTab(this, 'tab-character-sheet')" data-tab="tab-character-sheet" class="character-tab-btn border-b-2 border-transparent text-gray-400 px-4 py-3 font-semibold text-sm transition-colors hover:text-gray-300 flex-shrink-0 tracking-wide uppercase">Character Sheet</button>` : ''}
                     <button onclick="window.switchCharTab(this, 'tab-prompts')" data-tab="tab-prompts" class="character-tab-btn border-b-2 border-transparent text-gray-400 px-4 py-3 font-semibold text-sm transition-colors hover:text-gray-300 flex-shrink-0 tracking-wide uppercase">Prompts</button>
                     <button onclick="window.switchCharTab(this, 'tab-advanced')" data-tab="tab-advanced" class="character-tab-btn border-b-2 border-transparent text-gray-400 px-4 py-3 font-semibold text-sm transition-colors hover:text-gray-300 flex-shrink-0 tracking-wide uppercase">Advanced</button>
                 </div>
@@ -25445,6 +26151,7 @@ Write only the character's message.`;
             <div class="p-6 md:p-8 overflow-y-auto space-y-6 bg-gray-800/80 rounded-b-xl relative">
                 
                 <!-- V4 Hero Identity Tab -->
+                ${!char.is_user && !char.is_narrator ? DOM.html`<div id="tab-character-sheet" class="character-tab-content hidden animate-fade-rise">${DOM.unsafe(UIComponents.NpcCharacterSheet(char))}</div>` : ''}
                 <div id="tab-identity" class="character-tab-content animate-fade-rise">
                     <!-- Hero Image Container -->
                     <div class="relative w-full ${hasPortrait ? 'aspect-square' : 'min-h-[100px] h-auto'} rounded-2xl overflow-hidden group mb-6 shadow-2xl bg-gray-900 border border-white/5 flex transition-all">
@@ -25746,7 +26453,8 @@ Write only the character's message.`;
 
                 // Restore previous active tab state seamlessly
                 setTimeout(() => {
-                    const defaultTab = window.activeCharTab || 'tab-identity';
+                    const defaultTab = (this.RUNTIME.detailCharacterId === charId && window.activeCharTab) || (char.npc_profile || (!char.is_user && !char.is_narrator && ReactiveStore.state.playerCharacter?.progression?.enabled) ? 'tab-character-sheet' : 'tab-identity');
+                    this.RUNTIME.detailCharacterId = charId;
                     const targetBtn = container.querySelector('[data-tab="' + defaultTab + '"]');
                     if (targetBtn && window.switchCharTab) {
                         window.switchCharTab(targetBtn, defaultTab);
@@ -32128,6 +32836,7 @@ Write only the descriptive paragraphs.`;
                 const player = story.characters.find(c => c.id === this.currentEditScenario.user_character_id) || story.characters.find(c => c.is_user);
                 this.currentEditScenario.playerCharacter = UTILITY.normalizePlayerCharacter(this.currentEditScenario.playerCharacter, player);
                 document.getElementById('scenario-player-form').innerHTML = UIComponents.PlayerSheetForm('scenario-player', this.currentEditScenario.playerCharacter);
+                UIManager.refreshRpgSettings('scenario-player');
                 UIManager.renderPlayerPortrait('scenario-player', this.currentEditScenario.playerCharacter, player);
 
                 this.switchScenarioTab('setup');
@@ -35331,6 +36040,151 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
          * =================================================================================================
          */
         const NarrativeController = {
+            getNpcProfile(character) {
+                const state = ReactiveStore.state;
+                if (!character || character.is_user || character.is_narrator || !state?.playerCharacter?.progression?.enabled) return character?.npc_profile;
+                if (!state.npcProgression) state.npcProgression = {};
+                const entry = state.npcProgression[character.id];
+                const base = character.npc_profile || entry?.baseProfile || { ...UTILITY.createNpcProfile(character.name, 'Unknown', state.narrativeId), knownDetails: character.description || '', editedFields: [] };
+                const rules = UTILITY.normalizeRpgProgression(state.playerCharacter.progression);
+                let progression = UTILITY.normalizeRpgProgression({ ...rules, initialized: true, level: entry?.progression?.level ?? character.encounter?.initialLevel ?? base.level,
+                    xp: entry?.progression?.xp || 0, allocations: entry?.progression?.allocations || {} });
+                const budget = UTILITY.rpgPointBudget(progression.level, rules);
+                if (Object.values(progression.allocations).reduce((sum, points) => sum + points, 0) !== budget || entry?.occupation !== base.job) {
+                    const weights = Object.fromEntries(UTILITY.playerAbilities.map(key => [key, Math.max(1, (base.abilities[key] || 10) - 6)]));
+                    progression.allocations = UTILITY.distributeRpgPoints(weights, budget);
+                }
+                const next = { ...entry, progression, levelEstablished: true, occupation: base.job, ...(!character.npc_profile ? { baseProfile: base } : {}) };
+                if (JSON.stringify(entry) !== JSON.stringify(next)) state.npcProgression[character.id] = next;
+                return { ...base, level: progression.level, abilities: Object.fromEntries(UTILITY.playerAbilities.map(key => [key, 8 + progression.allocations[key]])), rpgProgression: progression };
+            },
+
+            syncRpgNpcs() {
+                const state = ReactiveStore.state;
+                if (!state?.playerCharacter?.progression?.enabled) return;
+                for (const character of [...(state.characters || []), ...(state.worldMap?.grid || []).flatMap(tile => tile.characters || [])]) this.getNpcProfile(character);
+            },
+
+            syncNamedCharacters(messages = null, notify = false) {
+                const state = ReactiveStore.state;
+                if (!state?.narrativeId || !Array.isArray(state.characters)) return [];
+                const added = [];
+                const ignored = new Set(state.ignoredCharacterNames || []);
+                for (const message of messages || state.chat_history || []) {
+                    if (!message || message.type !== 'chat' || message.isHidden || (!message.content && !message.npcMarkers?.length)) continue;
+                    if (message.character_id === 'user' || state.characters.some(char => char.id === message.character_id && char.is_user)) continue;
+                    const index = state.chat_history.findIndex(entry => entry.id === message.id);
+                    const preceding = state.chat_history.slice(0, index < 0 ? state.chat_history.length : index).findLast(entry => entry.type === 'chat' && !entry.isHidden);
+                    const previous = preceding && ReactiveStore.getCharacter(preceding.character_id)?.is_user ? preceding.content : '';
+                    for (const candidate of UTILITY.extractNamedCharacters(message.content + '\n' + (message.npcMarkers || []).join('\n'), previous)) {
+                        const key = UTILITY.npcNameKey(candidate.name);
+                        if (ignored.has(key)) continue;
+                        const roster = [...state.characters, ...(state.worldMap?.grid || []).flatMap(location => location.characters || [])];
+                        let character = UTILITY.findNamedCharacter(roster, candidate.name);
+                        if (!character && !key.includes(' ') && roster.filter(char => UTILITY.npcNameKey(char.name).split(' ')[0] === key).length > 1) continue;
+                        if (character) {
+                            if (!character.encounter || !character.npc_profile) continue;
+                            this.applyNpcIntroduction(character, candidate);
+                            if (!(character.encounter.aliases || []).includes(candidate.name)) character.encounter.aliases = [...(character.encounter.aliases || []), candidate.name];
+                            if (character.name === character.encounter.originalName && !UTILITY.npcNameKey(character.name).includes(' ') && key.includes(' ')) {
+                                character.name = candidate.name;
+                                character.encounter.originalName = candidate.name;
+                            }
+                            const profile = character.npc_profile;
+                            if (profile.job === 'Unknown' && candidate.job !== 'Unknown' && !(profile.editedFields || []).includes('job')) {
+                                const description = profile.generatedDescription;
+                                const updated = UTILITY.createNpcProfile(character.encounter.seedName || character.encounter.originalName, candidate.job, character.encounter.seedKey);
+                                for (const field of Object.keys(updated)) {
+                                    if (field === 'abilities') {
+                                        for (const ability of UTILITY.playerAbilities) if (!(profile.editedFields || []).includes(ability)) profile.abilities[ability] = updated.abilities[ability];
+                                    } else if (!(profile.editedFields || []).includes(field)) profile[field] = updated[field];
+                                }
+                                profile.generatedDescription = UTILITY.npcProfileDescription(profile, profile.knownDetails);
+                                if (character.description === description) character.description = profile.generatedDescription;
+                                character.short_description = `${profile.job} · ${profile.personality}`;
+                            }
+                            character.encounter.observations = character.encounter.observations || [];
+                            if (!character.encounter.observations.some(entry => entry.text === candidate.source)) {
+                                character.encounter.observations.push({ messageId: message.id, text: candidate.source });
+                                character.encounter.observations = character.encounter.observations.slice(-12);
+                            }
+                            continue;
+                        }
+                        const profile = UTILITY.createNpcProfile(candidate.name, candidate.job, state.narrativeId);
+                        profile.knownDetails = candidate.source;
+                        profile.editedFields = [];
+                        profile.generatedDescription = UTILITY.npcProfileDescription(profile, candidate.source);
+                        const colorIndex = state.characters.filter(char => !char.is_user).length % this.CONSTANTS.CHARACTER_COLORS.length;
+                        character = { id: UTILITY.uuid(), name: candidate.name, description: profile.generatedDescription,
+                            short_description: `${profile.job} · ${profile.personality}`, appearance: '', image_url: '', extra_portraits: [],
+                            model_instructions: 'Use the established character sheet and story context. Do not assume this character is present merely because they are in the roster.',
+                            tags: [candidate.job === 'Unknown' ? 'encountered' : candidate.job.toLowerCase()], is_user: false, is_narrator: false,
+                            is_active: false, color: this.CONSTANTS.CHARACTER_COLORS[colorIndex], dynamic_knowledge: [], npc_profile: profile,
+                            encounter: { seedKey: state.narrativeId, seedName: candidate.name, originalName: candidate.name, aliases: [candidate.name], firstMessageId: message.id,
+                                observations: [{ messageId: message.id, text: candidate.source }] } };
+                        this.applyNpcIntroduction(character, candidate);
+                        state.characters.push(character);
+                        added.push(character);
+                    }
+                }
+                if (added.length) {
+                    UIManager.renderCharacters();
+                    UIManager.updateAICharacterSelector();
+                    if (notify) UIManager.showNotification(added.length === 1 ? `${added[0].name} added to the roster.` : `${added.length} characters added to the roster.`);
+                }
+                this.syncRpgNpcs();
+                return added;
+            },
+
+            applyNpcIntroduction(character, candidate) {
+                const encounter = character.encounter;
+                if (!encounter) return;
+                if (candidate.level && !encounter.initialLevel && !ReactiveStore.state.npcProgression?.[character.id]) encounter.initialLevel = candidate.level;
+                if (candidate.encounterType === 'met') encounter.status = 'met';
+                else if (candidate.encounterType === 'mentioned' && encounter.status !== 'met') encounter.status = 'mentioned';
+                if (candidate.encounterType === 'met' && candidate.description && !character.appearance?.trim()
+                    && !(character.npc_profile?.editedFields || []).includes('appearance')) {
+                    character.appearance = candidate.description;
+                }
+            },
+
+            createLocalNpcProfile(id) {
+                const character = ReactiveStore.getCharacter(id);
+                if (!character || character.is_user || character.is_narrator || character.npc_profile) return;
+                const role = UTILITY.extractNamedCharacters(`${character.name}, ${character.short_description || ''}. ${character.description || ''}`).find(entry => UTILITY.npcNameKey(entry.name) === UTILITY.npcNameKey(character.name))?.job || 'Unknown';
+                character.npc_profile = UTILITY.createNpcProfile(character.name, role, ReactiveStore.state.narrativeId);
+                character.npc_profile.knownDetails = character.description || '';
+                character.npc_profile.editedFields = [];
+                window.activeCharTab = 'tab-character-sheet';
+                UIManager.openCharacterDetailModal(id);
+            },
+
+            updateNpcProfile(id, field, value) {
+                const character = ReactiveStore.getCharacter(id);
+                const rpg = ReactiveStore.state.playerCharacter?.progression?.enabled;
+                if (rpg && (field === 'level' || UTILITY.playerAbilities.includes(field))) return;
+                if (rpg) this.getNpcProfile(character);
+                const profile = character?.npc_profile || (rpg && ReactiveStore.state.npcProgression?.[id]?.baseProfile);
+                if (!profile) return;
+                const textFields = ['job', 'personality', 'temperament', 'motivation', 'mannerism', 'knownDetails'];
+                const bounds = { level: [1, 20], hp: [0, 9999], maxHp: [1, 9999], armorClass: [0, 40] };
+                const oldDescription = profile.generatedDescription;
+                if (field === 'appearance') character.appearance = String(value).slice(0, 1600);
+                else if (textFields.includes(field)) profile[field] = String(value).slice(0, field === 'knownDetails' ? 5000 : 1000);
+                else if (UTILITY.playerAbilities.includes(field)) profile.abilities[field] = Math.max(1, Math.min(30, Math.round(Number(value) || 10)));
+                else if (bounds[field]) profile[field] = Math.max(bounds[field][0], Math.min(bounds[field][1], Math.round(Number(value) || bounds[field][0])));
+                else return;
+                profile.editedFields = [...new Set([...(profile.editedFields || []), field])];
+                profile.generatedDescription = UTILITY.npcProfileDescription(profile, profile.knownDetails);
+                if (character.description === oldDescription) character.description = profile.generatedDescription;
+                character.short_description = `${profile.job} · ${profile.personality}`;
+                UIManager.renderCharacters();
+                const modifier = document.getElementById(`npc-modifier-${id}-${field}`);
+                if (modifier) { const bonus = UTILITY.playerAbilityModifier(profile.abilities[field]); modifier.textContent = `Modifier ${bonus >= 0 ? '+' : ''}${bonus}`; }
+                const input = document.querySelector(`#tab-character-sheet [data-id="${CSS.escape(id)}"][data-field="${CSS.escape(field)}"]`);
+                if (input) input.value = field === 'appearance' ? character.appearance : UTILITY.playerAbilities.includes(field) ? profile.abilities[field] : profile[field];
+            },
+
             advanceTimeForMessage(message, effects) {
                 const state = ReactiveStore.state;
                 if (message.playerTurn) return;
@@ -35347,6 +36201,14 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
             rewindPlayerTime(removed) {
                 const state = ReactiveStore.state;
                 if (!state.playerCharacter) return;
+                for (const message of [...(removed || [])].reverse()) {
+                    const award = message?.rpgAward;
+                    const current = state.playerCharacter.progression;
+                    if (award && current?.level === award.after.level && current.xp === award.after.xp) {
+                        state.playerCharacter = UTILITY.normalizePlayerCharacter({ ...state.playerCharacter,
+                            progression: { ...current, level: award.before.level, xp: award.before.xp } });
+                    }
+                }
                 const ids = new Set((removed || []).filter(Boolean).map(m => m.id));
                 const turns = (state.chat_history || []).filter(m => m.playerTurn);
                 const latest = turns.at(-1);
@@ -35431,8 +36293,9 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     if (!skip) {
                         const sample = new Uint32Array(1);
                         do { crypto.getRandomValues(sample); } while (sample[0] >= 4294967280);
-                        const modifier = sheet.statsEnabled && check.ability !== 'none' ? UTILITY.playerAbilityModifier(sheet.abilities[check.ability]) : 0;
-                        result = UTILITY.resolvePlayerCheck(sample[0] % 20 + 1, modifier, check.dc);
+                        const modifier = UTILITY.playerCheckModifier(sheet, check.ability);
+                        result = { ...UTILITY.resolvePlayerCheck(sample[0] % 20 + 1, modifier.total, check.dc), baseModifier: modifier.base,
+                            survivalModifier: modifier.survival, survivalPenalties: modifier.penalties.map(penalty => ({ need: penalty.need, label: penalty.label, modifier: penalty.modifier })) };
                     }
                     if (continueStory) {
                         this.RUNTIME.activeRequestAbortController = rollController;
@@ -35444,10 +36307,15 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     }
                     const roll = { ...result, ...check, requestId: message.id, requestVersion: message.currentVersion || 0 };
                     const content = skip ? `Check skipped: ${check.reason}. Continue this action without a dice result.`
-                        : `D20 check — ${check.reason}: ${result.die} ${result.modifier >= 0 ? '+' : '−'} ${Math.abs(result.modifier)} = ${result.total} vs target ${check.dc}: ${result.success ? 'Success' : 'Failure'}.`;
+                        : `D20 check — ${check.reason}: ${result.die} ${result.modifier >= 0 ? '+' : '−'} ${Math.abs(result.modifier)} = ${result.total} vs target ${check.dc}: ${result.success ? 'Success' : 'Failure'}.${result.survivalModifier ? ` Includes survival ${result.survivalModifier} (${result.survivalPenalties.map(penalty => `${penalty.label} ${penalty.modifier}`).join(', ')}); already applied.` : ''}`;
                     const resultId = UTILITY.uuid();
+                    const beforeProgression = UTILITY.normalizeRpgProgression(state.playerCharacter.progression);
+                    const award = UTILITY.awardRpgXp(beforeProgression, roll);
+                    const rpgAward = award.xpGained ? { before: { level: beforeProgression.level, xp: beforeProgression.xp },
+                        after: { level: award.progression.level, xp: award.progression.xp }, xp: award.xpGained, levels: award.levelsGained } : null;
+                    if (rpgAward) state.playerCharacter = UTILITY.normalizePlayerCharacter({ ...state.playerCharacter, progression: award.progression });
                     state.chat_history.push({ id: resultId, type: 'system_event', character_id: 'system',
-                        content, playerRoll: roll, timestamp: new Date().toISOString() });
+                        content, playerRoll: roll, ...(rpgAward ? { rpgAward } : {}), timestamp: new Date().toISOString() });
                     UIManager.renderChat();
                     await ReactiveStore.forceSave();
                     if (continueStory) {
@@ -36332,6 +37200,9 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
 
             getCurrentLocationName() {
                 const state = ReactiveStore.state;
+                const atlas = state?.worldMap?.atlas;
+                const place = atlas?.places.find(entry => entry.id === atlas.currentId);
+                if (place) return UTILITY.atlasAncestry(atlas.places, place.id).map(entry => entry.name).join(' / ');
                 if (state && state.worldMap && state.worldMap.grid && state.worldMap.currentLocation) {
                     const currentLoc = state.worldMap.grid.find(loc => loc.coords.x === state.worldMap.currentLocation.x && loc.coords.y === state.worldMap.currentLocation.y);
                     if (currentLoc) {
@@ -36741,6 +37612,9 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
 
                 const state = ReactiveStore.state;
                 const effects = turnOptions.effects || UTILITY.parsePlayerTurnEffects(fullText);
+                const atlasMarkers = UTILITY.parseAtlasMarkers(fullText);
+                const npcMarkers = UTILITY.stripThinking(fullText).replace(/```[\s\S]*?```/g, '').match(/\[NPC(?:_MET|_MENTION)?:[^\]]*\]/gi) || [];
+                fullText = fullText.replace(/\[NPC(?:_MET|_MENTION)?:[^\]]*\]/gi, '').replace(/\[(?:PLACE|AT):[^\]\r\n]*\]/gi, '').trim();
                 fullText = fullText.replace(/\[(?:TIME|RECOVER):[^\]\r\n]*\]/gi, '').trim();
                 const playerCheck = turnOptions.allowChecks !== false && state.playerCharacter?.diceEnabled === true && !ReactiveStore.getCharacter(charId)?.is_user
                     ? UTILITY.parsePlayerCheck(fullText) : null;
@@ -36815,10 +37689,15 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
 
                 // Process [STATE: ...] updates in the message content
                 newMessage.playerCheck = playerCheck;
+                newMessage.npcMarkers = npcMarkers;
+                this.syncNamedCharacters([newMessage], true);
+                newMessage.atlasMarkers = atlasMarkers;
+                newMessage.atlasTracked = false;
                 if (targetMessageIndex === null && !playerCheck && turnOptions.advance !== false
                     && fullText.trim() && ReactiveStore.getCharacter(charId) && !ReactiveStore.getCharacter(charId).is_user) {
                     this.advanceTimeForMessage(newMessage, effects);
                 }
+                WorldController.syncAtlasMessages([newMessage], targetMessageIndex === null);
                 if (typeof InventoryController !== 'undefined') {
                     InventoryController.processStateUpdates(newMessage);
                 }
@@ -39593,6 +40472,10 @@ ${formatRequirements.join('\n\n')}
              */
             deleteCharacter(id) {
                 UIManager.showConfirmationModal('Delete this character?', () => {
+                    const character = ReactiveStore.getCharacter(id);
+                    if (character?.encounter) {
+                        ReactiveStore.state.ignoredCharacterNames = [...new Set([...(ReactiveStore.state.ignoredCharacterNames || []), character.name, character.encounter.originalName, ...(character.encounter.aliases || [])].filter(Boolean).map(name => UTILITY.npcNameKey(name)))];
+                    }
                     ReactiveStore.state.characters = ReactiveStore.state.characters.filter(c => c.id !== id);
                     DBService.deleteImage(id);
                     AppController.closeModal('character-detail-modal');
@@ -42294,6 +43177,187 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
          * =================================================================================================
          */
         const WorldController = {
+            ensureAtlas() {
+                const state = ReactiveStore.state;
+                if (!state?.worldMap) return null;
+                if (!state.worldMap.atlas) state.worldMap.atlas = { version: 1, places: [], currentId: null };
+                const atlas = state.worldMap.atlas;
+                for (const tile of state.worldMap.grid || []) {
+                    if (!tile.name || /^(?:undefined|unknown|unnamed)$/i.test(tile.name)) continue;
+                    const match = atlas.places.find(place => place.legacyCoords?.x === tile.coords.x && place.legacyCoords?.y === tile.coords.y) || atlas.places.find(place => UTILITY.atlasNameKey(place.name) === UTILITY.atlasNameKey(tile.name));
+                    const details = [tile.prompt, ...(tile.local_static_entries || []).map(entry => `${entry.title}: ${entry.content}`)].filter(Boolean).join('\n\n');
+                    const place = match || { id: UTILITY.uuid(), name: tile.name, kind: UTILITY.extractAtlasPlaces(tile.name)[0]?.kind || 'area', parentId: null,
+                        description: tile.description || '', details, events: [], characterIds: (tile.characters || []).map(char => char.id), aliases: [], visits: 0 };
+                    if (!place.legacyCoords) place.legacyCoords = { ...tile.coords };
+                    if (match) {
+                        for (const [field, value] of Object.entries({ name: tile.name, description: tile.description || '', details })) if (!place[`${field}Edited`] && place[field] !== value) place[field] = value;
+                        const ids = (tile.characters || []).map(char => char.id).filter(id => !(place.characterIds || []).includes(id));
+                        if (ids.length) place.characterIds = [...(place.characterIds || []), ...ids];
+                    }
+                    if (tile.imageUrl && !place.imageKey?.startsWith('atlas::')) place.imageKey = tile.imageUrl.startsWith('local_idb_') ? `location::${tile.coords.x},${tile.coords.y}` : tile.imageUrl;
+                    if (!match) atlas.places.push(place);
+                    if (!atlas.currentId && tile.coords.x === state.worldMap.currentLocation?.x && tile.coords.y === state.worldMap.currentLocation?.y) atlas.currentId = place.id;
+                }
+                return atlas;
+            },
+
+            syncAtlasMessages(messages = null, allowArrival = true) {
+                const atlas = this.ensureAtlas();
+                if (!atlas) return;
+                const state = ReactiveStore.state;
+                const findPlace = name => atlas.places.find(place => [place.name, ...(place.aliases || [])].some(alias => UTILITY.atlasNameKey(alias) === UTILITY.atlasNameKey(name)));
+                for (const message of messages || state.chat_history || []) {
+                    if (!message || message.atlasTracked || message.isHidden || message.type !== 'chat' || !message.content || message.character_id === 'user' || ReactiveStore.getCharacter(message.character_id)?.is_user) continue;
+                    const markers = message.atlasMarkers || UTILITY.parseAtlasMarkers(message.content);
+                    const candidates = UTILITY.extractAtlasPlaces(message.content);
+                    for (const marker of markers.places) {
+                        const candidate = candidates.find(place => UTILITY.atlasNameKey(place.name) === UTILITY.atlasNameKey(marker.name));
+                        if (candidate) Object.assign(candidate, marker);
+                        else candidates.push({ ...marker, description: UTILITY.atlasDescription(message.content, marker.name) });
+                    }
+                    for (const candidate of candidates) {
+                        let place = findPlace(candidate.name);
+                        if (!place) {
+                            atlas.places.push({ id: UTILITY.uuid(), name: candidate.name, kind: candidate.kind, parentId: null, parentName: candidate.parentName,
+                                description: candidate.description, details: '', events: [], characterIds: [], aliases: [], visits: 0, discoveredMessageId: message.id });
+                            place = findPlace(candidate.name);
+                        } else {
+                            if (!place.description && !place.descriptionEdited) place.description = candidate.description;
+                            if (!place.parentId && candidate.parentName) place.parentName = candidate.parentName;
+                        }
+                    }
+                    for (const place of atlas.places) {
+                        if (place.parentId || !place.parentName || place.parentEdited) continue;
+                        const parent = findPlace(place.parentName);
+                        if (parent && parent.id !== place.id && !UTILITY.atlasAncestry(atlas.places, parent.id).some(entry => entry.id === place.id)) place.parentId = parent.id;
+                    }
+                    const mentioned = atlas.places.filter(place => [place.name, ...(place.aliases || [])].some(name => new RegExp(`(?:^|[^\\p{L}\\p{M}])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}])`, 'iu').test(message.content)));
+                    const previous = atlas.places.find(place => place.id === atlas.currentId);
+                    const arrival = allowArrival ? (findPlace(markers.arrival)?.id || UTILITY.detectAtlasArrival(message.content, atlas.places)) : null;
+                    if (arrival && arrival !== atlas.currentId) this.setAtlasCurrent(arrival, false);
+                    const current = atlas.places.find(place => place.id === (allowArrival ? atlas.currentId : message.atlasPlaceId));
+                    const parentContext = current && UTILITY.atlasKindRank(current.kind) < 2 ? current : previous;
+                    if (parentContext && UTILITY.atlasKindRank(parentContext.kind) < 2) {
+                        for (const place of mentioned) if (place.id === arrival && !place.parentId && !place.parentName && !place.parentEdited && UTILITY.atlasKindRank(place.kind) > UTILITY.atlasKindRank(parentContext.kind)) place.parentId = parentContext.id;
+                    }
+                    const associated = [...new Set([...mentioned.map(place => place.id), ...(current ? [current.id] : [])])];
+                    const characterIds = state.characters.filter(char => !char.is_user && !char.is_narrator && [char.name, ...(char.encounter?.aliases || [])].some(name => new RegExp(`(?:^|[^\\p{L}\\p{M}])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}])`, 'iu').test(message.content))).map(char => char.id);
+                    for (const place of atlas.places) if (place.events?.some(event => event.messageId === message.id)) place.events = place.events.filter(event => event.messageId !== message.id);
+                    for (const id of associated) {
+                        const place = atlas.places.find(entry => entry.id === id);
+                        const relevant = message.content.replace(/([.!?])\s+/g, '$1\n').split('\n').filter(sentence => id === current?.id || sentence.toLowerCase().includes(place.name.toLowerCase())).join(' ').slice(0, 700);
+                        if (!relevant) continue;
+                        place.events = (place.events || []).filter(event => event.messageId !== message.id);
+                        place.events.push({ messageId: message.id, text: relevant, characterIds, day: UTILITY.describePlayerTime(UTILITY.normalizePlayerCharacter(state.playerCharacter)).day });
+                        place.characterIds = [...new Set([...(place.characterIds || []), ...characterIds])];
+                    }
+                    message.atlasPlaceId = current?.id || null;
+                    message.atlasTracked = true;
+                }
+                if (document.getElementById('world-map-modal')?.style.display === 'flex') UIManager.renderWorldMapModal();
+                this.queueAtlasImages();
+            },
+
+            showAtlas(tab = 'world', id = null) {
+                this.ensureAtlas();
+                this.RUNTIME.atlasTab = tab;
+                if (id !== null) this.RUNTIME.atlasSelectedId = id;
+                UIManager.renderWorldMapModal();
+            },
+
+            setAtlasCurrent(id, render = true) {
+                const atlas = this.ensureAtlas();
+                const place = atlas?.places.find(entry => entry.id === id);
+                if (!place) return;
+                if (atlas.currentId !== id) place.visits = (place.visits || 0) + 1;
+                atlas.currentId = id;
+                if (place.legacyCoords) ReactiveStore.state.worldMap.currentLocation = { ...place.legacyCoords };
+                if (render) UIManager.renderWorldMapModal();
+            },
+
+            updateAtlasPlace(id, field, value) {
+                const atlas = this.ensureAtlas();
+                const place = atlas?.places.find(entry => entry.id === id);
+                if (!place) return;
+                if (field === 'parentId') {
+                    if (value && (!atlas.places.some(entry => entry.id === value) || UTILITY.atlasAncestry(atlas.places, value).some(entry => entry.id === id))) return;
+                    place.parentId = value || null;
+                    place.parentEdited = true;
+                } else if (field === 'kind' && UTILITY.atlasKinds.includes(value)) place.kind = value;
+                else if (['name', 'description', 'details'].includes(field)) {
+                    if (field === 'name') { if (!value.trim()) return; place.aliases = [...new Set([...(place.aliases || []), place.name])]; }
+                    place[field] = String(value).slice(0, field === 'name' ? 80 : field === 'description' ? 600 : 5000);
+                    place[`${field}Edited`] = true;
+                }
+                UIManager.renderWorldMapModal();
+            },
+
+            async uploadAtlasImage(event, id) {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const state = ReactiveStore.state;
+                const place = state.worldMap.atlas.places.find(entry => entry.id === id);
+                if (!place) return;
+                try {
+                    const blob = await ImageProcessor.processImageAsBlob(file);
+                    if (ReactiveStore.state !== state) return;
+                    await this.saveAtlasImage(place, blob);
+                } catch (error) { UIManager.showNotification(`Image upload failed: ${error.message}`, 'error'); }
+            },
+
+            async saveAtlasImage(place, blob) {
+                const key = `atlas::${place.id}`;
+                await DBService.saveImage(key, blob);
+                const cache = UIManager.RUNTIME.worldImageCache ||= {};
+                if (cache[key]) URL.revokeObjectURL(cache[key]);
+                cache[key] = URL.createObjectURL(blob);
+                place.imageKey = key;
+                place.imageRevision = (place.imageRevision || 0) + 1;
+                place.imageError = '';
+                await ReactiveStore.forceSave();
+                UIManager.renderWorldMapModal();
+            },
+
+            hasAtlasImageProvider() {
+                const settings = StateManager.data.globalSettings || {};
+                if (settings.imageGenBackend === 'openrouter') return !!(settings.imageGenOpenRouterKey || settings.openRouterKey);
+                if (settings.imageGenBackend === 'nanogpt') return !!(settings.imageGenNanoGPTKey || settings.nanoGPTKey);
+                return settings.imageGenBackend === 'koboldcpp' && !!settings.koboldImageGenUrl;
+            },
+
+            queueAtlasImages() {
+                const state = ReactiveStore.state;
+                const atlas = state?.worldMap?.atlas;
+                if (!atlas || atlas.autoImages === false || !this.hasAtlasImageProvider() || this.RUNTIME.atlasImageRunning || this.RUNTIME.atlasImagesPaused) return;
+                const place = atlas.places.find(entry => !entry.imageKey && !entry.imageAttempted && !entry.legacyCoords && entry.discoveredMessageId);
+                if (place) this.generateAtlasImage(place.id, true).catch(error => console.warn('Atlas image:', error.message));
+            },
+
+            async generateAtlasImage(id, automatic = false) {
+                const state = ReactiveStore.state;
+                const place = state?.worldMap?.atlas?.places.find(entry => entry.id === id);
+                if (!place || this.RUNTIME.generatingImages.has(id)) return;
+                if (!this.hasAtlasImageProvider()) { if (!automatic) UIManager.showNotification('Configure an image provider in Settings to generate pictures.', 'error'); return; }
+                if (automatic) this.RUNTIME.atlasImageRunning = true;
+                this.RUNTIME.generatingImages.add(id);
+                place.imageAttempted = true;
+                const previousImage = place.imageKey;
+                const previousRevision = place.imageRevision;
+                try {
+                    const ancestry = UTILITY.atlasAncestry(state.worldMap.atlas.places, id).map(entry => entry.name).join(', ');
+                    const blob = await ImageGenerationService.generateImage(`Environment illustration. ${ancestry}. ${place.kind}. ${place.description}`.slice(0, 700), 'text, labels, watermark', { width: 768, height: 512 });
+                    if (!blob) throw new Error('The image provider returned no picture.');
+                    if (ReactiveStore.state === state && place.imageKey === previousImage && place.imageRevision === previousRevision) await this.saveAtlasImage(place, blob);
+                } catch (error) {
+                    if (automatic) this.RUNTIME.atlasImagesPaused = true;
+                    if (ReactiveStore.state === state) { place.imageError = error.message; if (!automatic) UIManager.showNotification(error.message, 'error'); }
+                } finally {
+                    this.RUNTIME.generatingImages.delete(id);
+                    if (automatic) this.RUNTIME.atlasImageRunning = false;
+                    if (ReactiveStore.state === state) { UIManager.renderWorldMapModal(); if (automatic) this.queueAtlasImages(); }
+                }
+            },
+
             RUNTIME: {
                 activeWorldMapTab: 'move',
                 selectedMapTile: null,
@@ -42795,6 +43859,8 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
 
                     // 1. Update Location (Triggers auto-save)
                     state.worldMap.currentLocation = { x, y };
+                    const atlasPlace = this.ensureAtlas().places.find(place => place.legacyCoords?.x === x && place.legacyCoords?.y === y);
+                    if (atlasPlace) this.setAtlasCurrent(atlasPlace.id, false);
                     this.RUNTIME.turnOfArrival = state.messageCounter;
 
                     // Trigger Auto-Build of adjacent locations if enabled
@@ -43018,6 +44084,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 state.worldMap.currentLocation = { x: 4, y: 4 };
                 state.worldMap.destination = { x: null, y: null };
                 state.worldMap.path = [];
+                state.worldMap.atlas = { version: 1, places: [], currentId: null };
                 this.RUNTIME.selectedMapTile = null;
 
                 UIManager.renderWorldMapModal();
@@ -44550,11 +45617,32 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                     document.getElementById(`${ds.prefix}-clock`).disabled = !document.getElementById(`${ds.prefix}-clock-enabled`).checked;
                 });
                 ActionHandler.register('save-player-sheet', () => UIManager.savePlayerSheet());
+                ActionHandler.register('refresh-rpg-settings', ds => UIManager.refreshRpgSettings(ds.prefix));
+                ActionHandler.register('spend-rpg-point', ds => UIManager.changeRpgAllocation(ds.prefix, ds.ability, 1));
+                ActionHandler.register('refund-rpg-point', ds => UIManager.changeRpgAllocation(ds.prefix, ds.ability, -1));
+                ActionHandler.register('toggle-player-condition', ds => {
+                    const editor = document.getElementById(`${ds.prefix}-condition-editor`);
+                    editor.hidden = !editor.hidden;
+                    document.querySelector(`[data-action="toggle-player-condition"][data-prefix="${ds.prefix}"]`)?.setAttribute('aria-expanded', String(!editor.hidden));
+                    if (!editor.hidden) document.getElementById(`${ds.prefix}-current-form`)?.focus();
+                });
+                ActionHandler.register('change-player-form', (ds, val, event) => {
+                    const input = event.target;
+                    if (input.value.trim() === ds.previousForm) return;
+                    const editor = document.getElementById(`${ds.prefix}-condition-editor`);
+                    editor.querySelectorAll('[data-recognition-id]').forEach(select => { select.value = 'unknown'; });
+                    editor.querySelectorAll('[data-witness-id]').forEach(checkbox => { checkbox.checked = false; });
+                    input.dataset.previousForm = input.value.trim();
+                });
+                ActionHandler.register('open-player-stats', () => UIManager.switchInventoryTab('stats'));
+                ActionHandler.register('override-player-stats', (ds, val, event) => { UIManager.RUNTIME.playerStatsOverride = event.target.checked; UIManager.renderInventoryPanel(); });
+                ActionHandler.register('save-player-stats', () => UIManager.savePlayerSheet('stats'));
                 ActionHandler.register('toggle-player-survival', ds => {
                     document.getElementById(`${ds.prefix}-survival`).disabled = !document.getElementById(`${ds.prefix}-survivalEnabled`).checked;
                 });
                 ActionHandler.register('toggle-player-stats', ds => {
-                    document.getElementById(`${ds.prefix}-stats`).disabled = !document.getElementById(`${ds.prefix}-statsEnabled`).checked;
+                    const fields = document.getElementById(`${ds.prefix}-stats`);
+                    if (fields) fields.disabled = !document.getElementById(`${ds.prefix}-statsEnabled`).checked;
                 });
                 ActionHandler.register('update-player-modifier', ds => {
                     const score = document.getElementById(`${ds.prefix}-${ds.playerAbility}`).value;
@@ -44835,6 +45923,8 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
 
                 ActionHandler.register('open-character-detail', (ds) => AppController.openModal('character-detail-modal', ds.id));
                 ActionHandler.register('delete-character', (ds) => NarrativeController.deleteCharacter(ds.id));
+                ActionHandler.register('create-local-npc-profile', (ds) => NarrativeController.createLocalNpcProfile(ds.id));
+                ActionHandler.register('update-npc-profile', (ds, val) => NarrativeController.updateNpcProfile(ds.id, ds.field, val));
                 ActionHandler.register('set-char-role', (ds) => NarrativeController.setCharacterRole(ds.id, ds.role));
                 ActionHandler.register('gen-char-tags', (ds, val, e) => NarrativeController.generateTagsForCharacter(e, ds.id));
                 ActionHandler.register('gen-char-appearance', (ds, val, e) => NarrativeController.generateAppearanceForCharacter(e, ds.id));
@@ -44849,6 +45939,16 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 // --- WorldController (Map, Lore) ---
                 ActionHandler.register('switch-world-map-tab', (ds) => WorldController.switchWorldMapTab(ds.tab));
                 ActionHandler.register('gen-world-map', (ds, val, e) => WorldController.generateWorldMap(e));
+                ActionHandler.register('atlas-tab', ds => WorldController.showAtlas(ds.tab, ''));
+                ActionHandler.register('open-atlas-place', ds => {
+                    const place = WorldController.ensureAtlas().places.find(entry => entry.id === ds.id);
+                    if (place) WorldController.showAtlas(UTILITY.atlasKindRank(place.kind) === 2 ? 'areas' : 'places', ds.id);
+                });
+                ActionHandler.register('set-atlas-current', ds => WorldController.setAtlasCurrent(ds.id));
+                ActionHandler.register('update-atlas-place', (ds, val) => WorldController.updateAtlasPlace(ds.id, ds.field, val));
+                ActionHandler.register('upload-atlas-image', (ds, val, event) => WorldController.uploadAtlasImage(event, ds.id));
+                ActionHandler.register('generate-atlas-image', ds => WorldController.generateAtlasImage(ds.id));
+                ActionHandler.register('atlas-auto-images', (ds, val, event) => { WorldController.ensureAtlas().autoImages = event.target.checked; if (event.target.checked) WorldController.RUNTIME.atlasImagesPaused = false; WorldController.queueAtlasImages(); });
                 ActionHandler.register('clear-world-map', () => WorldController.clearWorldMap());
                 ActionHandler.register('select-pending-move', (ds) => WorldController.selectPendingMove(parseInt(ds.x), parseInt(ds.y)));
                 ActionHandler.register('confirm-move', () => WorldController.confirmMove());
@@ -45054,6 +46154,7 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 // 4. Load Active Narrative
                 await StateManager.loadActiveNarrative();
                 const state = StateManager.getState();
+                if (state?.characters) await UIManager.hydrateEncounteredPortraits(state.characters);
 
                 // Populate OpenRouter/NanoGPT cache early if active provider to ensure vision detection works
                 if (state && state.apiProvider === 'openrouter') {
@@ -45089,6 +46190,8 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 } else {
                     // Initialize Store
                     ReactiveStore.init(state);
+                    NarrativeController.syncNamedCharacters();
+                    WorldController.syncAtlasMessages();
 
                     // Initialize Runtime Variables
                     if (typeof WorldController !== 'undefined') {
@@ -45168,7 +46271,7 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                         }
                     });
 
-                    ReactiveStore.subscribe('playerCharacter', () => UIManager.renderPlayerControls());
+                    ReactiveStore.subscribe('playerCharacter', () => { UIManager.renderPlayerControls(); UIManager.renderInventoryPanel(); });
                     ReactiveStore.subscribe('gameState', () => {
                         UIManager.renderInventoryPanel();
                     });
