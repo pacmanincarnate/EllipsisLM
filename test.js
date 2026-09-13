@@ -86,6 +86,161 @@ function loadUtility() {
 
 const UTILITY = loadUtility();
 
+test('player sheet: legacy defaults opt out and copy the selected persona', () => {
+    const sheet = UTILITY.normalizePlayerCharacter(null, { id: 'u', name: 'Aria', description: 'Scout' });
+    assert.equal(sheet.name, 'Aria');
+    assert.equal(sheet.backstory, 'Scout');
+    assert.equal(sheet.statsEnabled, false);
+    assert.equal(sheet.diceEnabled, false);
+    assert.equal(sheet.abilities.dexterity, 10);
+    assert.equal(sheet.survivalEnabled, false);
+    deepEq(sheet.survival, { water: 100, sleep: 100, food: 100 });
+});
+
+test('survival: opt-in is independent, levels clamp, and disabled values are preserved', () => {
+    const source = { survivalEnabled: true, survival: { water: -5, sleep: 32.8, food: 120 } };
+    const sheet = UTILITY.normalizePlayerCharacter(source);
+    assert.equal(sheet.statsEnabled, false);
+    assert.equal(sheet.diceEnabled, false);
+    assert.equal(sheet.survivalEnabled, true);
+    deepEq(sheet.survival, { water: 0, sleep: 32.8, food: 100 });
+    sheet.survival.water = 80;
+    assert.equal(source.survival.water, -5);
+    deepEq(UTILITY.normalizePlayerCharacter({ ...sheet, survivalEnabled: false }).survival, { water: 80, sleep: 32.8, food: 100 });
+});
+
+test('game time: default turn advances 15 minutes and fractional survival depletion persists', () => {
+    const before = UTILITY.normalizePlayerCharacter({ survivalEnabled: true });
+    const after = UTILITY.advancePlayerTime(before);
+    assert.equal(after.clock.elapsedMinutes, 15);
+    assert.equal(after.clock.turns, 1);
+    deepEq(after.survival, { water: 99, sleep: 98.75, food: 99.25 });
+    assert.equal(before.clock.elapsedMinutes, 0);
+    assert.equal(UTILITY.normalizePlayerCharacter(after).survival.food, 99.25);
+});
+
+test('game time: midnight and complete elapsed days are tracked separately', () => {
+    const player = UTILITY.normalizePlayerCharacter({ clock: { elapsedMinutes: 960, turns: 64 } });
+    deepEq(UTILITY.describePlayerTime(player), { day: 2, time: '00:00', elapsed: '0d 16h 0m', turns: 64 });
+    player.clock.elapsedMinutes = 2940;
+    deepEq(UTILITY.describePlayerTime(player), { day: 3, time: '09:00', elapsed: '2d 1h 0m', turns: 64 });
+});
+
+test('game time: pause freezes time and survival; survival opt-out freezes only survival', () => {
+    const paused = UTILITY.normalizePlayerCharacter({ survivalEnabled: true, clock: { enabled: false } });
+    deepEq(UTILITY.advancePlayerTime(paused), JSON.parse(JSON.stringify(paused)));
+    const after = UTILITY.advancePlayerTime(UTILITY.normalizePlayerCharacter({ survivalEnabled: false }));
+    assert.equal(after.clock.elapsedMinutes, 15);
+    deepEq(after.survival, { water: 100, sleep: 100, food: 100 });
+});
+
+test('game time: completed sleep advances hours and restores rest while food and water decline', () => {
+    const player = UTILITY.normalizePlayerCharacter({ survivalEnabled: true, survival: { water: 50, food: 50, sleep: 10 } });
+    const after = UTILITY.advancePlayerTime(player, { minutes: 480, recovery: { sleep: 100 } });
+    assert.equal(after.clock.elapsedMinutes, 480);
+    deepEq(after.survival, { water: 18, food: 26, sleep: 100 });
+    const depleted = UTILITY.advancePlayerTime(player, { minutes: 10080 });
+    deepEq(depleted.survival, { water: 0, food: 0, sleep: 0 });
+});
+
+test('turn effects: require explicit valid markers and repeated tags do not stack', () => {
+    deepEq(UTILITY.parsePlayerTurnEffects('You wake. [TIME: 480] [RECOVER: sleep|100] [RECOVER: water|25] [RECOVER: water|25]'),
+        { minutes: 480, recovery: { water: 25, sleep: 100, food: 0 } });
+    deepEq(UTILITY.parsePlayerTurnEffects('I might drink later. [TIME: -5] [RECOVER: food|999]'), { minutes: null, recovery: { water: 0, sleep: 0, food: 0 } });
+    assert.equal(UTILITY.parsePlayerTurnEffects('[TIME: 10081]').minutes, null);
+});
+
+test('survival: legacy or malformed imports default safely and zero is retained', () => {
+    const sheet = UTILITY.normalizePlayerCharacter({ survivalEnabled: 'true', survival: { water: 0, sleep: 'bad', food: null } });
+    assert.equal(sheet.survivalEnabled, false);
+    deepEq(sheet.survival, { water: 0, sleep: 100, food: 100 });
+    deepEq(UTILITY.normalizePlayerCharacter({ survival: null }).survival, { water: 100, sleep: 100, food: 100 });
+});
+
+test('player sheet: invalid numeric imports normalize and sheets stay isolated', () => {
+    const source = { statsEnabled: 'false', diceEnabled: true, hp: 999, maxHp: 20, abilities: { strength: -3, dexterity: 16, wisdom: 'bad' } };
+    const sheet = UTILITY.normalizePlayerCharacter(source);
+    assert.equal(sheet.statsEnabled, false);
+    assert.equal(sheet.diceEnabled, true);
+    assert.equal(sheet.hp, 20);
+    assert.equal(sheet.abilities.strength, 1);
+    assert.equal(sheet.abilities.wisdom, 10);
+    sheet.abilities.dexterity = 3;
+    assert.equal(source.abilities.dexterity, 16);
+});
+
+test('ability checks: floor negative modifiers, meet DC, and no automatic criticals', () => {
+    assert.equal(UTILITY.playerAbilityModifier(9), -1);
+    assert.equal(UTILITY.playerAbilityModifier(16), 3);
+    assert.equal(UTILITY.resolvePlayerCheck(12, 3, 15).success, true);
+    assert.equal(UTILITY.resolvePlayerCheck(20, -2, 20).success, false);
+    assert.equal(UTILITY.resolvePlayerCheck(1, 10, 10).success, true);
+    assert.throws(() => UTILITY.resolvePlayerCheck(21, 0, 10));
+    assert.throws(() => UTILITY.resolvePlayerCheck(10, 0, NaN));
+});
+
+test('check requests: accept only explicit valid markers, never ordinary hiding prose', () => {
+    deepEq(UTILITY.parsePlayerCheck('Wait. [CHECK: dexterity|15|Hide from the guard]'), { ability: 'dexterity', dc: 15, reason: 'Hide from the guard' });
+    assert.equal(UTILITY.parsePlayerCheck('You hide from the guard.'), null);
+    assert.equal(UTILITY.parsePlayerCheck('[CHECK: dexterity|99|Hide]'), null);
+    assert.equal(UTILITY.parsePlayerCheck('[CHECK: stealth|15|Hide]'), null);
+    assert.equal(UTILITY.parsePlayerCheck('[CHECK: dexterity|15|]'), null);
+});
+
+test('player identity: applying a scenario leaves the shared roster unchanged', () => {
+    const cast = [{ id: 'u', name: 'Original', is_user: true }, { id: 'n', name: 'NPC', is_user: false }];
+    const result = UTILITY.applyPlayerCharacter(cast, { characterId: 'n', name: 'Player NPC', backstory: 'Personal history' });
+    assert.equal(result.find(c => c.is_user).id, 'n');
+    assert.equal(result[1].description, 'Personal history');
+    assert.equal(cast[1].name, 'NPC');
+    assert.equal(cast[0].is_user, true);
+    assert.equal(UTILITY.applyPlayerCharacter(cast, null)[0].name, 'Original');
+});
+
+test('player transformations: current identity and portrait override only the selected player', () => {
+    const portrait = 'data:image/jpeg;base64,YWJj';
+    const cast = [{ id: 'u', name: 'Alex', gender: 'Man', pronouns: 'he/him', is_user: true, image_url: 'original.png' }, { id: 'n', name: 'NPC' }];
+    const sheet = UTILITY.normalizePlayerCharacter({ characterId: 'u', name: 'Alex', gender: 'Woman', pronouns: 'she/her', appearance: 'Long silver hair after a transformation.', portrait });
+    const result = UTILITY.applyPlayerCharacter(cast, sheet);
+    assert.equal(result[0].gender, 'Woman');
+    assert.equal(result[0].pronouns, 'she/her');
+    assert.equal(result[0].appearance, sheet.appearance);
+    assert.equal(result[0].player_portrait, portrait);
+    assert.equal(result[0].image_url, 'original.png');
+    assert.equal(cast[0].gender, 'Man');
+    assert.equal(cast[0].player_portrait, undefined);
+    assert.equal(result[1].player_portrait, undefined);
+});
+
+test('player identity: legacy gender and pronouns survive and invalid portraits are discarded', () => {
+    const sheet = UTILITY.normalizePlayerCharacter(null, { gender: 'Nonbinary', pronouns: 'they/them' });
+    assert.equal(sheet.gender, 'Nonbinary');
+    assert.equal(sheet.pronouns, 'they/them');
+    assert.equal(sheet.portrait, null);
+    for (const portrait of ['javascript:alert(1)', 'data:text/html;base64,YWJj', 'data:image/svg+xml;base64,YWJj', 123]) {
+        assert.equal(UTILITY.normalizePlayerCharacter({ portrait }).portrait, null);
+    }
+});
+
+test('pending checks: ignore hidden requests, resolved checks, later player actions, and opt-out', () => {
+    const request = { id: 'a', character_id: 'npc', type: 'chat', playerCheck: { ability: 'dexterity', dc: 15, reason: 'Hide' } };
+    const state = { playerCharacter: { diceEnabled: true }, characters: [{ id: 'u', is_user: true }], chat_history: [request] };
+    assert.equal(UTILITY.getPendingPlayerCheck(state).check.dc, 15);
+    request.type = 'player_check';
+    assert.equal(UTILITY.getPendingPlayerCheck(state)?.check.dc, 15);
+    state.chat_history.push({ type: 'system_event', playerRoll: { die: 12 } });
+    assert.equal(UTILITY.getPendingPlayerCheck(state), null);
+    state.chat_history.pop();
+    state.chat_history.push({ type: 'chat', character_id: 'u', content: 'I leave.' });
+    assert.equal(UTILITY.getPendingPlayerCheck(state), null);
+    state.chat_history.pop();
+    request.isHidden = true;
+    assert.equal(UTILITY.getPendingPlayerCheck(state), null);
+    request.isHidden = false;
+    state.playerCharacter.diceEnabled = false;
+    assert.equal(UTILITY.getPendingPlayerCheck(state), null);
+});
+
 // ─── toStringArray ────────────────────────────────────────────────────────
 
 test('toStringArray: nullish input returns empty array', () => {
