@@ -2716,6 +2716,9 @@
         .player-sheet-form fieldset { min-width: 0; }
         .player-sheet-form fieldset:disabled { opacity: 0.45; }
         .player-sheet-form .player-stats-readonly:disabled { opacity: 1; }
+        .player-stats-readonly { container-type: inline-size; }
+        .player-stats-readonly .player-abilities-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        @container (min-width: 30rem) { .player-stats-readonly .player-abilities-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
         .rpg-attribute-step { min-width: 2rem; min-height: 2rem; border: 1px solid var(--brand-color); border-radius: 0.4rem; background: color-mix(in srgb, var(--brand-color) 25%, transparent); color: var(--chat-text-color, #fff); font-weight: 700; }
         .rpg-attribute-step:disabled { opacity: 0.3; cursor: default; }
         .rpg-xp { appearance: none; width: 100%; height: 0.4rem; border: 0; border-radius: 1rem; overflow: hidden; }
@@ -2837,6 +2840,11 @@
             width: 90%;
             max-width: 400px;
             max-height: 80vh;
+        }
+
+        @media (max-height: 480px) {
+            body.layout-horizontal #inventory-panel-container:not(.hidden) { position: fixed; inset: 0; width: 100%; height: 100%; align-items: center; padding: 1rem; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
+            body.layout-horizontal #inventory-panel-container>.inventory-panel { width: min(100%, 56rem); max-height: 100%; }
         }
 
         .stats-char-group {
@@ -10415,6 +10423,7 @@
                         playerCharacter: currentState.playerCharacter ? UTILITY.normalizePlayerCharacter({ ...currentState.playerCharacter,
                             name: rawCharacters.find(c => c.is_user)?.name || currentState.playerCharacter.name,
                             backstory: rawCharacters.find(c => c.is_user)?.description ?? currentState.playerCharacter.backstory,
+                            personality: rawCharacters.find(c => c.is_user)?.personality ?? currentState.playerCharacter.personality,
                             appearance: rawCharacters.find(c => c.is_user)?.appearance ?? currentState.playerCharacter.appearance
                         }) : null,
                         gm_rules: JSON.parse(JSON.stringify(currentState.gm_rules || [])),
@@ -13660,6 +13669,21 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 return short.length === 1 && (!key.includes(' ') || !this.npcNameKey(short[0].name).includes(' ')) ? short[0] : null;
             },
 
+            isNpcFlagName(value) {
+                if (typeof value !== 'string' || value.length < 2 || value.length > 70) return false;
+                const name = value.normalize('NFKC').replace(/[’‘]/g, "'");
+                if (!/^[\p{L}\p{M}]+(?:['-][\p{L}\p{M}]+)*(?:[ \t]+[\p{L}\p{M}]+(?:['-][\p{L}\p{M}]+)*){0,5}$/u.test(name)) return false;
+                const blocked = new Set("i i'm am me my mine you you're your yours he he's his she she's her hers it it's its we we're our ours they they're their theirs is are was were not name named called says said asks asked replies replied nods unknown unnamed someone somebody nobody".split(' '));
+                if (name.toLocaleLowerCase().split(/\s+/).some(word => blocked.has(word))) return false;
+                const key = this.npcNameKey(name);
+                return !!key && !this.npcArchetypes.some(role => role.jobs.split('|').includes(key)) && !/^(?:the )?(?:man|woman|girl|boy|person|stranger|figure|child|elf|dwarf|orc|goblin)$/i.test(key);
+            },
+
+            npcDialogueName(value) {
+                const match = String(value || '').trim().match(/^(?:I['’‘]m|I am|My name is)\s+(.+)$/i);
+                return match && /\p{Lu}/u.test(match[1]) && this.isNpcFlagName(match[1]) ? match[1] : '';
+            },
+
             parseNpcMarkers(value) {
                 if (typeof value !== 'string') return [];
                 const text = this.stripThinking(value).replace(/```[\s\S]*?```/g, '');
@@ -13667,7 +13691,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 for (const match of text.matchAll(/\[(NPC_MET|NPC_MENTION|NPC):\s*([^\]]{1,2200})\]/gi)) {
                     const [rawName, rawJob, ...details] = match[2].split('|');
                     const name = rawName.trim(), job = (rawJob || '').trim();
-                    if (rawJob === undefined || name.length < 2 || name.length > 70 || job.length > 60 || /[<>\[\]\r\n]/.test(name + job)) continue;
+                    if (rawJob === undefined || !this.isNpcFlagName(name) || job.length > 60 || /[<>\[\]\r\n]/.test(name + job)) continue;
                     const type = match[1].toUpperCase();
                     const levelText = (type === 'NPC_MET' && details.length > 1) || type === 'NPC_MENTION' ? details.at(-1)?.trim() : '';
                     const level = /^\d+$/.test(levelText || '') && Number.isSafeInteger(Number(levelText)) && Number(levelText) > 0 ? Number(details.pop().trim()) : null;
@@ -13678,7 +13702,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 return markers;
             },
 
-            extractNamedCharacters(value, previousMessage = '') {
+            extractNamedCharacters(value, previousMessage = '', markersOnly = false) {
                 if (typeof value !== 'string') return [];
                 const text = this.stripThinking(value).replace(/```[\s\S]*?```/g, ' ').replace(/\[[^\]\r\n]*\]/g, ' ')
                     .replace(/<[^>]*>/g, ' ').replace(/[*_]/g, '').replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
@@ -13694,39 +13718,41 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     'road river bridge gate castle tower temple tavern inn village city town kingdom sword blade shield ship forest mountain ' +
                     'chapter scene narrator unknown hungry tired sorry fine ready alone afraid').split(' '));
                 const found = new Map();
-                const add = (rawName, job, index) => {
+                const add = (rawName, job, index, flagged = false) => {
                     const key = this.npcNameKey(rawName);
                     const parts = key.split(' ');
-                    if (key.length < 2 || key.length > 70 || parts.some(part => blocked.has(part)) || !/\p{Lu}/u.test(rawName)) return;
+                    if (key.length < 2 || key.length > 70 || (!flagged && (parts.some(part => blocked.has(part)) || !/\p{Lu}/u.test(rawName)))) return;
                     const start = Math.max(text.lastIndexOf('.', index - 1), text.lastIndexOf('!', index - 1), text.lastIndexOf('?', index - 1), text.lastIndexOf('\n', index - 1)) + 1;
                     const tail = text.slice(index).search(/[.!?\n]/);
                     const source = text.slice(start, tail < 0 ? text.length : index + tail + 1).trim().slice(0, 500);
-                    if (/\b(?:imaginary|fictional)\s+(?:\w+\s+){0,2}(?:named|called)\b/i.test(source)) return;
+                    if (!flagged && /\b(?:imaginary|fictional)\s+(?:\w+\s+){0,2}(?:named|called)\b/i.test(source)) return;
                     const displayName = rawName.replace(new RegExp(`^(?:(?:[Tt]he|${roles}|[Ss]ir|[Dd]ame)\\s+)+`, 'u'), '').trim().replace(/'s$/i, '');
                     const role = job ? job[0].toUpperCase() + job.slice(1).toLowerCase() : 'Unknown';
                     const previous = found.get(key);
-                    if (!previous || (previous.job === 'Unknown' && role !== 'Unknown')) found.set(key, { name: displayName, job: role, source });
+                    if (!previous || flagged || (previous.job === 'Unknown' && role !== 'Unknown')) found.set(key, { ...previous, name: displayName, job: role === 'Unknown' && previous ? previous.job : role, source: previous?.source || source });
                 };
-                for (const match of text.matchAll(new RegExp(`\\b(${person})\\s+(?:(?:is|was)\\s+)?(?:named|called|known as)\\s+(${name})`, 'gu'))) {
-                    const job = new RegExp(`^(?:${roles})$`, 'u').test(match[1]) ? match[1] : null;
-                    add(match[2], job, match.index);
-                }
-                for (const match of text.matchAll(new RegExp(`(?:(?:[Mm]y|[Hh]is|[Hh]er|[Tt]heir) name (?:is|was)|I am|I'm|[Cc]all me|[Tt]hey call me|[Nn]ame's|introduces? (?:himself|herself|themselves) as)\\s+(${name})`, 'gu'))) add(match[1], null, match.index);
-                for (const match of text.matchAll(new RegExp(`\\b(${roles})\\s+(${name})`, 'gu'))) add(match[2], match[1], match.index);
-                for (const match of text.matchAll(new RegExp(`(${name}),?\\s+(?:(?:is|was),?\\s+)?(?:a|an|the)\\s+(?:[a-z-]+\\s+){0,3}(${roles})\\b`, 'gu'))) add(match[1], match[2], match.index);
-                for (const match of text.matchAll(new RegExp(`(${name})\\s+(?:says|said|asks|asked|replies|replied|whispers|whispered|mutters|muttered|shouts|shouted|nods|nodded|smiles|smiled|grins|grinned|bows|bowed|kneels|knelt|steps|stepped|greets|greeted|introduces|chuckles|laughs)\\b`, 'gu'))) add(match[1], null, match.index);
-                for (const match of text.matchAll(new RegExp(`(?:^|\\n)\\s*(${name}):[ \\t]*["']`, 'gu'))) add(match[1], null, match.index);
-                for (const match of text.matchAll(new RegExp(`(?:gives? (?:his|her|their) name as|[Hh]e is called|[Ss]he is called)\\s+(${name})`, 'gu'))) add(match[1], null, match.index);
-                const ambiguousReply = /\b(?:doesn['’]t|does not|didn['’]t|did not|won['’]t|will not|refuses? to)\s+(?:answer|give|share|tell|offer)[^.!?]*\bname\b|\b(?:gibberish|unintelligible|alien syllables)\b|\bwhether\b[^.!?]*\b(?:order|threat|title|command)\b[^.!?]*\b(?:cannot|can['’]t) tell\b/i.test(text);
-                if (!ambiguousReply && /\b(?:your|his|her|their)\s+name\b|\bwho (?:are you|is he|is she)\b|\bask(?:ed)?\b[^.!?]*\bname\b/i.test(previousMessage)) {
-                    const reply = text.match(new RegExp(`(?:^\\s*["']?|["']|it['’]s\\s+)(${name})(?=[,.'"!?\\n]|$)`, 'u'));
-                    if (reply) {
-                        const job = text.match(new RegExp(`\\b(${roles})\\b`, 'u'))?.[1] || String(previousMessage).match(new RegExp(`\\b(${roles})\\b`, 'u'))?.[1];
-                        add(reply[1], job, reply.index);
+                if (!markersOnly) {
+                    for (const match of text.matchAll(new RegExp(`\\b(${person})\\s+(?:(?:is|was)\\s+)?(?:named|called|known as)\\s+(${name})`, 'gu'))) {
+                        const job = new RegExp(`^(?:${roles})$`, 'u').test(match[1]) ? match[1] : null;
+                        add(match[2], job, match.index);
+                    }
+                    for (const match of text.matchAll(new RegExp(`(?:(?:[Mm]y|[Hh]is|[Hh]er|[Tt]heir) name (?:is|was)|I am|I'm|[Cc]all me|[Tt]hey call me|[Nn]ame's|introduces? (?:himself|herself|themselves) as)\\s+(${name})`, 'gu'))) add(match[1], null, match.index);
+                    for (const match of text.matchAll(new RegExp(`\\b(${roles})\\s+(${name})`, 'gu'))) add(match[2], match[1], match.index);
+                    for (const match of text.matchAll(new RegExp(`(${name}),?\\s+(?:(?:is|was),?\\s+)?(?:a|an|the)\\s+(?:[a-z-]+\\s+){0,3}(${roles})\\b`, 'gu'))) add(match[1], match[2], match.index);
+                    for (const match of text.matchAll(new RegExp(`(${name})\\s+(?:says|said|asks|asked|replies|replied|whispers|whispered|mutters|muttered|shouts|shouted|nods|nodded|smiles|smiled|grins|grinned|bows|bowed|kneels|knelt|steps|stepped|greets|greeted|introduces|chuckles|laughs)\\b`, 'gu'))) add(match[1], null, match.index);
+                    for (const match of text.matchAll(new RegExp(`(?:^|\\n)\\s*(${name}):[ \\t]*["']`, 'gu'))) add(match[1], null, match.index);
+                    for (const match of text.matchAll(new RegExp(`(?:gives? (?:his|her|their) name as|[Hh]e is called|[Ss]he is called)\\s+(${name})`, 'gu'))) add(match[1], null, match.index);
+                    const ambiguousReply = /\b(?:doesn['’]t|does not|didn['’]t|did not|won['’]t|will not|refuses? to)\s+(?:answer|give|share|tell|offer)[^.!?]*\bname\b|\b(?:gibberish|unintelligible|alien syllables)\b|\bwhether\b[^.!?]*\b(?:order|threat|title|command)\b[^.!?]*\b(?:cannot|can['’]t) tell\b/i.test(text);
+                    if (!ambiguousReply && /\b(?:your|his|her|their)\s+name\b|\bwho (?:are you|is he|is she)\b|\bask(?:ed)?\b[^.!?]*\bname\b/i.test(previousMessage)) {
+                        const reply = text.match(new RegExp(`(?:^\\s*["']?|["']|it['’]s\\s+)(${name})(?=[,.'"!?\\n]|$)`, 'u'));
+                        if (reply) {
+                            const job = text.match(new RegExp(`\\b(${roles})\\b`, 'u'))?.[1] || String(previousMessage).match(new RegExp(`\\b(${roles})\\b`, 'u'))?.[1];
+                            add(reply[1], job, reply.index);
+                        }
                     }
                 }
                 for (const marker of this.parseNpcMarkers(value)) {
-                    add(marker.name, marker.job, Math.max(0, text.indexOf(marker.name)));
+                    add(marker.name, marker.job, Math.max(0, text.indexOf(marker.name)), true);
                     const character = found.get(this.npcNameKey(marker.name));
                     if (character && (character.encounterType !== 'met' || marker.encounterType === 'met')) {
                         character.encounterType = marker.encounterType;
@@ -13796,8 +13822,13 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 const level = (n, fallback, max = 100) => n === '' || n == null || !Number.isFinite(Number(n))
                     ? fallback : Math.round(Math.max(0, Math.min(max, Number(n))) * 1000000) / 1000000;
                 const string = (n, fallback = '') => typeof n === 'string' ? n : fallback;
-                const maxHp = number(data.maxHp, 10, 1, 9999);
+                const statsCustomized = data.statsCustomized === true;
+                const maxHp = statsCustomized ? this.statNumber(data.maxHp, 10) : number(data.maxHp, 10, 1, 9999);
                 const progression = this.normalizeRpgProgression(data.progression);
+                if (statsCustomized && progression.enabled && data.progression?.initialized !== true) {
+                    progression.attributeAdjustments = Object.fromEntries(this.playerAbilities.map(key => [key,
+                        this.statNumber(data.abilities?.[key], 8 + progression.allocations[key]) - 8 - progression.allocations[key]]));
+                }
                 return {
                     characterId: string(data.characterId, character.id || ''),
                     name: string(data.name, character.name || 'You'),
@@ -13805,14 +13836,15 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     pronouns: string(data.pronouns, character.pronouns || ''),
                     portrait: typeof data.portrait === 'string' && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(data.portrait) ? data.portrait : null,
                     backstory: string(data.backstory, character.description || ''),
+                    personality: string(data.personality, string(character.personality)),
                     appearance: string(data.appearance, character.appearance || character.short_description || ''),
                     currentState: this.normalizePlayerCondition(data.currentState),
                     ancestry: string(data.ancestry), characterClass: string(data.characterClass),
-                    progression,
-                    level: progression.enabled ? progression.level : number(data.level, 1, 1, progression.initialized ? Number.MAX_SAFE_INTEGER : 20),
+                    progression, statsCustomized,
+                    level: progression.enabled ? progression.level : number(data.level, 1, 1, statsCustomized || progression.initialized ? Number.MAX_SAFE_INTEGER : 20),
                     statsEnabled: progression.enabled || data.statsEnabled === true, diceEnabled: data.diceEnabled === true,
                     survivalEnabled: data.survivalEnabled === true,
-                    survival: Object.fromEntries(['water', 'sleep', 'food'].map(key => [key, level(data.survival?.[key], 100)])),
+                    survival: Object.fromEntries(['water', 'sleep', 'food'].map(key => [key, statsCustomized ? this.statNumber(data.survival?.[key], 100) : level(data.survival?.[key], 100)])),
                     survivalRates: { water: level(data.survivalRates?.water, 4), sleep: level(data.survivalRates?.sleep, 5), food: level(data.survivalRates?.food, 3) },
                     clock: {
                         enabled: data.clock?.enabled !== false,
@@ -13821,9 +13853,31 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                         elapsedMinutes: number(data.clock?.elapsedMinutes, 0, 0, 525600000),
                         turns: number(data.clock?.turns, 0, 0, 525600000)
                     },
-                    hp: number(data.hp, maxHp, 0, maxHp), maxHp, armorClass: number(data.armorClass, 10, 0, 40),
-                    abilities: Object.fromEntries(this.playerAbilities.map(key => [key, progression.enabled ? 8 + progression.allocations[key] : number(data.abilities?.[key], 10, 1, progression.initialized ? Number.MAX_SAFE_INTEGER : 30)]))
+                    hp: statsCustomized ? this.statNumber(data.hp, maxHp) : number(data.hp, maxHp, 0, maxHp), maxHp,
+                    armorClass: statsCustomized ? this.statNumber(data.armorClass, 10) : number(data.armorClass, 10, 0, 40),
+                    abilities: Object.fromEntries(this.playerAbilities.map(key => [key, progression.enabled ? this.statNumber(8 + progression.allocations[key] + progression.attributeAdjustments[key], 10)
+                        : statsCustomized ? this.statNumber(data.abilities?.[key], 10) : number(data.abilities?.[key], 10, 1, progression.initialized ? Number.MAX_SAFE_INTEGER : 30)]))
                 };
+            },
+
+            statNumber(value, fallback = 0) {
+                return value === '' || value == null || !Number.isFinite(Number(value)) ? fallback
+                    : Math.max(-Number.MAX_SAFE_INTEGER + 100, Math.min(Number.MAX_SAFE_INTEGER - 100, Number(value)));
+            },
+
+            overridePlayerStats(player, values = {}) {
+                const sheet = this.normalizePlayerCharacter(player);
+                sheet.statsCustomized = true;
+                sheet.level = this.rpgInteger(values.level, sheet.level, 1);
+                for (const key of ['hp', 'maxHp', 'armorClass']) sheet[key] = this.statNumber(values[key], sheet[key]);
+                for (const key of ['water', 'sleep', 'food']) sheet.survival[key] = this.statNumber(values.survival?.[key], sheet.survival[key]);
+                for (const key of this.playerAbilities) sheet.abilities[key] = this.statNumber(values.abilities?.[key], sheet.abilities[key]);
+                if (sheet.progression.enabled || sheet.progression.initialized) {
+                    sheet.progression = this.normalizeRpgProgression({ ...sheet.progression, level: sheet.level, initialized: true, levelOverride: true });
+                    sheet.progression.attributeAdjustments = Object.fromEntries(this.playerAbilities.map(key => [key,
+                        this.statNumber(sheet.abilities[key] - 8 - sheet.progression.allocations[key])]));
+                }
+                return this.normalizePlayerCharacter(sheet);
             },
 
             rpgInteger(value, fallback = 0, minimum = 0) {
@@ -13859,11 +13913,13 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 const startingLevel = Math.min(this.rpgInteger(data.startingLevel, 1, 1), maxLevel || Number.MAX_SAFE_INTEGER);
                 const rules = { enabled: data.enabled === true, startingLevel, maxLevel,
                     startingPoints: this.rpgInteger(data.startingPoints, 12), pointsPerLevel: this.rpgInteger(data.pointsPerLevel, 2) };
-                const level = Math.min(data.initialized === true ? this.rpgInteger(data.level, startingLevel, 1) : startingLevel, maxLevel || Number.MAX_SAFE_INTEGER);
+                const levelOverride = data.levelOverride === true;
+                const level = Math.min(data.initialized === true ? this.rpgInteger(data.level, startingLevel, 1) : startingLevel, levelOverride ? Number.MAX_SAFE_INTEGER : maxLevel || Number.MAX_SAFE_INTEGER);
                 let allocations = Object.fromEntries(this.playerAbilities.map(key => [key, this.rpgInteger(data.allocations?.[key])]));
                 const budget = this.rpgPointBudget(level, rules);
                 if (Object.values(allocations).reduce((sum, points) => sum + points, 0) > budget) allocations = this.distributeRpgPoints(allocations, budget);
-                return { ...rules, initialized: data.initialized === true || rules.enabled, level,
+                return { ...rules, initialized: data.initialized === true || rules.enabled, level, levelOverride,
+                    attributeAdjustments: Object.fromEntries(this.playerAbilities.map(key => [key, this.statNumber(data.attributeAdjustments?.[key])])),
                     xp: maxLevel !== null && level >= maxLevel ? 0 : this.rpgInteger(data.xp), allocations };
             },
 
@@ -13911,7 +13967,8 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                         const amount = Number(effects.recovery?.[key]);
                         const recovery = Number.isFinite(amount) && amount > 0 && amount <= 100 ? amount : 0;
                         const loss = key === 'sleep' && recovery > 0 ? 0 : next.survivalRates[key] * minutes / 60;
-                        next.survival[key] = Math.max(0, Math.min(100, next.survival[key] - loss + recovery));
+                        const maximum = next.statsCustomized ? Math.max(100, next.survival[key]) : 100;
+                        next.survival[key] = Math.max(0, Math.min(maximum, next.survival[key] - loss + recovery));
                     }
                 }
                 return this.normalizePlayerCharacter(next);
@@ -13971,7 +14028,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 const sheet = this.normalizePlayerCharacter(profile, player);
                 return characters.map(c => c.id === player?.id ? { ...c, is_user: true, is_active: true,
                     name: sheet.name, gender: sheet.gender, pronouns: sheet.pronouns, player_portrait: sheet.portrait,
-                    description: sheet.backstory, appearance: sheet.appearance, short_description: sheet.appearance
+                    description: sheet.backstory, personality: sheet.personality, appearance: sheet.appearance, short_description: sheet.appearance
                 } : { ...c, is_user: false });
             },
 
@@ -13985,6 +14042,16 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 const match = typeof text === 'string' && text.match(/\[CHECK:\s*(strength|dexterity|constitution|intelligence|wisdom|charisma|none)\s*\|\s*(\d{1,2})\s*\|\s*([^\]\r\n]{1,200})\]/i);
                 if (!match || !match[3].trim() || +match[2] < 1 || +match[2] > 30) return null;
                 return { ability: match[1].toLowerCase(), dc: +match[2], reason: match[3].trim() };
+            },
+
+            parsePlayerCheckAssessment(value) {
+                const text = typeof value === 'string' ? this.stripThinking(value).trim() : '';
+                const starts = text.match(/\[\s*(?:CHECK\b|NO_CHECK\b)/gi) || [];
+                const markers = text.match(/\[\s*(?:CHECK\b|NO_CHECK\b)[^\]]*\]/gi) || [];
+                if (starts.length !== 1 || markers.length !== 1) return { status: 'deferred', check: null };
+                if (/^\[\s*NO_CHECK\s*\]$/i.test(markers[0])) return { status: 'no_check', check: null };
+                const check = this.parsePlayerCheck(markers[0].replace(/^\[\s*CHECK\s*:/i, '[CHECK:'));
+                return { status: check ? 'check' : 'deferred', check };
             },
 
             getPendingPlayerCheck(state) {
@@ -15004,7 +15071,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     prompt_story_tags_gen: "Based on the following story context (characters, lore), generate 3-5 relevant, one-word, comma-separated tags for this story (e.g., fantasy, sci-fi, mystery, horror, romance).\n\n### Context\n{context}",
                     visual_master_base_prompt: "You are a visual director. Based on the provided chat history, characters, and location, generate a high-quality, vivid, and detailed image generation prompt that captures the current scene. Focus on atmosphere, lighting, and key subjects. Output ONLY the visual description.",
                     prompt_auto_static_knowledge: "You are an automated archivist. Analyze the recent conversation transcript and the EXISTING static knowledge base. Your goal is to identify new information that needs to be recorded or updated.\n\n### Tasks\n1. Analyze the transcript for new events, character updates, items used/found, world-building lore, or relationship changes.\n2. Cross-reference with the existing list of entries to see if any matches exist.\n\n### Existing Knowledge\n{existing_knowledge}\n\n### Transcript\n{transcript}\n\n### Output Format\nRespond with a delimited list using a pipe character '|' in this exact format:\nCategory | Subject | New Detail or Update\nIf there are multiple entries, place each on a new line. If no changes are needed, return literally 'null'.\n\nValid Categories:\n- Event (for major plot events)\n- Character (for character details/updates)\n- Item (for important items)\n- World (for locations and world lore)\n- Relationship (for character interpersonal updates)\n\nExample Output:\nCharacter | Alistair | He has acquired a mysterious silver amulet with a blue gem.\nRelationship | Alistair & Elara | Alistair has started to trust Elara after she saved him from the wolf.",
-                    prompt_response_options_gen: "You are a master roleplayer and choose-your-own-adventure guide.\nBased on the current story context, characters, and the last response, generate 4 drastically different and divergent follow-up actions or responses strictly from the first-person perspective of the user character, {user_character}.\nEach option must take the narrative in a completely distinct direction. Ensure no two options are similar in tone, intent, or action.\nEach option should have a short, catchy 'label' (for a button) and a full 'prompt' (the text that will be sent to the AI if selected, written from the user character's perspective).\nLabels should be highly distinct and represent entirely different emotional or strategic paths (e.g., Aggressive Confrontation, Cautious Retreat, Clever Deception, Compassionate Inquiry).\n\n### Context\n{context}\n\n### Last Response\n{last_response}\n\nRespond ONLY with a valid JSON array of objects: [{ \"label\": \"Short Action\", \"prompt\": \"The full detailed response text representing {user_character}'s action or dialogue.\" }]. Generate exactly 4 options.",
+                    prompt_response_options_gen: "You are a roleplayer and choose-your-own-adventure guide.\nBased on the current story context, player personality, and last response, generate 4 distinct follow-up actions or responses from the first-person perspective of the user character, {user_character}.\nOffer different believable approaches that reflect this character's personality, values, and voice.\nEach option should have a short, clear 'label' (for a button) and a full 'prompt' (a draft placed in the text box for the player to review and edit before sending).\nDescribe the player's actions or dialogue without deciding the outcome.\n\n### Context\n{context}\n\n### Last Response\n{last_response}\n\nRespond ONLY with a valid JSON array of objects: [{ \"label\": \"Short Action\", \"prompt\": \"The full detailed response text representing {user_character}'s action or dialogue.\" }]. Generate exactly 4 options.",
                     prompt_stats_init: "You are analyzing a roleplay story to determine appropriate character stats for a game-like RPG system.\n\n### Story Context\n{context}\n\n### Characters\n{characters}\n\n### Task\nGenerate 4 to 6 stats appropriate for this story's genre and setting, interpersonal relationships, and emotions. Each stat must have a brief one-sentence description explaining what it measures and how it can change. Each character should have unique values reflecting their strengths, weaknesses, and relationships. Values range 0-100.\n\nReturn valid JSON:\n{\n  \"stats\": [{\"name\": \"Stat1\", \"description\": \"Brief explanation of what this stat measures.\"}, {\"name\": \"Stat2\", \"description\": \"Brief explanation.\"}],\n  \"characters\": {\n    \"CharacterName1\": [val1, val2],\n    \"CharacterName2\": [val1, val2]\n  }\n}",
                     swarm_scratchpad_prompt: "You are {character_name}. You are privately evaluating the current scene based on your internal state and the objective reality of the situation.\n\n## OBJECTIVE SCENE Analysis\n{objective_description}\n\n## YOUR PERSONA\n{character_description}\n\n## RECENT SCENE — LAST 5 EXCHANGES\n{recent_history}\n\n## INSTRUCTIONS\nAnalyze this scene from your specific perspective. Consider your motivations, desires, and the immediate physical situation. Focus on how your personality influences your goals for this interaction. Your reflections remain private and are intended purely for internal character consistency.\n\nRespond with a single paragraph describing your deep, internal emotional chain-of-thought. Focus exclusively on the immediate impact of the scene and your intended behavior. \n\nWrite your internal thoughts now:",
                     swarm_director_prompt: "You are the Scene Architect and Narrative Director. Your objective is to shape the scene's momentum, tension, and subtext based on the internal character states and the recent narrative flow.\n\n### WORLD LORE\n{world_lore}\n\n### CHARACTER REFERENCE\n{character_descriptions}\n\n### CHARACTER REFLECTIONS\n{winner_intents}\n\n### RECENT NARRATIVE EXCERPT\n{recent_history}\n\n## INSTRUCTIONS\nBased on the context above, provide precise staging instructions for {primary_speaker}. Your goal is to guide their next actions and dialogue to maximize narrative impact, build on relationships, and reflect their internal motivations.\n\n## STAGING GUIDELINES\n- Objective Directives: Provide behavioral cues and subtext (e.g., 'Action: Approaching with cautious optimism.', 'Tone: Impatient beneath a mask of politeness.').\n- Perspective Rule: DO NOT address the character as 'You'. Write instructions as objective behavioral tags that describe their intended state or action.\n- Conflict & Pacing: Use the character's internal reflections to drive the scene toward the most compelling narrative path.",
@@ -16269,7 +16336,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
 
             buildNpcContext(state) {
                 const characters = (state.characters || []).filter(char => (char.npc_profile || state.playerCharacter?.progression?.enabled) && !char.is_user && !char.is_narrator);
-                const introductions = 'Track named characters with two hidden flags in this SAME story response. For a named person the PLAYER actually meets or directly observes, use [NPC_MET: name|occupation|physical description]. At their first meeting, or when their saved description is missing, write 2–4 concise sentences describing their visible face, hair, eyes, build, clothing, and distinctive features, consistent with the scene. Do not invent hidden history or secrets. For someone only talked about, remembered, or rumored, use [NPC_MENTION: name|occupation] with NO description. Never treat an unintelligible word, command, threat, or title as a name. Compare against the saved roster: reuse the exact existing name for the same person, including a previously mentioned person now met. Distinguish different people with similar names. Existing descriptions and player edits take precedence; leave the description field empty when one is already saved. Use established occupations only, or leave blank. Never flag intentions to meet someone as an actual meeting. The app matches names and generates stats locally; no extra AI call is needed.\n';
+                const introductions = 'Track named characters with two hidden flags in this SAME story response. Only valid flags create roster entries; prose alone does not. The name field must contain ONLY the person’s name, never dialogue, pronouns, an introduction such as “I’m Lira”, or an unnamed role. For “I’m Lira, a hunter”, the name is Lira. Emit at most one flag per person per response; prefer NPC_MET if both meeting and discussing them. Do not flag the player or narrator. For a named person the PLAYER actually meets or directly observes, use [NPC_MET: name|occupation|physical description]. At their first meeting, or when their saved description is missing, write 2–4 concise sentences describing their visible face, hair, eyes, build, clothing, and distinctive features, consistent with the scene. Do not invent hidden history or secrets. For someone only talked about, remembered, or rumored, use [NPC_MENTION: name|occupation] with NO description. Never treat an unintelligible word, command, threat, or title as a name. Compare against the saved roster: reuse the exact existing name for the same person, including a previously mentioned person now met. Distinguish different people with similar names. Existing descriptions and player edits take precedence; leave the description field empty when one is already saved. Use established occupations only, or leave blank. Never flag intentions to meet someone as an actual meeting. The app matches names and generates stats locally; no extra AI call is needed.\n';
                 if (!characters.length) return introductions;
                 return introductions + '### KNOWN CHARACTER SHEETS\nThese profiles are already generated and saved by the game. Use them consistently when a character participates in the scene. Being listed here does not mean a character is present or knows the player. Explicit story facts and player edits take precedence over generated tendencies; do not rewrite established relationships or history to fit them. Ability scores can inform relevant opposed checks and difficulty; they do not decide a player outcome before the actual roll.\n' + characters.map(char => {
                     const profile = NarrativeController.getNpcProfile(char);
@@ -16278,11 +16345,12 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 }).join('\n\n');
             },
 
-            buildPlayerContext(state, allowChecks = true) {
+            buildPlayerContext(state, allowChecks = true, identityOnly = false) {
                 const user = (state.characters || []).find(c => c.is_user);
                 if (!state.playerCharacter && !user) return '';
                 const sheet = UTILITY.normalizePlayerCharacter(state.playerCharacter, user);
                 let context = `### PLAYER CHARACTER\nName: ${sheet.name}\nGender: ${sheet.gender}\nPronouns: ${sheet.pronouns}\nAncestry: ${sheet.ancestry}\nClass / role: ${sheet.characterClass}\nBackstory: ${sheet.backstory}\nCurrent appearance: ${sheet.appearance}\nThis sheet describes the player's CURRENT identity and body, including any transformations. If older backstory or messages conflict with these fields, use the current fields. The player controls this character's decisions. Treat backstory as context, not knowledge every NPC automatically possesses.\n`;
+                if (sheet.personality.trim()) context += `Personality: ${sheet.personality}\nWhen drafting the player's dialogue or suggesting actions, use this personality to guide their voice, motives, and reactions. Offer different plausible choices within these traits rather than forcing contradictory behavior for variety. Respect the player's explicitly chosen actions; personality does not authorize narrating decisions on their behalf.\n`;
                 if (sheet.currentState.form) context += `Current physical form: ${sheet.currentState.form}. This overrides any older body or species description.\n`;
                 if (sheet.currentState.conditions.length) context += 'Current injuries / ongoing effects: ' + sheet.currentState.conditions.join('; ') + '. Respect their practical effects without inventing numeric stat penalties.\n';
                 context += 'NPCs can notice visible physical changes and injuries, but do not automatically know the cause or recognize a transformed player. Identity recognition does not grant knowledge of the player\'s secrets or backstory. Only established witnesses or people explicitly told know what happened.\n';
@@ -16292,6 +16360,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     const status = { yes: 'recognizes the player in their current form', no: 'does not recognize the player in their current form', uncertain: 'suspects the player\'s identity but is not certain', unknown: 'recognition has not been established; do not assume it' }[knowledge.status];
                     context += `${character.name}: ${status}; ${knowledge.witnessed ? 'witnessed the current change' : 'has not been recorded as a witness; do not assume knowledge of the cause'}.\n`;
                 }
+                if (identityOnly) return context;
                 if (sheet.survivalEnabled) {
                     context += `Survival levels (0 depleted, 100 full): water ${sheet.survival.water}/100, sleep ${sheet.survival.sleep}/100, food ${sheet.survival.food}/100. Values at or below 25 are low; at or below 10 are critical. Reflect these needs where relevant. The app automatically deducts ${sheet.survivalRates.water} water, ${sheet.survivalRates.food} food, and ${sheet.survivalRates.sleep} rest points per awake in-game hour. Do not invent additional depletion, HP damage, or extra dice checks.\n`;
                     if (sheet.statsEnabled) context += 'Survival applies local ability-check penalties: each need gives -1 at 25 or below, -2 at 10 or below, -3 at 0. Thirst affects all six abilities; hunger affects strength/dexterity/constitution; fatigue affects dexterity/intelligence/wisdom/charisma. Applicable penalties stack and clear as needs recover. Base scores, HP and armor are unchanged. The app applies penalties to the roll: do not also raise DC, subtract them again, or invent other numeric penalties.\n';
@@ -16305,6 +16374,7 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     } else context += 'Do not emit TIME or RECOVER markers in this response.\n';
                 } else context += 'Game time and automatic survival changes are paused. Do not emit TIME or RECOVER markers.\n';
                 if (sheet.statsEnabled) {
+                    if (sheet.statsCustomized) context += 'The player has explicitly customized their stats. Use the current numeric values as authoritative even when they exceed the normal level cap or attribute budget; do not correct or rebalance them. NPCs still follow the shared progression rules.\n';
                     if (sheet.progression.enabled) context += `RPG progression is enabled for the player and EVERY NPC. Attributes start at 8; each character has exactly ${sheet.progression.startingPoints} starting points plus ${sheet.progression.pointsPerLevel} per level above level 1, with ${sheet.progression.maxLevel === null ? 'no level cap' : `a maximum level of ${sheet.progression.maxLevel}`}. Player level ${sheet.level}, XP ${sheet.progression.xp}/${100 * sheet.level}, unspent points ${UTILITY.rpgAvailablePoints(sheet.progression)}. The app awards DC × 10 XP for successful actual rolls and 5 XP for failures, with 100 × current level XP needed to level up. Skips earn none. Do not invent XP, levels, stat increases, or NPC attribute points. Use saved NPC levels/stats. Only when first establishing a NEW NPC's level, append it as a final field: [NPC_MET: name|occupation|description|level] or [NPC_MENTION: name|occupation|level]. The app enforces the same point budget and cap. Existing NPC levels cannot be changed by repeating a flag. These numeric RPG stats override older descriptions or free-form stat claims; occupation does not grant extra attribute points.\n`;
                     context += `Player stats: level ${sheet.level}, HP ${sheet.hp}/${sheet.maxHp}, armor class ${sheet.armorClass}.\n`;
                     context += UTILITY.playerAbilities.map(key => {
@@ -16316,6 +16386,8 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 if (!sheet.diceEnabled || !allowChecks) return context + 'Dice checks are disabled for this response. Do not request or simulate rolls. Resolve actions through the story.\n';
                 context += `### OPTIONAL D20 CHECKS\nRequest a check ONLY when the player has attempted an action with both an uncertain outcome and a meaningful consequence. Never roll for routine conversation, trivial actions, automatic successes, or impossible actions. Hiding from an actively searching guard may call for dexterity; casually standing in an empty room does not.\nBefore an uncertain outcome, describe the stakes, then END the response with exactly one marker: [CHECK: ability|DC|short action description]. Ability must be strength, dexterity, constitution, intelligence, wisdom, charisma, or none. DC is an integer from 1 to 30 (10 easy, 15 moderate, 20 hard). Choose the DC BEFORE seeing a result. Example: [CHECK: dexterity|15|Hide from the searching guard]\nStop at the request. Do not narrate success or failure, invent dice results, roll for the user, or add a check every turn. The application automatically animates and rolls a real d20 when a check is requested${sheet.statsEnabled ? ' and adds the relevant ability modifier' : ' without a modifier because stats are disabled'}. Total >= DC succeeds. A natural 1 or 20 is not an automatic outcome for these ability checks. This is a lightweight ability-check system, not a full combat rules engine.\n`;
                 context += 'Dice are central to resolving attempted actions when enabled. Before resolving meaningful persuasion, deception, intimidation, investigation, deduction, perception, stealth, physical feats, or endurance, require the appropriate ability check whenever the outcome is uncertain and matters. Use charisma for social influence, intelligence for reasoning and investigation, wisdom for awareness and insight, dexterity for stealth and precision, strength for force, and constitution for endurance. Do not narrate the outcome before the application records the roll. Routine conversation and trivial actions still need no check. A successful intelligence check cannot grant knowledge the character has never learned or had any way to infer.\n';
+                const latestAction = (state.chat_history || []).findLast(message => !message.isHidden && (message.type === 'chat' || message.playerRoll));
+                if (latestAction?.playerCheckAssessment === 'deferred') context += 'The preliminary action assessment was unreadable; this is NOT a no-check decision or a successful roll. Evaluate the latest attempted action within this story response. For meaningful uncertainty, describe the stakes and stop at one valid CHECK marker before any outcome. For routine, impossible, or hypothetical actions, respond appropriately without inventing a roll.\n';
                 const latestRoll = [...(state.chat_history || [])].reverse().find(m => m.playerRoll && !m.isHidden);
                 if (latestRoll) context += `Latest application-recorded check (historical context, not a new action): ${latestRoll.content}\nHonor this result when resolving that action; never reroll it or change its DC. If skipped, resolve without dice. Only a new risky action may prompt another check.\n`;
                 return context;
@@ -16746,7 +16818,7 @@ JSON Schema:
              * @param {Array|null} [historyOverride=null] - Optional override for chat history (e.g. for regeneration).
              * @returns {string} - The constructed prompt.
              */
-            buildPrompt(charToActId, isForUser = false, historyOverride = null, customInstruction = null, isDirectMessage = false) {
+            buildPrompt(charToActId, isForUser = false, historyOverride = null, customInstruction = null, isDirectMessage = false, options = {}) {
                 const state = StateManager.getState();
                 const charToAct = ReactiveStore.getCharacter(charToActId);
                 if (!charToAct) return "";
@@ -16755,9 +16827,15 @@ JSON Schema:
                 const components = this.getPromptComponents(charToActId, historyOverride, customInstruction, isDirectMessage);
                 if (!components) return "";
                 components.isForUser = isForUser;
+                components.isAssessment = options.assessment === true;
+                if (components.isAssessment) {
+                    components.event_master_prompt = '';
+                    components.system_prompt = 'This is a private rules assessment. Use the following material as scene context, but follow only the final assessment instruction for output. Do not perform roleplay or emit character, location, or time flags.\n\n' + components.system_prompt;
+                    components.customInstruction += '\n\nReturn only one [CHECK: ability|DC|short action description] or [NO_CHECK]. No narration, explanations, or other flags.';
+                }
 
                 // Simple auto-consume logic for event master
-                if (state.event_master_prompt) {
+                if (state.event_master_prompt && !components.isAssessment) {
                     state.event_master_prompt = '';
                     StateManager.saveState();
                 }
@@ -16962,7 +17040,7 @@ JSON Schema:
                 if (components.characters) p += "## CHARACTERS\n" + components.characters + "\n\n";
 
                 const exampleDialogue = (state.chat_history || []).filter(m => m && m.isHidden);
-                if (exampleDialogue.length > 0) {
+                if (!components.isAssessment && exampleDialogue.length > 0) {
                     let examplesText = "";
                     exampleDialogue.forEach(msg => {
                         if (!msg) return;
@@ -17014,14 +17092,14 @@ JSON Schema:
                 // Response Length Instruction
                 const responseLength = state.responseLength || 'normal';
                 // Text Mode sets its own brevity rules; the narrative length setting would fight them.
-                if (!components.charToAct.is_narrator && !components.isDirectMessage) {
+                if (!components.isAssessment && !components.charToAct.is_narrator && !components.isDirectMessage) {
                     if (responseLength === 'short') p += " Keep the response concise and under two sentences, focusing only on the character's next words and actions.";
                     else if (responseLength === 'medium') p += " Keep the response between three to six sentences, including the character's next words and actions written with descriptive language.";
                     else if (responseLength === 'long') p += " Keep the response between two and four paragraphs. Be descriptive, verbose, and detailed in your response, providing this character's dialogue and actions, as well as full sensory descriptions of the surroundings, characters, and event.";
                     else if (responseLength === 'novel') p += " Continue writing a long-form addition to the text that builds on the current actions, describes the scene, and contributes to world-building. Include full sensory descriptions of the surroundings, characters, and events.";
                 }
 
-                p += " Do not repeat the character's name in the response itself.\n### " + components.charToAct.name + ":";
+                p += components.isAssessment ? "\n### Check decision:" : " Do not repeat the character's name in the response itself.\n### " + components.charToAct.name + ":";
                 if (components.event_master_prompt) p += "### SECRET EVENT MASTER INSTRUCTION\n\nDo not repeat these instructions, but organically respond to them in your next response.\n" + components.event_master_prompt + "\n\n";
 
                 // Extract images from history
@@ -17062,7 +17140,7 @@ JSON Schema:
 
                 // Example Dialogue
                 const exampleDialogue = (state.chat_history || []).filter(m => m && m.isHidden);
-                if (exampleDialogue.length > 0) {
+                if (!components.isAssessment && exampleDialogue.length > 0) {
                     let examples = "";
                     exampleDialogue.forEach(msg => {
                         if (!msg) return;
@@ -17088,14 +17166,14 @@ JSON Schema:
                 // Response Length Instruction
                 const responseLength = state.responseLength || 'normal';
                 // Text Mode sets its own brevity rules; the narrative length setting would fight them.
-                if (!components.charToAct.is_narrator && !components.isDirectMessage) {
+                if (!components.isAssessment && !components.charToAct.is_narrator && !components.isDirectMessage) {
                     if (responseLength === 'short') instruction += " Keep the response concise and under two sentences, focusing only on the character's next words and actions.";
                     else if (responseLength === 'medium') instruction += " Keep the response between three to six sentences, including the character's next words and actions written with descriptive language.";
                     else if (responseLength === 'long') instruction += " Keep the response between two and four paragraphs. Be descriptive, verbose, and detailed in your response, providing this character's dialogue and actions, as well as full sensory descriptions of the surroundings, characters, and event.";
                     else if (responseLength === 'novel') instruction += " Continue writing a long-form addition to the text that builds on the current actions, describes the scene, and contributes to world-building. Include full sensory descriptions of the surroundings, characters, and events.";
                 }
 
-                instruction += " Do not repeat the character's name in the response itself.";
+                if (!components.isAssessment) instruction += " Do not repeat the character's name in the response itself.";
 
                 // Event Master
                 if (components.event_master_prompt) system.push("### Secret Event Master Instruction\n" + components.event_master_prompt);
@@ -17131,7 +17209,7 @@ JSON Schema:
                         return `<|start_header_id|>${role}<|end_header_id|>\n\n${content}<|eot_id|>`;
                     }).filter(Boolean).join('\n');
 
-                    return `<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n${system_prompt_str}<|eot_id|>\n${history_llama3}\n<|start_header_id|>user<|end_header_id|>\n\n${instruction}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n${components.charToAct.name}:\n`;
+                    return `<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n${system_prompt_str}<|eot_id|>\n${history_llama3}\n<|start_header_id|>user<|end_header_id|>\n\n${instruction}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n${components.isAssessment ? 'Check decision' : components.charToAct.name}:\n`;
                 }
 
                 // --- GEMMA (Google) ---
@@ -17155,7 +17233,7 @@ JSON Schema:
                         return `<start_of_turn>${role}\n${content}<end_of_turn>`;
                     }).filter(Boolean).join('\n');
 
-                    return `<start_of_turn>user\n${system_prompt_str}<end_of_turn>\n${history_gemma}\n<start_of_turn>user\n${instruction}<end_of_turn>\n<start_of_turn>model\n${components.charToAct.name}:\n`;
+                    return `<start_of_turn>user\n${system_prompt_str}<end_of_turn>\n${history_gemma}\n<start_of_turn>user\n${instruction}<end_of_turn>\n<start_of_turn>model\n${components.isAssessment ? 'Check decision' : components.charToAct.name}:\n`;
                 }
 
                 // --- PHI-3 (Microsoft) ---
@@ -17177,7 +17255,7 @@ JSON Schema:
                         return `<|${role}|>\n${content}<|end|>`;
                     }).filter(Boolean).join('\n');
 
-                    return `<|system|>\n${system_prompt_str}<|end|>\n${history_phi}\n<|user|>\n${instruction}<|end|>\n<|assistant|>\n${components.charToAct.name}:\n`;
+                    return `<|system|>\n${system_prompt_str}<|end|>\n${history_phi}\n<|user|>\n${instruction}<|end|>\n<|assistant|>\n${components.isAssessment ? 'Check decision' : components.charToAct.name}:\n`;
                 }
 
                 // --- MISTRAL ---
@@ -17213,7 +17291,7 @@ JSON Schema:
                         }
                         return `<|im_start|>${role}\n${content}<|im_end|>`;
                     }).filter(Boolean).join('\n');
-                    return `<|im_start|>system\n${system_prompt_str}<|im_end|>\n${history_chatml}\n<|im_start|>user\n${instruction}<|im_end|>\n<|im_start|>assistant\n${components.charToAct.name}:\n`;
+                    return `<|im_start|>system\n${system_prompt_str}<|im_end|>\n${history_chatml}\n<|im_start|>user\n${instruction}<|im_end|>\n<|im_start|>assistant\n${components.isAssessment ? 'Check decision' : components.charToAct.name}:\n`;
                 }
 
                 // --- ALPACA ---
@@ -19947,7 +20025,7 @@ Write only the character's message.`;
                     return `<button type="button" class="survival-meter" data-action="open-player-survival" data-need="${key}" data-status="${status}"
                         aria-label="${label}: ${value} out of 100. ${condition}.${penalty ? ` ${penalty.label} penalty ${penalty.modifier} to ${penalty.abilities.join(', ')} checks.` : ''} View stats." title="View stats${penalty ? `: ${penalty.label} ${penalty.modifier}` : ''}">
                         <span class="survival-meter-heading"><span>${label}</span><span class="survival-meter-value">${value}%</span></span>
-                        <span class="survival-track" aria-hidden="true"><span class="survival-fill" style="width: ${value}%"></span></span>
+                        <span class="survival-track" aria-hidden="true"><span class="survival-fill" style="width: ${Math.max(0, Math.min(100, value))}%"></span></span>
                         ${penalty ? `<span class="text-xs text-red-300">${penalty.label} ${penalty.modifier}</span>` : ''}
                     </button>`;
                 }).join('')}</div>`;
@@ -20038,12 +20116,12 @@ Write only the character's message.`;
                 const editable = UIManager.RUNTIME.playerStatsOverride === true;
                 const prefix = 'live-stats';
                 const penalties = UTILITY.playerSurvivalPenalties(sheet);
-                const number = (key, label, value, min, max) => `<label>${label}<input id="${prefix}-${key}" type="number" min="${min}" max="${max}" ${key === 'level' && sheet.progression.enabled ? 'disabled' : ''} step="${key.startsWith('survival-') ? 'any' : '1'}" value="${value}"></label>`;
+                const number = (key, label, value, min, max) => `<label>${label}<input id="${prefix}-${key}" data-action-change="preview-player-stats" type="number" ${editable ? key === 'level' ? 'min="1"' : '' : `min="${min}" max="${max}"`} step="${key === 'level' ? '1' : 'any'}" value="${value}" required></label>`;
                 return `<div class="player-sheet-form" data-player-form="live-stats"><label class="player-sheet-toggle"><input type="checkbox" data-action-change="override-player-stats" ${editable ? 'checked' : ''}> Override stats</label>
-                    ${penalties.length ? `<div class="text-sm text-red-300 player-survival-penalties"><strong>Survival penalties</strong>${penalties.map(penalty => `<div>${penalty.label} ${penalty.modifier} · ${penalty.abilities.length === 6 ? 'All abilities' : penalty.abilities.map(ability => ability.slice(0, 3).toUpperCase()).join(', ')}</div>`).join('')}</div>` : ''}
-                    ${sheet.progression.enabled ? `<div id="${prefix}-rpg-allocation">${this.RpgAllocationPanel(sheet, prefix, true)}</div>` : ''}
+                    ${penalties.length && !editable ? `<div class="text-sm text-red-300 player-survival-penalties"><strong>Survival penalties</strong>${penalties.map(penalty => `<div>${penalty.label} ${penalty.modifier} · ${penalty.abilities.length === 6 ? 'All abilities' : penalty.abilities.map(ability => ability.slice(0, 3).toUpperCase()).join(', ')}</div>`).join('')}</div>` : ''}
+                    ${sheet.progression.enabled && !editable ? `<div id="${prefix}-rpg-allocation">${this.RpgAllocationPanel(sheet, prefix, true)}</div>` : ''}
                     <fieldset class="player-sheet-form player-stats-readonly" ${editable ? '' : 'disabled'}><legend class="sr-only">Player stats</legend>
-                    ${sheet.statsEnabled ? `<div class="player-sheet-grid">${sheet.progression.enabled ? '' : number('level', 'Level', sheet.level, 1, sheet.progression.initialized ? Number.MAX_SAFE_INTEGER : 20)}${number('armorClass', 'Armor class', sheet.armorClass, 0, 40)}${number('hp', 'Current HP', sheet.hp, 0, 9999)}${number('maxHp', 'Maximum HP', sheet.maxHp, 1, 9999)}</div><div class="player-sheet-grid player-abilities-grid">${(sheet.progression.enabled ? [] : UTILITY.playerAbilities).map(key => {
+                    ${sheet.statsEnabled ? `<div class="player-sheet-grid">${sheet.progression.enabled && !editable ? '' : number('level', 'Level', sheet.level, 1, sheet.progression.initialized ? Number.MAX_SAFE_INTEGER : 20)}${number('armorClass', 'Armor class', sheet.armorClass, 0, 40)}${number('hp', 'Current HP', sheet.hp, 0, 9999)}${number('maxHp', 'Maximum HP', sheet.maxHp, 1, 9999)}</div><div class="player-sheet-grid player-abilities-grid">${(sheet.progression.enabled && !editable ? [] : UTILITY.playerAbilities).map(key => {
                         const modifier = UTILITY.playerCheckModifier(sheet, key);
                         return `<div>${number(key, key[0].toUpperCase() + key.slice(1), sheet.abilities[key], 1, sheet.progression.initialized ? Number.MAX_SAFE_INTEGER : 30)}<span data-effective-ability="${key}" class="text-xs ${modifier.survival ? 'text-red-300' : 'text-gray-400'}">Modifier ${modifier.total >= 0 ? '+' : ''}${modifier.total}${modifier.survival ? `<br>Base ${modifier.base >= 0 ? '+' : ''}${modifier.base} · Survival ${modifier.survival}` : ''}</span></div>`;
                     }).join('')}</div>` : ''}
@@ -20071,6 +20149,7 @@ Write only the character's message.`;
                     ${field('name', 'Name')}
                     <div class="player-sheet-grid">${field('gender', 'Gender')}${field('pronouns', 'Pronouns')}</div>
                     <div class="player-sheet-grid">${field('ancestry', 'Ancestry / species')}${field('characterClass', 'Class / role')}</div>
+                    <label for="${prefix}-personality">Personality<textarea id="${prefix}-personality" rows="3" placeholder="Traits, values, habits, and how they speak.">${e(sheet.personality || '')}</textarea></label>
                     <label for="${prefix}-backstory">Backstory<textarea id="${prefix}-backstory" rows="5">${e(sheet.backstory)}</textarea></label>
                     <label for="${prefix}-appearance">Current appearance<textarea id="${prefix}-appearance" rows="4" placeholder="Describe their face, hair, eyes, body, height, clothing, and any current transformations.">${e(sheet.appearance)}</textarea></label>
                     ${this.PlayerConditionEditor(prefix, sheet)}
@@ -21378,7 +21457,7 @@ Write only the character's message.`;
                 const data = UTILITY.normalizePlayerCharacter(previous);
                 const value = (key, fallback) => document.getElementById(`${prefix}-${key}`)?.value ?? fallback;
                 const checked = (key, fallback) => document.getElementById(`${prefix}-${key}`)?.checked ?? fallback;
-                for (const key of ['name', 'gender', 'pronouns', 'portrait', 'backstory', 'appearance', 'ancestry', 'characterClass', 'level', 'hp', 'maxHp', 'armorClass']) data[key] = value(key, data[key]);
+                for (const key of ['name', 'gender', 'pronouns', 'portrait', 'backstory', 'personality', 'appearance', 'ancestry', 'characterClass', 'level', 'hp', 'maxHp', 'armorClass']) data[key] = value(key, data[key]);
                 for (const key of ['statsEnabled', 'diceEnabled', 'survivalEnabled']) data[key] = checked(key, data[key]);
                 for (const key of UTILITY.playerAbilities) data.abilities[key] = value(key, data.abilities[key]);
                 for (const key of ['water', 'sleep', 'food']) {
@@ -21405,7 +21484,18 @@ Write only the character's message.`;
                     data.currentState.recognition = [...data.currentState.recognition.filter(entry => !updated.some(item => item.characterId === entry.characterId)), ...updated];
                 }
                 data.name = data.name.trim() || 'You';
-                return UTILITY.normalizePlayerCharacter(data);
+                return prefix === 'live-stats' && this.RUNTIME.playerStatsOverride === true ? UTILITY.overridePlayerStats(previous, data) : UTILITY.normalizePlayerCharacter(data);
+            },
+
+            previewPlayerStats() {
+                if (!this.RUNTIME.playerStatsOverride || this.RUNTIME.activeInventoryTab !== 'stats') return;
+                const sheet = this.readPlayerSheet('live-stats', ReactiveStore.state.playerCharacter);
+                document.querySelectorAll('[data-player-form="live-stats"] [data-effective-ability]').forEach(element => {
+                    const modifier = UTILITY.playerCheckModifier(sheet, element.dataset.effectiveAbility);
+                    element.textContent = `Modifier ${modifier.total >= 0 ? '+' : ''}${modifier.total}${modifier.survival ? ` · Survival ${modifier.survival}` : ''}`;
+                    element.classList.toggle('text-red-300', !!modifier.survival);
+                    element.classList.toggle('text-gray-400', !modifier.survival);
+                });
             },
 
             refreshRpgSettings(prefix) {
@@ -32905,7 +32995,7 @@ Write only the descriptive paragraphs.`;
                         const selected = story.characters.find(c => c.id === charId);
                         this.currentEditScenario.playerCharacter = UTILITY.normalizePlayerCharacter({ ...previous, characterId: charId,
                             name: selected.name, gender: selected.gender || '', pronouns: selected.pronouns || '', portrait: null,
-                            backstory: selected.description || '', appearance: selected.appearance || selected.short_description || '' }, selected);
+                            backstory: selected.description || '', personality: selected.personality || '', appearance: selected.appearance || selected.short_description || '' }, selected);
                         document.getElementById('scenario-player-form').innerHTML = UIComponents.PlayerSheetForm('scenario-player', this.currentEditScenario.playerCharacter);
                         UIManager.renderPlayerPortrait('scenario-player', this.currentEditScenario.playerCharacter, selected);
                         this.renderScenarioCast(story.characters);
@@ -36047,7 +36137,7 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 const entry = state.npcProgression[character.id];
                 const base = character.npc_profile || entry?.baseProfile || { ...UTILITY.createNpcProfile(character.name, 'Unknown', state.narrativeId), knownDetails: character.description || '', editedFields: [] };
                 const rules = UTILITY.normalizeRpgProgression(state.playerCharacter.progression);
-                let progression = UTILITY.normalizeRpgProgression({ ...rules, initialized: true, level: entry?.progression?.level ?? character.encounter?.initialLevel ?? base.level,
+                let progression = UTILITY.normalizeRpgProgression({ ...rules, initialized: true, levelOverride: false, attributeAdjustments: {}, level: entry?.progression?.level ?? character.encounter?.initialLevel ?? base.level,
                     xp: entry?.progression?.xp || 0, allocations: entry?.progression?.allocations || {} });
                 const budget = UTILITY.rpgPointBudget(progression.level, rules);
                 if (Object.values(progression.allocations).reduce((sum, points) => sum + points, 0) !== budget || entry?.occupation !== base.job) {
@@ -36065,9 +36155,47 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 for (const character of [...(state.characters || []), ...(state.worldMap?.grid || []).flatMap(tile => tile.characters || [])]) this.getNpcProfile(character);
             },
 
+            repairNpcDialogueDuplicates() {
+                const state = ReactiveStore.state;
+                let repaired = false;
+                for (const duplicate of [...state.characters]) {
+                    const name = UTILITY.npcDialogueName(duplicate.name);
+                    const profile = duplicate.npc_profile;
+                    if (!name || duplicate.is_user || duplicate.is_narrator || duplicate.is_active
+                        || !profile || duplicate.encounter?.originalName !== duplicate.name
+                        || profile.editedFields?.length || duplicate.description !== profile.generatedDescription
+                        || duplicate.image_url || duplicate.extra_portraits?.length || UIManager.getPortraitSrc(duplicate)
+                        || state.npcProgression?.[duplicate.id]?.progression?.xp) continue;
+                    const matches = state.characters.filter(char => char.id !== duplicate.id && char.encounter && !char.is_user && !char.is_narrator
+                        && UTILITY.npcNameKey(char.name) === UTILITY.npcNameKey(name)
+                        && char.encounter.firstMessageId && char.encounter.firstMessageId === duplicate.encounter.firstMessageId);
+                    if (matches.length !== 1) continue;
+                    const referenced = value => value === duplicate.id || (value && typeof value === 'object'
+                        && (Object.hasOwn(value, duplicate.id) || Object.values(value).some(referenced)));
+                    if ([state.chat_history, state.gameState, state.playerCharacter, state.relationship_matrix, state.swarmSecrets,
+                        state.swarmLastIntents, state.evolved_characters, state.livingPersonaCounters, state.characterStats].some(referenced)) continue;
+                    const character = matches[0];
+                    character.encounter.mergedDialogueDuplicates = [...(character.encounter.mergedDialogueDuplicates || []),
+                        { character: JSON.parse(JSON.stringify(duplicate)), progression: state.npcProgression?.[duplicate.id] || null }];
+                    for (const observation of duplicate.encounter.observations || []) {
+                        character.encounter.observations = character.encounter.observations || [];
+                        if (!character.encounter.observations.some(entry => entry.messageId === observation.messageId && entry.text === observation.text)) character.encounter.observations.push(observation);
+                    }
+                    this.applyNpcIntroduction(character, { encounterType: duplicate.encounter.status, description: duplicate.appearance || '' });
+                    for (const place of state.worldMap?.atlas?.places || []) {
+                        place.characterIds = [...new Set((place.characterIds || []).map(id => id === duplicate.id ? character.id : id))];
+                    }
+                    state.characters = state.characters.filter(char => char.id !== duplicate.id);
+                    if (state.npcProgression) delete state.npcProgression[duplicate.id];
+                    repaired = true;
+                }
+                return repaired;
+            },
+
             syncNamedCharacters(messages = null, notify = false) {
                 const state = ReactiveStore.state;
                 if (!state?.narrativeId || !Array.isArray(state.characters)) return [];
+                const repaired = !messages && this.repairNpcDialogueDuplicates();
                 const added = [];
                 const ignored = new Set(state.ignoredCharacterNames || []);
                 for (const message of messages || state.chat_history || []) {
@@ -36076,7 +36204,7 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     const index = state.chat_history.findIndex(entry => entry.id === message.id);
                     const preceding = state.chat_history.slice(0, index < 0 ? state.chat_history.length : index).findLast(entry => entry.type === 'chat' && !entry.isHidden);
                     const previous = preceding && ReactiveStore.getCharacter(preceding.character_id)?.is_user ? preceding.content : '';
-                    for (const candidate of UTILITY.extractNamedCharacters(message.content + '\n' + (message.npcMarkers || []).join('\n'), previous)) {
+                    for (const candidate of UTILITY.extractNamedCharacters(message.content + '\n' + (message.npcMarkers || []).join('\n'), previous, true)) {
                         const key = UTILITY.npcNameKey(candidate.name);
                         if (ignored.has(key)) continue;
                         const roster = [...state.characters, ...(state.worldMap?.grid || []).flatMap(location => location.characters || [])];
@@ -36127,10 +36255,10 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                         added.push(character);
                     }
                 }
-                if (added.length) {
+                if (added.length || repaired) {
                     UIManager.renderCharacters();
                     UIManager.updateAICharacterSelector();
-                    if (notify) UIManager.showNotification(added.length === 1 ? `${added[0].name} added to the roster.` : `${added.length} characters added to the roster.`);
+                    if (notify && added.length) UIManager.showNotification(added.length === 1 ? `${added[0].name} added to the roster.` : `${added.length} characters added to the roster.`);
                 }
                 this.syncRpgNpcs();
                 return added;
@@ -36247,12 +36375,12 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 UIManager.RUNTIME.dicePresentation = { state, phase: 'assessing' };
                 UIManager.renderDiceComposer();
                 try {
-                    const response = await APIService.callAI(PromptBuilder.buildPrompt(speaker.id, false, null, instruction), false, signal);
+                    const response = await APIService.callAI(PromptBuilder.buildPrompt(speaker.id, false, null, instruction, false, { assessment: true }), false, signal);
                     if (signal.aborted || ReactiveStore.state !== state || latestAction()?.id !== action.id) return true;
-                    const text = UTILITY.stripThinking(typeof response === 'string' ? response : response?.text || '').trim();
-                    const check = UTILITY.parsePlayerCheck(text);
-                    if (!check && !/^\s*\[NO_CHECK\]\s*$/i.test(text)) throw new Error('The action check could not be read. Try continuing again.');
+                    const assessment = UTILITY.parsePlayerCheckAssessment(typeof response === 'string' ? response : response?.text);
+                    const check = assessment.check;
                     action.playerCheckAssessed = true;
+                    action.playerCheckAssessment = assessment.status;
                     if (!check) return false;
                     state.chat_history.push({ id: UTILITY.uuid(), type: 'player_check', character_id: speaker.id,
                         content: `Check requested: ${check.reason} (${check.ability}, target ${check.dc}).`, playerCheck: check,
@@ -37812,7 +37940,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                         .replace('{last_response}', lastMsg.content);
 
                     // Always append a critical instruction to override older saved prompts
-                    prompt += `\n\nCRITICAL INSTRUCTION: You MUST generate these 4 options strictly from the perspective of the user's character (${userName}). The options MUST describe their direct actions or dialogue, written from their perspective. Generate options for this specific character **only**. Furthermore, each option MUST be a completely unique direction for the character to take and lead to a completely different consequence, emotion, or narrative direction.`;
+                    prompt += `\n\n${PromptBuilder.buildPlayerContext(state, false, true)}\nCRITICAL INSTRUCTION: Generate 4 distinct options strictly from the perspective of the user's character (${userName}). Each option is a draft of their direct actions or dialogue for the player to review and edit before sending. Tailor the wording, tone, and motivations to their current personality. Vary the approach while keeping each choice believable for this character; this takes priority over any earlier requirement for contrasting emotions. Respect their current body, injuries, established knowledge, and language limits. Describe attempted actions, not guaranteed outcomes or other characters' reactions. Generate options for this character only, without story bookkeeping flags.`;
 
                     // Call AI
                     const response = await APIService.callAI(prompt, false, null, true);
@@ -37861,15 +37989,17 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     }
                 }
 
+                const input = document.getElementById('chat-input');
+                if (!input || input.disabled || input.readOnly || typeof opt?.prompt !== 'string' || !opt.prompt.trim()) return;
+                if (UTILITY.getPendingPlayerCheck(ReactiveStore.state)) return;
+
                 // 1. Clear and Hide Container
                 this._clearResponseOptions();
 
-                // 2. Set Input and Send
-                const input = document.getElementById('chat-input');
-                if (input) {
-                    input.value = opt.prompt;
-                    this.sendMessage();
-                }
+                input.value = opt.prompt;
+                input.focus();
+                input.setSelectionRange(input.value.length, input.value.length);
+                input.dispatchEvent(new Event('input', { bubbles: true }));
             },
 
             /**
@@ -45637,6 +45767,7 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 ActionHandler.register('open-player-stats', () => UIManager.switchInventoryTab('stats'));
                 ActionHandler.register('override-player-stats', (ds, val, event) => { UIManager.RUNTIME.playerStatsOverride = event.target.checked; UIManager.renderInventoryPanel(); });
                 ActionHandler.register('save-player-stats', () => UIManager.savePlayerSheet('stats'));
+                ActionHandler.register('preview-player-stats', () => UIManager.previewPlayerStats());
                 ActionHandler.register('toggle-player-survival', ds => {
                     document.getElementById(`${ds.prefix}-survival`).disabled = !document.getElementById(`${ds.prefix}-survivalEnabled`).checked;
                 });
