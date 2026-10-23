@@ -7,6 +7,12 @@
   "scripts": {
     "start": "electron .",
     "test": "node test.js && node tools/check-map.test.js",
+    "test:unit": "node test.js",
+    "test:kobold": "node tools/kobold-e2e.test.js",
+    "test:kobold:ipc": "node tools/electron-kobold.test.js",
+    "test:kobold:live": "node tools/live-kobold-smoke.js",
+    "test:extensive": "node test.js && node tools/check-map.test.js && node tools/electron-kobold.test.js && node tools/kobold-e2e.test.js",
+    "test:all": "npm run test:extensive",
     "dist": "electron-builder --win --publish never",
     "dist:mac": "electron-builder --mac --publish never",
     "prepare": "git config core.hooksPath .githooks || true"

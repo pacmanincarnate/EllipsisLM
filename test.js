@@ -337,6 +337,40 @@ test('stripThinking: passes through non-strings unchanged', () => {
     assert.equal(UTILITY.stripThinking(undefined), undefined);
 });
 
+// ─── stripCacheBreaks ─────────────────────────────────────────────────────
+
+test('stripCacheBreaks: removes <|ELLIPSIS_CACHE_BREAK|> delimiters', () => {
+    const input = "World Knowledge\n\n<|ELLIPSIS_CACHE_BREAK|>\n## RECENT CONVERSATION\n### Sivra: Hi";
+    const expected = "World Knowledge\n\n## RECENT CONVERSATION\n### Sivra: Hi";
+    assert.equal(UTILITY.stripCacheBreaks(input), expected);
+});
+
+test('stripCacheBreaks: handles multiple breaks and edge whitespace safely', () => {
+    const input = "<|ELLIPSIS_CACHE_BREAK|>\nHello\n<|ELLIPSIS_CACHE_BREAK|>\n";
+    assert.equal(UTILITY.stripCacheBreaks(input), "Hello\n");
+    assert.equal(UTILITY.stripCacheBreaks(null), null);
+    assert.equal(UTILITY.stripCacheBreaks(undefined), undefined);
+});
+
+// ─── sanitizeModelResponse ───────────────────────────────────────────────
+
+test('sanitizeModelResponse: truncates at leaked <|ELLIPSIS_CACHE delimiter and hallucinatory end tags', () => {
+    const input = 'I will take the five minutes. And then, I will keep moving.\n\n<|ELLIPSIS_CACHE_BREAK|><|ELLIPSIS_CACHE_BREAK|>\n\n<|ELLIPSIS_CACHE_BREAK_END|>\n<|ELLIPSIS_CACHE_END|>';
+    assert.equal(UTILITY.sanitizeModelResponse(input), 'I will take the five minutes. And then, I will keep moving.');
+});
+
+test('sanitizeModelResponse: truncates at standard stop tokens if leaked into text', () => {
+    assert.equal(UTILITY.sanitizeModelResponse('Hello world<end_of_turn>extra tokens'), 'Hello world');
+    assert.equal(UTILITY.sanitizeModelResponse('Hello world<|eot_id|>extra tokens'), 'Hello world');
+    assert.equal(UTILITY.sanitizeModelResponse('Hello world<|im_end|>extra tokens'), 'Hello world');
+});
+
+test('sanitizeModelResponse: passes through clean strings and non-strings safely', () => {
+    assert.equal(UTILITY.sanitizeModelResponse('Clean dialogue without artifacts.'), 'Clean dialogue without artifacts.');
+    assert.equal(UTILITY.sanitizeModelResponse(null), null);
+    assert.equal(UTILITY.sanitizeModelResponse(undefined), undefined);
+});
+
 // ─── extractThinking ──────────────────────────────────────────────────────
 
 test('extractThinking: extracts thoughts and cleans content', () => {
@@ -392,6 +426,72 @@ test('extractThinking: handles null or non-string inputs safely', () => {
     deepEq(UTILITY.extractThinking(undefined), { thinking: '', content: '' });
 });
 
+// ─── resolveOpenRouterConfig ──────────────────────────────────────────────
+
+test('resolveOpenRouterConfig: defaults to 16384 hefty maxTokens and null reasoning for generic model', () => {
+    const config = UTILITY.resolveOpenRouterConfig({ model: 'meta-llama/llama-3.3-70b-instruct' });
+    assert.equal(config.maxTokens, 16384);
+    assert.equal(config.reasoning, null);
+});
+
+test('resolveOpenRouterConfig: automatically assigns high effort reasoning for known reasoning model on auto', () => {
+    const config = UTILITY.resolveOpenRouterConfig({ model: 'deepseek/deepseek-r1' });
+    assert.equal(config.maxTokens, 16384);
+    deepEq(config.reasoning, { effort: 'high' });
+});
+
+test('resolveOpenRouterConfig: respects user configured maxTokens', () => {
+    const config = UTILITY.resolveOpenRouterConfig({
+        model: 'anthropic/claude-3.7-sonnet',
+        maxTokens: 32768
+    });
+    assert.equal(config.maxTokens, 32768);
+    deepEq(config.reasoning, { effort: 'high' });
+});
+
+test('resolveOpenRouterConfig: clamps maxTokens if cached model has lower top_provider max_completion_tokens', () => {
+    const modelCache = [
+        {
+            id: 'openai/gpt-3.5-turbo',
+            top_provider: { max_completion_tokens: 4096 }
+        }
+    ];
+    const config = UTILITY.resolveOpenRouterConfig({
+        model: 'openai/gpt-3.5-turbo',
+        maxTokens: 16384,
+        modelCache
+    });
+    assert.equal(config.maxTokens, 4096);
+});
+
+test('resolveOpenRouterConfig: clamps maxTokens if cached model context_length is small', () => {
+    const modelCache = [
+        {
+            id: 'legacy/small-model',
+            context_length: 4096
+        }
+    ];
+    const config = UTILITY.resolveOpenRouterConfig({
+        model: 'legacy/small-model',
+        maxTokens: 16384,
+        modelCache
+    });
+    assert.equal(config.maxTokens, 3072);
+});
+
+test('resolveOpenRouterConfig: respects explicit thinkingEffort and thinkingBudget', () => {
+    const configEffort = UTILITY.resolveOpenRouterConfig({
+        model: 'generic/model',
+        thinkingEffort: 'medium'
+    });
+    deepEq(configEffort.reasoning, { effort: 'medium' });
+
+    const configBudget = UTILITY.resolveOpenRouterConfig({
+        model: 'deepseek/deepseek-r1',
+        thinkingBudget: 6000
+    });
+    deepEq(configBudget.reasoning, { max_tokens: 6000 });
+});
 
 // ─── hex color math ───────────────────────────────────────────────────────
 
@@ -1446,3 +1546,247 @@ test('buildVisionContextBlock: instructs the model never to reveal the mechanism
     assert.ok(/never mention this/i.test(out));
     assert.ok(/described to you/i.test(out));
 });
+
+
+// ─── sanitizeDebugLog ────────────────────────────────────────────────────────
+
+test('sanitizeDebugLog: nullish or empty string returns empty string', () => {
+    assert.equal(UTILITY.sanitizeDebugLog(''), '');
+    assert.equal(UTILITY.sanitizeDebugLog(null), '');
+    assert.equal(UTILITY.sanitizeDebugLog(undefined), '');
+});
+
+test('sanitizeDebugLog: redacts Gemini API keys', () => {
+    const dummySuffix = 'A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q';
+    const dummyKey = ['AIza', 'Sy', dummySuffix].join('');
+    const raw = `Calling Gemini with key ${dummyKey} in request`;
+    const sanitized = UTILITY.sanitizeDebugLog(raw);
+    assert.ok(!sanitized.includes(dummySuffix));
+    assert.ok(sanitized.includes('AIzaSy[REDACTED]'));
+});
+
+test('sanitizeDebugLog: redacts OpenRouter API keys', () => {
+    const dummyHex = '0123456789abcdef'.repeat(4);
+    const dummyKey = ['sk', 'or', 'v1', dummyHex].join('-');
+    const raw = `Auth: Bearer ${dummyKey}`;
+    const sanitized = UTILITY.sanitizeDebugLog(raw);
+    assert.ok(!sanitized.includes('0123456789abcdef'));
+    assert.ok(sanitized.includes('sk-or-v1-[REDACTED]'));
+});
+
+test('sanitizeDebugLog: redacts OpenAI format sk- keys', () => {
+    const dummySuffix = '1234567890abcdef1234567890';
+    const dummyKey = ['sk', dummySuffix].join('-');
+    const raw = `Key ${dummyKey} loaded`;
+    const sanitized = UTILITY.sanitizeDebugLog(raw);
+    assert.ok(!sanitized.includes(dummySuffix));
+    assert.ok(sanitized.includes('sk-[REDACTED]'));
+});
+
+test('sanitizeDebugLog: redacts JSON apiKey and password fields', () => {
+    const raw = '{"geminiApiKey": "AIzaSySecretKey", "openrouterApiKey": "sk-or-secret", "password": "pass"}';
+    const sanitized = UTILITY.sanitizeDebugLog(raw);
+    assert.ok(!sanitized.includes('AIzaSySecretKey'));
+    assert.ok(!sanitized.includes('sk-or-secret'));
+    assert.ok(!sanitized.includes('"pass"'));
+    assert.ok(sanitized.includes('"geminiApiKey": "[REDACTED]"'));
+    assert.ok(sanitized.includes('"password": "[REDACTED]"'));
+});
+
+test('sanitizeDebugLog: preserves normal log lines without sensitive keys', () => {
+    const raw = '[2026-10-23T10:00:00Z] [KOBOLD/STDOUT] Model loaded on port 5001 with 20480 context';
+    assert.equal(UTILITY.sanitizeDebugLog(raw), raw);
+});
+
+// ─── formatDiagnosticReport ──────────────────────────────────────────────────
+
+test('formatDiagnosticReport: handles null/empty metadata and empty logs gracefully', () => {
+    const report = UTILITY.formatDiagnosticReport(null, []);
+    assert.ok(typeof report === 'string');
+    assert.ok(report.includes('DEBUG & DIAGNOSTIC REPORT'));
+    assert.ok(report.includes('(No log entries recorded)'));
+});
+
+test('formatDiagnosticReport: includes application version, platform, and log entries', () => {
+    const meta = {
+        appVersion: '1.2.3',
+        platform: 'win32',
+        arch: 'x64',
+        osRelease: '10.0.22631',
+        totalRam: '32.00 GB',
+        freeRam: '16.50 GB',
+        koboldStatus: 'running',
+        koboldVersion: 'v1.82',
+        clientState: {
+            activeProvider: 'koboldcpp',
+            storyCount: 5
+        }
+    };
+    const logs = [
+        '[2026-10-23T10:00:00Z] [MAIN/INFO] Server starting',
+        '[2026-10-23T10:00:01Z] [KOBOLD/STDOUT] Ready'
+    ];
+    const report = UTILITY.formatDiagnosticReport(meta, logs);
+    assert.ok(report.includes('App Version: 1.2.3'));
+    assert.ok(report.includes('Platform: win32 (x64)'));
+    assert.ok(report.includes('Detected Local Version: v1.82'));
+    assert.ok(report.includes('Active Provider: koboldcpp'));
+    assert.ok(report.includes('Server starting'));
+    assert.ok(report.includes('Ready'));
+    assert.ok(report.includes('END OF REPORT'));
+});
+
+// ─── parsePortFromUrl ──────────────────────────────────────────────────────
+
+test('parsePortFromUrl: extracts port from standard localhost url', () => {
+    assert.equal(UTILITY.parsePortFromUrl('http://localhost:5001'), 5001);
+    assert.equal(UTILITY.parsePortFromUrl('http://127.0.0.1:5001/'), 5001);
+    assert.equal(UTILITY.parsePortFromUrl('http://localhost:8080/api'), 8080);
+});
+
+test('parsePortFromUrl: returns default port when no port specified', () => {
+    assert.equal(UTILITY.parsePortFromUrl('http://localhost'), 5001);
+    assert.equal(UTILITY.parsePortFromUrl('http://localhost/'), 5001);
+    assert.equal(UTILITY.parsePortFromUrl('http://localhost', 8000), 8000);
+});
+
+test('parsePortFromUrl: returns default port for null, undefined, empty, or invalid input', () => {
+    assert.equal(UTILITY.parsePortFromUrl(null), 5001);
+    assert.equal(UTILITY.parsePortFromUrl(undefined), 5001);
+    assert.equal(UTILITY.parsePortFromUrl(''), 5001);
+    assert.equal(UTILITY.parsePortFromUrl('not-a-url'), 5001);
+    assert.equal(UTILITY.parsePortFromUrl('http://localhost:999999'), 5001);
+});
+
+// ─── checkKoboldCompatibility ──────────────────────────────────────────────
+
+test('checkKoboldCompatibility: handles empty or null input', () => {
+    deepEq(UTILITY.checkKoboldCompatibility(null, 'v1.82'), { compatible: true, archName: '', requiredVersion: '' });
+    deepEq(UTILITY.checkKoboldCompatibility('', 'v1.82'), { compatible: true, archName: '', requiredVersion: '' });
+});
+
+test('checkKoboldCompatibility: detects Jinja embedded templates and version requirements', () => {
+    const res1 = UTILITY.checkKoboldCompatibility('jinja', 'v1.82');
+    assert.equal(res1.compatible, true);
+    assert.equal(res1.archName, 'Jinja Embedded Templates');
+    assert.equal(res1.requiredVersion, '1.75');
+
+    const res2 = UTILITY.checkKoboldCompatibility('--jinja', 'v1.70');
+    assert.equal(res2.compatible, false);
+});
+
+test('checkKoboldCompatibility: detects Llama 3 architecture requirement', () => {
+    const res1 = UTILITY.checkKoboldCompatibility('llama3', 'v1.65');
+    assert.equal(res1.compatible, true);
+    assert.equal(res1.archName, 'Llama 3 Architecture');
+
+    const res2 = UTILITY.checkKoboldCompatibility('llama-3', 'v1.60');
+    assert.equal(res2.compatible, false);
+});
+
+test('checkKoboldCompatibility: detects Gemma 4 architecture requirement', () => {
+    const res1 = UTILITY.checkKoboldCompatibility('Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-Q4_K_P.gguf', 'v1.123.1');
+    assert.equal(res1.compatible, true);
+    assert.equal(res1.archName, 'Gemma 4 Architecture');
+    assert.equal(res1.requiredVersion, '1.75');
+
+    const res2 = UTILITY.checkKoboldCompatibility('gemma4', 'v1.70');
+    assert.equal(res2.compatible, false);
+});
+
+test('checkKoboldCompatibility: detects Gemma 2 architecture requirement', () => {
+    const res1 = UTILITY.checkKoboldCompatibility('gemma2', 'v1.72');
+    assert.equal(res1.compatible, true);
+    assert.equal(res1.archName, 'Gemma 2 Architecture');
+
+    const res2 = UTILITY.checkKoboldCompatibility('gemma-2', 'v1.68');
+    assert.equal(res2.compatible, false);
+});
+
+test('checkKoboldCompatibility: reports incompatible when currentVersion is unknown', () => {
+    const res = UTILITY.checkKoboldCompatibility('llama3', 'unknown');
+    assert.equal(res.compatible, false);
+    assert.equal(res.archName, 'Llama 3 Architecture');
+});
+
+
+test('checkKoboldCompatibility: detects Orion architecture requirement (e.g. TheDrummer_Orion)', () => {
+    const res1 = UTILITY.checkKoboldCompatibility('TheDrummer_Orion-26B-A4B-v1.1-Q4_K_M.gguf', 'v1.75');
+    assert.equal(res1.compatible, true);
+    assert.equal(res1.archName, 'Orion Architecture');
+    assert.equal(res1.requiredVersion, '1.65');
+
+    const res2 = UTILITY.checkKoboldCompatibility('orion-14b', 'v1.60');
+    assert.equal(res2.compatible, false);
+});
+
+// ─── applyChatTemplate (KoboldCPP formatting) ──────────────────────────────
+
+test('applyChatTemplate: returns empty string on nullish or non-string prompt', () => {
+    assert.equal(UTILITY.applyChatTemplate(null, 'chatml'), '');
+    assert.equal(UTILITY.applyChatTemplate(undefined, 'llama3'), '');
+    assert.equal(UTILITY.applyChatTemplate(12345, 'gemma'), '');
+});
+
+test('applyChatTemplate: returns raw prompt for none or autoguess', () => {
+    assert.equal(UTILITY.applyChatTemplate('Hello world', 'none'), 'Hello world');
+    assert.equal(UTILITY.applyChatTemplate('Hello world', 'autoguess'), 'Hello world');
+    assert.equal(UTILITY.applyChatTemplate('Hello world', 'jinja'), 'Hello world');
+    assert.equal(UTILITY.applyChatTemplate('Hello world', ''), 'Hello world');
+});
+
+test('applyChatTemplate: formats ChatML template', () => {
+    const formatted = UTILITY.applyChatTemplate('Hello world', 'chatml');
+    assert.equal(formatted, '<|im_start|>user\nHello world<|im_end|>\n<|im_start|>assistant\n');
+});
+
+test('applyChatTemplate: formats Llama 3 template', () => {
+    const formatted = UTILITY.applyChatTemplate('Hello world', 'llama3');
+    assert.equal(formatted, '<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\nHello world<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n');
+});
+
+test('applyChatTemplate: formats Gemma template', () => {
+    const formatted = UTILITY.applyChatTemplate('Hello world', 'gemma');
+    assert.equal(formatted, '<start_of_turn>user\nHello world<end_of_turn>\n<start_of_turn>model\n');
+});
+
+test('applyChatTemplate: formats Mistral template', () => {
+    const formatted = UTILITY.applyChatTemplate('Hello world', 'mistral');
+    assert.equal(formatted, '<s>[INST] Hello world [/INST]');
+});
+
+test('applyChatTemplate: formats Alpaca template', () => {
+    const formatted = UTILITY.applyChatTemplate('Hello world', 'alpaca');
+    assert.equal(formatted, '### Instruction:\nHello world\n\n### Response:\n');
+});
+
+test('applyChatTemplate: prevents double-wrapping on pre-templated text', () => {
+    const chatml = '<|im_start|>user\nAlready wrapped<|im_end|>\n';
+    assert.equal(UTILITY.applyChatTemplate(chatml, 'chatml'), chatml);
+
+    const llama3 = '<|start_header_id|>user<|end_header_id|>\nPre-wrapped<|eot_id|>';
+    assert.equal(UTILITY.applyChatTemplate(llama3, 'llama3'), llama3);
+});
+
+// ─── isRoleplayActive ──────────────────────────────────────────────────────────
+
+test('isRoleplayActive: returns false for nullish or invalid input', () => {
+    assert.equal(UTILITY.isRoleplayActive(null), false);
+    assert.equal(UTILITY.isRoleplayActive(undefined), false);
+    assert.equal(UTILITY.isRoleplayActive('not an object'), false);
+    assert.equal(UTILITY.isRoleplayActive(123), false);
+});
+
+test('isRoleplayActive: returns false when active_story_id or active_narrative_id is missing/empty', () => {
+    assert.equal(UTILITY.isRoleplayActive({}), false);
+    assert.equal(UTILITY.isRoleplayActive({ active_story_id: 'story-1' }), false);
+    assert.equal(UTILITY.isRoleplayActive({ active_narrative_id: 'nar-1' }), false);
+    assert.equal(UTILITY.isRoleplayActive({ active_story_id: 'story-1', active_narrative_id: null }), false);
+    assert.equal(UTILITY.isRoleplayActive({ active_story_id: '', active_narrative_id: 'nar-1' }), false);
+    assert.equal(UTILITY.isRoleplayActive({ active_story_id: 'story-1', active_narrative_id: '' }), false);
+});
+
+test('isRoleplayActive: returns true when both active_story_id and active_narrative_id are set', () => {
+    assert.equal(UTILITY.isRoleplayActive({ active_story_id: 'story-1', active_narrative_id: 'nar-1' }), true);
+});
+

@@ -430,6 +430,34 @@
             color: #d1d5db;
         }
 
+        .settings-tab-sidebar-btn:disabled,
+        .settings-tab-sidebar-btn[aria-disabled="true"] {
+            opacity: 0.3 !important;
+            cursor: not-allowed !important;
+            color: #4b5563 !important;
+            border-left-color: transparent !important;
+            pointer-events: auto;
+        }
+
+        .settings-tab-sidebar-btn:disabled:hover,
+        .settings-tab-sidebar-btn[aria-disabled="true"]:hover {
+            color: #4b5563 !important;
+        }
+
+        #settings-modal-header-tabs button:disabled,
+        #settings-modal-header-tabs button[aria-disabled="true"] {
+            opacity: 0.3 !important;
+            cursor: not-allowed !important;
+            color: #4b5563 !important;
+            border-bottom-color: transparent !important;
+            pointer-events: auto;
+        }
+
+        #settings-modal-header-tabs button:disabled:hover,
+        #settings-modal-header-tabs button[aria-disabled="true"]:hover {
+            color: #4b5563 !important;
+        }
+
         /* Layout specific overrides for settings */
         body.layout-vertical #settings-sidebar-nav {
             display: none !important;
@@ -4798,7 +4826,7 @@
 
     <!-- Appearance & Global Settings: Theme, fonts, AI backends, and user personas -->
     <!-- [UI:MODAL:SETTINGS] -->
-    <div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center hidden p-4">
+    <div id="settings-modal" class="fixed inset-0 z-[60] items-center justify-center hidden p-4">
         <div class="modal-overlay absolute inset-0" data-action="close-modal" data-id="settings-modal"></div>
         <div
             class="bg-gray-800/80 backdrop-blur-md rounded-lg shadow-xl w-full max-w-4xl h-[85vh] max-h-[85vh] relative flex flex-col md:flex-row overflow-hidden border border-white/5">
@@ -5237,6 +5265,36 @@
                             class="px-3 py-1.5 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 text-[10px] font-bold rounded-lg border border-gray-600/30 transition-all active:scale-95">
                             Show Onboarding
                         </button>
+                    </div>
+
+                    <!-- Diagnostics & Debug Log -->
+                    <div class="mt-4 pt-4 border-t border-indigo-500/10">
+                        <div class="flex items-center justify-between mb-2">
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-200 uppercase tracking-widest flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                        </path>
+                                    </svg>
+                                    Diagnostics & Debug Log
+                                </h4>
+                                <p class="text-[10px] text-gray-500 font-medium">Export background logs, backend process states, and system errors for support.</p>
+                            </div>
+                            <button id="copy-debug-log-btn" onclick="window.electronCopyDebugLog()"
+                                class="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 hover:text-indigo-300 text-[10px] font-bold rounded-lg border border-indigo-600/30 transition-all active:scale-95 flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
+                                    </path>
+                                </svg>
+                                <span id="copy-debug-log-btn-text">Copy Debug Log</span>
+                            </button>
+                        </div>
+                        <div id="debug-log-status-container" class="hidden text-[10px] text-gray-400 italic flex items-center justify-between mt-1 pt-1 border-t border-indigo-500/5">
+                            <span id="debug-log-status-text"></span>
+                            <button onclick="window.electronOpenDebugLogFolder()" class="text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer ml-2">Show in folder</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -6431,6 +6489,36 @@
                 </div>
 
                 <div id="openrouter-saved-models-list" class="mt-3 flex flex-wrap gap-2"></div>
+
+                <div class="mt-4 pt-3 border-t border-gray-700/60 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label for="openrouter-max-tokens-input" class="text-sm font-medium text-gray-200">
+                            Max Output Tokens
+                        </label>
+                        <span class="text-xs text-indigo-400 font-mono">Hefty Budget</span>
+                    </div>
+                    <input type="number" id="openrouter-max-tokens-input" class="w-full rounded-lg p-2 bg-gray-800 border border-gray-700 text-white"
+                        placeholder="16384" min="1024" max="131072" step="1024">
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Default: 16384. Sets a generous ceiling allowing reasoning models (DeepSeek R1, Claude 3.7, o1/o3, QwQ) to think extensively without exhausting the output token limit or leaving blank responses.
+                    </p>
+
+                    <div class="flex items-center justify-between pt-1">
+                        <label for="openrouter-thinking-effort-select" class="text-sm font-medium text-gray-200">
+                            Reasoning / Thinking Effort
+                        </label>
+                    </div>
+                    <select id="openrouter-thinking-effort-select" class="w-full rounded-lg p-2 bg-gray-800 border border-gray-700 text-white">
+                        <option value="auto">Auto / High (Allow deep thinking)</option>
+                        <option value="high">High Effort</option>
+                        <option value="medium">Medium Effort</option>
+                        <option value="low">Low Effort</option>
+                        <option value="none">None (Disable reasoning where supported)</option>
+                    </select>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Configures OpenRouter's reasoning effort for models that support explicit reasoning control.
+                    </p>
+                </div>
             </div>
             <div id="nanogpt-settings">
                 <div class="flex justify-between items-center mb-2">
@@ -6508,6 +6596,8 @@
                                 class="w-2.5 h-2.5 rounded-full bg-gray-500 flex-shrink-0"></span>
                             <span id="kobold-status-text" class="text-gray-200 font-medium">KoboldCPP: Stopped</span>
                         </div>
+                        <div id="kobold-status-detail" class="text-[11px] text-gray-400 pl-4.5 break-all hidden"></div>
+                        <div id="kobold-status-notice" class="text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800/40 p-2 rounded hidden"></div>
 
                         <!-- Download Progress Bar -->
                         <div id="kobold-download-container" class="hidden mt-1">
@@ -6553,88 +6643,395 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        Launch KoboldCPP
+                        <span id="kobold-start-btn-label">Launch Managed KoboldCPP</span>
                     </button>
                     <button id="kobold-electron-stop-btn" onclick="window.electronStopKobold()"
-                        class="w-full hidden bg-red-900/40 hover:bg-red-800/60 text-red-200 font-bold py-2 px-4 rounded-lg transition-all border border-red-700/30 flex justify-center items-center">
+                        class="w-full hidden bg-red-900/40 hover:bg-red-800/60 text-red-200 font-bold py-2 px-4 rounded-lg transition-all border border-red-700/30 flex justify-center items-center mb-2">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none"></rect>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        Stop KoboldCPP
+                        <span id="kobold-stop-btn-label">Stop Managed KoboldCPP</span>
+                    </button>
+                    <button id="kobold-electron-stop-ext-btn" onclick="window.electronStopExternalKoboldPrompt()"
+                        class="w-full hidden bg-amber-900/40 hover:bg-amber-800/60 text-amber-200 font-bold py-2 px-4 rounded-lg transition-all border border-amber-700/30 flex justify-center items-center mb-2">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                        </svg>
+                        <span id="kobold-stop-ext-btn-label">Stop External KoboldCPP</span>
                     </button>
                 </div>
 
                 <script>
-                    (function initElectronKoboldUI() {
-                        if (!window.electronBridge) return;
-                        // Set current version
-                        window.electronBridge.app.getVersion().then(v => {
-                            document.getElementById("app-current-version").textContent = "Version: " + v;
-                        });
-                        document.getElementById('kobold-electron-controls').classList.remove('hidden');
+                    // Global tracked state for KoboldCPP download (survives tab switches and modal close)
+                    window.koboldDownloadState = {
+                        status: 'stopped',
+                        progress: 0,
+                        version: null
+                    };
 
-                        const STATUS_MAP = {
-                            stopped: { dot: 'bg-gray-500', label: 'KoboldCPP: Stopped' },
-                            downloading: { dot: 'bg-indigo-400 animate-pulse', label: 'Downloading KoboldCPP...' },
-                            starting: { dot: 'bg-amber-400 animate-pulse', label: 'Starting Backend...' },
-                            running: { dot: 'bg-green-400', label: 'Running on port 5001' },
-                            error: { dot: 'bg-red-500', label: 'Error — see details below' }
-                        };
+                    window.updateKoboldDownloadUI = function (progress, version) {
+                        const p = Math.max(0, Math.min(100, typeof progress === 'number' ? progress : 0));
+                        const roundP = Math.round(p);
+                        const ver = version || window.koboldDownloadState.version;
 
-                        function applyStatus(s) {
-                            console.log('[UI] Applying status:', s);
-                            const cfg = STATUS_MAP[s] || STATUS_MAP.stopped;
-                            document.getElementById('kobold-status-dot').className = 'w-2.5 h-2.5 rounded-full flex-shrink-0 ' + cfg.dot;
-                            document.getElementById('kobold-status-text').textContent = cfg.label;
+                        // 1. Update elements inside Model Settings if currently rendered in DOM
+                        const bar = document.getElementById('kobold-download-bar');
+                        const txt = document.getElementById('kobold-download-percent');
+                        const container = document.getElementById('kobold-download-container');
+                        const label = document.getElementById('kobold-download-label');
+                        const statusText = document.getElementById('kobold-update-status');
+                        const actionDiv = document.getElementById('kobold-update-action');
+                        const startBtn = document.getElementById('kobold-electron-start-btn');
+                        const stopBtn = document.getElementById('kobold-electron-stop-btn');
+                        const stopExtBtn = document.getElementById('kobold-electron-stop-ext-btn');
 
-                            const isDownloading = (s === 'downloading');
-                            const isActive = (s === 'running' || s === 'starting');
-                            const isStopped = (s === 'stopped' || s === 'error');
+                        if (container) container.classList.remove('hidden');
+                        if (bar) bar.style.width = p + '%';
+                        if (txt) txt.textContent = roundP + '%';
+                        if (label && ver) label.textContent = `Downloading KoboldCPP ${ver}...`;
+                        if (statusText) statusText.textContent = ver ? `Downloading ${ver} (${roundP}%)` : `Downloading (${roundP}%)`;
+                        if (actionDiv) actionDiv.classList.add('hidden');
+                        if (startBtn) startBtn.classList.add('hidden');
+                        if (stopBtn) stopBtn.classList.add('hidden');
+                        if (stopExtBtn) stopExtBtn.classList.add('hidden');
 
-                            document.getElementById('kobold-download-container').classList.toggle('hidden', !isDownloading);
-                            document.getElementById('kobold-electron-start-btn').classList.toggle('hidden', !isStopped);
-                            document.getElementById('kobold-electron-stop-btn').classList.toggle('hidden', !isActive);
-
-                            // Hide error display if we just started something new
-                            if (!isStopped) {
-                                document.getElementById('kobold-error-display').classList.add('hidden');
-                            }
+                        // 2. Global floating indicator across the application
+                        let pill = document.getElementById('global-kobold-download-pill');
+                        if (!pill) {
+                            pill = document.createElement('div');
+                            pill.id = 'global-kobold-download-pill';
+                            pill.setAttribute('title', 'Click to open KoboldCPP settings');
+                            pill.onclick = () => {
+                                if (typeof AppController !== 'undefined' && AppController.openSettingsToTab) {
+                                    AppController.openSettingsToTab('model');
+                                }
+                            };
+                            pill.className = 'fixed bottom-4 right-4 z-50 cursor-pointer bg-gray-900/95 hover:bg-gray-800 text-gray-200 border border-indigo-500/40 rounded-full px-4 py-2 shadow-2xl backdrop-blur-md transition-all duration-300 flex items-center gap-3 group';
+                            pill.innerHTML = `
+                                <div class="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse flex-shrink-0"></div>
+                                <div class="flex flex-col">
+                                    <div class="flex items-center justify-between gap-4 text-xs font-medium">
+                                        <span id="global-kobold-pill-label">Downloading KoboldCPP...</span>
+                                        <span id="global-kobold-pill-percent" class="text-indigo-400 font-mono text-[11px]">0%</span>
+                                    </div>
+                                    <div class="w-36 bg-gray-700/60 rounded-full h-1 mt-1 overflow-hidden">
+                                        <div id="global-kobold-pill-bar" class="bg-indigo-500 h-full transition-all duration-300" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-1">Settings &rarr;</span>
+                            `;
+                            document.body.appendChild(pill);
                         }
 
-                        // Status and Log handlers
-                        window.electronBridge.kobold.onStatusChange(applyStatus);
-                        window.electronBridge.kobold.onDownloadProgress((p) => {
-                            const bar = document.getElementById('kobold-download-bar');
-                            const txt = document.getElementById('kobold-download-percent');
-                            if (bar) bar.style.width = p + '%';
-                            if (txt) txt.textContent = Math.round(p) + '%';
+                        if (pill) {
+                            pill.classList.remove('hidden');
+                            const pillBar = document.getElementById('global-kobold-pill-bar');
+                            const pillPercent = document.getElementById('global-kobold-pill-percent');
+                            const pillLabel = document.getElementById('global-kobold-pill-label');
+                            if (pillBar) pillBar.style.width = p + '%';
+                            if (pillPercent) pillPercent.textContent = roundP + '%';
+                            if (pillLabel) pillLabel.textContent = ver ? `Downloading KoboldCPP ${ver}...` : 'Downloading KoboldCPP...';
+                        }
+                    };
+
+                    (function initElectronKoboldUI() {
+                        if (!window.electronBridge) return;
+
+                        window.electronBridge.app.getVersion().then(v => {
+                            const disp = document.getElementById("app-current-version");
+                            if (disp) disp.textContent = "Version: " + v;
                         });
 
-                        window.electronBridge.kobold.onLog((line) => {
-                            console.log('[KoboldCPP Log]:', line);
-                            // If it's an error line, show it in the UI
-                            if (line.includes('[ERROR]')) {
+                        const controls = document.getElementById('kobold-electron-controls');
+                        if (controls) controls.classList.remove('hidden');
+
+                        window.syncElectronKoboldUI = async function () {
+                            if (!window.electronBridge || !window.electronBridge.kobold) return;
+                            const controlsEl = document.getElementById('kobold-electron-controls');
+                            if (controlsEl) controlsEl.classList.remove('hidden');
+
+                            try {
+                                const urlInput = document.getElementById('koboldcpp-url-input');
+                                const port = typeof UTILITY !== 'undefined' && UTILITY.parsePortFromUrl
+                                    ? UTILITY.parsePortFromUrl(urlInput?.value, 5001)
+                                    : 5001;
+
+                                const info = typeof window.electronBridge.kobold.getDetailedStatus === 'function'
+                                    ? await window.electronBridge.kobold.getDetailedStatus(port)
+                                    : { status: await window.electronBridge.kobold.getStatus(), type: 'managed', localVersion: '' };
+
+                                window.koboldDownloadState.status = info.status;
+
+                                const dot = document.getElementById('kobold-status-dot');
+                                const text = document.getElementById('kobold-status-text');
+                                const detail = document.getElementById('kobold-status-detail');
+                                const notice = document.getElementById('kobold-status-notice');
+                                const startBtn = document.getElementById('kobold-electron-start-btn');
+                                const startLabel = document.getElementById('kobold-start-btn-label');
+                                const stopBtn = document.getElementById('kobold-electron-stop-btn');
+                                const stopLabel = document.getElementById('kobold-stop-btn-label');
+                                const stopExtBtn = document.getElementById('kobold-electron-stop-ext-btn');
+                                const stopExtLabel = document.getElementById('kobold-stop-ext-btn-label');
+                                const updateStatus = document.getElementById('kobold-update-status');
+                                const downloadContainer = document.getElementById('kobold-download-container');
+                                const errorDisplay = document.getElementById('kobold-error-display');
+
+                                const localVer = info.localVersion && info.localVersion !== 'unknown' ? info.localVersion : '';
+                                if (updateStatus && localVer) {
+                                    updateStatus.textContent = `Local Install: ${localVer}`;
+                                }
+
+                                const isDownloading = (info.status === 'downloading');
+                                if (downloadContainer) downloadContainer.classList.toggle('hidden', !isDownloading);
+
+                                if (info.type === 'managed' && info.status === 'running') {
+                                    if (dot) dot.className = 'w-2.5 h-2.5 rounded-full flex-shrink-0 bg-green-400';
+                                    if (text) text.textContent = `Managed KoboldCPP (${info.version || localVer || 'Active'}) Running`;
+                                    if (detail) {
+                                        detail.textContent = `Port: ${info.port} • PID: ${info.pid} • Binary: ${info.exePath}`;
+                                        detail.classList.remove('hidden');
+                                    }
+                                    if (notice) notice.classList.add('hidden');
+                                    if (errorDisplay) errorDisplay.classList.add('hidden');
+
+                                    if (startBtn) startBtn.classList.add('hidden');
+                                    if (stopBtn) {
+                                        stopBtn.classList.remove('hidden');
+                                        if (stopLabel) stopLabel.textContent = `Stop Managed KoboldCPP (${info.version || localVer || ''})`;
+                                    }
+                                    if (stopExtBtn) stopExtBtn.classList.add('hidden');
+                                } else if (info.type === 'external' || info.status === 'external_running') {
+                                    if (dot) dot.className = 'w-2.5 h-2.5 rounded-full flex-shrink-0 bg-sky-400';
+                                    if (text) text.textContent = `External KoboldCPP Detected on Port ${info.port} (${info.version || 'Active'})`;
+                                    if (detail) {
+                                        detail.textContent = `PID: ${info.pid} • Executable: ${info.exePath}`;
+                                        detail.classList.remove('hidden');
+                                    }
+                                    if (notice) {
+                                        notice.innerHTML = `⚠️ An external KoboldCPP process is currently active on port <strong>${info.port}</strong>. The ELM managed local install (${localVer || 'v...'}) is stopped.`;
+                                        notice.classList.remove('hidden');
+                                    }
+
+                                    if (startBtn) {
+                                        startBtn.classList.remove('hidden');
+                                        startBtn.classList.replace('bg-indigo-600', 'bg-gray-700');
+                                        startBtn.classList.replace('hover:bg-indigo-500', 'hover:bg-gray-600');
+                                        if (startLabel) startLabel.textContent = `Launch Managed (${localVer || 'v...'}) [Port ${info.port} Busy]`;
+                                    }
+                                    if (stopBtn) stopBtn.classList.add('hidden');
+                                    if (stopExtBtn) {
+                                        stopExtBtn.classList.remove('hidden');
+                                        if (stopExtLabel) stopExtLabel.textContent = `Stop External KoboldCPP (PID: ${info.pid})`;
+                                        stopExtBtn.setAttribute('data-external-pid', String(info.pid));
+                                        stopExtBtn.setAttribute('data-external-path', String(info.exePath || ''));
+                                        stopExtBtn.setAttribute('data-port', String(info.port || 5001));
+                                    }
+                                } else if (info.status === 'starting') {
+                                    if (dot) dot.className = 'w-2.5 h-2.5 rounded-full flex-shrink-0 bg-amber-400 animate-pulse';
+                                    if (text) text.textContent = `Starting Managed KoboldCPP (${localVer || ''})...`;
+                                    if (detail) {
+                                        detail.textContent = `Initializing on port ${info.port || 5001}...`;
+                                        detail.classList.remove('hidden');
+                                    }
+                                    if (notice) notice.classList.add('hidden');
+                                    if (startBtn) startBtn.classList.add('hidden');
+                                    if (stopBtn) {
+                                        stopBtn.classList.remove('hidden');
+                                        if (stopLabel) stopLabel.textContent = 'Stop Managed KoboldCPP';
+                                    }
+                                    if (stopExtBtn) stopExtBtn.classList.add('hidden');
+                                } else if (isDownloading) {
+                                    if (dot) dot.className = 'w-2.5 h-2.5 rounded-full flex-shrink-0 bg-indigo-400 animate-pulse';
+                                    if (text) text.textContent = 'Downloading KoboldCPP...';
+                                    if (detail) detail.classList.add('hidden');
+                                    if (notice) notice.classList.add('hidden');
+                                    if (startBtn) startBtn.classList.add('hidden');
+                                    if (stopBtn) stopBtn.classList.add('hidden');
+                                    if (stopExtBtn) stopExtBtn.classList.add('hidden');
+                                    window.updateKoboldDownloadUI(window.koboldDownloadState.progress || 0, window.koboldDownloadState.version);
+                                } else {
+                                    // Stopped or error
+                                    const isErr = info.status === 'error';
+                                    if (dot) dot.className = 'w-2.5 h-2.5 rounded-full flex-shrink-0 ' + (isErr ? 'bg-red-500' : 'bg-gray-500');
+                                    if (text) text.textContent = isErr ? 'Managed KoboldCPP: Error' : 'Managed KoboldCPP: Stopped';
+                                    if (detail) {
+                                        detail.textContent = `Local Install: ${localVer || 'Not installed'} • Ready to launch`;
+                                        detail.classList.remove('hidden');
+                                    }
+                                    if (notice) notice.classList.add('hidden');
+
+                                    if (startBtn) {
+                                        startBtn.classList.remove('hidden');
+                                        startBtn.classList.replace('bg-gray-700', 'bg-indigo-600');
+                                        startBtn.classList.replace('hover:bg-gray-600', 'hover:bg-indigo-500');
+                                        if (startLabel) startLabel.textContent = `Launch Managed KoboldCPP (${localVer || 'Local'})`;
+                                    }
+                                    if (stopBtn) stopBtn.classList.add('hidden');
+                                    if (stopExtBtn) stopExtBtn.classList.add('hidden');
+                                }
+
+                                const pill = document.getElementById('global-kobold-download-pill');
+                                if (!isDownloading && pill && !pill.classList.contains('hidden')) {
+                                    if (info.status === 'running' || info.status === 'stopped') {
+                                        const pillLabel = document.getElementById('global-kobold-pill-label');
+                                        const pillBar = document.getElementById('global-kobold-pill-bar');
+                                        if (pillLabel) pillLabel.textContent = 'KoboldCPP Ready! ✨';
+                                        if (pillBar) {
+                                            pillBar.style.width = '100%';
+                                            pillBar.className = 'bg-emerald-500 h-full transition-all duration-300';
+                                        }
+                                        setTimeout(() => { if (pill) pill.classList.add('hidden'); }, 3000);
+                                    } else {
+                                        pill.classList.add('hidden');
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn('[KoboldCPP] Sync UI failed:', e);
+                            }
+                        };
+
+                        window.applyKoboldStatus = (status) => {
+                            window.koboldDownloadState.status = status;
+                            window.syncElectronKoboldUI();
+                        };
+
+                        // Status and Log handlers
+                        window.electronBridge.kobold.onStatusChange((status) => {
+                            window.syncElectronKoboldUI();
+                        });
+
+                        if (window.electronBridge.kobold.onPortConflict) {
+                            window.electronBridge.kobold.onPortConflict((data) => {
                                 const errDisplay = document.getElementById('kobold-error-display');
                                 const errText = document.getElementById('kobold-error-text');
                                 if (errDisplay && errText) {
                                     errDisplay.classList.remove('hidden');
-                                    errText.textContent = line.replace('[ERROR]', '').trim();
+                                    errText.textContent = `Port ${data.port} is already in use by an external process (PID ${data.pid}: ${data.exePath}).`;
+                                }
+                                window.syncElectronKoboldUI();
+                            });
+                        }
+
+                        window.electronBridge.kobold.onDownloadProgress((p) => {
+                            const progress = typeof p === 'object' && p !== null ? p.progress : p;
+                            const version = typeof p === 'object' && p !== null ? p.version : null;
+                            window.koboldDownloadState.status = 'downloading';
+                            window.koboldDownloadState.progress = typeof progress === 'number' ? progress : 0;
+                            if (version) window.koboldDownloadState.version = version;
+                            window.updateKoboldDownloadUI(window.koboldDownloadState.progress, window.koboldDownloadState.version);
+                        });
+
+                        // Incompatible Model Architecture Notification
+                        window.electronPromptKoboldUpdate = async function (details = {}) {
+                            if (!window.electronBridge) return;
+                            try {
+                                const [local, remote] = await Promise.all([
+                                    window.electronBridge.kobold.getLocalVersion(),
+                                    window.electronBridge.kobold.getLatestVersion()
+                                ]);
+                                const modelNameEl = document.getElementById('kobold-incompat-model-name');
+                                const currVerEl = document.getElementById('kobold-incompat-current-ver');
+                                const reqVerEl = document.getElementById('kobold-incompat-required-ver');
+                                const latestVerEl = document.getElementById('kobold-incompat-latest-ver');
+
+                                if (modelNameEl) modelNameEl.textContent = details.archName || details.model || 'This model';
+                                if (currVerEl) currVerEl.textContent = local || 'unknown';
+                                if (reqVerEl) reqVerEl.textContent = details.requiredVersion ? `${details.requiredVersion}+` : 'Newer build';
+                                if (latestVerEl) latestVerEl.textContent = remote || 'Latest';
+
+                                const updateBtn = document.getElementById('kobold-incompat-update-btn');
+                                if (updateBtn) updateBtn.setAttribute('data-target-version', remote);
+
+                                AppController.openModal('kobold-incompatible-modal');
+                            } catch (e) {
+                                console.error("Failed to prompt Kobold update:", e);
+                            }
+                        };
+
+                        window.electronUpdateKoboldFromModal = async function () {
+                            const updateBtn = document.getElementById('kobold-incompat-update-btn');
+                            const version = updateBtn?.getAttribute('data-target-version') || 'latest';
+                            AppController.closeModal('kobold-incompatible-modal');
+
+                            if (window.koboldDownloadState?.status === 'downloading') {
+                                if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                                    UIManager.showNotification('KoboldCPP is already downloading in the background.', 'info');
+                                }
+                                return;
+                            }
+
+                            window.koboldDownloadState.status = 'downloading';
+                            window.koboldDownloadState.version = version;
+                            window.koboldDownloadState.progress = 0;
+                            window.syncElectronKoboldUI();
+                            window.updateKoboldDownloadUI(0, version);
+
+                            if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                                UIManager.showNotification(`Downloading KoboldCPP ${version} in background...`, 'info');
+                            }
+
+                            if (window.electronBridge) {
+                                await window.electronBridge.kobold.update(version);
+                            }
+                        };
+
+                        if (window.electronBridge.kobold.onIncompatibleModel) {
+                            window.electronBridge.kobold.onIncompatibleModel(async (data) => {
+                                const local = await window.electronBridge.kobold.getLocalVersion();
+                                const compat = typeof UTILITY !== 'undefined' && UTILITY.checkKoboldCompatibility
+                                    ? UTILITY.checkKoboldCompatibility(data.arch || data.log, local)
+                                    : { compatible: true };
+                                window.electronPromptKoboldUpdate({
+                                    archName: compat.archName || data.arch || 'Model Architecture',
+                                    requiredVersion: compat.requiredVersion
+                                });
+                            });
+                        }
+
+                        window.electronBridge.kobold.onLog((line) => {
+                            console.log('[KoboldCPP Log]:', line);
+                            const archMatch = line.match(/(?:unknown model architecture:?\s*['"]?([a-zA-Z0-9_\-\.]+)['"]?|error loading model architecture|failed to load model|unrecognized arguments:\s*--jinja)/i);
+                            if (archMatch) {
+                                window.electronBridge.kobold.getLocalVersion().then(local => {
+                                    const compat = typeof UTILITY !== 'undefined' && UTILITY.checkKoboldCompatibility
+                                        ? UTILITY.checkKoboldCompatibility(archMatch[1] || line, local)
+                                        : { compatible: true };
+                                    window.electronPromptKoboldUpdate({
+                                        archName: compat.archName || archMatch[1] || 'Model Architecture',
+                                        requiredVersion: compat.requiredVersion
+                                    });
+                                });
+                            }
+
+                            if (line.includes('[ERROR]') || line.includes('[STDERR]')) {
+                                const errDisplay = document.getElementById('kobold-error-display');
+                                const errText = document.getElementById('kobold-error-text');
+                                if (errDisplay && errText) {
+                                    errDisplay.classList.remove('hidden');
+                                    errText.textContent = line.replace(/\[ERROR\]|\[STDERR\]/g, '').trim();
                                 }
                             }
                         });
 
-                        window.electronBridge.kobold.getStatus().then(applyStatus);
+                        window.syncElectronKoboldUI();
                     })();
+
                     // Updater Logic
                     window.electronCheckKoboldUpdate = async function () {
                         if (!window.electronBridge) return;
+                        if (window.koboldDownloadState?.status === 'downloading') {
+                            const statusText = document.getElementById("kobold-update-status");
+                            const p = Math.round(window.koboldDownloadState.progress || 0);
+                            const v = window.koboldDownloadState.version || '';
+                            if (statusText) statusText.textContent = `Download in progress${v ? ' (' + v + ')' : ''}: ${p}%`;
+                            return;
+                        }
                         const btn = document.getElementById("kobold-check-update-btn");
                         const statusText = document.getElementById("kobold-update-status");
                         const actionDiv = document.getElementById("kobold-update-action");
                         const newVerSpan = document.getElementById("kobold-new-version");
-
 
                         btn.disabled = true; btn.textContent = "Checking...";
                         try {
@@ -6661,12 +7058,26 @@
 
                     window.electronUpdateKobold = async function () {
                         if (!window.electronBridge) return;
-                        const remote = document.getElementById("kobold-new-version").textContent;
+                        if (window.koboldDownloadState?.status === 'downloading') {
+                            if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                                UIManager.showNotification('KoboldCPP is already downloading in the background.', 'info');
+                            }
+                            return;
+                        }
+                        const remote = document.getElementById("kobold-new-version")?.textContent || 'latest';
                         const statusText = document.getElementById("kobold-update-status");
                         if (!confirm(`Download KoboldCPP ${remote} in the background? You can continue roleplaying during the download.`)) return;
 
-                        statusText.textContent = `Downloading ${remote}...`;
-                        document.getElementById("kobold-update-action").classList.add("hidden");
+                        window.koboldDownloadState.status = 'downloading';
+                        window.koboldDownloadState.version = remote;
+                        window.koboldDownloadState.progress = 0;
+                        window.syncElectronKoboldUI();
+                        window.updateKoboldDownloadUI(0, remote);
+
+                        if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                            UIManager.showNotification(`Downloading KoboldCPP ${remote} in background...`, 'info');
+                        }
+
                         await window.electronBridge.kobold.update(remote);
                     };
 
@@ -6744,6 +7155,88 @@
                         }
                     };
 
+                    /**
+                     * Copies the full detailed diagnostic report to clipboard.
+                     */
+                    window.electronCopyDebugLog = async function () {
+                        if (!window.electronBridge || !window.electronBridge.debug) {
+                            alert("Diagnostic logging is only available in the local desktop installation.");
+                            return;
+                        }
+
+                        const btn = document.getElementById("copy-debug-log-btn");
+                        const btnText = document.getElementById("copy-debug-log-btn-text");
+                        const statusContainer = document.getElementById("debug-log-status-container");
+                        const statusText = document.getElementById("debug-log-status-text");
+
+                        const originalLabel = btnText ? btnText.textContent : "Copy Debug Log";
+                        if (btn) btn.disabled = true;
+                        if (btnText) btnText.textContent = "Compiling Log...";
+
+                        try {
+                            const state = (typeof StateManager !== 'undefined' && StateManager.data) ? StateManager.data : {};
+                            const globalSettings = state.globalSettings || {};
+                            const library = (typeof StateManager !== 'undefined' && StateManager.getLibrary) ? StateManager.getLibrary() : {};
+                            const clientState = {
+                                activeProvider: globalSettings.apiProvider || state.apiProvider || 'unknown',
+                                storyCount: (library.stories || []).length,
+                                activeStoryId: library.active_story_id || null,
+                                screen: `${window.innerWidth}x${window.innerHeight} (DPR: ${window.devicePixelRatio || 1})`,
+                                layout: document.body.classList.contains('layout-vertical') ? 'Mobile (Vertical)' : 'Desktop (Horizontal)',
+                                userAgent: navigator.userAgent
+                            };
+
+                            let res = await window.electronBridge.debug.copyLog(clientState);
+                            let success = res && res.success;
+
+                            // Fallback to renderer clipboard if main copy failed
+                            if (!success) {
+                                const logRes = await window.electronBridge.debug.getLog(clientState);
+                                if (logRes && logRes.report) {
+                                    await navigator.clipboard.writeText(logRes.report);
+                                    res = logRes;
+                                    success = true;
+                                }
+                            }
+
+                            if (success) {
+                                if (btn) {
+                                    btn.classList.remove("text-indigo-400", "border-indigo-600/30", "bg-indigo-600/20");
+                                    btn.classList.add("text-emerald-400", "border-emerald-500/40", "bg-emerald-600/25");
+                                }
+                                if (btnText) btnText.textContent = "✓ Copied to Clipboard!";
+                                if (statusContainer && statusText) {
+                                    statusText.textContent = `Copied ${res.lines} log lines (${res.sizeKB} KB). Ready to send to dev team.`;
+                                    statusContainer.classList.remove("hidden");
+                                }
+                            } else {
+                                throw new Error(res?.error || "Failed to copy debug log");
+                            }
+                        } catch (err) {
+                            console.error("Failed to copy debug log:", err);
+                            if (btnText) btnText.textContent = "Copy Failed";
+                            if (statusContainer && statusText) {
+                                statusText.textContent = `Error: ${err.message || 'Clipboard access failed'}`;
+                                statusContainer.classList.remove("hidden");
+                            }
+                        } finally {
+                            setTimeout(() => {
+                                if (btn) {
+                                    btn.disabled = false;
+                                    btn.classList.remove("text-emerald-400", "border-emerald-500/40", "bg-emerald-600/25");
+                                    btn.classList.add("text-indigo-400", "border-indigo-600/30", "bg-indigo-600/20");
+                                }
+                                if (btnText) btnText.textContent = originalLabel;
+                            }, 3500);
+                        }
+                    };
+
+                    window.electronOpenDebugLogFolder = function () {
+                        if (window.electronBridge && window.electronBridge.debug && typeof window.electronBridge.debug.openLogFile === 'function') {
+                            window.electronBridge.debug.openLogFile();
+                        }
+                    };
+
                     // Bootstrap App Version
                     if (window.electronBridge) {
                         window.electronBridge.app.getVersion().then(v => {
@@ -6751,56 +7244,161 @@
                             if (display) display.textContent = "Local Instance: v" + v;
                         });
                     }
-                    // Initial version check (silent)
-                    if (window.electronBridge) {
-                        setTimeout(async () => {
-                            const local = await window.electronBridge.kobold.getLocalVersion();
-                            document.getElementById("kobold-update-status").textContent = `Version: ${local}`;
-                        }, 1000);
-                    }
 
                     window.electronLaunchKobold = async function () {
                         if (!window.electronBridge) return;
                         const st = typeof ReactiveStore !== 'undefined' ? ReactiveStore.state : {};
-                        const adapter = document.getElementById('koboldcpp-template-selector')?.value || 'none';
+                        const adapter = document.getElementById('koboldcpp-template-selector')?.value || 'jinja';
                         const normalizedAdapter = adapter === 'none' ? 'None' : (adapter === 'autoguess' ? 'AutoGuess' : adapter);
 
-                        await window.electronBridge.kobold.start({
-                            contextSize: 20480,
-                            chatcompletionsadapter: normalizedAdapter,
+                        const urlInput = document.getElementById('koboldcpp-url-input');
+                        const port = typeof UTILITY !== 'undefined' && UTILITY.parsePortFromUrl
+                            ? UTILITY.parsePortFromUrl(urlInput?.value, 5001)
+                            : 5001;
 
+                        const modelInput = document.getElementById('koboldcpp-model-path-input');
+                        const chosenModel = modelInput?.value || st.kobold_model_path || '';
+
+                        const ctxInput = document.getElementById('koboldcpp-context-size-input');
+                        const parsedCtx = ctxInput ? parseInt(ctxInput.value, 10) : 0;
+                        const contextSize = parsedCtx > 0 ? parsedCtx : (st.koboldcpp_context_size || 20480);
+
+                        const quantSelect = document.getElementById('koboldcpp-quantkv-selector');
+                        const quantKv = quantSelect?.value || st.koboldcpp_quantkv || 'q8_0';
+
+                        await window.electronBridge.kobold.start({
+                            contextSize: contextSize,
+                            chatcompletionsadapter: normalizedAdapter === 'jinja' ? 'AutoGuess' : normalizedAdapter,
+                            useJinja: adapter === 'jinja' || adapter === 'autoguess' || !adapter,
                             defaultgenamt: 2048,
                             autofitpadding: 1024,
                             batchSize: 512,
-                            autoFit: true,
-                            port: 5001,
+                            gpuLayers: -1,
+                            autoFit: false,
+                            port: port,
                             useCuda: true,
-                            quantKv: 1,
-                            modelPath: st.kobold_model_path || ''
+                            quantKv: quantKv,
+                            modelPath: chosenModel
                         });
+                        setTimeout(() => window.syncElectronKoboldUI?.(), 300);
                     };
 
-                    window.electronStopKobold = function () {
-                        if (window.electronBridge) window.electronBridge.kobold.stop();
+                    window.electronPickKoboldModel = async function () {
+                        if (!window.electronBridge || !window.electronBridge.pickModelFile) return;
+                        try {
+                            const filePath = await window.electronBridge.pickModelFile();
+                            if (filePath) {
+                                const input = document.getElementById('koboldcpp-model-path-input');
+                                if (input) input.value = filePath;
+                                if (typeof ReactiveStore !== 'undefined' && ReactiveStore.state) {
+                                    ReactiveStore.state.kobold_model_path = filePath;
+                                }
+                                if (typeof StateManager !== 'undefined' && StateManager.data?.globalSettings) {
+                                    StateManager.data.globalSettings.kobold_model_path = filePath;
+                                    StateManager.saveGlobalSettings();
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Failed to pick GGUF model:', e);
+                        }
+                    };
+
+                    window.electronClearKoboldModel = function () {
+                        const input = document.getElementById('koboldcpp-model-path-input');
+                        if (input) input.value = '';
+                        if (typeof ReactiveStore !== 'undefined' && ReactiveStore.state) {
+                            ReactiveStore.state.kobold_model_path = '';
+                        }
+                        if (typeof StateManager !== 'undefined' && StateManager.data?.globalSettings) {
+                            StateManager.data.globalSettings.kobold_model_path = '';
+                            StateManager.saveGlobalSettings();
+                        }
+                    };
+
+                    window.electronStopKobold = async function () {
+                        if (window.electronBridge) {
+                            await window.electronBridge.kobold.stop({ target: 'managed' });
+                            setTimeout(() => window.syncElectronKoboldUI?.(), 300);
+                        }
+                    };
+
+                    window.electronStopExternalKoboldPrompt = async function () {
+                        if (!window.electronBridge) return;
+                        const stopExtBtn = document.getElementById('kobold-electron-stop-ext-btn');
+                        const pid = stopExtBtn?.getAttribute('data-external-pid');
+                        const pathStr = stopExtBtn?.getAttribute('data-external-path') || '';
+                        const port = stopExtBtn?.getAttribute('data-port') || '5001';
+
+                        if (!pid) return;
+
+                        const confirmed = confirm(
+                            `Are you sure you want to stop this external KoboldCPP process?\n\nPID: ${pid}\nPath: ${pathStr}\n\nThis will terminate that external process so port ${port} is released.`
+                        );
+                        if (!confirmed) return;
+
+                        try {
+                            await window.electronBridge.kobold.stop({ target: 'external', pid: Number(pid) });
+                        } catch (e) {
+                            alert('Failed to stop external process: ' + e.message);
+                        }
+                        setTimeout(() => window.syncElectronKoboldUI?.(), 400);
                     };
 
                 </script>
-                <input type="text" id="koboldcpp-url-input" class="w-full rounded-lg p-2 mb-4"
+                <label for="koboldcpp-url-input" class="text-gray-400 text-sm block mb-1">Server URL</label>
+                <input type="text" id="koboldcpp-url-input" class="w-full rounded-lg p-2 mb-3 bg-gray-700 border border-gray-600 text-white"
                     placeholder="http://localhost:5001">
-                <div>
-                    <label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-2">Prompt
-                        Template</label>
-                    <select id="koboldcpp-template-selector" class="w-full rounded-lg p-2">
-                        <option value="none" selected>None (Raw Text)</option>
-                        <option value="autoguess">AutoGuess (Experimental)</option>
 
+                <div class="mb-3">
+                    <label for="koboldcpp-model-path-input" class="text-gray-400 text-sm block mb-1">Model File (GGUF)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="koboldcpp-model-path-input" class="flex-1 rounded-lg p-2 text-xs bg-gray-700 border border-gray-600 text-white truncate"
+                            placeholder="Optional: Select .gguf file or leave blank to use Kobold default">
+                        <button type="button" onclick="window.electronPickKoboldModel()"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors flex-shrink-0">
+                            Browse...
+                        </button>
+                        <button type="button" onclick="window.electronClearKoboldModel()"
+                            class="bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs px-2.5 py-1.5 rounded transition-colors flex-shrink-0"
+                            title="Clear model selection">
+                            ✕
+                        </button>
+                    </div>
+                    <span class="text-[10px] text-gray-400 mt-0.5 block">When selected, ELM launches KoboldCPP directly with this model.</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label for="koboldcpp-context-size-input" class="text-gray-400 text-sm block mb-1">Context Size</label>
+                        <input type="number" id="koboldcpp-context-size-input" class="w-full rounded-lg p-2 text-sm bg-gray-700 border border-gray-600 text-white"
+                            placeholder="20480" min="2048" max="262144" step="1024" value="20480">
+                        <span class="text-[10px] text-gray-400 mt-0.5 block">Default: 20480 (or 53248 for high context)</span>
+                    </div>
+                    <div>
+                        <label for="koboldcpp-quantkv-selector" class="text-gray-400 text-sm block mb-1">Context Quant (KV)</label>
+                        <select id="koboldcpp-quantkv-selector" class="w-full rounded-lg p-2 text-sm bg-gray-700 border border-gray-600 text-white">
+                            <option value="q8_0" selected>Q8 (Recommended - 50% VRAM)</option>
+                            <option value="q4_0">Q4 (Low VRAM - 4-bit)</option>
+                            <option value="f16">FP16 (Uncompressed)</option>
+                        </select>
+                        <span class="text-[10px] text-gray-400 mt-0.5 block">Q8 context saves 50% VRAM with full accuracy</span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-1">Prompt Template</label>
+                    <select id="koboldcpp-template-selector" class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white">
+                        <option value="jinja" selected>Jinja (Model Embedded / Auto)</option>
+                        <option value="autoguess">AutoGuess Adapter</option>
+                        <option value="none">None (Raw Text)</option>
                         <option value="llama3">Llama 3</option>
-                        <option value="gemma">Gemma 2 (Google)</option>
+                        <option value="gemma">Gemma 2 / 4 (Google)</option>
                         <option value="phi3">Phi-3 (Microsoft)</option>
                         <option value="mistral">Mistral</option>
                         <option value="chatml">ChatML (Qwen/DeepSeek)</option>
                         <option value="alpaca">Alpaca</option>
                     </select>
+                    <span class="text-[10px] text-gray-400 mt-0.5 block">Jinja uses the native template embedded in the GGUF model</span>
                 </div>
                 <div>
                     <label for="koboldcpp-min-p-slider" class="text-gray-400 text-sm block mt-4 mb-2">Min P</label>
@@ -7226,7 +7824,8 @@
                     class="w-full rounded-lg p-3 bg-gray-700 border border-gray-600 text-white focus:border-indigo-500 transition-colors"
                     onchange="AppController.updateImageGenSettingsVisibility()">
                     <option value="disabled">Disabled</option>
-                    <option value="koboldcpp">Local (Stable Diffusion / KoboldCPP)</option>
+                    <option value="comfyui">Local (ComfyUI - Recommended)</option>
+                    <option value="koboldcpp">Local (KoboldCPP / SDAPI)</option>
                     <option value="openrouter">Cloud (OpenRouter / DALL-E)</option>
                     <option value="nanogpt">NanoGPT Images</option>
                 </select>
@@ -7250,6 +7849,145 @@
                     <option value="pixel_art">Pixel Art</option>
                     <option value="concept_art">Concept Art</option>
                 </select>
+            </div>
+
+                        <!-- ComfyUI Local Settings -->
+            <div id="image-gen-comfy-settings" class="space-y-4 hidden">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-bold text-gray-200 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        ComfyUI Native Settings
+                    </h4>
+                    <span id="comfy-status-badge" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-gray-800 text-gray-400 border border-gray-700">Offline</span>
+                </div>
+
+                <!-- API URL with Auto-detect button -->
+                <div>
+                    <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Server URL</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="image-gen-comfy-url" data-setting-key="comfyImageGenUrl"
+                            placeholder="http://127.0.0.1:8188"
+                            class="flex-grow bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                        <button type="button" onclick="AppController.autoDetectComfyUI()"
+                            class="bg-gray-700 hover:bg-indigo-600 text-white text-xs font-bold px-3 rounded flex items-center gap-1.5 transition-colors"
+                            title="Auto-detect running ComfyUI instance">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            Auto-Detect
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Model Checkpoint Selector -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs uppercase text-gray-400 font-bold">Model Checkpoint</label>
+                        <button type="button" onclick="AppController.refreshComfyCheckpoints(true)"
+                            class="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Refresh Models
+                        </button>
+                    </div>
+                    <select id="image-gen-comfy-checkpoint" data-setting-key="comfyImageGenCheckpoint"
+                        class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                        <option value="">(Click Refresh Models to detect)</option>
+                    </select>
+                    <div id="comfy-model-hint" class="text-[11px] text-gray-400 mt-1">
+                        Scans all models in your <code>ComfyUI/models/checkpoints/</code> directory.
+                    </div>
+                </div>
+
+                <!-- Aspect Ratio & Resolution Presets -->
+                <div>
+                    <label class="block text-xs uppercase text-gray-400 font-bold mb-1.5">Resolution Preset</label>
+                    <div class="grid grid-cols-5 gap-1.5 mb-2">
+                        <button type="button" onclick="AppController.setComfyResolution(512, 512)"
+                            class="comfy-res-btn px-2 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[11px] text-gray-200 text-center font-medium transition-colors">
+                            512² (SD 1.5)
+                        </button>
+                        <button type="button" onclick="AppController.setComfyResolution(768, 768)"
+                            class="comfy-res-btn px-2 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[11px] text-gray-200 text-center font-medium transition-colors">
+                            768² (Balanced)
+                        </button>
+                        <button type="button" onclick="AppController.setComfyResolution(832, 1216)"
+                            class="comfy-res-btn px-2 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[11px] text-gray-200 text-center font-medium transition-colors">
+                            Portrait (SDXL)
+                        </button>
+                        <button type="button" onclick="AppController.setComfyResolution(1216, 832)"
+                            class="comfy-res-btn px-2 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[11px] text-gray-200 text-center font-medium transition-colors">
+                            Landscape
+                        </button>
+                        <button type="button" onclick="AppController.setComfyResolution(1024, 1024)"
+                            class="comfy-res-btn px-2 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[11px] text-gray-200 text-center font-medium transition-colors">
+                            1024² (HD)
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <span class="block text-[10px] uppercase text-gray-500 font-bold mb-0.5">Width</span>
+                            <input type="number" id="image-gen-comfy-width" data-setting-key="comfyImageGenWidth" placeholder="512" step="64"
+                                class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <span class="block text-[10px] uppercase text-gray-500 font-bold mb-0.5">Height</span>
+                            <input type="number" id="image-gen-comfy-height" data-setting-key="comfyImageGenHeight" placeholder="512" step="64"
+                                class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sampler & Scheduler -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Sampler</label>
+                        <select id="image-gen-comfy-sampler" data-setting-key="comfyImageGenSampler"
+                            class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                            <option value="euler" selected>Euler (Fast & Classic)</option>
+                            <option value="euler_ancestral">Euler A (Soft / Creative)</option>
+                            <option value="dpmpp_2m">DPM++ 2M (Sharp & Detailed)</option>
+                            <option value="dpmpp_sde">DPM++ SDE</option>
+                            <option value="dpmpp_2m_sde">DPM++ 2M SDE</option>
+                            <option value="ddim">DDIM</option>
+                            <option value="uni_pc">UniPC</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Scheduler</label>
+                        <select id="image-gen-comfy-scheduler" data-setting-key="comfyImageGenScheduler"
+                            class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                            <option value="normal" selected>Normal</option>
+                            <option value="karras">Karras (Recommended)</option>
+                            <option value="exponential">Exponential</option>
+                            <option value="sgm_uniform">SGM Uniform</option>
+                            <option value="simple">Simple</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Steps & CFG Scale -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Steps</label>
+                        <input type="number" id="image-gen-comfy-steps" data-setting-key="comfyImageGenSteps" placeholder="20" min="1" max="100"
+                            class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-1">CFG Scale (Guidance)</label>
+                        <input type="number" id="image-gen-comfy-cfg" data-setting-key="comfyImageGenCfg" placeholder="7.0" step="0.5" min="1" max="25"
+                            class="w-full bg-black/30 border border-gray-600 rounded p-2 text-sm text-white focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <!-- Live Hardware Telemetry Banner -->
+                <div id="comfy-hardware-card" class="p-3 bg-gray-900/60 border border-gray-700/60 rounded-lg text-xs hidden">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-gray-300 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            Hardware Telemetry
+                        </span>
+                        <span id="comfy-gpu-vram" class="text-indigo-300 font-mono text-[11px]"></span>
+                    </div>
+                    <div id="comfy-gpu-name" class="text-gray-400 text-[11px] truncate"></div>
+                </div>
             </div>
 
             <!-- KoboldCPP / Local SD Settings -->
@@ -9240,6 +9978,399 @@
          */
         const ImageGenerationService = {
 
+            /**
+             * Canonical 7-Node ComfyUI txt2img Workflow (Standard Core Nodes)
+             */
+            COMFY_TXT2IMG_WORKFLOW: {
+                "1": {
+                    "class_type": "CheckpointLoaderSimple",
+                    "inputs": {
+                        "ckpt_name": "v1-5-pruned-emaonly.safetensors"
+                    }
+                },
+                "2": {
+                    "class_type": "EmptyLatentImage",
+                    "inputs": {
+                        "batch_size": 1,
+                        "height": 512,
+                        "width": 512
+                    }
+                },
+                "3": {
+                    "class_type": "CLIPTextEncode",
+                    "inputs": {
+                        "clip": ["1", 1],
+                        "text": ""
+                    }
+                },
+                "4": {
+                    "class_type": "CLIPTextEncode",
+                    "inputs": {
+                        "clip": ["1", 1],
+                        "text": ""
+                    }
+                },
+                "5": {
+                    "class_type": "KSampler",
+                    "inputs": {
+                        "cfg": 7,
+                        "denoise": 1,
+                        "latent_image": ["2", 0],
+                        "model": ["1", 0],
+                        "negative": ["4", 0],
+                        "positive": ["3", 0],
+                        "sampler_name": "euler",
+                        "scheduler": "normal",
+                        "seed": 0,
+                        "steps": 20
+                    }
+                },
+                "6": {
+                    "class_type": "VAEDecode",
+                    "inputs": {
+                        "samples": ["5", 0],
+                        "vae": ["1", 2]
+                    }
+                },
+                "7": {
+                    "class_type": "SaveImage",
+                    "inputs": {
+                        "filename_prefix": "EllipsisLM",
+                        "images": ["6", 0]
+                    }
+                }
+            },
+
+            /**
+             * Canonical 8-Node ComfyUI img2img Workflow (for Character Expressions & Variations)
+             */
+            COMFY_IMG2IMG_WORKFLOW: {
+                "1": {
+                    "class_type": "CheckpointLoaderSimple",
+                    "inputs": {
+                        "ckpt_name": "v1-5-pruned-emaonly.safetensors"
+                    }
+                },
+                "2": {
+                    "class_type": "LoadImage",
+                    "inputs": {
+                        "image": ""
+                    }
+                },
+                "3": {
+                    "class_type": "VAEEncode",
+                    "inputs": {
+                        "pixels": ["2", 0],
+                        "vae": ["1", 2]
+                    }
+                },
+                "4": {
+                    "class_type": "CLIPTextEncode",
+                    "inputs": {
+                        "clip": ["1", 1],
+                        "text": ""
+                    }
+                },
+                "5": {
+                    "class_type": "CLIPTextEncode",
+                    "inputs": {
+                        "clip": ["1", 1],
+                        "text": ""
+                    }
+                },
+                "6": {
+                    "class_type": "KSampler",
+                    "inputs": {
+                        "cfg": 7,
+                        "denoise": 0.55,
+                        "latent_image": ["3", 0],
+                        "model": ["1", 0],
+                        "negative": ["5", 0],
+                        "positive": ["4", 0],
+                        "sampler_name": "euler",
+                        "scheduler": "normal",
+                        "seed": 0,
+                        "steps": 20
+                    }
+                },
+                "7": {
+                    "class_type": "VAEDecode",
+                    "inputs": {
+                        "samples": ["6", 0],
+                        "vae": ["1", 2]
+                    }
+                },
+                "8": {
+                    "class_type": "SaveImage",
+                    "inputs": {
+                        "filename_prefix": "EllipsisLM_I2I",
+                        "images": ["7", 0]
+                    }
+                }
+            },
+
+            /**
+             * Discovers all available checkpoint filenames from a ComfyUI instance.
+             * @param {string} [url] - ComfyUI endpoint URL.
+             * @returns {Promise<string[]>} List of checkpoint filenames.
+             */
+            async fetchComfyCheckpoints(url) {
+                const globalSettings = StateManager.data.globalSettings;
+                const endpoint = (url || globalSettings.comfyImageGenUrl || "http://127.0.0.1:8188").replace(/\/$/, "");
+                try {
+                    const res = await fetch(`${endpoint}/object_info/CheckpointLoaderSimple`);
+                    if (!res.ok) return [];
+                    const data = await res.json();
+                    const list = data?.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0];
+                    return Array.isArray(list) ? list : [];
+                } catch (e) {
+                    console.warn("Failed to fetch ComfyUI checkpoints:", e);
+                    return [];
+                }
+            },
+
+            /**
+             * Discovers system/GPU hardware stats from ComfyUI.
+             * @param {string} [url] - ComfyUI endpoint URL.
+             * @returns {Promise<Object|null>}
+             */
+            async fetchComfySystemInfo(url) {
+                const globalSettings = StateManager.data.globalSettings;
+                const endpoint = (url || globalSettings.comfyImageGenUrl || "http://127.0.0.1:8188").replace(/\/$/, "");
+                try {
+                    const res = await fetch(`${endpoint}/system_stats`);
+                    if (!res.ok) return null;
+                    return await res.json();
+                } catch (e) {
+                    return null;
+                }
+            },
+
+            /**
+             * Uploads an image blob to ComfyUI for Image-to-Image generation.
+             * @param {string} url - ComfyUI server URL.
+             * @param {Blob} imageBlob - Image to upload.
+             * @returns {Promise<string>} Uploaded filename in ComfyUI input folder.
+             */
+            async _uploadImageToComfyUI(url, imageBlob) {
+                const formData = new FormData();
+                const filename = `ellipsis_i2i_${Date.now()}.png`;
+                formData.append('image', imageBlob, filename);
+                formData.append('overwrite', 'true');
+
+                const res = await fetch(`${url}/upload/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`Failed to upload base image to ComfyUI: ${text}`);
+                }
+
+                const data = await res.json();
+                return data.name || filename;
+            },
+
+            /**
+             * Native First-Class ComfyUI Generation Engine
+             * Supports prompt queuing, WebSocket step tracking, polling fallback, and image extraction.
+             */
+            async _generateComfyUI(prompt, negativePrompt, options = {}, initImage = null) {
+                const globalSettings = StateManager.data.globalSettings;
+                const url = (globalSettings.comfyImageGenUrl || "http://127.0.0.1:8188").replace(/\/$/, "");
+
+                const width = options.width || parseInt(globalSettings.comfyImageGenWidth) || parseInt(globalSettings.imageGenWidth) || 512;
+                const height = options.height || parseInt(globalSettings.comfyImageGenHeight) || parseInt(globalSettings.imageGenHeight) || 512;
+                const steps = parseInt(options.steps || globalSettings.comfyImageGenSteps || globalSettings.koboldImageGenSteps || 20);
+                const cfg = parseFloat(options.cfg || globalSettings.comfyImageGenCfg || globalSettings.koboldImageGenCfg || 7.0);
+                const sampler_name = options.sampler || globalSettings.comfyImageGenSampler || "euler";
+                const scheduler = options.scheduler || globalSettings.comfyImageGenScheduler || "normal";
+                const seed = Math.floor(Math.random() * 1000000000000000);
+
+                // Checkpoint resolution
+                let ckpt_name = globalSettings.comfyImageGenCheckpoint;
+                if (!ckpt_name) {
+                    const available = await this.fetchComfyCheckpoints(url);
+                    if (available && available.length > 0) {
+                        ckpt_name = available[0];
+                        globalSettings.comfyImageGenCheckpoint = ckpt_name;
+                        StateManager.saveGlobalSettings();
+                    } else {
+                        throw new Error("No model checkpoint selected and none found in ComfyUI/models/checkpoints/. Please place a .safetensors model in that folder.");
+                    }
+                }
+
+                let workflow;
+                if (initImage) {
+                    // Image-to-Image mode
+                    const uploadedImageName = await this._uploadImageToComfyUI(url, initImage);
+                    workflow = JSON.parse(JSON.stringify(this.COMFY_IMG2IMG_WORKFLOW));
+                    workflow["1"].inputs.ckpt_name = ckpt_name;
+                    workflow["2"].inputs.image = uploadedImageName;
+                    workflow["4"].inputs.text = prompt;
+                    workflow["5"].inputs.text = negativePrompt || "";
+                    workflow["6"].inputs.seed = seed;
+                    workflow["6"].inputs.steps = steps;
+                    workflow["6"].inputs.cfg = cfg;
+                    workflow["6"].inputs.sampler_name = sampler_name;
+                    workflow["6"].inputs.scheduler = scheduler;
+                    workflow["6"].inputs.denoise = options.denoising_strength !== undefined ? options.denoising_strength : 0.55;
+                } else {
+                    // Text-to-Image mode
+                    workflow = JSON.parse(JSON.stringify(this.COMFY_TXT2IMG_WORKFLOW));
+                    workflow["1"].inputs.ckpt_name = ckpt_name;
+                    workflow["2"].inputs.width = width;
+                    workflow["2"].inputs.height = height;
+                    workflow["2"].inputs.batch_size = 1;
+                    workflow["3"].inputs.text = prompt;
+                    workflow["4"].inputs.text = negativePrompt || "";
+                    workflow["5"].inputs.seed = seed;
+                    workflow["5"].inputs.steps = steps;
+                    workflow["5"].inputs.cfg = cfg;
+                    workflow["5"].inputs.sampler_name = sampler_name;
+                    workflow["5"].inputs.scheduler = scheduler;
+                    workflow["5"].inputs.denoise = 1.0;
+                }
+
+                // Dispatch initial progress
+                window.dispatchEvent(new CustomEvent('image-gen-progress', {
+                    detail: { value: 0, max: steps, status: "Queueing generation in ComfyUI..." }
+                }));
+
+                const clientId = UTILITY.uuid();
+                let ws = null;
+                let outputImages = null;
+                let executionError = null;
+                let targetPromptId = null;
+
+                // Setup WebSocket monitoring
+                try {
+                    const wsProtocol = url.startsWith('https') ? 'wss:' : 'ws:';
+                    const host = url.replace(/^https?:\/\//, '');
+                    ws = new WebSocket(`${wsProtocol}//${host}/ws?clientId=${clientId}`);
+                    ws.onmessage = (event) => {
+                        try {
+                            const msg = JSON.parse(event.data);
+                            if (msg.type === 'progress') {
+                                const val = msg.data.value;
+                                const max = msg.data.max;
+                                window.dispatchEvent(new CustomEvent('image-gen-progress', {
+                                    detail: { value: val, max: max, status: `Sampling: ${val}/${max} steps (${Math.round((val / max) * 100)}%)` }
+                                }));
+                            } else if (msg.type === 'executing') {
+                                if (msg.data.node) {
+                                    window.dispatchEvent(new CustomEvent('image-gen-progress', {
+                                        detail: { value: 0, max: steps, status: `ComfyUI: Executing node ${msg.data.node}...` }
+                                    }));
+                                }
+                            } else if (msg.type === 'executed') {
+                                if (msg.data.prompt_id === targetPromptId && msg.data.output && msg.data.output.images) {
+                                    outputImages = msg.data.output.images;
+                                }
+                            } else if (msg.type === 'execution_error') {
+                                if (msg.data.prompt_id === targetPromptId) {
+                                    executionError = msg.data.exception_message || "ComfyUI execution error";
+                                }
+                            }
+                        } catch (err) {}
+                    };
+                } catch (wsErr) {
+                    console.warn("ComfyUI WebSocket connection failed, continuing with HTTP polling fallback:", wsErr);
+                }
+
+                // Submit Prompt
+                try {
+                    const promptRes = await fetch(`${url}/prompt`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ client_id: clientId, prompt: workflow })
+                    });
+
+                    if (!promptRes.ok) {
+                        const errText = await promptRes.text();
+                        throw new Error(`ComfyUI Queue Failed (${promptRes.status}): ${errText}`);
+                    }
+
+                    const promptData = await promptRes.json();
+                    if (promptData.error) {
+                        const errDetails = promptData.node_errors ? JSON.stringify(promptData.node_errors) : promptData.error;
+                        throw new Error(`ComfyUI Error: ${errDetails}`);
+                    }
+
+                    targetPromptId = promptData.prompt_id;
+                } catch (queueErr) {
+                    if (ws) { try { ws.close(); } catch (e) {} }
+                    throw queueErr;
+                }
+
+                // Await completion with polling fallback
+                const startTime = Date.now();
+                const TIMEOUT_MS = 180000; // 3 minutes timeout
+
+                while (Date.now() - startTime < TIMEOUT_MS) {
+                    if (executionError) {
+                        let cleanErr = executionError;
+                        if (cleanErr.includes("CUDA out of memory")) {
+                            cleanErr = "GPU ran out of VRAM. Try choosing a smaller resolution preset (e.g. 512x512).";
+                        }
+                        if (ws) { try { ws.close(); } catch (e) {} }
+                        throw new Error(cleanErr);
+                    }
+
+                    if (outputImages && outputImages.length > 0) {
+                        break;
+                    }
+
+                    // Polling fallback to /history
+                    try {
+                        const histRes = await fetch(`${url}/history/${targetPromptId}`);
+                        if (histRes.ok) {
+                            const histData = await histRes.json();
+                            const item = histData[targetPromptId];
+                            if (item) {
+                                if (item.status && item.status.status_str === 'error') {
+                                    const msg = (item.status.messages && item.status.messages[0]) ? item.status.messages[0] : "Execution failed";
+                                    throw new Error(`ComfyUI Error: ${typeof msg === 'string' ? msg : JSON.stringify(msg)}`);
+                                }
+                                if (item.outputs) {
+                                    for (const nId of Object.keys(item.outputs)) {
+                                        if (item.outputs[nId].images && item.outputs[nId].images.length > 0) {
+                                            outputImages = item.outputs[nId].images;
+                                            break;
+                                        }
+                                    }
+                                    if (outputImages) break;
+                                }
+                            }
+                        }
+                    } catch (pollErr) {
+                        if (pollErr.message && pollErr.message.startsWith("ComfyUI Error:")) {
+                            if (ws) { try { ws.close(); } catch (e) {} }
+                            throw pollErr;
+                        }
+                    }
+
+                    await new Promise(r => setTimeout(r, 600));
+                }
+
+                if (ws) { try { ws.close(); } catch (e) {} }
+
+                if (!outputImages || outputImages.length === 0) {
+                    throw new Error("ComfyUI generation timed out or produced no output image.");
+                }
+
+                // Download image
+                const imgInfo = outputImages[0];
+                const viewUrl = `${url}/view?filename=${encodeURIComponent(imgInfo.filename)}&subfolder=${encodeURIComponent(imgInfo.subfolder || '')}&type=${encodeURIComponent(imgInfo.type || 'output')}`;
+                const imgRes = await fetch(viewUrl);
+                if (!imgRes.ok) {
+                    throw new Error(`Failed to download rendered image from ComfyUI (${imgRes.status})`);
+                }
+
+                return await imgRes.blob();
+            },
+
             ART_STYLE_PROMPTS: {
                 "anime": "High-quality anime key visual, vibrant colors, clean lineart, cel shading, intricate details, cinematic lighting, 4k resolution",
                 "cinematic": "Cinematic film still, photorealistic, shallow depth of field with bokeh, dramatic lighting, highly detailed textures, color graded, 8k resolution",
@@ -9295,7 +10426,9 @@
                     return null;
                 }
 
-                if (backend === 'koboldcpp') {
+                if (backend === 'comfyui') {
+                    return this._generateComfyUI(prompt, negativePrompt, options, initImage);
+                } else if (backend === 'koboldcpp') {
                     return this._generateKoboldCPP(prompt, negativePrompt, options, initImage);
                 } else if (backend === 'openrouter') {
                     return this._generateOpenRouter(prompt, options, initImage);
@@ -9315,7 +10448,13 @@
                 const backend = globalSettings.imageGenBackend || 'koboldcpp';
 
                 try {
-                    if (backend === 'koboldcpp') {
+                    if (backend === 'comfyui') {
+                        const url = (globalSettings.comfyImageGenUrl || "http://127.0.0.1:8188").replace(/\/$/, "");
+                        const res = await fetch(`${url}/system_stats`);
+                        if (!res.ok) return false;
+                        const data = await res.json();
+                        return !!(data.system || data.devices);
+                    } else if (backend === 'koboldcpp') {
                         const url = (globalSettings.koboldImageGenUrl || "http://localhost:5001").replace(/\/$/, "");
                         const res = await fetch(`${url}/sdapi/v1/options`, { method: 'GET' }); // Check SDAPI options
                         return res.ok;
@@ -11499,6 +12638,12 @@
             },
 
             async callAI(prompt, isJson = false, signal = null, silent = false, options = null) {
+                // Support calling callAI(prompt, isJson, signal, options) where silent was omitted
+                if (typeof silent === 'object' && silent !== null && options === null) {
+                    options = silent;
+                    silent = false;
+                }
+
                 const state = StateManager.getState();
 
                 // Resolve prompt structure
@@ -11560,7 +12705,10 @@
                     const controller = new AbortController();
                     activeSignal = controller.signal;
 
-                    let remainingMs = 60000;
+                    // Deep reasoning models on OpenRouter can think for 1-2+ minutes.
+                    // Allocate 180 seconds for OpenRouter to prevent prematurely interrupting thinking.
+                    const isCloudReasoning = provider === 'openrouter';
+                    let remainingMs = isCloudReasoning ? 180000 : 60000;
                     let armedAt = 0;
 
                     const arm = () => {
@@ -11592,6 +12740,9 @@
                 let responseText = "";
                 this.lastThinking = "";
                 try {
+                    if (provider !== 'openrouter') {
+                        text = UTILITY.stripCacheBreaks(text);
+                    }
                     let rawResult = null;
                     if (provider === 'gemini') {
                         rawResult = await this.callGemini({ text, images }, activeSignal);
@@ -11627,6 +12778,7 @@
 
                     // Always strip internal thinking blocks before downstream processing
                     responseText = UTILITY.stripThinking(responseText);
+                    responseText = UTILITY.sanitizeModelResponse(responseText);
 
                     if (isJson) {
                         // Match either {} or [] patterns, whichever comes first
@@ -11648,7 +12800,8 @@
                             // throw a differently worded error, so every caller that reported
                             // e.message produced a second banner for the same problem.
                             // The friendly wording now rides on the error itself.
-                            const timeoutError = new Error("Connection timed out after 60 seconds. Check that your AI backend is running.");
+                            const timeoutSecs = provider === 'openrouter' ? 180 : 60;
+                            const timeoutError = new Error(`Connection timed out after ${timeoutSecs} seconds. Check that your AI backend is running.`);
                             if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
                                 UIManager.showNotification(timeoutError.message, 'error');
                                 timeoutError.reported = true;
@@ -11759,6 +12912,7 @@
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${rawModel}:generateContent?key=${apiKey}`;
 
                 let cleanPrompt = typeof prompt === 'string' ? prompt : prompt.text;
+                cleanPrompt = UTILITY.stripCacheBreaks(cleanPrompt);
                 const images = typeof prompt === 'string' ? [] : (prompt.images || []);
 
                 if (typeof cleanPrompt === 'string') {
@@ -11832,6 +12986,7 @@
                 const cacheDelimiter = "<|ELLIPSIS_CACHE_BREAK|>";
 
                 let cleanPrompt = typeof prompt === 'string' ? prompt : prompt.text;
+                cleanPrompt = UTILITY.stripCacheBreaks(cleanPrompt);
                 const images = typeof prompt === 'string' ? [] : (prompt.images || []);
 
                 if (typeof cleanPrompt === 'string' && cleanPrompt.includes(cacheDelimiter)) {
@@ -11887,33 +13042,38 @@
                     });
                 }
 
-                // Sampling. Every other backend gets a full set - KoboldCPP is sent rep_pen,
-                // rep_pen_slope and dry_multiplier, which exist precisely to stop a model
-                // falling into a repeating groove - while this path sent model and messages
-                // and nothing else. With no penalty and no output cap, a run of repetition
-                // had nothing to break it and nothing to stop it, so it ran to the
-                // provider ceiling and came back as a wall of the same clause.
-                //
-                // OpenRouter drops parameters the chosen model does not accept rather than
-                // erroring, so these can be sent unconditionally: Gemini takes only the
-                // first three and ignores the penalties, DeepSeek and GLM take them all.
+                // Sampling & Token Limits:
+                // OpenRouter models with thinking/reasoning (DeepSeek R1, Claude 3.7, o1/o3, QwQ, etc.)
+                // consume tokens from max_tokens during their internal chain-of-thought.
+                // A hefty budget (16384 default) ensures deep reasoning never exhausts the total output limit
+                // and leaves responses blank.
+                const orConfig = UTILITY.resolveOpenRouterConfig({
+                    model: model,
+                    maxTokens: global.openRouterMaxTokens || state.openRouterMaxTokens,
+                    thinkingEffort: global.openRouterThinkingEffort || state.openRouterThinkingEffort,
+                    thinkingBudget: global.openRouterThinkingBudget || state.openRouterThinkingBudget,
+                    modelCache: this.openRouterModelCache
+                });
+
+                const requestBody = {
+                    model: model,
+                    messages: messagesPayload,
+                    max_tokens: orConfig.maxTokens,
+                    temperature: 1.0,
+                    top_p: 1.0,
+                    frequency_penalty: 0.2,
+                    presence_penalty: 0.0,
+                    repetition_penalty: 1.05
+                };
+
+                if (orConfig.reasoning) {
+                    requestBody.reasoning = orConfig.reasoning;
+                }
+
                 const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: messagesPayload,
-                        // Generous, but bounded. A turn never legitimately needs this much,
-                        // and it means a failure costs seconds rather than minutes.
-                        max_tokens: 2048,
-                        temperature: 1.0,
-                        top_p: 1.0,
-                        // Deliberately mild. Roleplay reuses names and pronouns constantly,
-                        // so a heavy hand here reads as a model avoiding the words it needs.
-                        frequency_penalty: 0.2,
-                        presence_penalty: 0.0,
-                        repetition_penalty: 1.05
-                    }),
+                    body: JSON.stringify(requestBody),
                     signal
                 });
 
@@ -11928,7 +13088,8 @@
                     throw new Error(`API Error: ${errorDetails}`);
                 }
                 const data = await res.json();
-                const msg = data.choices?.[0]?.message || {};
+                const choice = data.choices?.[0] || {};
+                const msg = choice.message || {};
                 let thinking = msg.reasoning || msg.reasoning_content || "";
                 let content = msg.content || "";
 
@@ -11937,6 +13098,13 @@
                 if (extracted.thinking) {
                     thinking = [thinking.trim(), extracted.thinking.trim()].filter(Boolean).join('\n\n');
                     content = extracted.content;
+                }
+
+                if (!content.trim() && choice.finish_reason === 'length') {
+                    throw new Error(
+                        `OpenRouter model exhausted its token limit (${orConfig.maxTokens} tokens) during reasoning/thinking (finish_reason: length) before producing response text. ` +
+                        `Please increase the Max Output Tokens in OpenRouter Settings.`
+                    );
                 }
 
                 return { text: content.trim(), thinking: thinking.trim() };
@@ -11956,6 +13124,7 @@
                 if (!apiKey || !model) throw new Error("NanoGPT API key or model not set.");
 
                 let cleanPrompt = typeof prompt === 'string' ? prompt : prompt.text;
+                cleanPrompt = UTILITY.stripCacheBreaks(cleanPrompt);
                 const images = typeof prompt === 'string' ? [] : (prompt.images || []);
 
                 // Strip cache-break delimiter (NanoGPT doesn't use prompt caching)
@@ -12122,7 +13291,14 @@
             async callKoboldCPP(prompt, signal, isJson = false) {
                 const state = StateManager.getState();
 
-                const stopSequences = ["<|eot_id|>", "<|im_end|>", "<|end_of_text|>"];
+                const stopSequences = [
+                    "<|eot_id|>",
+                    "<|im_end|>",
+                    "<|end_of_text|>",
+                    "<end_of_turn>",
+                    "<|endoftext|>",
+                    "<|ELLIPSIS_CACHE"
+                ];
                 const allChars = [...(state.characters || []), ...(typeof ReactiveStore !== 'undefined' && ReactiveStore.getActiveLocationCharacters ? ReactiveStore.getActiveLocationCharacters() : [])];
                 allChars.forEach(c => {
                     if (c.name) {
@@ -12139,6 +13315,7 @@
                 });
 
                 let cleanPrompt = typeof prompt === 'string' ? prompt : prompt.text;
+                cleanPrompt = UTILITY.stripCacheBreaks(cleanPrompt);
                 const images = typeof prompt === 'string' ? [] : (prompt.images || []);
 
                 const payload = {
@@ -12187,7 +13364,7 @@
 
                 let truncateIdx = -1;
                 for (const seq of stopSequences) {
-                    if (seq.startsWith('\n')) {
+                    if (seq) {
                         const idx = resultText.indexOf(seq);
                         if (idx !== -1 && (truncateIdx === -1 || idx < truncateIdx)) {
                             truncateIdx = idx;
@@ -12199,6 +13376,7 @@
                     resultText = resultText.substring(0, truncateIdx);
                 }
 
+                resultText = UTILITY.sanitizeModelResponse(resultText);
                 const extracted = UTILITY.extractThinking(resultText);
                 return { text: extracted.content.trim(), thinking: extracted.thinking.trim() };
             },
@@ -12212,7 +13390,14 @@
             async streamKoboldPolled(prompt, onChunk, signal) {
                 const state = StateManager.getState();
 
-                const stopSequences = ["<|eot_id|>", "<|im_end|>", "<|end_of_text|>"];
+                const stopSequences = [
+                    "<|eot_id|>",
+                    "<|im_end|>",
+                    "<|end_of_text|>",
+                    "<end_of_turn>",
+                    "<|endoftext|>",
+                    "<|ELLIPSIS_CACHE"
+                ];
                 const allChars = [...(state.characters || []), ...(typeof ReactiveStore !== 'undefined' && ReactiveStore.getActiveLocationCharacters ? ReactiveStore.getActiveLocationCharacters() : [])];
                 allChars.forEach(c => {
                     if (c.name) {
@@ -12268,7 +13453,7 @@
                             if (typeof textSoFar !== 'string') textSoFar = String(textSoFar ?? "");
                             let truncateIdx = -1;
                             for (const seq of stopSequences) {
-                                if (seq.startsWith('\n')) {
+                                if (seq) {
                                     const idx = textSoFar.indexOf(seq);
                                     if (idx !== -1 && (truncateIdx === -1 || idx < truncateIdx)) {
                                         truncateIdx = idx;
@@ -12306,6 +13491,7 @@
                 const baseUrl = state.lmstudio_url.replace(/\/+$/, '');
                 const endpoint = `${baseUrl}/v1/chat/completions`;
                 let cleanPrompt = typeof prompt === 'string' ? prompt : prompt.text;
+                cleanPrompt = UTILITY.stripCacheBreaks(cleanPrompt);
                 const images = typeof prompt === 'string' ? [] : (prompt.images || []);
 
                 let contentPayload = cleanPrompt;
@@ -13617,33 +14803,186 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     });
                 }
 
+                content = content.trim();
+
+                // Salvage logic if outer content is empty but thoughts contain the actual output
+                if (!content && thoughts.length > 0) {
+                    const fullThought = thoughts.join('\n\n');
+                    const outputMarker = fullThought.match(/(?:^|\n)(?:Output|Response|Final Answer):\s*([\s\S]+)$/i);
+                    if (outputMarker) {
+                        content = outputMarker[1].trim();
+                    } else {
+                        const headingMarker = fullThought.match(/(?:^|\n)(#{1,4}\s+[A-Z_]+[\s\S]+)$/);
+                        if (headingMarker) {
+                            content = headingMarker[1].trim();
+                        } else {
+                            const jsonMatch = fullThought.match(/```json[\s\S]*?```/i);
+                            if (jsonMatch) {
+                                content = jsonMatch[0].trim();
+                            }
+                        }
+                    }
+                }
+
                 return {
                     thinking: thoughts.join('\n\n').trim(),
-                    content: content.trim()
+                    content: content
                 };
             },
 
             /**
              * Strips internal model "thinking" blocks (e.g. <think>...</think>) from a string.
              * Supports standard tags like <think>, <thought>, <thinking>, <scratchpad>, [THOUGHTS], [REASONING], [THINK].
-             * Also cleanly removes unclosed tags at end of text.
+             * Also cleanly removes unclosed tags at end of text and salvages thought content if needed.
              * @param {string} text - The raw AI response.
              * @returns {string} - The cleaned text.
              */
+            /**
+             * Strips internal prompt-caching breakpoints (<|ELLIPSIS_CACHE_BREAK|>) from prompts
+             * before dispatching to backends that do not use Anthropic/OpenRouter ephemeral caching.
+             * @param {string} prompt
+             * @returns {string}
+             */
+            stripCacheBreaks(prompt) {
+                if (!prompt || typeof prompt !== 'string') return prompt;
+                return prompt.replace(/<\|ELLIPSIS_CACHE_BREAK\|>\n?/g, '');
+            },
+
+            /**
+             * Post-processes an AI response to truncate leaked internal markers or stop tokens.
+             * Defends against hallucinated cache closing tags (e.g., <|ELLIPSIS_CACHE_BREAK_END|>)
+             * or unstripped stop tokens (<end_of_turn>, <|eot_id|>, <|im_end|>).
+             * @param {string} text
+             * @returns {string}
+             */
+            sanitizeModelResponse(text) {
+                if (!text || typeof text !== 'string') return text;
+                const cacheIdx = text.indexOf('<|ELLIPSIS_CACHE');
+                if (cacheIdx !== -1) {
+                    text = text.substring(0, cacheIdx);
+                }
+                const stopTokens = ['<end_of_turn>', '<|eot_id|>', '<|im_end|>', '<|end_of_text|>', '<|endoftext|>'];
+                for (const token of stopTokens) {
+                    const idx = text.indexOf(token);
+                    if (idx !== -1) {
+                        text = text.substring(0, idx);
+                    }
+                }
+                return text.trimEnd();
+            },
+
             stripThinking(text) {
                 if (!text || typeof text !== 'string') return text;
+                return this.extractThinking(text).content;
+            },
 
-                let clean = text
-                    .replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '')
-                    .replace(/<thought>[\s\S]*?(?:<\/thought>|$)/gi, '')
-                    .replace(/<thinking>[\s\S]*?(?:<\/thinking>|$)/gi, '')
-                    .replace(/<reasoning>[\s\S]*?(?:<\/reasoning>|$)/gi, '')
-                    .replace(/<scratchpad>[\s\S]*?(?:<\/scratchpad>|$)/gi, '')
-                    .replace(/\[THOUGHTS?\][\s\S]*?(?:\[\/THOUGHTS?\]|$)/gi, '')
-                    .replace(/\[REASONING\][\s\S]*?(?:\[\/REASONING\]|$)/gi, '')
-                    .replace(/\[THINK\][\s\S]*?(?:\[\/THINK\]|$)/gi, '');
+            /**
+             * Resolves execution configuration for OpenRouter models, calculating a hefty token budget
+             * to accommodate both internal thinking/reasoning tokens and completion prose, while configuring
+             * reasoning parameters (effort/budget) appropriately.
+             *
+             * @param {Object} options
+             * @param {string} [options.model] - Model identifier (e.g. 'deepseek/deepseek-r1')
+             * @param {number|string} [options.maxTokens] - Configured max output tokens ceiling
+             * @param {string} [options.thinkingEffort] - Reasoning effort ('auto', 'high', 'medium', 'low', 'none')
+             * @param {number|string} [options.thinkingBudget] - Explicit reasoning token budget (0 = unconstrained/adaptive)
+             * @param {Array} [options.modelCache] - Cached OpenRouter model objects
+             * @returns {{ maxTokens: number, reasoning: Object|null }}
+             */
+            resolveOpenRouterConfig(options = {}) {
+                const model = (options.model || '').toLowerCase();
+                const defaultHeftyTokens = 16384;
 
-                return clean.trim();
+                let parsedMax = parseInt(options.maxTokens, 10);
+                let maxTokens = (Number.isFinite(parsedMax) && parsedMax > 0) ? parsedMax : defaultHeftyTokens;
+
+                const cache = Array.isArray(options.modelCache) ? options.modelCache : [];
+                const cachedModel = cache.find(m => m && typeof m.id === 'string' && m.id.toLowerCase() === model);
+
+                // If the provider specifies a strict max completion token ceiling lower than requested, clamp safely
+                if (cachedModel && cachedModel.top_provider && typeof cachedModel.top_provider.max_completion_tokens === 'number') {
+                    const providerLimit = cachedModel.top_provider.max_completion_tokens;
+                    if (providerLimit > 0 && providerLimit < maxTokens) {
+                        maxTokens = providerLimit;
+                    }
+                }
+
+                // If total context length is smaller than maxTokens (e.g. legacy 4k/8k context model), clamp to fit inside context
+                if (cachedModel && typeof cachedModel.context_length === 'number' && cachedModel.context_length > 0) {
+                    if (cachedModel.context_length <= maxTokens) {
+                        maxTokens = Math.max(1024, Math.floor(cachedModel.context_length * 0.75));
+                    }
+                }
+
+                // Check reasoning support
+                const supportedParams = (cachedModel && Array.isArray(cachedModel.supported_parameters))
+                    ? cachedModel.supported_parameters
+                    : [];
+                const hasExplicitReasoningParam = supportedParams.includes('reasoning') || supportedParams.includes('reasoning_effort');
+                const isKnownReasoningModel = /r1|reasoning|thinking|o1|o3|qwq|claude-3[.-]7/i.test(model);
+                const supportsReasoning = hasExplicitReasoningParam || isKnownReasoningModel;
+
+                const rawEffort = (options.thinkingEffort || 'auto').toLowerCase();
+                const parsedBudget = parseInt(options.thinkingBudget, 10);
+                const explicitBudget = (Number.isFinite(parsedBudget) && parsedBudget > 0) ? parsedBudget : 0;
+
+                let reasoning = null;
+
+                if (explicitBudget > 0) {
+                    // Specific token ceiling requested for reasoning
+                    reasoning = { max_tokens: explicitBudget };
+                } else if (['high', 'medium', 'low', 'none'].includes(rawEffort)) {
+                    // Explicit effort requested
+                    reasoning = { effort: rawEffort };
+                } else if (rawEffort === 'auto' && supportsReasoning) {
+                    // Reasoning model with auto setting: default to high effort to allow it to think as much as needed
+                    reasoning = { effort: 'high' };
+                }
+
+                return {
+                    maxTokens,
+                    reasoning
+                };
+            },
+
+            /**
+             * Wraps a raw prompt in model-specific chat templates for local backends.
+             * @param {string} prompt - Raw prompt string.
+             * @param {string} template - Template name ('chatml', 'llama3', 'gemma', 'phi3', 'mistral', 'alpaca', etc.)
+             * @returns {string} Formatted prompt string.
+             */
+            applyChatTemplate(prompt, template) {
+                if (!prompt || typeof prompt !== 'string') return '';
+                if (!template || template === 'none' || template === 'autoguess' || template === 'jinja') return prompt;
+                const t = template.toLowerCase();
+
+                // Avoid double-wrapping
+                if (t === 'chatml' && (prompt.includes('<|im_start|>') || prompt.includes('<|im_end|>'))) return prompt;
+                if (t === 'llama3' && (prompt.includes('<|start_header_id|>') || prompt.includes('<|eot_id|>') || prompt.includes('<|begin_of_text|>'))) return prompt;
+                if (t === 'mistral' && (prompt.includes('[INST]') || prompt.includes('[/INST]'))) return prompt;
+                if (t === 'gemma' && (prompt.includes('<start_of_turn>') || prompt.includes('<end_of_turn>'))) return prompt;
+                if (t === 'phi3' && (prompt.includes('<|user|>') || prompt.includes('<|assistant|>'))) return prompt;
+                if (t === 'alpaca' && (prompt.includes('### Instruction:') || prompt.includes('### Response:'))) return prompt;
+
+                if (t === 'chatml') {
+                    return `<|im_start|>user\n${prompt}<|im_end|>\n<|im_start|>assistant\n`;
+                }
+                if (t === 'llama3') {
+                    return `<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n${prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n`;
+                }
+                if (t === 'gemma') {
+                    return `<start_of_turn>user\n${prompt}<end_of_turn>\n<start_of_turn>model\n`;
+                }
+                if (t === 'phi3') {
+                    return `<|user|>\n${prompt}<|end|>\n<|assistant|>\n`;
+                }
+                if (t === 'mistral') {
+                    return `<s>[INST] ${prompt} [/INST]`;
+                }
+                if (t === 'alpaca') {
+                    return `### Instruction:\n${prompt}\n\n### Response:\n`;
+                }
+                return prompt;
             },
 
             /**
@@ -14237,8 +15576,14 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     geminiModel: 'gemini-1.5-flash',
                     openRouterKey: '',
                     openRouterModel: 'google/gemini-flash-1.5',
+                    openRouterMaxTokens: 16384,
+                    openRouterThinkingEffort: 'auto',
+                    openRouterThinkingBudget: 0,
                     koboldcpp_url: 'http://localhost:5001',
-                    koboldcpp_template: 'none',
+                    koboldcpp_template: 'jinja',
+                    kobold_model_path: '',
+                    koboldcpp_context_size: 20480,
+                    koboldcpp_quantkv: 'q8_0',
                     koboldcpp_min_p: 0.1,
                     koboldcpp_dry: 0.25,
                     lmstudio_url: 'http://localhost:1234',
@@ -15560,6 +16905,229 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     + `Respond as though you are looking at it yourself. Never mention this `
                     + `description, never refer to it as a description, and never state that `
                     + `anything was described to you.`;
+            }
+        ,
+
+            /**
+             * Extracts numeric port from a URL or host:port string.
+             * Returns defaultPort if not present or invalid.
+             * Pure: no DOM, no network. Tested in test.js.
+             * @param {string} url
+             * @param {number} [defaultPort=5001]
+             * @returns {number}
+             */
+            parsePortFromUrl(url, defaultPort = 5001) {
+                if (!url || typeof url !== 'string') return defaultPort;
+                const match = url.match(/:(\d+)(?:\/|$)/);
+                if (match) {
+                    const parsed = parseInt(match[1], 10);
+                    if (!isNaN(parsed) && parsed > 0 && parsed <= 65535) {
+                        return parsed;
+                    }
+                }
+                return defaultPort;
+            },
+
+            /**
+             * Checks if a model architecture, log error, or template is compatible with current KoboldCPP version.
+             * Pure: no DOM, no network. Tested in test.js.
+             * @param {string} archOrLogOrTemplate
+             * @param {string} currentVersion
+             * @returns {{ compatible: boolean, archName: string, requiredVersion: string }}
+             */
+            checkKoboldCompatibility(archOrLogOrTemplate, currentVersion) {
+                if (!archOrLogOrTemplate || typeof archOrLogOrTemplate !== 'string') {
+                    return { compatible: true, archName: '', requiredVersion: '' };
+                }
+
+                const str = archOrLogOrTemplate.toLowerCase();
+                let archName = '';
+                let requiredVersion = '1.75';
+
+                if (str.includes('jinja') || str.includes('--jinja')) {
+                    archName = 'Jinja Embedded Templates';
+                    requiredVersion = '1.75';
+                } else if (str.includes('llama3') || str.includes('llama-3') || str.includes('llama_3')) {
+                    archName = 'Llama 3 Architecture';
+                    requiredVersion = '1.65';
+                } else if (str.includes('gemma4') || str.includes('gemma-4') || str.includes('gemma_4')) {
+                    archName = 'Gemma 4 Architecture';
+                    requiredVersion = '1.75';
+                } else if (str.includes('gemma2') || str.includes('gemma-2') || str.includes('gemma_2')) {
+                    archName = 'Gemma 2 Architecture';
+                    requiredVersion = '1.70';
+                } else if (str.includes('qwen2') || str.includes('qwen') || str.includes('chatml')) {
+                    archName = 'ChatML / Qwen2 Architecture';
+                    requiredVersion = '1.68';
+                } else if (str.includes('orion')) {
+                    archName = 'Orion Architecture';
+                    requiredVersion = '1.65';
+                } else if (str.includes('command-r') || str.includes('commandr')) {
+                    archName = 'Command-R Architecture';
+                    requiredVersion = '1.62';
+                } else if (str.includes('deepseek')) {
+                    archName = 'DeepSeek Architecture';
+                    requiredVersion = '1.72';
+                } else if (str.includes('error loading model architecture') || str.includes('unknown model architecture') || str.includes('failed to load model')) {
+                    archName = 'Model Architecture';
+                    requiredVersion = '1.78';
+                }
+
+                if (!archName) {
+                    return { compatible: true, archName: '', requiredVersion: '' };
+                }
+
+                if (!currentVersion || currentVersion === 'unknown') {
+                    return { compatible: false, archName, requiredVersion };
+                }
+
+                const parseVer = (v) => {
+                    const clean = String(v).replace(/^v/i, '').trim();
+                    const parts = clean.split('.').map(n => parseInt(n, 10) || 0);
+                    while (parts.length < 3) parts.push(0);
+                    return parts;
+                };
+
+                const curr = parseVer(currentVersion);
+                const req = parseVer(requiredVersion);
+
+                let compatible = true;
+                for (let i = 0; i < 3; i++) {
+                    if (curr[i] > req[i]) {
+                        compatible = true;
+                        break;
+                    }
+                    if (curr[i] < req[i]) {
+                        compatible = false;
+                        break;
+                    }
+                }
+
+                return { compatible, archName, requiredVersion };
+            },
+
+            /**
+             * Sanitizes sensitive information (API keys, authorization tokens, passwords)
+             * from debug log messages and text.
+             * @param {string} text - The raw text or log line to sanitize.
+             * @returns {string} Sanitized text with sensitive data redacted.
+             */
+            sanitizeDebugLog(text) {
+                if (!text || typeof text !== 'string') return '';
+                return text
+                    // Gemini API keys: AIzaSy followed by 33 chars
+                    .replace(/\bAIzaSy[A-Za-z0-9_-]{33}\b/g, 'AIzaSy[REDACTED]')
+                    // OpenRouter API keys: sk-or-v1- followed by hex chars
+                    .replace(/\bsk-or-v1-[a-f0-9]{64}\b/g, 'sk-or-v1-[REDACTED]')
+                    // Generic OpenAI-style sk- keys (at least 20 chars)
+                    .replace(/\bsk-[A-Za-z0-9]{20,}\b/g, 'sk-[REDACTED]')
+                    // Authorization header tokens
+                    .replace(/(Authorization:\s*Bearer\s+)[A-Za-z0-9_\-\.\:]{10,}/gi, '$1[REDACTED]')
+                    .replace(/(Bearer\s+)[A-Za-z0-9_\-\.\:]{10,}/gi, '$1[REDACTED]')
+                    // Sensitive JSON fields
+                    .replace(/("?(?:geminiApiKey|openrouterApiKey|apiKey|password|secret|token)"?\s*:\s*)"([^"]+)"/gi, '$1"[REDACTED]"');
+            },
+
+            /**
+             * Formats a structured diagnostic report suitable for sharing with developers.
+             * @param {object} meta - System, runtime, and environment metadata.
+             * @param {Array<string|object>} logs - Array of log entries.
+             * @returns {string} The formatted diagnostic report.
+             */
+            formatDiagnosticReport(meta, logs) {
+                const m = meta || {};
+                const c = m.clientState || {};
+                const kobold = m.kobold || {};
+                const timestamp = m.timestamp || new Date().toISOString();
+
+                const lines = [
+                    '================================================================================',
+                    'ELLIPSIS LM - DEBUG & DIAGNOSTIC REPORT',
+                    `Generated: ${timestamp}`,
+                    '================================================================================',
+                    '',
+                    '--- APPLICATION & RUNTIME ---',
+                    `App Version: ${m.appVersion || 'unknown'}`,
+                    `Electron: ${m.electronVersion || 'N/A'}`,
+                    `Node.js: ${m.nodeVersion || 'N/A'}`,
+                    `Chrome: ${m.chromeVersion || 'N/A'}`,
+                    `Platform: ${m.platform || 'unknown'} (${m.arch || 'unknown'})`,
+                    `OS Release: ${m.osRelease || 'unknown'}`,
+                    `Total RAM: ${m.totalRam || 'unknown'}`,
+                    `Free RAM: ${m.freeRam || 'unknown'}`,
+                    `CPU: ${m.cpus || 'unknown'}`,
+                    `User Data Path: ${m.userDataPath || 'unknown'}`,
+                    `Packaged: ${m.isPackaged !== undefined ? m.isPackaged : 'unknown'}`,
+                    '',
+                    '--- KOBOLDCPP BACKEND ---',
+                    `Executable Name: ${kobold.exeName || m.koboldExeName || 'koboldcpp'}`,
+                    `Executable Path: ${kobold.exePath || m.koboldExePath || 'unknown'}`,
+                    `Executable Exists: ${kobold.exists !== undefined ? kobold.exists : (m.koboldExists !== undefined ? m.koboldExists : 'unknown')}`,
+                    `Detected Local Version: ${kobold.localVersion || m.koboldVersion || 'unknown'}`,
+                    `Current Status: ${kobold.status || m.koboldStatus || 'unknown'}`
+                ];
+
+                if (kobold.lastLaunchOpts || m.lastLaunchOpts) {
+                    const opts = kobold.lastLaunchOpts || m.lastLaunchOpts;
+                    lines.push(
+                        'Last Launch Config:',
+                        `  - Port: ${opts.port || 5001}`,
+                        `  - Context Size: ${opts.contextSize || 'unknown'}`,
+                        `  - Model Path: ${opts.modelPath || 'none'}`,
+                        `  - Adapter: ${opts.chatcompletionsadapter || opts.adapter || (opts.useJinja ? 'jinja' : 'default')}`,
+                        `  - GPU Layers: ${opts.gpuLayers !== undefined ? opts.gpuLayers : 'auto (-1)'}`,
+                        `  - Batch Size: ${opts.batchSize || 'default'}`,
+                        `  - Quant KV: ${opts.quantKv || 'default'}`,
+                        `  - Jinja Enabled: ${opts.useJinja !== undefined ? opts.useJinja : true}`,
+                        `  - CUDA Enabled: ${opts.useCuda !== undefined ? opts.useCuda : 'unknown'}`
+                    );
+                }
+
+                lines.push(
+                    '',
+                    '--- AUTO-BACKUP STATUS ---',
+                    `Latest Backup: ${m.backupLatest || (m.backupInfo && m.backupInfo.latest ? JSON.stringify(m.backupInfo.latest) : 'N/A')}`,
+                    `Previous Backup: ${m.backupPrevious || (m.backupInfo && m.backupInfo.previous ? JSON.stringify(m.backupInfo.previous) : 'N/A')}`,
+                    '',
+                    '--- CLIENT STATE (RENDERER) ---',
+                    `Active Provider: ${c.activeProvider || 'unknown'}`,
+                    `Active Story ID: ${c.activeStoryId || 'none'}`,
+                    `Story Count: ${c.storyCount !== undefined ? c.storyCount : 'unknown'}`,
+                    `Layout Mode: ${c.layout || 'unknown'}`,
+                    `Screen Resolution: ${c.screen || 'unknown'}`,
+                    `User Agent: ${c.userAgent || 'unknown'}`,
+                    '',
+                    '================================================================================',
+                    `LOG STREAM (${Array.isArray(logs) ? logs.length : 0} entries)`
+                );
+
+                if (Array.isArray(logs) && logs.length > 0) {
+                    lines.push('================================================================================');
+                    logs.forEach(entry => {
+                        const str = typeof entry === 'string' ? entry : (entry?.message || JSON.stringify(entry));
+                        lines.push(this.sanitizeDebugLog(str));
+                    });
+                } else {
+                    lines.push('(No log entries recorded)');
+                }
+
+                lines.push(
+                    '================================================================================',
+                    'END OF REPORT',
+                    '================================================================================'
+                );
+
+                return lines.join('\n');
+            },
+
+            /**
+             * Checks whether a roleplay (narrative) is actively loaded.
+             * @param {Object} [library] - The library state object.
+             * @returns {boolean} - True if both active_story_id and active_narrative_id are set.
+             */
+            isRoleplayActive(library) {
+                if (!library || typeof library !== 'object') return false;
+                return Boolean(library.active_story_id && library.active_narrative_id);
             }
         };
 
@@ -21013,13 +22581,19 @@ Write only the character's message.`;
 
 
 
-                // Create Folder Button (plain string — must use DOM.unsafe() at inject-site to preserve onclick)
+                // Create Folder, View Toggle, and Settings Buttons
                 const createFolderBtn = `
                     <button onclick="UIManager.showCreateFolderModal()" class="flex-shrink-0 border border-gray-700 hover:border-gray-500 bg-gray-800/80 hover:bg-gray-700/80 p-2 rounded-lg text-gray-400 hover:text-white transition-all duration-200" title="New Folder">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
                     </button>
                     <button id="lib-view-toggle" onclick="UIManager.renderLibraryInterface({ viewMode: '${isListView ? 'grid' : 'list'}' })" class="flex-shrink-0 border border-gray-700 hover:border-gray-500 bg-gray-800/80 hover:bg-gray-700/80 p-2 rounded-lg text-gray-400 hover:text-white transition-all duration-200" title="${isListView ? 'Switch to Card View' : 'Switch to List View'}">
                         ${viewIcon}
+                    </button>
+                    <button id="lib-settings-btn" data-action="open-settings-tab" data-action-val="model" onclick="AppController.openSettingsToTab('model')" class="flex-shrink-0 border border-gray-700 hover:border-gray-500 bg-gray-800/80 hover:bg-gray-700/80 p-2 rounded-lg text-gray-400 hover:text-white transition-all duration-200" title="Settings">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <circle cx="12" cy="12" r="3" stroke-width="2" />
+                        </svg>
                     </button>
                 `;
 
@@ -25674,6 +27248,32 @@ Write only the character's message.`;
                     btn.disabled = true;
                     btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...`;
 
+                    resultArea.innerHTML = DOM.unsafe(`
+                        <div class="flex flex-col items-center justify-center p-8 text-center space-y-4">
+                            <div class="relative w-16 h-16">
+                                <svg class="animate-spin w-16 h-16 text-indigo-500/20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none"></circle></svg>
+                                <svg class="animate-spin absolute inset-0 w-16 h-16 text-indigo-500" viewBox="0 0 24 24"><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            </div>
+                            <div id="gen-modal-status" class="text-sm font-semibold text-indigo-300">Generating image...</div>
+                            <div id="gen-modal-progress-wrap" class="w-56 bg-gray-700 h-2 rounded-full overflow-hidden hidden">
+                                <div id="gen-modal-progress-bar" class="bg-indigo-500 h-full w-0 transition-all duration-200"></div>
+                            </div>
+                        </div>
+                    `);
+
+                    const onProgressHandler = (ev) => {
+                        const { value, max, status } = ev.detail || {};
+                        const statusEl = document.getElementById('gen-modal-status');
+                        const barEl = document.getElementById('gen-modal-progress-bar');
+                        const wrapEl = document.getElementById('gen-modal-progress-wrap');
+                        if (statusEl && status) statusEl.textContent = status;
+                        if (barEl && max > 0) {
+                            if (wrapEl) wrapEl.classList.remove('hidden');
+                            barEl.style.width = `${Math.min(100, Math.round((value / max) * 100))}%`;
+                        }
+                    };
+                    window.addEventListener('image-gen-progress', onProgressHandler);
+
                     try {
                         const blob = await ImageGenerationService.generateImage(prompt, neg, {}, initImage);
                         const url = URL.createObjectURL(blob);
@@ -25716,6 +27316,7 @@ Write only the character's message.`;
                     } catch (err) {
                         resultArea.innerHTML = `<div class="text-red-400 p-4 text-center font-bold">Generation Failed</div><div class="text-red-300 text-xs px-4 pb-4 text-center">${err.message}</div>`;
                     } finally {
+                        window.removeEventListener('image-gen-progress', onProgressHandler);
                         btn.disabled = false;
                         btn.innerHTML = 'Generate'; // Reset Label
                     }
@@ -25830,10 +27431,13 @@ Write only the character's message.`;
             CONSTANTS: {
                 MODEL_SETTING_KEYS: [
                     'apiProvider', 'geminiApiKey', 'openRouterKey', 'openRouterModel',
-                    'koboldcpp_url', 'koboldcpp_template', 'koboldcpp_min_p', 'koboldcpp_dry', 'lmstudio_url',
+                    'openRouterMaxTokens', 'openRouterThinkingEffort', 'openRouterThinkingBudget',
+                    'koboldcpp_url', 'koboldcpp_template', 'koboldcpp_min_p', 'koboldcpp_dry', 'kobold_model_path', 'koboldcpp_context_size', 'koboldcpp_quantkv', 'lmstudio_url',
                     'geminiModel', 'webllmModel',
                     // Image Gen Keys
-                    'imageGenBackend', 'koboldImageGenUrl', 'imageGenOpenRouterKey', 'imageGenOpenRouterModel',
+                    'imageGenBackend', 'comfyImageGenUrl', 'comfyImageGenCheckpoint', 'comfyImageGenWidth', 'comfyImageGenHeight',
+                    'comfyImageGenSampler', 'comfyImageGenScheduler', 'comfyImageGenSteps', 'comfyImageGenCfg',
+                    'koboldImageGenUrl', 'imageGenOpenRouterKey', 'imageGenOpenRouterModel',
                     'imageGenWidth', 'imageGenHeight',
                     'koboldImageGenCfg', 'koboldImageGenSampler', 'koboldImageGenScheduler', 'koboldImageGenSteps',
                     // Vision Bridge Keys
@@ -25855,6 +27459,17 @@ Write only the character's message.`;
                 const target = document.getElementById(`onboarding-step-${step}`);
                 if (target) target.classList.add('active');
                 this.RUNTIME.onboardingStep = step;
+
+                if (step === 3) {
+                    fetch('http://127.0.0.1:8188/system_stats', { signal: AbortSignal.timeout(1500) })
+                        .then(res => {
+                            if (res.ok) {
+                                const badge = document.getElementById('onboarding-comfy-badge');
+                                if (badge) badge.classList.remove('hidden');
+                            }
+                        })
+                        .catch(() => {});
+                }
             },
 
             selectOnboardingModel(provider) {
@@ -25987,14 +27602,18 @@ Write only the character's message.`;
                 let cardId = 'onboarding-img-skip';
                 if (provider === 'openrouter') cardId = 'onboarding-img-openrouter';
                 else if (provider === 'koboldcpp') cardId = 'onboarding-img-local';
+                else if (provider === 'comfyui') cardId = 'onboarding-img-comfy';
 
                 document.getElementById(cardId)?.classList.add('selected');
 
                 document.getElementById('onboarding-img-config-openrouter')?.classList.toggle('hidden', provider !== 'openrouter');
                 document.getElementById('onboarding-img-config-local')?.classList.toggle('hidden', provider !== 'koboldcpp');
+                document.getElementById('onboarding-img-config-comfy')?.classList.toggle('hidden', provider !== 'comfyui');
 
                 if (provider === 'openrouter') {
                     this.populateOnboardingOpenRouterModels('image');
+                } else if (provider === 'comfyui') {
+                    this.refreshComfyCheckpoints();
                 }
             },
 
@@ -26007,6 +27626,10 @@ Write only the character's message.`;
                     StateManager.data.globalSettings.imageGenOpenRouterModel = document.getElementById('onboarding-img-openrouter-model').value;
                 } else if (provider === 'koboldcpp') {
                     StateManager.data.globalSettings.koboldImageGenUrl = document.getElementById('onboarding-img-local-url').value;
+                } else if (provider === 'comfyui') {
+                    StateManager.data.globalSettings.comfyImageGenUrl = document.getElementById('onboarding-img-comfy-url')?.value || 'http://127.0.0.1:8188';
+                    const ckpt = document.getElementById('onboarding-img-comfy-checkpoint')?.value;
+                    if (ckpt) StateManager.data.globalSettings.comfyImageGenCheckpoint = ckpt;
                 }
 
                 StateManager.saveGlobalSettings();
@@ -26055,8 +27678,8 @@ Write only the character's message.`;
              */
             openModal(modalId, contextId = null) {
                 // 1. Guard: Check if story is loaded for context-dependent modals
-                // 'io-hub-modal' and 'story-library-modal' are allowed without an active story.
-                const needsStory = ['knowledge-modal', 'characters-modal', 'settings-modal', 'world-map-modal', 'example-dialogue-modal', 'character-detail-modal', 'edit-response-modal'];
+                // 'settings-modal', 'io-hub-modal', and 'story-library-modal' are allowed without an active story.
+                const needsStory = ['knowledge-modal', 'characters-modal', 'world-map-modal', 'example-dialogue-modal', 'character-detail-modal', 'edit-response-modal'];
 
                 if (needsStory.includes(modalId) && !StateManager.getLibrary().active_story_id) {
                     alert("Please load a narrative first.");
@@ -26093,7 +27716,9 @@ Write only the character's message.`;
 
                     case 'settings-modal':
                         this.prepareSettingsModal();
-                        this.switchSettingsTab(this.RUNTIME.activeSettingsTab || 'appearance');
+                        const hasRoleplay = UTILITY.isRoleplayActive(StateManager.getLibrary());
+                        const defaultTab = hasRoleplay ? (this.RUNTIME.activeSettingsTab || 'appearance') : 'model';
+                        this.switchSettingsTab(defaultTab);
                         break;
 
                     case 'example-dialogue-modal':
@@ -26173,9 +27798,37 @@ Write only the character's message.`;
              * Prepares the settings modal structure if it hasn't been initialized yet.
              */
             prepareSettingsModal() {
-                // Logic removed to allow natural scrolling.
-                // The CSS classes (flex-grow, min-h-0, overflow-y-auto) on the container 
-                // handle the layout correctly without a fixed min-height.
+                this.updateSettingsTabsDisabledState();
+            },
+
+            /**
+             * Updates the disabled/grayed-out state of roleplay-specific settings tabs (appearance and prompts)
+             * based on whether a roleplay (narrative) is currently active.
+             */
+            updateSettingsTabsDisabledState() {
+                const hasRoleplay = UTILITY.isRoleplayActive(StateManager.getLibrary());
+                const roleplayOnlyTabs = ['appearance', 'prompt'];
+
+                roleplayOnlyTabs.forEach(tab => {
+                    const headerBtn = document.getElementById(`settings-tab-${tab}`);
+                    const sidebarBtn = document.getElementById(`settings-tab-sidebar-${tab}`);
+
+                    [headerBtn, sidebarBtn].forEach(btn => {
+                        if (!btn) return;
+                        if (!hasRoleplay) {
+                            btn.disabled = true;
+                            btn.classList.add('opacity-30', 'cursor-not-allowed', 'text-gray-600');
+                            btn.classList.remove('hover:text-white', 'text-gray-400', 'text-white');
+                            btn.setAttribute('title', 'Requires an active roleplay');
+                            btn.setAttribute('aria-disabled', 'true');
+                        } else {
+                            btn.disabled = false;
+                            btn.classList.remove('opacity-30', 'cursor-not-allowed', 'text-gray-600');
+                            btn.removeAttribute('aria-disabled');
+                            btn.removeAttribute('title');
+                        }
+                    });
+                });
             },
 
             /**
@@ -26609,6 +28262,12 @@ Write only the character's message.`;
              * @param {string} tabName - 'appearance', 'prompt', or 'model'.
              */
             switchSettingsTab(tabName) {
+                const hasRoleplay = UTILITY.isRoleplayActive(StateManager.getLibrary());
+                const roleplayOnlyTabs = ['appearance', 'prompt'];
+                if (!hasRoleplay && roleplayOnlyTabs.includes(tabName)) {
+                    tabName = 'model';
+                }
+
                 this.RUNTIME.activeSettingsTab = tabName;
                 const tabs = ['appearance', 'prompt', 'model', 'personas', 'image-gen', 'export', 'defaults'];
                 const container = document.getElementById('settings-content-container');
@@ -26643,9 +28302,20 @@ Write only the character's message.`;
                     }
                 });
 
+                this.updateSettingsTabsDisabledState();
                 this.bindSettingsListeners();
 
-                if (tabName === 'personas') {
+                if (tabName === 'appearance') {
+                    if (!window.electronBridge) {
+                        const maintenanceSection = document.getElementById('app-maintenance-section');
+                        if (maintenanceSection) maintenanceSection.style.display = 'none';
+                    } else if (window.electronBridge.app) {
+                        window.electronBridge.app.getVersion().then(v => {
+                            const display = document.getElementById("app-current-version");
+                            if (display) display.textContent = "Local Instance: v" + v;
+                        }).catch(() => {});
+                    }
+                } else if (tabName === 'personas') {
                     this.renderUserPersonaList();
                 } else if (tabName === 'prompt') {
                     this.renderTokenVisualizer();
@@ -26940,6 +28610,9 @@ Write only the character's message.`;
                     musicIntSlider.value = globalSettings.musicInterval || 10;
                     if (musicIntValue) musicIntValue.textContent = `${globalSettings.musicInterval || 10} msgs`;
                 }
+                if (typeof window.syncElectronKoboldUI === 'function') {
+                    window.syncElectronKoboldUI();
+                }
             },
 
             /**
@@ -26955,8 +28628,8 @@ Write only the character's message.`;
              * Handles bi-directional binding between UI and ReactiveStore/GlobalSettings.
              */
             bindSettingsListeners() {
-                const state = ReactiveStore.state;
-                const globalSettings = StateManager.data.globalSettings;
+                const state = ReactiveStore.state || {};
+                const globalSettings = StateManager.data.globalSettings || {};
 
                 // Retrieve defaults to handle uninitialized values (e.g. blank prompts)
                 const defaultPrompts = UTILITY.getDefaultSystemPrompts();
@@ -27078,6 +28751,15 @@ Write only the character's message.`;
                     });
                 }
 
+                if (document.getElementById('image-gen-comfy-url')) setListener('image-gen-comfy-url', 'comfyImageGenUrl');
+                if (document.getElementById('image-gen-comfy-checkpoint')) setListener('image-gen-comfy-checkpoint', 'comfyImageGenCheckpoint');
+                if (document.getElementById('image-gen-comfy-width')) setListener('image-gen-comfy-width', 'comfyImageGenWidth');
+                if (document.getElementById('image-gen-comfy-height')) setListener('image-gen-comfy-height', 'comfyImageGenHeight');
+                if (document.getElementById('image-gen-comfy-sampler')) setListener('image-gen-comfy-sampler', 'comfyImageGenSampler');
+                if (document.getElementById('image-gen-comfy-scheduler')) setListener('image-gen-comfy-scheduler', 'comfyImageGenScheduler');
+                if (document.getElementById('image-gen-comfy-steps')) setListener('image-gen-comfy-steps', 'comfyImageGenSteps');
+                if (document.getElementById('image-gen-comfy-cfg')) setListener('image-gen-comfy-cfg', 'comfyImageGenCfg');
+
                 if (document.getElementById('image-gen-kobold-url')) setListener('image-gen-kobold-url', 'koboldImageGenUrl');
                 if (document.getElementById('image-gen-width')) setListener('image-gen-width', 'imageGenWidth');
                 if (document.getElementById('image-gen-height')) setListener('image-gen-height', 'imageGenHeight');
@@ -27096,6 +28778,8 @@ Write only the character's message.`;
                 if (document.getElementById('gemini-api-key-input')) setListener('gemini-api-key-input', 'geminiApiKey');
                 if (document.getElementById('openrouter-api-key-input')) setListener('openrouter-api-key-input', 'openRouterKey');
                 if (document.getElementById('openrouter-model-input')) setListener('openrouter-model-input', 'openRouterModel');
+                if (document.getElementById('openrouter-max-tokens-input')) setListener('openrouter-max-tokens-input', 'openRouterMaxTokens');
+                if (document.getElementById('openrouter-thinking-effort-select')) setListener('openrouter-thinking-effort-select', 'openRouterThinkingEffort');
                 if (document.getElementById('nanogpt-api-key-input')) setListener('nanogpt-api-key-input', 'nanoGPTKey');
                 if (document.getElementById('nanogpt-model-input')) setListener('nanogpt-model-input', 'nanoGPTModel');
                 if (document.getElementById('koboldcpp-min-p-slider')) setupSlider('koboldcpp-min-p-slider', 'koboldcpp-min-p-value', 'koboldcpp_min_p');
@@ -27581,10 +29265,44 @@ Write only the character's message.`;
                     if (document.getElementById(inputId)) setListener(inputId, key);
                 });
 
-                // Kobold Template Selector
+                // Kobold Extended Settings (Model, Context, Quant, Template)
+                if (document.getElementById('koboldcpp-model-path-input')) {
+                    const modelInput = document.getElementById('koboldcpp-model-path-input');
+                    modelInput.value = globalSettings.kobold_model_path || '';
+                    modelInput.addEventListener('change', (e) => {
+                        globalSettings.kobold_model_path = e.target.value.trim();
+                        if (typeof ReactiveStore !== 'undefined' && ReactiveStore.state) {
+                            ReactiveStore.state.kobold_model_path = globalSettings.kobold_model_path;
+                        }
+                        StateManager.saveGlobalSettings();
+                    });
+                }
+                if (document.getElementById('koboldcpp-context-size-input')) {
+                    const ctxInput = document.getElementById('koboldcpp-context-size-input');
+                    ctxInput.value = globalSettings.koboldcpp_context_size || 20480;
+                    ctxInput.addEventListener('change', (e) => {
+                        const val = parseInt(e.target.value, 10);
+                        globalSettings.koboldcpp_context_size = val > 0 ? val : 20480;
+                        if (typeof ReactiveStore !== 'undefined' && ReactiveStore.state) {
+                            ReactiveStore.state.koboldcpp_context_size = globalSettings.koboldcpp_context_size;
+                        }
+                        StateManager.saveGlobalSettings();
+                    });
+                }
+                if (document.getElementById('koboldcpp-quantkv-selector')) {
+                    const quantSel = document.getElementById('koboldcpp-quantkv-selector');
+                    quantSel.value = globalSettings.koboldcpp_quantkv || 'q8_0';
+                    quantSel.addEventListener('change', (e) => {
+                        globalSettings.koboldcpp_quantkv = e.target.value;
+                        if (typeof ReactiveStore !== 'undefined' && ReactiveStore.state) {
+                            ReactiveStore.state.koboldcpp_quantkv = globalSettings.koboldcpp_quantkv;
+                        }
+                        StateManager.saveGlobalSettings();
+                    });
+                }
                 const templateSelector = document.getElementById('koboldcpp-template-selector');
                 if (templateSelector) {
-                    templateSelector.value = globalSettings.koboldcpp_template || 'none';
+                    templateSelector.value = globalSettings.koboldcpp_template || 'jinja';
                     templateSelector.addEventListener('change', (e) => {
                         globalSettings.koboldcpp_template = e.target.value;
                         StateManager.saveGlobalSettings();
@@ -27761,9 +29479,12 @@ Write only the character's message.`;
              */
             setApiProvider(provider) {
                 // Update live state
-                ReactiveStore.state.apiProvider = provider;
+                if (ReactiveStore.state) {
+                    ReactiveStore.state.apiProvider = provider;
+                }
 
                 // Update global state
+                if (!StateManager.data.globalSettings) StateManager.data.globalSettings = {};
                 StateManager.data.globalSettings.apiProvider = provider;
                 StateManager.saveGlobalSettings();
 
@@ -28126,6 +29847,18 @@ Write only the character's message.`;
                 if (!backendSelect) return;
                 const val = backendSelect.value;
 
+                const comfySettings = document.getElementById('image-gen-comfy-settings');
+                if (comfySettings) {
+                    const show = val === 'comfyui';
+                    comfySettings.style.display = show ? 'block' : 'none';
+                    if (show) {
+                        comfySettings.classList.remove('hidden');
+                        this.refreshComfyCheckpoints();
+                    } else {
+                        comfySettings.classList.add('hidden');
+                    }
+                }
+
                 const koboldSettings = document.getElementById('image-gen-kobold-settings');
                 const openRouterSettings = document.getElementById('image-gen-openrouter-settings');
 
@@ -28162,6 +29895,151 @@ Write only the character's message.`;
                     if (show) nanoGPTSettings.classList.remove('hidden');
                     else nanoGPTSettings.classList.add('hidden');
                 }
+            },
+
+            /**
+             * Auto-detects a local ComfyUI server across standard ports.
+             */
+            async autoDetectComfyUI() {
+                const candidates = ['http://127.0.0.1:8188', 'http://localhost:8188', 'http://127.0.0.1:8189'];
+                UIManager.showNotification("Scanning for running ComfyUI instance...", "info");
+
+                for (const url of candidates) {
+                    try {
+                        const res = await fetch(`${url}/system_stats`, { signal: AbortSignal.timeout(2000) });
+                        if (res.ok) {
+                            const input = document.getElementById('image-gen-comfy-url');
+                            if (input) input.value = url;
+                            StateManager.data.globalSettings.comfyImageGenUrl = url;
+                            StateManager.saveGlobalSettings();
+
+                            const badge = document.getElementById('comfy-status-badge');
+                            if (badge) {
+                                badge.textContent = "Online ✅";
+                                badge.className = "px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                            }
+
+                            await this.refreshComfyCheckpoints(false);
+                            UIManager.showNotification(`Connected to ComfyUI at ${url}!`, "success");
+                            return true;
+                        }
+                    } catch (e) {}
+                }
+
+                UIManager.showNotification("Could not find a running ComfyUI instance. Ensure ComfyUI is started at 127.0.0.1:8188.", "warning");
+                return false;
+            },
+
+            /**
+             * Discovers checkpoints and hardware stats from ComfyUI and populates the UI.
+             * @param {boolean} [showToast=false]
+             */
+            async refreshComfyCheckpoints(showToast = false) {
+                const url = (StateManager.data.globalSettings.comfyImageGenUrl || "http://127.0.0.1:8188").replace(/\/$/, "");
+                const selects = Array.from(document.querySelectorAll('#image-gen-comfy-checkpoint, #onboarding-img-comfy-checkpoint'));
+                const badge = document.getElementById('comfy-status-badge');
+                const hint = document.getElementById('comfy-model-hint');
+
+                try {
+                    const [checkpoints, sysInfo] = await Promise.all([
+                        ImageGenerationService.fetchComfyCheckpoints(url),
+                        ImageGenerationService.fetchComfySystemInfo(url)
+                    ]);
+
+                    if (badge) {
+                        badge.textContent = checkpoints.length > 0 || sysInfo ? "Online ✅" : "Offline ❌";
+                        badge.className = checkpoints.length > 0 || sysInfo 
+                            ? "px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                            : "px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                    }
+
+                    // Update Hardware Card
+                    const hwCard = document.getElementById('comfy-hardware-card');
+                    const gpuName = document.getElementById('comfy-gpu-name');
+                    const gpuVram = document.getElementById('comfy-gpu-vram');
+
+                    if (sysInfo && sysInfo.devices && sysInfo.devices.length > 0) {
+                        const dev = sysInfo.devices[0];
+                        if (hwCard) hwCard.classList.remove('hidden');
+                        if (gpuName) gpuName.textContent = dev.name || "GPU Device";
+                        if (gpuVram && dev.vram_total) {
+                            const totalGB = (dev.vram_total / (1024 * 1024 * 1024)).toFixed(1);
+                            const freeGB = dev.vram_free ? (dev.vram_free / (1024 * 1024 * 1024)).toFixed(1) : "?";
+                            gpuVram.textContent = `${freeGB} GB free / ${totalGB} GB`;
+                        }
+                    }
+
+                    const current = StateManager.data.globalSettings.comfyImageGenCheckpoint;
+
+                    // Populate Selects across both main settings and onboarding
+                    selects.forEach(sel => {
+                        if (!sel) return;
+                        sel.innerHTML = '';
+
+                        if (checkpoints.length === 0) {
+                            sel.innerHTML = '<option value="">(No checkpoints found in ComfyUI/models/checkpoints/)</option>';
+                            return;
+                        }
+
+                        checkpoints.forEach(name => {
+                            const opt = document.createElement('option');
+                            opt.value = name;
+                            opt.textContent = name;
+                            if (name === current) opt.selected = true;
+                            sel.appendChild(opt);
+                        });
+
+                        if (!current || !checkpoints.includes(current)) {
+                            sel.selectedIndex = 0;
+                        }
+                    });
+
+                    if (checkpoints.length > 0 && (!current || !checkpoints.includes(current))) {
+                        StateManager.data.globalSettings.comfyImageGenCheckpoint = checkpoints[0];
+                        StateManager.saveGlobalSettings();
+                    }
+
+                    if (hint) {
+                        if (checkpoints.length > 0) {
+                            hint.innerHTML = `<span class="text-emerald-400">✓ ${checkpoints.length} model(s) detected.</span> Ready to paint.`;
+                        } else {
+                            hint.innerHTML = `<span class="text-amber-400">⚠️ No models found in ComfyUI/models/checkpoints/.</span> Drop a .safetensors model file there.`;
+                        }
+                    }
+
+                    if (showToast) {
+                        UIManager.showNotification(`ComfyUI: Found ${checkpoints.length} model checkpoint(s).`, "success");
+                    }
+                } catch (err) {
+                    if (badge) {
+                        badge.textContent = "Offline ❌";
+                        badge.className = "px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                    }
+                    if (hint) {
+                        hint.innerHTML = '<span class="text-rose-400">Could not connect to ComfyUI. Is it running?</span>';
+                    }
+                    if (showToast) {
+                        UIManager.showNotification("Could not connect to ComfyUI server.", "error");
+                    }
+                }
+            },
+
+            /**
+             * Sets resolution preset for ComfyUI.
+             * @param {number} width
+             * @param {number} height
+             */
+            setComfyResolution(width, height) {
+                const wInput = document.getElementById('image-gen-comfy-width');
+                const hInput = document.getElementById('image-gen-comfy-height');
+                if (wInput) wInput.value = width;
+                if (hInput) hInput.value = height;
+
+                StateManager.data.globalSettings.comfyImageGenWidth = width;
+                StateManager.data.globalSettings.comfyImageGenHeight = height;
+                StateManager.saveGlobalSettings();
+
+                UIManager.showNotification(`Resolution set to ${width}x${height}`, "info");
             },
 
             /**
@@ -43673,6 +45551,7 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
 
                 // --- AppController (Navigation & Global UI) ---
                 ActionHandler.register('open-modal', (ds) => AppController.openModal(ds.target, ds.id));
+                ActionHandler.register('open-settings-tab', (ds, val) => AppController.openSettingsToTab(val || ds.tab || 'model'));
                 ActionHandler.register('open-hub', () => HubController.openHub());
                 ActionHandler.register('view-hub-details', (ds, val) => HubController.viewDetails(val));
                 ActionHandler.register('close-hub-details', () => HubController.closeDetails());
@@ -45054,7 +46933,28 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                         </div>
                     </div>
 
-                    <!-- Option: Local (SD) -->
+                    <!-- Option: Local (ComfyUI - Recommended) -->
+                    <div id="onboarding-img-comfy" onclick="AppController.selectOnboardingImageProvider('comfyui')"
+                        class="model-option-card">
+                        <div class="flex items-center gap-3">
+                            <div class="model-option-card-icon">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h4 class="text-sm font-bold text-white">Local (ComfyUI)</h4>
+                                    <span id="onboarding-comfy-badge" class="hidden px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Detected Online</span>
+                                </div>
+                                <p class="text-[11px] text-gray-400">Direct ComfyUI connection with automatic checkpoint loading.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Option: Local (SD / KoboldCPP) -->
                     <div id="onboarding-img-local" onclick="AppController.selectOnboardingImageProvider('koboldcpp')"
                         class="model-option-card">
                         <div class="flex items-center gap-3">
@@ -45066,8 +46966,8 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                                 </svg>
                             </div>
                             <div>
-                                <h4 class="text-sm font-bold text-white">Local (Stable Diffusion)</h4>
-                                <p class="text-[11px] text-gray-400">Free, private generation via your local GPU.</p>
+                                <h4 class="text-sm font-bold text-white">Local (KoboldCPP / SDAPI)</h4>
+                                <p class="text-[11px] text-gray-400">Connect to KoboldCPP built-in SD or WebUI endpoint.</p>
                             </div>
                         </div>
                     </div>
@@ -45083,6 +46983,28 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                         value="black-forest-labs/flux-schnell" placeholder="Type to search image models...">
                     <datalist id="onboarding-img-openrouter-models-list"></datalist>
                     <p class="text-[10px] text-indigo-400 mt-1 italic">Default: Flux Schnell</p>
+                </div>
+
+                                <!-- Config: ComfyUI Image -->
+                <div id="onboarding-img-config-comfy"
+                    class="hidden animate-fade-in p-3 bg-gray-800/50 border border-gray-700 rounded-lg mb-6 space-y-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-300 uppercase mb-1.5">ComfyUI Server URL</label>
+                        <input type="text" id="onboarding-img-comfy-url"
+                            class="w-full bg-black/40 border border-gray-600 rounded-md p-2 text-sm focus:border-indigo-500"
+                            value="http://127.0.0.1:8188">
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-[11px] font-bold text-gray-300 uppercase">Select Checkpoint</label>
+                            <button type="button" onclick="AppController.refreshComfyCheckpoints(true)"
+                                class="text-[10px] text-indigo-400 hover:text-indigo-300">Refresh Models</button>
+                        </div>
+                        <select id="onboarding-img-comfy-checkpoint"
+                            class="w-full bg-black/40 border border-gray-600 rounded-md p-2 text-sm focus:border-indigo-500 text-white">
+                            <option value="">(Click to detect installed models)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Config: Local Image -->

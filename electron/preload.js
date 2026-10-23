@@ -16,7 +16,7 @@ contextBridge.exposeInMainWorld('electronBridge', {
     kobold: {
         /**
          * Start KoboldCPP with the given CLI args.
-         * @param {object} opts - { modelPath, contextSize, port, useCuda, quantKv }
+         * @param {object} opts - { modelPath, contextSize, port, useCuda, gpuLayers, quantKv, useJinja, chatcompletionsadapter, autoFit }
          * @returns {Promise<void>}
          */
         start(opts) {
@@ -24,10 +24,16 @@ contextBridge.exposeInMainWorld('electronBridge', {
         },
 
         /** Stop the running KoboldCPP process. */
-        stop: () => ipcRenderer.invoke('kobold:stop'),
+        stop: (opts) => ipcRenderer.invoke('kobold:stop', opts),
 
         /** Get the current status of the KoboldCPP process. */
         getStatus: () => ipcRenderer.invoke('kobold:getStatus'),
+
+        /** Get the detailed process, port, and version status of KoboldCPP. */
+        getDetailedStatus: (port) => ipcRenderer.invoke('kobold:getDetailedStatus', port),
+
+        /** Get the current download progress and status for KoboldCPP. */
+        getDownloadProgress: () => ipcRenderer.invoke('kobold:getDownloadProgress'),
 
         /** Get the latest available KoboldCPP version from GitHub. */
         getLatestVersion: () => ipcRenderer.invoke('kobold:getLatestVersion'),
@@ -73,6 +79,28 @@ contextBridge.exposeInMainWorld('electronBridge', {
             const listener = (_event, line) => callback(line);
             ipcRenderer.on('kobold:log', listener);
             return () => ipcRenderer.removeListener('kobold:log', listener);
+        },
+
+        /**
+         * Subscribe to incompatible model detection events.
+         * @param {function} callback - Called with { log, arch }.
+         * @returns {function} Unsubscribe function.
+         */
+        onIncompatibleModel(callback) {
+            const listener = (_event, data) => callback(data);
+            ipcRenderer.on('kobold:incompatibleModel', listener);
+            return () => ipcRenderer.removeListener('kobold:incompatibleModel', listener);
+        },
+
+        /**
+         * Subscribe to port conflict detection events.
+         * @param {function} callback - Called with { port, pid, exePath }.
+         * @returns {function} Unsubscribe function.
+         */
+        onPortConflict(callback) {
+            const listener = (_event, data) => callback(data);
+            ipcRenderer.on('kobold:portConflict', listener);
+            return () => ipcRenderer.removeListener('kobold:portConflict', listener);
         }
     },
 
@@ -126,5 +154,14 @@ contextBridge.exposeInMainWorld('electronBridge', {
         saveNative: (payload) => ipcRenderer.invoke('backup:saveNative', payload),
         loadNative: () => ipcRenderer.invoke('backup:loadNative'),
         getInfo: () => ipcRenderer.invoke('backup:getInfo')
+    },
+
+    /** Debugging and diagnostics log management */
+    debug: {
+        copyLog: (clientState) => ipcRenderer.invoke('debug:copyLog', clientState),
+        getLog: (clientState) => ipcRenderer.invoke('debug:getLog', clientState),
+        openLogFile: () => ipcRenderer.invoke('debug:openLogFile'),
+        clearLog: () => ipcRenderer.invoke('debug:clearLog'),
+        log: (level, message, source) => ipcRenderer.invoke('debug:log', { level, message, source })
     }
 });

@@ -27,6 +27,12 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Install Playwright Browsers
+        run: npx playwright install chromium
+
+      - name: Run Extensive Test Suite
+        run: npm run test:extensive
+
       - name: Clear macOS Attributes
         if: matrix.os == 'macos-latest'
         run: xattr -cr .
