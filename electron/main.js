@@ -339,7 +339,8 @@ function setKoboldStatus(status) {
 }
 
 function sendKoboldLog(line) {
-    logDebug('info', 'KOBOLD', line);
+    const isError = line.startsWith('[ERROR]') || /(?:fatal error|cuda out of memory|cuda error: out of memory|fatal:\s*failed to load model)/i.test(line);
+    logDebug(isError ? 'error' : 'info', 'KOBOLD', line);
     if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('kobold:log', line);
     }
@@ -986,7 +987,7 @@ function startKobold(opts = {}) {
     koboldProcess.stderr.on('data', (data) => {
         const lines = data.toString().split('\n').filter(Boolean);
         lines.forEach(line => {
-            sendKoboldLog(`[STDERR] ${line}`);
+            sendKoboldLog(line);
             if (koboldStatus === 'starting' && isReadyLine(line)) {
                 setKoboldStatus('running');
             }
@@ -1158,54 +1159,109 @@ ipcMain.handle('app:downloadUpdate', async (_event, url) => {
     const installerPath = path.join(tempDir, `EllipsisLM_Setup_Update${ext}`);
 
     return new Promise((resolve, reject) => {
-        const file = fs.createWriteStream(installerPath);
+        try {
+            if (fs.existsSync(installerPath)) {
+                fs.unlinkSync(installerPath);
+            }
+        } catch (e) {
+            console.warn('[AppUpdate] Could not pre-clean installer file:', e.message);
+        }
+
+        let redirectCount = 0;
+        const maxRedirects = 10;
 
         function get(downloadUrl) {
-            https.get(downloadUrl, (res) => {
-                if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-                    get(res.headers.location); return;
+            let parsedUrl;
+            try {
+                parsedUrl = new URL(downloadUrl);
+            } catch (err) {
+                return reject(new Error('Invalid download URL: ' + downloadUrl));
+            }
+
+            const client = parsedUrl.protocol === 'http:' ? http : https;
+            const options = {
+                hostname: parsedUrl.hostname,
+                path: parsedUrl.pathname + parsedUrl.search,
+                headers: {
+                    'User-Agent': 'EllipsisLM-Desktop'
                 }
-                if (res.statusCode !== 200) {
-                    reject(new Error(`Download failed: ${res.statusCode}`)); return;
+            };
+
+            const req = client.get(options, (res) => {
+                if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                    redirectCount++;
+                    if (redirectCount > maxRedirects) {
+                        return reject(new Error('Too many redirects while downloading update'));
+                    }
+                    res.resume();
+                    const nextUrl = new URL(res.headers.location, downloadUrl).href;
+                    return get(nextUrl);
                 }
 
-                const totalSize = parseInt(res.headers['content-length'], 10);
+                if (res.statusCode !== 200) {
+                    return reject(new Error(`Download failed with HTTP status ${res.statusCode}`));
+                }
+
+                const totalSize = parseInt(res.headers['content-length'], 10) || 0;
                 let downloadedSize = 0;
+                let lastSentPercent = -1;
+
+                const file = fs.createWriteStream(installerPath);
+
+                file.on('error', (err) => {
+                    fs.unlink(installerPath, () => {});
+                    reject(new Error(`Failed to write installer to disk: ${err.message}`));
+                });
+
+                file.on('finish', () => {
+                    file.close(() => {
+                        console.log('[AppUpdate] Download finished successfully:', installerPath);
+                        resolve(installerPath);
+                    });
+                });
 
                 res.on('data', (chunk) => {
                     downloadedSize += chunk.length;
-                    file.write(chunk);
-                    if (totalSize && mainWindow) {
-                        mainWindow.webContents.send('app:updateProgress', (downloadedSize / totalSize) * 100);
+                    if (totalSize > 0 && mainWindow && !mainWindow.isDestroyed()) {
+                        const pct = Math.min(100, Math.round((downloadedSize / totalSize) * 100));
+                        if (pct !== lastSentPercent) {
+                            lastSentPercent = pct;
+                            mainWindow.webContents.send('app:updateProgress', pct);
+                        }
                     }
                 });
 
-                res.on('end', () => {
-                    file.end(() => resolve(installerPath));
-                });
-            }).on('error', (err) => {
-                fs.unlink(installerPath, () => { });
-                reject(err);
+                res.pipe(file);
+            });
+
+            req.on('error', (err) => {
+                fs.unlink(installerPath, () => {});
+                reject(new Error(`Network error while downloading update: ${err.message}`));
             });
         }
+
         get(url);
     });
 });
 
-ipcMain.handle('app:applyUpdate', (_event, installerPath) => {
+ipcMain.handle('app:applyUpdate', async (_event, installerPath) => {
     console.log('[AppUpdate] Launching installer:', installerPath);
+    if (!installerPath || !fs.existsSync(installerPath)) {
+        throw new Error(`Installer file not found at: ${installerPath}`);
+    }
 
     if (process.platform === 'darwin') {
-        shell.openPath(installerPath);
-        app.quit();
+        await shell.openPath(installerPath);
+        setTimeout(() => app.quit(), 600);
     } else {
         const installer = spawn(installerPath, [], {
             detached: true,
             stdio: 'ignore'
         });
         installer.unref();
-        app.quit();
+        setTimeout(() => app.quit(), 600);
     }
+    return true;
 });
 
 ipcMain.handle('dialog:pickModelFile', async () => {
