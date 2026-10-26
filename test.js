@@ -3152,7 +3152,7 @@ test('isRenderableImageSrc: accepts valid blob, data, http/https, and relative a
     assert.equal(UTILITY.isRenderableImageSrc('blob:http://localhost:3000/abc-123'), true);
     assert.equal(UTILITY.isRenderableImageSrc('data:image/png;base64,iVBORw0KGgo='), true);
     assert.equal(UTILITY.isRenderableImageSrc('https://example.com/avatar.png'), true);
-    assert.equal(UTILITY.isRenderableImageSrc('assets/locations/defaults/valley.jpg'), true);
+    assert.equal(UTILITY.isRenderableImageSrc('assets/demo/hearthstone_inn.png'), true);
 });
 
 test('getDefaultApiSettings: initializes imageGenBackend to disabled so unconfigured installs do not trigger broken image gen', () => {
