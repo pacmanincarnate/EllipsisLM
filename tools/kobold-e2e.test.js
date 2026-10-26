@@ -87,7 +87,7 @@ const MOCK_URL = `http://127.0.0.1:${TEST_PORT}`;
         }
 
         // ─── Test 2: Standard Generation & Parameter Propagation ─────────
-        console.log('\n[Test 2] Testing callKoboldCPP via /api/v1/generate with sampling params...');
+        console.log('\n[Test 2] Testing callKoboldCPP via /v1/chat/completions with sampling params...');
         try {
             mockServer.setNextResponse({
                 text: '*The warrior nods.* "The road ahead is quiet."',
@@ -99,10 +99,10 @@ const MOCK_URL = `http://127.0.0.1:${TEST_PORT}`;
             });
 
             const req = mockServer.lastRequest;
-            if (req && req.pathname === '/api/v1/generate') {
-                recordPass('Request routed to /api/v1/generate');
+            if (req && req.pathname === '/v1/chat/completions') {
+                recordPass('Request routed to /v1/chat/completions');
             } else {
-                recordFail('API routing', `Expected /api/v1/generate, got ${req?.pathname}`);
+                recordFail('API routing', `Expected /v1/chat/completions, got ${req?.pathname}`);
             }
 
             if (req && req.body && req.body.min_p === 0.1 && req.body.dry_multiplier === 0.25) {
@@ -249,6 +249,51 @@ const MOCK_URL = `http://127.0.0.1:${TEST_PORT}`;
             }
         } catch (e) {
             recordFail('Dead port test', e.message);
+        }
+
+        // ─── Test 8: callAI Sign-of-Life Timeout & Token Ceiling ─────────
+        console.log('\n[Test 8] Testing callAI sign-of-life timeout and 2048 token limit propagation...');
+        try {
+            mockServer.reset();
+            mockServer.setNextResponse('Tokens generated past initial deadline.');
+
+            const result = await page.evaluate(async () => {
+                return await APIService.callAI('Test prompt', false, null, true, { timeoutMs: 5000 });
+            });
+
+            const req = mockServer.lastRequest;
+            if (req && req.body && req.body.max_tokens === 2048) {
+                recordPass('KoboldCPP payload increased max_tokens to 2048 tokens');
+            } else {
+                recordFail('Max tokens payload', `Expected max_tokens 2048, got ${req?.body?.max_tokens}`);
+            }
+
+            if (result && result.includes('Tokens generated')) {
+                recordPass('callAI completed successfully with activity tracker active');
+            } else {
+                recordFail('callAI completion', `Unexpected result: ${result}`);
+            }
+
+            // Verify timeout aborts when backend stalls with no activity
+            mockServer.setChaos({ delayMs: 1500 });
+            const timedOut = await page.evaluate(async () => {
+                try {
+                    await APIService.callAI('Stall prompt', false, null, true, { timeoutMs: 400 });
+                    return false;
+                } catch (e) {
+                    return e.message.includes('timed out');
+                }
+            });
+
+            if (timedOut) {
+                recordPass('callAI times out when no sign of life is received within timeout window');
+            } else {
+                recordFail('callAI timeout', 'Did not catch expected timeout error');
+            }
+        } catch (e) {
+            recordFail('Test 8 failed', e.message);
+        } finally {
+            mockServer.reset();
         }
 
     } finally {

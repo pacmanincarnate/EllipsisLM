@@ -28,6 +28,7 @@ class MockKoboldServer {
         };
         this.customResponse = null;
         this.activeStream = null;
+        this.lastCompletedText = '';
     }
 
     start() {
@@ -66,6 +67,7 @@ class MockKoboldServer {
         this.lastRequest = null;
         this.customResponse = null;
         this.activeStream = null;
+        this.lastCompletedText = '';
         this.chaos = {
             errorOnChatCompletions: false,
             simulateOOM: false,
@@ -114,6 +116,11 @@ class MockKoboldServer {
             // Route dispatch
             if (pathname === '/api/v1/model' && req.method === 'GET') {
                 return this.handleModel(res);
+            }
+            if (pathname === '/v1/models' && req.method === 'GET') {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ object: 'list', data: [{ id: this.modelName, object: 'model' }] }));
+                return;
             }
             if (pathname === '/api/v1/generate' && req.method === 'POST') {
                 return this.handleGenerate(parsedBody, res);
@@ -193,6 +200,11 @@ class MockKoboldServer {
     }
 
     handleChatCompletions(body, res) {
+        if (this.chaos.simulateOOM) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: { message: 'CUDA error: out of memory' } }));
+            return;
+        }
         if (this.chaos.errorOnChatCompletions) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: { message: 'Endpoint /v1/chat/completions not supported on this Kobold build' } }));
@@ -241,13 +253,14 @@ class MockKoboldServer {
     handleGenerateCheck(res) {
         if (!this.activeStream) {
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ done: true, results: [{ text: '' }] }));
+            res.end(JSON.stringify({ done: true, results: [{ text: this.lastCompletedText || '' }] }));
             return;
         }
 
         if (this.activeStream.aborted) {
+            this.lastCompletedText = this.activeStream.currentText || '';
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ done: true, results: [{ text: this.activeStream.currentText || '' }] }));
+            res.end(JSON.stringify({ done: true, results: [{ text: this.lastCompletedText }] }));
             this.activeStream = null;
             return;
         }
@@ -260,6 +273,7 @@ class MockKoboldServer {
 
         const isDone = this.activeStream.chunkIdx >= this.activeStream.chunks.length;
         if (isDone) {
+            this.lastCompletedText = textSoFar;
             this.activeStream = null;
         }
 

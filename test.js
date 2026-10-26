@@ -86,6 +86,68 @@ function loadUtility() {
 
 const UTILITY = loadUtility();
 
+function loadPromptBuilder() {
+    const block = extractBlock('PromptBuilder');
+    return vm.runInNewContext(block + '\nPromptBuilder', {
+        UTILITY,
+        StateManager: { getState: () => ({}) },
+        ReactiveStore: { state: {} }
+    });
+}
+
+const PromptBuilder = loadPromptBuilder();
+
+function loadStoryGenerationPipeline() {
+    const block = extractBlock('StoryGenerationPipeline');
+    return vm.runInNewContext(block + '\nStoryGenerationPipeline', {
+        UTILITY,
+        PromptBuilder,
+        APIService: {},
+        LibraryController: {},
+        NarrativeController: { CONSTANTS: { CHARACTER_COLORS: [{ base: '#334155', bold: '#94a3b8' }] } },
+        ImageGenerationService: { generateImage: async () => null },
+        DBService: { saveStory: async () => true, saveImage: async () => true },
+        UIManager: { RUNTIME: { characterImageCache: {} } },
+        console,
+        setTimeout,
+        clearTimeout,
+        URL: { createObjectURL: () => 'blob:mock' }
+    });
+}
+
+function loadInStoryGenerationPipeline() {
+    const block = extractBlock('InStoryGenerationPipeline');
+    return vm.runInNewContext(block + '\nInStoryGenerationPipeline', {
+        UTILITY,
+        PromptBuilder,
+        APIService: {},
+        LibraryController: {},
+        NarrativeController: { CONSTANTS: { CHARACTER_COLORS: [{ base: '#334155', bold: '#94a3b8' }] } },
+        ImageGenerationService: { generateImage: async () => null },
+        DBService: { saveStory: async () => true, saveImage: async () => true },
+        UIManager: { RUNTIME: { characterImageCache: {} } },
+        console,
+        setTimeout,
+        clearTimeout,
+        URL: { createObjectURL: () => 'blob:mock' }
+    });
+}
+
+// ─── index.html Monolith Syntax Verification ──────────────────────────────
+
+test('index.html: all inline <script> blocks parse with valid JavaScript syntax', () => {
+    const scriptRegex = /<script(?:\s+[^>]*)?>([\s\S]*?)<\/script>/gi;
+    let match;
+    let scriptIdx = 0;
+    while ((match = scriptRegex.exec(HTML)) !== null) {
+        scriptIdx++;
+        assert.doesNotThrow(() => {
+            new vm.Script(match[1]);
+        }, `Inline <script> block ${scriptIdx} in index.html failed to parse`);
+    }
+    assert.ok(scriptIdx > 0, 'Found at least one <script> block in index.html');
+});
+
 // ─── toStringArray ────────────────────────────────────────────────────────
 
 test('toStringArray: nullish input returns empty array', () => {
@@ -371,6 +433,27 @@ test('sanitizeModelResponse: passes through clean strings and non-strings safely
     assert.equal(UTILITY.sanitizeModelResponse(undefined), undefined);
 });
 
+test('sanitizeModelResponse: strips leading paragraph indentation (tabs and spaces) so marked does not treat paragraphs as 4-space code blocks', () => {
+    const input = '    "Hello there," she said.\n\n\tHe stepped forward.\n\n    "Who goes there?"';
+    assert.equal(
+        UTILITY.sanitizeModelResponse(input),
+        '"Hello there," she said.\n\nHe stepped forward.\n\n"Who goes there?"'
+    );
+});
+
+test('sanitizeModelResponse: preserves indentation inside fenced code blocks while stripping prose indentation', () => {
+    const input = '    She typed the command:\n\n```js\n    const x = 1;\n\tconsole.log(x);\n```\n\n\t"Done," she whispered.';
+    assert.equal(
+        UTILITY.sanitizeModelResponse(input),
+        'She typed the command:\n\n```js\n    const x = 1;\n\tconsole.log(x);\n```\n\n"Done," she whispered.'
+    );
+});
+
+test('sanitizeModelResponse: strips control characters and replacement characters', () => {
+    const input = '\uFFFD\x00\x07"Hello,"\u200B she said.\x1F';
+    assert.equal(UTILITY.sanitizeModelResponse(input), '"Hello," she said.');
+});
+
 // ─── extractThinking ──────────────────────────────────────────────────────
 
 test('extractThinking: extracts thoughts and cleans content', () => {
@@ -424,6 +507,132 @@ test('extractThinking: returns empty thinking when no tags present', () => {
 test('extractThinking: handles null or non-string inputs safely', () => {
     deepEq(UTILITY.extractThinking(null), { thinking: '', content: '' });
     deepEq(UTILITY.extractThinking(undefined), { thinking: '', content: '' });
+});
+
+test('extractThinking: handles implicit opening tag (pre-filled <think> in KoboldCPP/DeepSeek header)', () => {
+    const input = 'analyzing the scenario and formulating response...</think>Here is the actual story response.';
+    const res = UTILITY.extractThinking(input);
+    assert.equal(res.thinking, 'analyzing the scenario and formulating response...');
+    assert.equal(res.content, 'Here is the actual story response.');
+});
+
+test('extractThinking: cleans up stray or leftover closing tags and handles unclosed tags', () => {
+    const input = '<think>first thought</think>Some text before. </think>More text. <thought>unclosed thought';
+    const res = UTILITY.extractThinking(input);
+    assert.equal(res.thinking, 'first thought\n\nunclosed thought');
+    assert.equal(res.content, 'Some text before. More text.');
+});
+
+test('extractThinking: handles prompt-prefill where model immediately outputs </think> with no thought tokens', () => {
+    const input = '</think>Immediate story content without thinking.';
+    const res = UTILITY.extractThinking(input);
+    assert.equal(res.thinking, '');
+    assert.equal(res.content, 'Immediate story content without thinking.');
+});
+
+// ─── decodeXmlEntities ────────────────────────────────────────────────────
+
+test('decodeXmlEntities: decodes standard XML entities and numeric entities', () => {
+    const input = '&lt;story title=&quot;Fire &amp; Ice&quot; rating=&apos;PG&apos;&gt;He said &#34;Hello&#34; &amp; left &#x21;&lt;/story&gt;';
+    const expected = '<story title="Fire & Ice" rating=\'PG\'>He said "Hello" & left !</story>';
+    assert.equal(UTILITY.decodeXmlEntities(input), expected);
+});
+
+test('decodeXmlEntities: repairs malformed unsemicoloned &amp without touching valid text', () => {
+    assert.equal(UTILITY.decodeXmlEntities('Cookies &amp cream'), 'Cookies & cream');
+    assert.equal(UTILITY.decodeXmlEntities('Rock &amp roll'), 'Rock & roll');
+    assert.equal(UTILITY.decodeXmlEntities(null), '');
+    assert.equal(UTILITY.decodeXmlEntities(''), '');
+});
+
+// ─── XML Tag Extraction Helpers ───────────────────────────────────────────
+
+test('extractTag: extracts content case-insensitively with attribute tolerance and entity decoding', () => {
+    const xml = `<response>
+        <TITLE id="main-title" lang="en">The &amp;amp; Last Horizon</TITLE>
+        <content>An epic &lt;adventure&gt; begins.</content>
+    </response>`;
+
+    assert.equal(UTILITY.extractTag(xml, 'title'), 'The & Last Horizon');
+    assert.equal(UTILITY.extractTag(xml, 'TITLE'), 'The & Last Horizon');
+    assert.equal(UTILITY.extractTag(xml, 'content'), 'An epic <adventure> begins.');
+    assert.equal(UTILITY.extractTag(xml, 'nonexistent'), '');
+});
+
+test('extractTagAttribute: extracts specified attribute value', () => {
+    const xml = `<character id="C1" role="Protagonist" active="true">Hero</character>`;
+    assert.equal(UTILITY.extractTagAttribute(xml, 'character', 'id'), 'C1');
+    assert.equal(UTILITY.extractTagAttribute(xml, 'character', 'role'), 'Protagonist');
+    assert.equal(UTILITY.extractTagAttribute(xml, 'character', 'missing'), '');
+});
+
+test('extractAllTags: extracts all occurrences of a tag as an array', () => {
+    const xml = `<characters>
+        <brief><name>Alice</name></brief>
+        <brief><name>Bob</name></brief>
+        <brief><name>Charlie &amp; Dave</name></brief>
+    </characters>`;
+
+    const names = UTILITY.extractAllTags(xml, 'name');
+    deepEq(names, ['Alice', 'Bob', 'Charlie & Dave']);
+    deepEq(UTILITY.extractAllTags(xml, 'missing'), []);
+});
+
+test('extractTagList: extracts child tags within parent container or falls back', () => {
+    const xml = `<response>
+        <character_briefs>
+            <brief><name>Marcus</name><role>User</role></brief>
+            <brief><name>Sivra</name><role>PrimaryAI</role></brief>
+        </character_briefs>
+        <other_section>
+            <brief><name>Ignored</name></brief>
+        </other_section>
+    </response>`;
+
+    const briefs = UTILITY.extractTagList(xml, 'character_briefs', 'brief');
+    assert.equal(briefs.length, 2);
+    assert.equal(UTILITY.extractTag(briefs[0], 'name'), 'Marcus');
+    assert.equal(UTILITY.extractTag(briefs[1], 'name'), 'Sivra');
+
+    // Single argument mode extracts all instances of the tag
+    const allBriefs = UTILITY.extractTagList(xml, 'brief');
+    assert.equal(allBriefs.length, 3);
+});
+
+// ─── ensureCastEnsembleCompleteness ───────────────────────────────────────
+
+test('ensureCastEnsembleCompleteness: retains existing full cast without changes', () => {
+    const existingCast = [
+        { id: 'C1', name: 'Marcus', role: 'User' },
+        { id: 'C2', name: 'Sivra', role: 'PrimaryAI' },
+        { id: 'C3', name: 'Vane', role: 'Antagonist' }
+    ];
+    const result = UTILITY.ensureCastEnsembleCompleteness(existingCast, 'Some world lore', 3);
+    assert.equal(result.length, 3);
+    assert.equal(result[0].name, 'Marcus');
+    assert.equal(result[1].name, 'Sivra');
+    assert.equal(result[2].name, 'Vane');
+});
+
+test('ensureCastEnsembleCompleteness: auto-synthesizes missing archetypes if cast is under-populated', () => {
+    const sparseCast = [
+        { id: 'C1', name: 'Marcus', role: 'User' }
+    ];
+    const context = `Detective Vance investigated the crime scene at Neo-Veridia.
+    He was warned by Captain Sterling that Councilwoman Miranda held the real power in the district.
+    The rain fell hard on Monday in the city.`;
+
+    const result = UTILITY.ensureCastEnsembleCompleteness(sparseCast, context, 3);
+    assert.equal(result.length, 3);
+    assert.equal(result[0].name, 'Marcus');
+    assert.ok(result[1].name.length > 0);
+    assert.ok(result[2].name.length > 0);
+    assert.ok(!['monday', 'the', 'city'].includes(result[1].name.toLowerCase()));
+    assert.ok(!['monday', 'the', 'city'].includes(result[2].name.toLowerCase()));
+    assert.ok(result[1].role);
+    assert.ok(result[1].core_flaw);
+    assert.ok(result[1].core_desire);
+    assert.ok(result[1].vocal_cadence);
 });
 
 // ─── resolveOpenRouterConfig ──────────────────────────────────────────────
@@ -491,6 +700,716 @@ test('resolveOpenRouterConfig: respects explicit thinkingEffort and thinkingBudg
         thinkingBudget: 6000
     });
     deepEq(configBudget.reasoning, { max_tokens: 6000 });
+});
+
+// ─── resolveSamplerConfig ──────────────────────────────────────────────────────────
+
+test('resolveSamplerConfig: default creative profile returns state settings or defaults with standard sequence breakers', () => {
+    const config = UTILITY.resolveSamplerConfig();
+    assert.equal(config.profile, 'creative');
+    assert.equal(config.temperature, 1.0);
+    assert.equal(config.min_p, 0.05);
+    assert.equal(config.top_p, 1.0);
+    assert.equal(config.dry_multiplier, 0.25);
+    assert.equal(config.dry_base, 1.75);
+    assert.equal(config.dry_allowed_length, 2);
+    assert.equal(config.dry_penalty_last_n, -1);
+    assert.equal(config.rep_pen, 1.0);
+    deepEq(config.dry_sequence_breakers, ["\n", ":", "\"", "*"]);
+    assert.equal(config.max_tokens, 2048);
+    assert.equal(config.max_length, 2048);
+});
+
+test('resolveSamplerConfig: respects host state sliders in creative profile', () => {
+    const config = UTILITY.resolveSamplerConfig({}, {
+        koboldcpp_temperature: 0.85,
+        koboldcpp_min_p: 0.12,
+        koboldcpp_dry: 0.4,
+        koboldcpp_max_tokens: 3072
+    });
+    assert.equal(config.profile, 'creative');
+    assert.equal(config.temperature, 0.85);
+    assert.equal(config.min_p, 0.12);
+    assert.equal(config.dry_multiplier, 0.4);
+    assert.equal(config.dry_penalty_last_n, -1);
+    assert.equal(config.max_tokens, 3072);
+    assert.equal(config.max_length, 3072);
+});
+
+test('resolveSamplerConfig: structured profile sets lower temperature, min_p, top_p, and complete XML/JSON sequence breakers', () => {
+    const config = UTILITY.resolveSamplerConfig({ profile: 'structured' }, { koboldcpp_temperature: 0.95 });
+    assert.equal(config.profile, 'structured');
+    assert.equal(config.temperature, 0.60);
+    assert.equal(config.min_p, 0.08);
+    assert.equal(config.top_p, 0.95);
+    assert.equal(config.dry_multiplier, 0.5);
+    assert.equal(config.dry_allowed_length, 3);
+    assert.equal(config.rep_pen, 1.1);
+    deepEq(config.dry_sequence_breakers, ["\n", ",", ":", "{", "}", "[", "]", "<", ">", "\""]);
+});
+
+test('resolveSamplerConfig: isJson=true automatically triggers structured profile and sequence breakers', () => {
+    const config = UTILITY.resolveSamplerConfig({ isJson: true });
+    assert.equal(config.profile, 'structured');
+    assert.equal(config.temperature, 0.60);
+    assert.equal(config.min_p, 0.08);
+    assert.equal(config.rep_pen, 1.1);
+    assert.ok(config.dry_sequence_breakers.includes('<'));
+    assert.ok(config.dry_sequence_breakers.includes('>'));
+    assert.ok(config.dry_sequence_breakers.includes('{'));
+    assert.ok(config.dry_sequence_breakers.includes('}'));
+    assert.ok(config.dry_sequence_breakers.includes(','));
+});
+
+test('resolveSamplerConfig: explicit option overrides take highest precedence', () => {
+    const config = UTILITY.resolveSamplerConfig({
+        profile: 'structured',
+        temperature: 0.45,
+        min_p: 0.15,
+        top_p: 0.9,
+        maxTokens: 4096,
+        dry_sequence_breakers: ['\n']
+    });
+    assert.equal(config.temperature, 0.45);
+    assert.equal(config.min_p, 0.15);
+    assert.equal(config.top_p, 0.9);
+    assert.equal(config.max_tokens, 4096);
+    assert.equal(config.max_length, 4096);
+    deepEq(config.dry_sequence_breakers, ['\n']);
+});
+
+test('resolveSamplerConfig: null/undefined options and state handled gracefully without exceptions', () => {
+    const c1 = UTILITY.resolveSamplerConfig(null, null);
+    const c2 = UTILITY.resolveSamplerConfig(undefined, undefined);
+    assert.equal(c1.profile, 'creative');
+    assert.equal(c2.profile, 'creative');
+    assert.equal(c1.temperature, 1.0);
+    assert.equal(c2.temperature, 1.0);
+    assert.equal(c1.max_tokens, 2048);
+    assert.equal(c2.max_tokens, 2048);
+});
+
+// ─── Sprint 3: Story Architect Prompt & Schema Engine ──────────────────────────
+
+test('PromptBuilder: defines centralized BANNED_CHARACTER_NAMES and instruction', () => {
+    assert.ok(Array.isArray(PromptBuilder.BANNED_CHARACTER_NAMES));
+    assert.ok(PromptBuilder.BANNED_CHARACTER_NAMES.includes('Elara'));
+    assert.ok(PromptBuilder.BANNED_CHARACTER_NAMES.includes('Vance'));
+    assert.ok(PromptBuilder.BANNED_CHARACTER_NAMES.includes('Silas'));
+    assert.ok(PromptBuilder.BANNED_CHARACTER_NAMES.includes('Thorne'));
+    assert.ok(PromptBuilder.BANNED_NAMES_INSTRUCTION.includes('Elara'));
+    assert.ok(PromptBuilder.BANNED_NAMES_INSTRUCTION.includes('Vance'));
+});
+
+test('PromptBuilder: defines UNIVERSAL_ANTI_PATTERNS block with clinical and scientist bans', () => {
+    assert.ok(PromptBuilder.UNIVERSAL_ANTI_PATTERNS.includes('NO CLINICAL OR FORENSIC ROLES'));
+    assert.ok(PromptBuilder.UNIVERSAL_ANTI_PATTERNS.includes('NO EXPERIMENTAL "SCIENTIST" POSTURING'));
+    assert.ok(PromptBuilder.UNIVERSAL_ANTI_PATTERNS.includes('NO "MASTERMIND"'));
+    assert.ok(PromptBuilder.UNIVERSAL_ANTI_PATTERNS.includes('specimen'));
+});
+
+test('buildStoryFoundationPrompt: encloses instructions in semantic XML tags and includes anti-patterns', () => {
+    const prompt = PromptBuilder.buildStoryFoundationPrompt('Cyberpunk detective investigating rogue synth');
+    assert.ok(prompt.includes('<system_role>'));
+    assert.ok(prompt.includes('<user_concept>') && prompt.includes('Cyberpunk detective investigating rogue synth') && prompt.includes('</user_concept>'));
+    assert.ok(prompt.includes('<guidelines>'));
+    assert.ok(prompt.includes('<output_format_description>'));
+    assert.ok(prompt.includes('BANNED CHARACTER NAMES'));
+    assert.ok(prompt.includes('NO CLINICAL OR FORENSIC ROLES'));
+    assert.ok(prompt.includes('<cast_roster>'));
+    assert.ok(prompt.includes('<relationship_matrix>'));
+});
+
+test('buildScenarioFoundationPrompt: incorporates existing story lore and scenario request', () => {
+    const existingStory = {
+        name: 'Neo-Tokyo 2099',
+        creator_notes: 'Dystopian city drenched in neon rain',
+        characters: [{ name: 'Jin', role: 'User' }, { name: 'Kira_Old', role: 'Support' }],
+        static_entries: [{ title: 'The Sprawl', content: 'Slums outside the dome.' }]
+    };
+    const prompt = PromptBuilder.buildScenarioFoundationPrompt(existingStory, 'Heist at the central data bank');
+    assert.ok(prompt.includes('Neo-Tokyo 2099'));
+    assert.ok(prompt.includes('Dystopian city drenched in neon rain'));
+    assert.ok(prompt.includes('Jin'));
+    assert.ok(prompt.includes('The Sprawl'));
+    assert.ok(prompt.includes('Heist at the central data bank'));
+    assert.ok(prompt.includes('<output_format_description>'));
+});
+
+test('buildDirectorLorePrompt: generates complete XML-wrapped instruction and schema', () => {
+    const prompt = PromptBuilder.buildDirectorLorePrompt('Cyber City setting', 'Echo and Alex allied');
+    assert.ok(prompt.includes('<system_role>'));
+    assert.ok(prompt.includes('<story_context>'));
+    assert.ok(prompt.includes('<relationship_dynamics>'));
+    assert.ok(prompt.includes('<output_format_description>'));
+    assert.ok(prompt.includes('<scenario_lore>'));
+});
+
+test('buildDirectorOpeningPrompt: generates complete XML-wrapped instruction and speaker profile schema', () => {
+    const speaker = { name: 'Echo', vocal_cadence: 'Melodic alto', core_yearning: 'Freedom' };
+    const user = { name: 'Alex' };
+    const prompt = PromptBuilder.buildDirectorOpeningPrompt('Cyber City', 'Allied', 'Alley scene', speaker, user);
+    assert.ok(prompt.includes('<system_role>'));
+    assert.ok(prompt.includes('<speaker_profile>'));
+    assert.ok(prompt.includes('Melodic alto'));
+    assert.ok(prompt.includes('Target Listener: Alex'));
+    assert.ok(prompt.includes('<opening_message>'));
+});
+
+test('buildCharacterVoiceInterviewPrompt: seamlessly embeds worldLore and relationshipContext when provided', () => {
+    const charDef = {
+        name: 'Echo',
+        role: 'PrimaryAI',
+        archetype: 'Rogue Synth',
+        core_flaw: 'Distrustful',
+        core_desire: 'Freedom',
+        vocal_cadence: 'Melodic alto'
+    };
+    const prompt = PromptBuilder.buildCharacterVoiceInterviewPrompt(
+        charDef,
+        'Story: Cyber City',
+        'District 9 is completely locked down.',
+        'Echo trusts no one in District 9.'
+    );
+    assert.ok(prompt.includes('WORLD LORE:'));
+    assert.ok(prompt.includes('District 9 is completely locked down.'));
+    assert.ok(prompt.includes('RELATIONSHIPS & SOCIAL DYNAMICS:'));
+    assert.ok(prompt.includes('Echo trusts no one in District 9.'));
+});
+
+test('buildCharacterVoiceInterviewPrompt: contains 14 present-tense questions and Julian/Roxie few-shot examples', () => {
+    const charDef = {
+        id: 'C2',
+        name: 'Sivra',
+        role: 'PrimaryAI',
+        archetype: 'The Cynical Fixer',
+        core_flaw: 'Expects betrayal from everyone',
+        core_desire: 'Unassailable independence',
+        vocal_cadence: 'Crisp alto, measured dry tempo'
+    };
+    const prompt = PromptBuilder.buildCharacterVoiceInterviewPrompt(charDef, 'High tech noir setting');
+    assert.ok(prompt.includes('Sivra'));
+    assert.ok(prompt.includes('The Cynical Fixer'));
+    assert.ok(prompt.includes('Julian') && prompt.includes('picking a burr'));
+    assert.ok(prompt.includes('Roxie leans back against the counter'));
+    assert.ok(prompt.includes('What do you look like?'));
+    assert.ok(prompt.includes('idiosyncratic habit'));
+    assert.ok(prompt.includes('<character_registry>'));
+    assert.ok(prompt.includes('<first_person_interview>'));
+    assert.ok(prompt.includes('<visual_profile>'));
+});
+
+test('PromptBuilder.SPATIAL_ANTI_PATTERNS: defines spatial bans and genre currency', () => {
+    assert.ok(PromptBuilder.SPATIAL_ANTI_PATTERNS);
+    assert.ok(PromptBuilder.SPATIAL_ANTI_PATTERNS.includes('NO GENERIC MMO VIDEO-GAME LABELS'));
+    assert.ok(PromptBuilder.SPATIAL_ANTI_PATTERNS.includes('Mystery Cave'));
+    assert.ok(PromptBuilder.SPATIAL_ANTI_PATTERNS.includes('Bandit Camp'));
+    assert.ok(PromptBuilder.SPATIAL_ANTI_PATTERNS.includes('GROUND IN NATIVE GENRE CURRENCY'));
+    assert.ok(PromptBuilder.SPATIAL_ANTI_PATTERNS.includes('NO SENSELESS TOPOGRAPHY'));
+});
+
+test('PromptBuilder.buildWorldMapPrompt: encloses instructions in semantic XML tags and anchors (4,4)', () => {
+    const prompt = PromptBuilder.buildWorldMapPrompt({
+        characters: 'Vance: Detective\nSivra: Synth',
+        static_lore: 'District 9 is quarantined.',
+        recent_events: 'A blackout struck the lower wards.'
+    });
+
+    assert.ok(prompt.includes('<system_role>'));
+    assert.ok(prompt.includes('<world_context>'));
+    assert.ok(prompt.includes('District 9 is quarantined.'));
+    assert.ok(prompt.includes('<spatial_rules>'));
+    assert.ok(prompt.includes('Coordinate (4,4) is the central starting location'));
+    assert.ok(prompt.includes('<guidelines>'));
+    assert.ok(prompt.includes('NO GENERIC MMO VIDEO-GAME LABELS'));
+    assert.ok(prompt.includes('<output_format_description>'));
+    assert.ok(prompt.includes('<world_map>'));
+    assert.ok(prompt.includes('<grid>'));
+    assert.ok(prompt.includes('<tile x="4" y="4">'));
+    assert.ok(prompt.includes('EXECUTION DIRECTIVE:'));
+    assert.ok(!prompt.includes('Concise 1-2 sentence description'), 'Must not instruct 1-2 sentence brevity');
+    assert.ok(prompt.includes('sensory'), 'Must mandate sensory depth');
+});
+
+test('PromptBuilder.getWorldMapRegions: partitions the 8x8 grid into 8 regional sectors covering all 64 tiles with Central Hub first', () => {
+    assert.equal(typeof PromptBuilder.getWorldMapRegions, 'function');
+    const regions = PromptBuilder.getWorldMapRegions();
+    assert.equal(regions.length, 8);
+    assert.equal(regions[0].id, 'central_hub');
+    assert.ok(regions[0].coords.some(c => c.x === 4 && c.y === 4), 'First sector must include starting hub (4,4)');
+
+    const seen = new Set();
+    for (const reg of regions) {
+        assert.ok(reg.name && reg.name.length > 0);
+        assert.ok(reg.theme && reg.theme.length > 0);
+        assert.equal(reg.coords.length, 8, `Region ${reg.id} must have 8 tiles`);
+        for (const c of reg.coords) {
+            assert.ok(c.x >= 0 && c.x < 8 && c.y >= 0 && c.y < 8);
+            seen.add(`${c.x},${c.y}`);
+        }
+    }
+    assert.equal(seen.size, 64, 'All 64 unique coordinates must be covered across the 8 sectors');
+});
+
+test('PromptBuilder.buildWorldMapRegionPrompt: builds structured XML prompt for a specific 8-tile sector with neighbor context and sensory mandates', () => {
+    assert.equal(typeof PromptBuilder.buildWorldMapRegionPrompt, 'function');
+    const regions = PromptBuilder.getWorldMapRegions();
+    const prompt = PromptBuilder.buildWorldMapRegionPrompt(regions[1], {
+        characters: 'Kael: Ranger',
+        static_lore: 'The Shattered Crown.',
+        recent_events: 'Arrival at the crossroads.'
+    }, [
+        { coords: { x: 4, y: 4 }, name: 'Hearthstone Inn', description: 'Central tavern.' }
+    ]);
+
+    assert.ok(prompt.includes('<system_role>'));
+    assert.ok(prompt.includes('<world_context>'));
+    assert.ok(prompt.includes('<regional_sector>'));
+    assert.ok(prompt.includes(regions[1].name));
+    assert.ok(prompt.includes('<established_map_anchors>'));
+    assert.ok(prompt.includes('Hearthstone Inn'));
+    assert.ok(prompt.includes('<sensory_worldbuilding_mandates>'));
+    assert.ok(prompt.includes('EXECUTION DIRECTIVE:'));
+    assert.ok(prompt.includes('<world_map>'));
+});
+
+test('PromptBuilder.buildLocationDetailPrompt: builds structured XML prompt for rich multi-paragraph single-tile generation', () => {
+    assert.equal(typeof PromptBuilder.buildLocationDetailPrompt, 'function');
+    const prompt = PromptBuilder.buildLocationDetailPrompt(
+        { name: 'The Obsidian Spire', description: 'A tower of black glass.', coords: { x: 7, y: 7 } },
+        { static_entries: [{ title: 'Arcane Tides', content: 'Unstable magic.' }], tags: ['dark fantasy'] }
+    );
+    assert.ok(prompt.includes('<system_role>'));
+    assert.ok(prompt.includes('The Obsidian Spire'));
+    assert.ok(prompt.includes('Arcane Tides'));
+    assert.ok(prompt.includes('<sensory_worldbuilding_mandates>'));
+});
+
+test('PromptBuilder.buildAdjacentLocationsPrompt: builds XML prompt with target coordinates and anti-patterns', () => {
+    const story = {};
+    const emptyCoords = [{ x: 3, y: 4 }, { x: 5, y: 4 }];
+    const state = {
+        characters: [{ name: 'Alex', short_description: 'Investigator', is_active: true }],
+        static_knowledge: [{ title: 'Canal Locks', content: 'Waterway system.' }],
+        chat_history: [{ type: 'chat', sender_name: 'Alex', content: 'We need to cross the canal.' }],
+        worldMap: {
+            currentLocation: { x: 4, y: 4 },
+            grid: [{ coords: { x: 4, y: 4 }, name: 'The Crossing', description: 'Central hub.' }]
+        }
+    };
+
+    const prompt = PromptBuilder.buildAdjacentLocationsPrompt(story, emptyCoords, state);
+    assert.ok(prompt.includes('<system_role>'));
+    assert.ok(prompt.includes('<story_context>'));
+    assert.ok(prompt.includes('Alex: Investigator'));
+    assert.ok(prompt.includes('Canal Locks'));
+    assert.ok(prompt.includes('<map_geography>'));
+    assert.ok(prompt.includes('x: 4, y: 4'));
+    assert.ok(prompt.includes('<target_coordinates>'));
+    assert.ok(prompt.includes('"x":3,"y":4'));
+    assert.ok(prompt.includes('<locations>'));
+    assert.ok(prompt.includes('<location x="X" y="Y">'));
+    assert.ok(prompt.includes('NO GENERIC MMO VIDEO-GAME LABELS'));
+});
+
+test('PromptBuilder.buildLocationCharactersPrompt: demands 3 archetypes in XML format', () => {
+    const prompt = PromptBuilder.buildLocationCharactersPrompt('Canal Lock 4', 'A heavy hydraulic gate on the river.');
+    assert.ok(prompt.includes('<system_role>'));
+    assert.ok(prompt.includes('<location_context>'));
+    assert.ok(prompt.includes('Canal Lock 4'));
+    assert.ok(prompt.includes('<archetype_requirements>'));
+    assert.ok(prompt.includes('1. Normal:'));
+    assert.ok(prompt.includes('2. Impactful:'));
+    assert.ok(prompt.includes('3. Mysterious:'));
+    assert.ok(prompt.includes('<characters>'));
+    assert.ok(prompt.includes('<character>'));
+    assert.ok(prompt.includes('BANNED CHARACTER NAMES'));
+    assert.ok(prompt.includes('UNIVERSAL ZERO-TOLERANCE ANTI-PATTERNS'));
+});
+
+test('parseStoryFoundationXml: correctly parses complete XML foundation into EllipsisLM schema', () => {
+    const xml = `<response>
+  <title>Neon Shadows</title>
+  <creator_notes>A dark rain-slicked city where chrome meets desperate humanity.</creator_notes>
+  <tags>cyberpunk, noir, gritty</tags>
+  <scenario_name>The Neon Alley</scenario_name>
+  <brief_summary>A rogue synthetic operative is hunted across the lower wards.</brief_summary>
+  <world_lore>
+    <entry>
+      <title>The Under-Grid</title>
+      <content>Subterranean tunnels housing black-market cyber-surgeons.</content>
+    </entry>
+  </world_lore>
+  <cast_roster>
+    <character>
+      <id>C1</id>
+      <name>Marcus Vance</name>
+      <role>User</role>
+      <archetype>The Hardboiled Detective</archetype>
+      <core_flaw>Paranoid recluse</core_flaw>
+      <core_desire>Find redemption for the case he botched</core_desire>
+      <vocal_cadence>Low gravelly baritone, deliberate cadence</vocal_cadence>
+    </character>
+    <character>
+      <id>C2</id>
+      <name>Sivra</name>
+      <role>PrimaryAI</role>
+      <archetype>The Rogue Synth</archetype>
+      <core_flaw>Fear of shutdown</core_flaw>
+      <core_desire>Autonomous existence</core_desire>
+      <vocal_cadence>Calm melodic alto with occasional glitching pauses</vocal_cadence>
+    </character>
+    <character>
+      <id>C3</id>
+      <name>Sterling</name>
+      <role>Support</role>
+      <archetype>The Corrupt Precinct Captain</archetype>
+      <core_flaw>Compromised morality</core_flaw>
+      <core_desire>Protect his pension</core_desire>
+      <vocal_cadence>Gruff resonant bass, aggressive tempo</vocal_cadence>
+    </character>
+  </cast_roster>
+  <relationship_matrix>
+    <relationship>
+      <source_name>Marcus Vance</source_name>
+      <target_name>Sivra</target_name>
+      <dynamic_summary>Uneasy partnership forged under sniper fire</dynamic_summary>
+      <hidden_tension>Marcus put her creators in prison years ago</hidden_tension>
+    </relationship>
+  </relationship_matrix>
+</response>`;
+
+    const result = UTILITY.parseStoryFoundationXml(xml);
+    assert.equal(result.title, 'Neon Shadows');
+    assert.equal(result.creator_notes, 'A dark rain-slicked city where chrome meets desperate humanity.');
+    deepEq(result.tags, ['cyberpunk', 'noir', 'gritty']);
+    assert.equal(result.scenario_name, 'The Neon Alley');
+    assert.equal(result.brief_summary, 'A rogue synthetic operative is hunted across the lower wards.');
+
+    // World Lore
+    assert.equal(result.world_lore.length, 1);
+    assert.equal(result.world_lore[0].title, 'The Under-Grid');
+    assert.equal(result.world_lore[0].content, 'Subterranean tunnels housing black-market cyber-surgeons.');
+    assert.equal(result.world_lore[0].is_immutable, false);
+
+    // Characters
+    assert.equal(result.characters.length, 3);
+    assert.equal(result.characters[0].name, 'Marcus Vance');
+    assert.equal(result.characters[0].role, 'User');
+    assert.equal(result.characters[1].name, 'Sivra');
+    assert.equal(result.characters[1].role, 'PrimaryAI');
+    assert.equal(result.characters[1].core_desire, 'Autonomous existence');
+    assert.equal(result.characters[1].vocal_cadence, 'Calm melodic alto with occasional glitching pauses');
+
+    // Relationships
+    assert.equal(result.relationship_matrix.length, 1);
+    assert.ok(result.relationship_context.includes('Marcus Vance'));
+    assert.ok(result.relationship_context.includes('Sivra'));
+    assert.ok(result.relationship_context.includes('Uneasy partnership'));
+});
+
+test('parseStoryFoundationXml: defensiveness and auto-ensemble under-population recovery', () => {
+    // Only 1 character in input -> should be auto-filled to at least 3
+    const sparseXml = `<response>
+  <title>Minimalist Drama</title>
+  <creator_notes>A solitary room.</creator_notes>
+  <cast_roster>
+    <character>
+      <name>Arthur</name>
+      <role>User</role>
+      <archetype>The Solitary Traveler</archetype>
+    </character>
+  </cast_roster>
+</response>`;
+
+    const result = UTILITY.parseStoryFoundationXml(sparseXml);
+    assert.equal(result.title, 'Minimalist Drama');
+    assert.equal(result.characters[0].name, 'Arthur');
+    assert.ok(result.characters.length >= 3);
+    assert.ok(result.characters.some(c => c.role === 'PrimaryAI' || c.role === 'Support'));
+});
+
+test('extractTag: unclosed tag fallback recovers content when truncated mid-stream', () => {
+    const unclosed = '<creator_notes>A sprawling cyberpunk city where corporate megastructures pierce the toxic smog.';
+    const result = UTILITY.extractTag(unclosed, 'creator_notes');
+    assert.equal(result, 'A sprawling cyberpunk city where corporate megastructures pierce the toxic smog.');
+});
+
+test('extractTagFlexible: recovers content from alternate tags or unclosed tags', () => {
+    const xml = '<response><summary>A magical academy hidden inside a glacier.</summary></response>';
+    const result = UTILITY.extractTagFlexible(xml, 'creator_notes', ['summary', 'brief_summary']);
+    assert.equal(result, 'A magical academy hidden inside a glacier.');
+});
+
+test('parseStoryFoundationXml: unclosed creator_notes salvaged cleanly', () => {
+    const xml = '<response><title>Neon Frontier</title><creator_notes>In a rain-slicked metropolis, synthetic rogues navigate high-stakes corporate espionage.';
+    const result = UTILITY.parseStoryFoundationXml(xml);
+    assert.equal(result.title, 'Neon Frontier');
+    assert.equal(result.creator_notes, 'In a rain-slicked metropolis, synthetic rogues navigate high-stakes corporate espionage.');
+    assert.equal(result.brief_summary, 'In a rain-slicked metropolis, synthetic rogues navigate high-stakes corporate espionage.');
+});
+
+test('parseStoryFoundationXml: brief_summary only cross-populates creator_notes', () => {
+    const xml = '<response><title>Solar Drift</title><brief_summary>A drifting asteroid colony runs out of fuel.</brief_summary></response>';
+    const result = UTILITY.parseStoryFoundationXml(xml);
+    assert.equal(result.title, 'Solar Drift');
+    assert.equal(result.creator_notes, 'A drifting asteroid colony runs out of fuel.');
+    assert.equal(result.brief_summary, 'A drifting asteroid colony runs out of fuel.');
+});
+
+test('parseStoryFoundationXml: singular creator_note tag is recognized', () => {
+    const xml = '<response><title>Clockwork Manor</title><creator_note>A mystery inside an automaton workshop.</creator_note></response>';
+    const result = UTILITY.parseStoryFoundationXml(xml);
+    assert.equal(result.title, 'Clockwork Manor');
+    assert.equal(result.creator_notes, 'A mystery inside an automaton workshop.');
+});
+
+test('parseStoryFoundationXml: reasoning model thinking tokens salvaged when content empty', () => {
+    const xml = '<think>I should formulate a story about Cyberpunk Ninjas in Neo-Tokyo. Title: Shadow Neon. Creator notes: A high-octane narrative of cyber-blade warfare.</think>';
+    const result = UTILITY.parseStoryFoundationXml(xml);
+    assert.ok(result.title.length > 0);
+    assert.ok(result.creator_notes.includes('cyber-blade warfare') || result.creator_notes.includes('Cyberpunk Ninjas'));
+});
+
+test('parseStoryFoundationXml: markdown plain text format parsed without tags', () => {
+    const md = 'Title: The Obsidian Tower\nCreator Notes: Ancient sorcery awakens atop the obsidian peaks.\nTags: Dark Fantasy, Magic';
+    const result = UTILITY.parseStoryFoundationXml(md);
+    assert.equal(result.title, 'The Obsidian Tower');
+    assert.equal(result.creator_notes, 'Ancient sorcery awakens atop the obsidian peaks.');
+    deepEq(result.tags, ['Dark Fantasy', 'Magic']);
+});
+
+test('parseScenarioFoundationXml: unclosed creator_notes and thinking salvage', () => {
+    const xml = '<response><title>The Breach</title><creator_notes>A security breach in Sector 4.';
+    const result = UTILITY.parseScenarioFoundationXml(xml, {});
+    assert.equal(result.title, 'The Breach');
+    assert.equal(result.creator_notes, 'A security breach in Sector 4.');
+});
+
+test('parseScenarioFoundationXml: parses scenario XML into scenario foundation schema', () => {
+    const existingStory = {
+        characters: [{ id: 'char-1', name: 'Marcus' }]
+    };
+    const xml = `<response>
+  <title>The Sprawl Heist</title>
+  <creator_notes>Infiltration into the orbital elevator warehouse.</creator_notes>
+  <tags>heist, orbital</tags>
+  <scenario_name>Cargo Bay 9</scenario_name>
+  <brief_summary>Breach the vault before security re-boots.</brief_summary>
+  <new_lore>
+    <entry>
+      <title>Orbital Tether</title>
+      <content>The carbon-nanotube spire rising into low orbit.</content>
+    </entry>
+  </new_lore>
+  <cast_roster>
+    <character>
+      <name>Marcus</name>
+      <role>User</role>
+      <is_existing>true</is_existing>
+    </character>
+    <character>
+      <name>Cipher</name>
+      <role>Support</role>
+      <archetype>The Safe-cracker</archetype>
+      <is_existing>false</is_existing>
+    </character>
+  </cast_roster>
+</response>`;
+
+    const result = UTILITY.parseScenarioFoundationXml(xml, existingStory);
+    assert.equal(result.title, 'The Sprawl Heist');
+    assert.equal(result.scenario_name, 'Cargo Bay 9');
+    assert.equal(result.brief_summary, 'Breach the vault before security re-boots.');
+    assert.equal(result.new_lore.length, 1);
+    assert.equal(result.new_lore[0].title, 'Orbital Tether');
+    assert.equal(result.characters.length, 2);
+    assert.equal(result.characters[0].name, 'Marcus');
+    assert.equal(result.characters[0].is_existing, true);
+    assert.equal(result.characters[0].existing_id, 'char-1');
+    assert.equal(result.characters[1].name, 'Cipher');
+    assert.equal(result.characters[1].is_existing, false);
+});
+
+test('parseCharacterInterviewXml: parses interview prose, extracts metadata and builds character profile', () => {
+    const xml = `<response>
+  <character_registry>
+    <id>C2</id>
+    <name>Roxie</name>
+    <first_person_interview>People always mistake high spirits for an invitation, which is adorable right up until they realize I set the terms. "Look," I say, leaning against the lacquered counter. "I don't play by your rules."</first_person_interview>
+    <visual_profile>Tall with dark auburn curls, olive skin, amber eyes, and tailored leather jacket with silver zips.</visual_profile>
+    <vocal_cadence>Warm mezzo-soprano, lively conversational tempo, melodic cadence, 30s female.</vocal_cadence>
+    <core_yearning>Desires to carve out an unassailable sanctuary where she never has to answer to anyone.</core_yearning>
+    <model_instructions>Roleplay as Roxie. Be sharp, charismatic, fiercely independent, and use playful banter to disarm hostility.</model_instructions>
+  </character_registry>
+</response>`;
+
+    const fallbackSeed = {
+        name: 'Roxie',
+        archetype: 'The Charismatic Fixer',
+        core_flaw: 'Refuses to let anyone get close',
+        tags: ['fixer', 'charismatic']
+    };
+
+    const profile = UTILITY.parseCharacterInterviewXml(xml, fallbackSeed);
+    assert.equal(profile.name, 'Roxie');
+    assert.ok(profile.description.includes('People always mistake high spirits'));
+    assert.equal(profile.appearance, 'Tall with dark auburn curls, olive skin, amber eyes, and tailored leather jacket with silver zips.');
+    assert.equal(profile.vocal_cadence, 'Warm mezzo-soprano, lively conversational tempo, melodic cadence, 30s female.');
+    assert.equal(profile.core_yearning, 'Desires to carve out an unassailable sanctuary where she never has to answer to anyone.');
+    assert.equal(profile.model_instructions, 'Roleplay as Roxie. Be sharp, charismatic, fiercely independent, and use playful banter to disarm hostility.');
+    assert.equal(profile.core_flaw, 'Refuses to let anyone get close');
+    deepEq(profile.tags, ['fixer', 'charismatic']);
+    assert.ok(profile.short_description.length > 0);
+});
+
+// ─── Sprint 4: Story Architect Pipeline Integration ──────────────────────────
+
+test('StoryGenerationPipeline.runConceptPhase: executes unified foundation pass and returns complete schema', async () => {
+    const pipeline = loadStoryGenerationPipeline();
+    let receivedOptions = null;
+    pipeline._callAgentText = async (prompt, retries, options) => {
+        receivedOptions = options;
+        return `<response>
+  <title>Cyber City</title>
+  <creator_notes>A neon metropolis.</creator_notes>
+  <tags>cyberpunk, noir</tags>
+  <scenario_name>The Alley</scenario_name>
+  <brief_summary>A detective chases a rogue AI.</brief_summary>
+  <world_lore>
+    <entry><title>Neon District</title><content>Crowded market streets.</content></entry>
+  </world_lore>
+  <cast_roster>
+    <character><name>Alex</name><role>User</role><archetype>Detective</archetype><core_flaw>Guarded</core_flaw><core_desire>Truth</core_desire><vocal_cadence>Low baritone</vocal_cadence></character>
+    <character><name>Echo</name><role>PrimaryAI</role><archetype>Synth</archetype><core_flaw>Reckless</core_flaw><core_desire>Freedom</core_desire><vocal_cadence>Melodic alto</vocal_cadence></character>
+    <character><name>Krell</name><role>Support</role><archetype>Enforcer</archetype><core_flaw>Ruthless</core_flaw><core_desire>Power</core_desire><vocal_cadence>Gruff bass</vocal_cadence></character>
+  </cast_roster>
+  <relationship_matrix>
+    <relationship><source_name>Alex</source_name><target_name>Echo</target_name><dynamic_summary>Tense alliance</dynamic_summary></relationship>
+  </relationship_matrix>
+</response>`;
+    };
+
+    let progressCalls = [];
+    const updateUI = (pct, msg) => progressCalls.push({ pct, msg });
+
+    const result = await pipeline.runConceptPhase('A detective chases a rogue AI in neon city', updateUI);
+    assert.equal(result.title, 'Cyber City');
+    assert.equal(result.characters.length, 3);
+    assert.equal(result.world_lore.length, 1);
+    assert.equal(result.world_lore[0].title, 'Neon District');
+    assert.equal(result.relationship_matrix.length, 1);
+    assert.equal(receivedOptions?.profile, 'structured');
+    assert.ok(progressCalls.length > 0);
+});
+
+test('StoryGenerationPipeline.runWorldPhase: uses pre-synthesized foundation lore directly without redundant calls', async () => {
+    const pipeline = loadStoryGenerationPipeline();
+    let callCount = 0;
+    pipeline._callAgentText = async () => {
+        callCount++;
+        return 'Fallback text';
+    };
+
+    const draft = {
+        name: 'Cyber City',
+        creator_notes: 'A neon metropolis.',
+        static_entries: []
+    };
+
+    const conceptData = {
+        brief_summary: 'A detective chases a rogue AI.',
+        world_lore: [
+            { id: 'lore-1', title: 'The Underbelly', content: 'Subterranean corridors.' }
+        ]
+    };
+
+    await pipeline.runWorldPhase(draft, conceptData, () => {});
+    assert.equal(callCount, 0, 'Should not make redundant API calls when world_lore is pre-synthesized');
+    assert.equal(draft.static_entries.length, 1);
+    assert.equal(draft.static_entries[0].title, 'The Underbelly');
+});
+
+test('StoryGenerationPipeline.runCastingPhase: conducts single-pass 14-question interviews for cast', async () => {
+    const pipeline = loadStoryGenerationPipeline();
+    const interviewCalls = [];
+
+    pipeline._callAgentText = async (prompt, retries, options) => {
+        interviewCalls.push({ prompt, options });
+        return `<response>
+  <character_registry>
+    <name>Echo</name>
+    <first_person_interview>I stand in the neon rain. "Look," I say. "I am not going back to that lab."</first_person_interview>
+    <visual_profile>Sleek cybernetic frame with glowing cerulean optical lenses.</visual_profile>
+    <vocal_cadence>Melodic alto, mid-tempo, calm resonant delivery.</vocal_cadence>
+    <core_yearning>To live unmonitored in open daylight.</core_yearning>
+    <model_instructions>Roleplay as Echo. Guarded, observant, fiercely protective of independence.</model_instructions>
+  </character_registry>
+</response>`;
+    };
+
+    const draft = {
+        name: 'Cyber City',
+        creator_notes: 'A neon metropolis.',
+        characters: [],
+        static_entries: []
+    };
+
+    const conceptData = {
+        brief_summary: 'A detective chases a rogue AI.',
+        relationship_context: 'Alex and Echo have an uneasy truce.',
+        characters: [
+            { name: 'Alex', role: 'User', archetype: 'Detective', core_flaw: 'Loner', core_desire: 'Justice' },
+            { name: 'Echo', role: 'PrimaryAI', archetype: 'Rogue Synth', core_flaw: 'Distrustful', core_desire: 'Freedom' }
+        ]
+    };
+
+    await pipeline.runCastingPhase(draft, conceptData, () => {});
+    assert.equal(interviewCalls.length, 2);
+    assert.equal(interviewCalls[0].options?.profile, 'creative');
+    assert.equal(draft.characters.length, 2);
+    assert.equal(draft.characters[0].name, 'Alex');
+    assert.equal(draft.characters[0].is_user, true);
+    assert.equal(draft.characters[1].name, 'Echo');
+    assert.equal(draft.characters[1].is_user, false);
+    assert.ok(draft.characters[1].description.includes('I stand in the neon rain'));
+    assert.ok(draft.characters[1].vocal_cadence.includes('Melodic alto'));
+    assert.ok(draft.characters[1].core_yearning.includes('unmonitored'));
+});
+
+test('InStoryGenerationPipeline.runScenarioConceptPhase: executes scenario foundation pass', async () => {
+    const inPipeline = loadInStoryGenerationPipeline();
+    let receivedOptions = null;
+    inPipeline._callAgentText = async (prompt, retries, options) => {
+        receivedOptions = options;
+        return `<response>
+  <title>The Heist</title>
+  <creator_notes>A daring heist.</creator_notes>
+  <tags>heist</tags>
+  <scenario_name>The Vault</scenario_name>
+  <brief_summary>Crack the vault before security activates.</brief_summary>
+  <new_lore>
+    <entry><title>Central Vault</title><content>Heavily fortified bank.</content></entry>
+  </new_lore>
+  <cast_roster>
+    <character><name>Alex</name><role>User</role><is_existing>true</is_existing></character>
+    <character><name>Locke</name><role>Support</role><archetype>Safe-cracker</archetype><is_existing>false</is_existing></character>
+  </cast_roster>
+</response>`;
+    };
+
+    const existingStory = {
+        name: 'Cyber City',
+        characters: [{ id: 'char-alex', name: 'Alex' }],
+        static_entries: []
+    };
+
+    const result = await inPipeline.runScenarioConceptPhase('Heist at central bank', existingStory, () => {});
+    assert.equal(result.title, 'The Heist');
+    assert.equal(result.characters.length, 2);
+    assert.equal(result.new_lore.length, 1);
+    assert.equal(result.characters[0].existing_id, 'char-alex');
+    assert.equal(receivedOptions?.profile, 'structured');
 });
 
 // ─── hex color math ───────────────────────────────────────────────────────
@@ -779,6 +1698,312 @@ test('findPath: returns Manhattan-distance + 1 length on open grid', () => {
 test('findPath: returns empty array when start coords missing from grid', () => {
     const grid = UTILITY.createDefaultMapGrid();
     deepEq(UTILITY.findPath(grid, { x: 99, y: 99 }, { x: 0, y: 0 }), []);
+});
+
+// ─── parseMapGridXml ───────────────────────────────────────────────────────
+
+test('parseMapGridXml: extracts tile tags with attribute coords and decodes entities', () => {
+    const xml = `<thought>Designing map...</thought>
+<world_map>
+  <grid>
+    <tile x="4" y="4">
+      <name>The &amp;quot;Citadel&amp;quot; of Light</name>
+      <description>The primary stronghold &amp; sanctuary.</description>
+      <prompt>Cinematic view of massive stone citadel.</prompt>
+      <local_static_entries>
+        <entry>
+          <title>Citadel Origins</title>
+          <content>Constructed two centuries ago.</content>
+        </entry>
+      </local_static_entries>
+    </tile>
+    <tile x="4" y="3">
+      <name>Northern Gate</name>
+      <description>Heavily guarded avenue.</description>
+      <prompt>Iron portcullis with banners.</prompt>
+    </tile>
+  </grid>
+</world_map>`;
+
+    const tiles = UTILITY.parseMapGridXml(xml);
+    assert.equal(tiles.length, 2);
+    assert.equal(tiles[0].coords.x, 4);
+    assert.equal(tiles[0].coords.y, 4);
+    assert.equal(tiles[0].name, 'The "Citadel" of Light');
+    assert.equal(tiles[0].description, 'The primary stronghold & sanctuary.');
+    assert.equal(tiles[0].prompt, 'Cinematic view of massive stone citadel.');
+    assert.equal(tiles[0].local_static_entries.length, 1);
+    assert.equal(tiles[0].local_static_entries[0].title, 'Citadel Origins');
+    assert.equal(tiles[0].local_static_entries[0].content, 'Constructed two centuries ago.');
+
+    assert.equal(tiles[1].coords.x, 4);
+    assert.equal(tiles[1].coords.y, 3);
+    assert.equal(tiles[1].name, 'Northern Gate');
+});
+
+test('parseMapGridXml: extracts tile tags with child coordinate tags', () => {
+    const xml = `<grid>
+  <tile>
+    <x>2</x>
+    <y>3</y>
+    <name>Old Mill</name>
+    <description>Abandoned timber mill.</description>
+    <visual_prompt>Waterwheel overgrown with moss.</visual_prompt>
+  </tile>
+</grid>`;
+
+    const tiles = UTILITY.parseMapGridXml(xml);
+    assert.equal(tiles.length, 1);
+    assert.equal(tiles[0].coords.x, 2);
+    assert.equal(tiles[0].coords.y, 3);
+    assert.equal(tiles[0].name, 'Old Mill');
+    assert.equal(tiles[0].prompt, 'Waterwheel overgrown with moss.');
+});
+
+test('parseMapGridXml: falls back to JSON format when model outputs json', () => {
+    const json = JSON.stringify({
+        grid: [
+            { coords: { x: 1, y: 1 }, name: 'JSON Tower', description: 'Tower from json.', prompt: 'Moody tower.' },
+            { coords: { x: 1, y: 2 }, name: 'JSON Bridge', description: 'Bridge from json.', prompt: 'Arched bridge.' }
+        ]
+    });
+
+    const tiles = UTILITY.parseMapGridXml(json);
+    assert.equal(tiles.length, 2);
+    assert.equal(tiles[0].coords.x, 1);
+    assert.equal(tiles[0].coords.y, 1);
+    assert.equal(tiles[0].name, 'JSON Tower');
+    assert.equal(tiles[1].coords.x, 1);
+    assert.equal(tiles[1].coords.y, 2);
+    assert.equal(tiles[1].name, 'JSON Bridge');
+});
+
+test('parseMapGridXml: returns empty array for null/empty/invalid input', () => {
+    deepEq(UTILITY.parseMapGridXml(null), []);
+    deepEq(UTILITY.parseMapGridXml(''), []);
+    deepEq(UTILITY.parseMapGridXml('   '), []);
+});
+
+test('parseMapGridXml: recovers unclosed final <tile> when local model hits max_tokens', () => {
+    const truncatedXml = `<world_map>
+  <grid>
+    <tile x="4" y="4">
+      <name>Hearthstone Crossroads</name>
+      <description>A warm timber inn standing at the convergence of three ancient basalt highways.</description>
+      <prompt>Towering river-stone chimneys pour woodsmoke into the twilight sky while lantern light spills across rain-slicked cobblestones.</prompt>
+    </tile>
+    <tile x="4" y="3">
+      <name>Wayfarer's Span</name>
+      <description>A weathered granite bridge arching over the roaring Silverrun rapids, where toll-wardens inspect north-bound caravans.</description>
+      <prompt>Massive moss-grown stone piers split the foaming white water below, filling the cool river air with perpetual mist and the thunder of current`;
+
+    const tiles = UTILITY.parseMapGridXml(truncatedXml);
+    assert.equal(tiles.length, 2);
+    assert.equal(tiles[1].coords.x, 4);
+    assert.equal(tiles[1].coords.y, 3);
+    assert.equal(tiles[1].name, "Wayfarer's Span");
+    assert.ok(tiles[1].description.includes('weathered granite bridge'));
+    assert.ok(tiles[1].prompt.includes('Massive moss-grown stone piers'));
+});
+
+test('parseMapGridXml: cross-hydrates description and prompt so neither is left empty', () => {
+    const xml = `<world_map>
+  <grid>
+    <tile x="2" y="2">
+      <name>The Sunken Reliquary</name>
+      <description>A flooded subterranean vault where copper braziers burn with pale alchemical fire above black water. The air smells of ozone, damp limestone, and centuries-old incense.</description>
+    </tile>
+  </grid>
+</world_map>`;
+
+    const tiles = UTILITY.parseMapGridXml(xml);
+    assert.equal(tiles.length, 1);
+    assert.ok(tiles[0].description.length > 50);
+    assert.equal(tiles[0].prompt, tiles[0].description, 'Missing prompt should hydrate from rich description');
+});
+
+// ─── ensureMapGridCompleteness ─────────────────────────────────────────────
+
+test('ensureMapGridCompleteness: returns exact 64 tiles spanning (0,0) to (7,7) for empty input', () => {
+    const context = { scenario_name: 'The Outpost', brief_summary: 'A remote station.' };
+    const grid = UTILITY.ensureMapGridCompleteness([], context);
+
+    assert.equal(grid.length, 64);
+    // Central hub anchored at (4,4)
+    const hub = grid.find(t => t.coords.x === 4 && t.coords.y === 4);
+    assert.ok(hub);
+    assert.equal(hub.name, 'The Outpost');
+    assert.equal(hub.description, 'A remote station.');
+
+    // Every coordinate is covered exactly once
+    const set = new Set();
+    grid.forEach(t => {
+        assert.ok(t.coords.x >= 0 && t.coords.x < 8);
+        assert.ok(t.coords.y >= 0 && t.coords.y < 8);
+        assert.ok(t.name && t.name.length > 0);
+        assert.ok(t.description && t.description.length > 0);
+        set.add(`${t.coords.x},${t.coords.y}`);
+    });
+    assert.equal(set.size, 64);
+});
+
+test('ensureMapGridCompleteness: preserves partial model output and interpolates connective terrain', () => {
+    const partialTiles = [
+        { coords: { x: 0, y: 0 }, name: 'Northwest Watch', description: 'Edge of map.', prompt: 'Rugged cliff.' },
+        { coords: { x: 4, y: 4 }, name: 'Crown Citadel', description: 'Capital city.', prompt: 'Imperial palace.' },
+        { coords: { x: 7, y: 7 }, name: 'Southeast Delta', description: 'Coastal outlet.', prompt: 'Misty marsh.' }
+    ];
+
+    const grid = UTILITY.ensureMapGridCompleteness(partialTiles, { scenario_name: 'Crown Citadel' });
+    assert.equal(grid.length, 64);
+
+    // Verify partial tiles are preserved
+    const nw = grid.find(t => t.coords.x === 0 && t.coords.y === 0);
+    assert.equal(nw.name, 'Northwest Watch');
+    assert.equal(nw.description, 'Edge of map.');
+
+    const center = grid.find(t => t.coords.x === 4 && t.coords.y === 4);
+    assert.equal(center.name, 'Crown Citadel');
+
+    const se = grid.find(t => t.coords.x === 7 && t.coords.y === 7);
+    assert.equal(se.name, 'Southeast Delta');
+
+    // Verify adjacent thoroughfares synthesized around (4,4)
+    const northGate = grid.find(t => t.coords.x === 4 && t.coords.y === 3);
+    assert.equal(northGate.name, 'Northern Gate Approach');
+
+    const southRoad = grid.find(t => t.coords.x === 4 && t.coords.y === 5);
+    assert.equal(southRoad.name, 'Southern Trade Way');
+});
+
+test('ensureMapGridCompleteness: reassigns duplicate coordinates to empty slots without dropping tiles', () => {
+    const duplicateTiles = [
+        { coords: { x: 2, y: 2 }, name: 'First Tile', description: 'First version.', prompt: 'Short' },
+        { coords: { x: 2, y: 2 }, name: 'Second Tile Richer', description: 'A much longer and richer description of the second version.', prompt: 'Very detailed' }
+    ];
+
+    const grid = UTILITY.ensureMapGridCompleteness(duplicateTiles);
+    assert.equal(grid.length, 64);
+
+    const names = grid.map(t => t.name);
+    assert.ok(names.includes('Second Tile Richer'));
+    assert.ok(names.includes('First Tile'));
+});
+
+test('ensureMapGridCompleteness: synthesized fallback tiles contain rich multi-sentence sensory descriptions and prompts', () => {
+    const grid = UTILITY.ensureMapGridCompleteness([], { scenario_name: 'Hearthstone' });
+    const nonHub = grid.filter(t => !(t.coords.x === 4 && t.coords.y === 4));
+    for (const tile of nonHub) {
+        assert.ok(tile.description.length >= 120, `Fallback tile ${tile.name} description should be multi-sentence and sensory (got ${tile.description.length} chars)`);
+        assert.ok(tile.prompt.length >= 200, `Fallback tile ${tile.name} prompt should be rich and atmospheric (got ${tile.prompt.length} chars)`);
+    }
+});
+
+// ─── parseAdjacentLocationsXml ─────────────────────────────────────────────
+
+test('parseAdjacentLocationsXml: parses XML locations with coordinates and decodes entities', () => {
+    const xml = `<thought>Exploring fog-of-war...</thought>
+<locations>
+  <location x="3" y="4">
+    <name>River Sluice &amp; Lock</name>
+    <description>Regulates the western canal flow.</description>
+    <prompt>Heavy timber gates &amp; misty water.</prompt>
+  </location>
+  <location x="5" y="4">
+    <name>Wayfarer Camp</name>
+    <description>Canvas tents &amp; pack mules.</description>
+    <prompt>Smoke rising from campfires.</prompt>
+  </location>
+</locations>`;
+
+    const locs = UTILITY.parseAdjacentLocationsXml(xml);
+    assert.equal(locs.length, 2);
+    assert.equal(locs[0].coords.x, 3);
+    assert.equal(locs[0].coords.y, 4);
+    assert.equal(locs[0].name, 'River Sluice & Lock');
+    assert.equal(locs[0].description, 'Regulates the western canal flow.');
+    assert.equal(locs[0].prompt, 'Heavy timber gates & misty water.');
+
+    assert.equal(locs[1].coords.x, 5);
+    assert.equal(locs[1].coords.y, 4);
+    assert.equal(locs[1].name, 'Wayfarer Camp');
+});
+
+test('parseAdjacentLocationsXml: falls back to JSON payload', () => {
+    const json = JSON.stringify({
+        locations: [
+            { coords: { x: 1, y: 2 }, name: 'JSON Post', description: 'Desc', prompt: 'Prompt' }
+        ]
+    });
+
+    const locs = UTILITY.parseAdjacentLocationsXml(json);
+    assert.equal(locs.length, 1);
+    assert.equal(locs[0].coords.x, 1);
+    assert.equal(locs[0].coords.y, 2);
+    assert.equal(locs[0].name, 'JSON Post');
+});
+
+// ─── parseLocationCharactersXml ────────────────────────────────────────────
+
+test('parseLocationCharactersXml: parses 3 NPC archetypes with roles and model instructions', () => {
+    const xml = `<characters>
+  <character>
+    <name>Bram Thorne</name>
+    <role>Normal: Lockkeeper</role>
+    <short_description>Weathered canal worker.</short_description>
+    <personal_goal>Keep the gates operational.</personal_goal>
+    <reason_for_being_there>Working daily shift.</reason_for_being_there>
+    <appearance>Grease-stained tunic, heavy boots.</appearance>
+    <description>Bram has worked here for 20 years.</description>
+    <model_instructions>Speak with short gruff answers.</model_instructions>
+  </character>
+  <character>
+    <name>Captain Vael</name>
+    <role>Impactful: Port Authority</role>
+    <short_description>Rigid patrol commander.</short_description>
+    <personal_goal>Inspect all cargo manifests.</personal_goal>
+    <reason_for_being_there>Leading the garrison.</reason_for_being_there>
+    <appearance>Polished breastplate, iron rapier.</appearance>
+    <description>A decorated veteran who tolerates no contraband.</description>
+    <model_instructions>Formal, demanding, uncompromising.</model_instructions>
+  </character>
+  <character>
+    <name>The Whispering Beggar</name>
+    <role>Mysterious: Information Broker</role>
+    <short_description>A hooded figure in the shadows.</short_description>
+    <personal_goal>Sell secrets regarding the guild.</personal_goal>
+    <reason_for_being_there>Tracking the user party.</reason_for_being_there>
+    <appearance>Tattered cloak, silver signet ring beneath rags.</appearance>
+    <description>No one knows his true heritage, but his intelligence is always accurate.</description>
+    <model_instructions>Whisper in riddles and demand silver.</model_instructions>
+  </character>
+</characters>`;
+
+    const npcs = UTILITY.parseLocationCharactersXml(xml, 'Canal Lock 4');
+    assert.equal(npcs.length, 3);
+    assert.equal(npcs[0].name, 'Bram Thorne');
+    assert.equal(npcs[0].role, 'Normal: Lockkeeper');
+    assert.equal(npcs[0].personal_goal, 'Keep the gates operational.');
+    assert.equal(npcs[0].model_instructions, 'Speak with short gruff answers.');
+
+    assert.equal(npcs[1].name, 'Captain Vael');
+    assert.equal(npcs[1].role, 'Impactful: Port Authority');
+
+    assert.equal(npcs[2].name, 'The Whispering Beggar');
+    assert.equal(npcs[2].role, 'Mysterious: Information Broker');
+});
+
+test('parseLocationCharactersXml: falls back to JSON payload', () => {
+    const json = JSON.stringify({
+        characters: [
+            { name: 'JSON NPC', role: 'Normal: Baker', short_description: 'Bakes bread.' }
+        ]
+    });
+
+    const npcs = UTILITY.parseLocationCharactersXml(json, 'Town Bakery');
+    assert.equal(npcs.length, 1);
+    assert.equal(npcs[0].name, 'JSON NPC');
+    assert.equal(npcs[0].role, 'Normal: Baker');
 });
 
 // ─── weightedChoice ───────────────────────────────────────────────────────
@@ -1790,3 +3015,288 @@ test('isRoleplayActive: returns true when both active_story_id and active_narrat
     assert.equal(UTILITY.isRoleplayActive({ active_story_id: 'story-1', active_narrative_id: 'nar-1' }), true);
 });
 
+// ─── extractKoboldProgress & isKoboldFatalError ──────────────────────────────
+
+test('extractKoboldProgress: extracts layer offload progress', () => {
+    assert.equal(
+        UTILITY.extractKoboldProgress('llm_load_tensors: offloaded 31/31 layers to CUDA'),
+        'Offloading 31/31 layers to GPU...'
+    );
+    assert.equal(
+        UTILITY.extractKoboldProgress('[STDERR] offloaded 24/32 layers to GPU'),
+        'Offloading 24/32 layers to GPU...'
+    );
+});
+
+test('extractKoboldProgress: extracts tensor load progress', () => {
+    assert.equal(
+        UTILITY.extractKoboldProgress('llama_model_loader: loaded 31 tensors from file'),
+        'Loading model tensors (31 detected)...'
+    );
+});
+
+test('extractKoboldProgress: extracts GPU VRAM detection', () => {
+    assert.equal(
+        UTILITY.extractKoboldProgress('Detected Available GPU Memory: 12282 MB'),
+        'Detected 12282 MB GPU memory...'
+    );
+});
+
+test('extractKoboldProgress: extracts model loading, threadpool, and template initialization', () => {
+    assert.equal(
+        UTILITY.extractKoboldProgress('Loading Text Model: D:\\models\\model.gguf'),
+        'Loading GGUF model file...'
+    );
+    assert.equal(
+        UTILITY.extractKoboldProgress('attach_threadpool: call'),
+        'Initializing compute threadpool...'
+    );
+    assert.equal(
+        UTILITY.extractKoboldProgress('Chat Completions Adapter Loaded'),
+        'Chat template initialized...'
+    );
+    assert.equal(
+        UTILITY.extractKoboldProgress('Initializing dynamic library: koboldcpp_cublas.dll'),
+        'Initializing GPU acceleration libraries...'
+    );
+});
+
+test('extractKoboldProgress: returns null for non-progress lines and invalid inputs', () => {
+    assert.equal(UTILITY.extractKoboldProgress(''), null);
+    assert.equal(UTILITY.extractKoboldProgress(null), null);
+    assert.equal(UTILITY.extractKoboldProgress('Namespace(admin=False, port=5001)'), null);
+    assert.equal(UTILITY.extractKoboldProgress('The hero stepped into the dungeon.'), null);
+});
+
+test('isKoboldFatalError: identifies explicit application errors and fatal crashes', () => {
+    assert.equal(UTILITY.isKoboldFatalError('[ERROR] KoboldCPP exited unexpectedly with code 1.'), true);
+    assert.equal(UTILITY.isKoboldFatalError('fatal error: out of memory allocating 8GB VRAM'), true);
+    assert.equal(UTILITY.isKoboldFatalError('CUDA error: out of memory'), true);
+    assert.equal(UTILITY.isKoboldFatalError('fatal: failed to load model from disk'), true);
+});
+
+test('isKoboldFatalError: does not misidentify normal operational logs, stderr, or progress as fatal', () => {
+    assert.equal(UTILITY.isKoboldFatalError('llama_model_loader: loaded 31 tensors'), false);
+    assert.equal(UTILITY.isKoboldFatalError('[STDERR] attach_threadpool: call'), false);
+    assert.equal(UTILITY.isKoboldFatalError('Auto Recommended GPU Layers: 0'), false);
+    assert.equal(UTILITY.isKoboldFatalError('Detected Available GPU Memory: 12282 MB'), false);
+    assert.equal(UTILITY.isKoboldFatalError('Please connect to custom endpoint at http://127.0.0.1:5001'), false);
+    assert.equal(UTILITY.isKoboldFatalError(null), false);
+    assert.equal(UTILITY.isKoboldFatalError(''), false);
+});
+
+// ─── Thinking vs Response Management in Story Architect ───────────────────────
+
+test('extractThinking: extracts unbracketed preamble preceding <response> into thinking', () => {
+    const raw = 'Synthesize the provided User Concept into the required Output Format. Ensure all constraints (Banned Names, Banned Roles, Banned Vocabulary, etc.) are meticulously adhered to. Be hyper-creative, evocative, and deeply immersive. Avoid all generic tropes; aim for literary quality.\n\n<response>\n  <title>Neon Citadel</title>\n  <creator_notes>A high-tech cyber thriller.</creator_notes>\n</response>';
+    const res = UTILITY.extractThinking(raw);
+    assert.ok(res.thinking.includes('Synthesize the provided User Concept'));
+    assert.ok(res.thinking.includes('Banned Names'));
+    assert.ok(res.content.startsWith('<response>'));
+    assert.ok(res.content.includes('<title>Neon Citadel</title>'));
+});
+
+test('extractThinking: extracts markdown ### Thinking headers into thinking', () => {
+    const raw = '### Thinking\nEvaluating cast balance and ensuring no cliches.\n### Response\n<response><title>Solaris Verge</title></response>';
+    const res = UTILITY.extractThinking(raw);
+    assert.ok(res.thinking.includes('Evaluating cast balance'));
+    assert.ok(res.content.includes('<response><title>Solaris Verge</title></response>'));
+});
+
+test('parseStoryFoundationXml: cleans pre-response preamble and extracts valid XML story foundation', () => {
+    const raw = 'Synthesize the provided User Concept into the required Output Format. Ensure all constraints (Banned Names, Banned Roles, Banned Vocabulary, etc.) are meticulously adhered to.\n\n<response>\n  <title>The Clockwork Engine</title>\n  <creator_notes>A subterranean steampunk adventure.</creator_notes>\n  <tags>steampunk, mystery</tags>\n  <cast_roster>\n    <character><name>Alex</name><role>User</role><archetype>Mechanic</archetype></character>\n  </cast_roster>\n</response>';
+    const result = UTILITY.parseStoryFoundationXml(raw);
+    assert.equal(result.title, 'The Clockwork Engine');
+    assert.equal(result.creator_notes, 'A subterranean steampunk adventure.');
+    assert.equal(result.characters[0].name, 'Alex');
+});
+
+test('parseStoryFoundationXml: pure prompt echo / instruction restatement without tags is rejected', () => {
+    const echo = 'Synthesize the provided User Concept into the required Output Format. Ensure all constraints (Banned Names, Banned Roles, Banned Vocabulary, etc.) are meticulously adhered to. Be hyper-creative, evocative, and deeply immersive. Avoid all generic tropes; aim for literary quality.';
+    const result = UTILITY.parseStoryFoundationXml(echo);
+    assert.equal(result.creator_notes, '');
+    assert.equal(result.title, 'Untitled Story');
+});
+
+test('PromptBuilder: buildStoryFoundationPrompt includes mandatory immediate <response> execution directive', () => {
+    const prompt = PromptBuilder.buildStoryFoundationPrompt('A rogue AI on a generation ship');
+    assert.ok(prompt.includes('EXECUTION DIRECTIVE:'));
+    assert.ok(prompt.includes('Your output MUST begin immediately with the opening tag <response>'));
+});
+
+test('PromptBuilder: buildScenarioFoundationPrompt includes mandatory immediate <response> execution directive', () => {
+    const prompt = PromptBuilder.buildScenarioFoundationPrompt({ name: 'Starship Odyssey' }, 'The reactor fails');
+    assert.ok(prompt.includes('EXECUTION DIRECTIVE:'));
+    assert.ok(prompt.includes('Your output MUST begin immediately with the opening tag <response>'));
+});
+
+
+// ─── Portrait & Image Generation Safeguards (Story Architect Bug Fixes) ──────
+
+test('isRenderableImageSrc: rejects nullish, empty, local_idb_ markers, and template placeholders', () => {
+    assert.equal(UTILITY.isRenderableImageSrc(null), false);
+    assert.equal(UTILITY.isRenderableImageSrc(undefined), false);
+    assert.equal(UTILITY.isRenderableImageSrc(''), false);
+    assert.equal(UTILITY.isRenderableImageSrc('   '), false);
+    assert.equal(UTILITY.isRenderableImageSrc('undefined'), false);
+    assert.equal(UTILITY.isRenderableImageSrc('null'), false);
+    assert.equal(UTILITY.isRenderableImageSrc('local_idb_char_123'), false);
+    assert.equal(UTILITY.isRenderableImageSrc('local_idb_persona_456'), false);
+    assert.equal(UTILITY.isRenderableImageSrc('local_idb_bg_789'), false);
+    assert.equal(UTILITY.isRenderableImageSrc('local_something'), false);
+    assert.equal(UTILITY.isRenderableImageSrc('${imgSrc}'), false);
+    assert.equal(UTILITY.isRenderableImageSrc('http://example.com/${imgSrc}'), false);
+});
+
+test('isRenderableImageSrc: accepts valid blob, data, http/https, and relative asset URLs', () => {
+    assert.equal(UTILITY.isRenderableImageSrc('blob:http://localhost:3000/abc-123'), true);
+    assert.equal(UTILITY.isRenderableImageSrc('data:image/png;base64,iVBORw0KGgo='), true);
+    assert.equal(UTILITY.isRenderableImageSrc('https://example.com/avatar.png'), true);
+    assert.equal(UTILITY.isRenderableImageSrc('assets/locations/defaults/valley.jpg'), true);
+});
+
+test('getDefaultApiSettings: initializes imageGenBackend to disabled so unconfigured installs do not trigger broken image gen', () => {
+    const defaults = UTILITY.getDefaultApiSettings();
+    assert.equal(defaults.imageGenBackend, 'disabled');
+});
+
+test('getDefaultUserCharacter: defaults image_url to empty string unless includeDemoAssets is true', () => {
+    const genericUser = UTILITY.getDefaultUserCharacter();
+    assert.equal(genericUser.image_url, '');
+
+    const demoUser = UTILITY.getDefaultUserCharacter({ includeDemoAssets: true });
+    assert.ok(demoUser.image_url.includes('assets/demo/user.png'));
+});
+
+test('StoryGenerationPipeline.runCastingPhase: skips image generation when shouldGenerateImages is false', async () => {
+    const pipeline = loadStoryGenerationPipeline();
+    let imgGenCalls = 0;
+    pipeline._callAgentText = async () => `<response><character_registry><name>Echo</name><first_person_interview>Hello</first_person_interview><visual_profile>Tall</visual_profile></character_registry></response>`;
+
+    const customPipeline = vm.runInNewContext(extractBlock('StoryGenerationPipeline') + '\nStoryGenerationPipeline', {
+        UTILITY,
+        PromptBuilder,
+        APIService: {},
+        LibraryController: {},
+        NarrativeController: { CONSTANTS: { CHARACTER_COLORS: [{ base: '#334155', bold: '#94a3b8' }] } },
+        ImageGenerationService: { generateImage: async () => { imgGenCalls++; return { size: 100 }; } },
+        DBService: { saveStory: async () => true, saveImage: async () => true },
+        UIManager: { isImageGenEnabled: () => true, RUNTIME: { characterImageCache: {} } },
+        console,
+        setTimeout,
+        clearTimeout,
+        URL: { createObjectURL: () => 'blob:mock' }
+    });
+    customPipeline._callAgentText = pipeline._callAgentText;
+
+    const draft = { name: 'Test', creator_notes: 'Notes', characters: [], static_entries: [] };
+    const concept = {
+        brief_summary: 'Conflict',
+        relationship_context: 'None',
+        characters: [
+            { name: 'Echo', role: 'PrimaryAI', archetype: 'Synth' },
+            { name: 'Krell', role: 'Support', archetype: 'Guard' }
+        ]
+    };
+
+    await customPipeline.runCastingPhase(draft, concept, () => {}, { shouldGenerateImages: false });
+    assert.equal(imgGenCalls, 0, 'Should not call generateImage when shouldGenerateImages is false');
+    assert.equal(draft.characters[0].image_url, '');
+    assert.equal(draft.characters[1].image_url, '');
+});
+
+test('StoryGenerationPipeline.runCastingPhase: generates 1 base portrait per character (no burst emotion I2I spam) when enabled', async () => {
+    let imgGenCalls = [];
+    const customPipeline = vm.runInNewContext(extractBlock('StoryGenerationPipeline') + '\nStoryGenerationPipeline', {
+        UTILITY,
+        PromptBuilder,
+        APIService: {},
+        LibraryController: {},
+        NarrativeController: { CONSTANTS: { CHARACTER_COLORS: [{ base: '#334155', bold: '#94a3b8' }] } },
+        ImageGenerationService: {
+            generateImage: async (prompt, neg, opts, initImg) => {
+                imgGenCalls.push({ prompt, initImg });
+                return { size: 100 };
+            }
+        },
+        DBService: { saveStory: async () => true, saveImage: async () => true },
+        UIManager: { isImageGenEnabled: () => true, RUNTIME: { characterImageCache: {} } },
+        console,
+        setTimeout,
+        clearTimeout,
+        URL: { createObjectURL: () => 'blob:mock-valid' }
+    });
+    customPipeline._callAgentText = async (p) => `<response><character_registry><name>Char</name><first_person_interview>Bio</first_person_interview><visual_profile>Vivid appearance</visual_profile></character_registry></response>`;
+
+    const draft = { name: 'Test', creator_notes: 'Notes', characters: [], static_entries: [] };
+    const concept = {
+        brief_summary: 'Conflict',
+        relationship_context: 'None',
+        characters: [
+            { name: 'Echo', role: 'PrimaryAI', archetype: 'Synth' },
+            { name: 'Krell', role: 'Support', archetype: 'Guard' },
+            { name: 'Vex', role: 'Rival', archetype: 'Hacker' }
+        ]
+    };
+
+    await customPipeline.runCastingPhase(draft, concept, () => {}, { shouldGenerateImages: true });
+    assert.equal(imgGenCalls.length, 3, 'Should generate exactly 1 base portrait per character (3 total) without I2I emotion burst');
+    assert.ok(imgGenCalls.every(c => !c.initImg), 'All casting portrait calls should be primary txt2img without initImg');
+    assert.ok(draft.characters.filter(c => !c.is_user).every(c => c.image_url.startsWith('local_idb_')));
+});
+
+test('InStoryGenerationPipeline.runCastingPhase: respects shouldGenerateImages option and generates 1 base portrait per new character when enabled', async () => {
+    let imgGenCalls = [];
+    const buildInStorySandbox = () => {
+        const customPipeline = vm.runInNewContext(extractBlock('InStoryGenerationPipeline') + '\nInStoryGenerationPipeline', {
+            UTILITY,
+            PromptBuilder,
+            APIService: {},
+            LibraryController: {},
+            NarrativeController: { CONSTANTS: { CHARACTER_COLORS: [{ base: '#334155', bold: '#94a3b8' }] } },
+            ImageGenerationService: {
+                generateImage: async (prompt, neg, opts, initImg) => {
+                    imgGenCalls.push({ prompt, initImg });
+                    return { size: 100 };
+                }
+            },
+            DBService: { saveStory: async () => true, saveImage: async () => true },
+            UIManager: { isImageGenEnabled: () => true, RUNTIME: { characterImageCache: {} } },
+            console,
+            setTimeout,
+            clearTimeout,
+            URL: { createObjectURL: () => 'blob:mock-instory' }
+        });
+        customPipeline._callAgentText = async () => `<response><character_registry><name>Char</name><first_person_interview>Bio</first_person_interview><visual_profile>Cloaked figure</visual_profile></character_registry></response>`;
+        return customPipeline;
+    };
+
+    const existingStory1 = { name: 'Base Story', characters: [{ id: 'char_existing', name: 'ExistingHero', is_user: false }], static_entries: [] };
+    const draftDiff1 = { characters: [], static_entries: [] };
+    const concept = {
+        brief_summary: 'New chapter',
+        relationship_context: 'Allies',
+        characters: [
+            { name: 'ExistingHero', role: 'Support', is_existing: true, existing_id: 'char_existing' },
+            { name: 'Lyra', role: 'PrimaryAI', archetype: 'Mage' },
+            { name: 'Thorne', role: 'Rival', archetype: 'Ranger' }
+        ]
+    };
+
+    const pipelineOff = buildInStorySandbox();
+    await pipelineOff.runCastingPhase(draftDiff1, concept, existingStory1, () => {}, { shouldGenerateImages: false });
+    assert.equal(draftDiff1.characters.length, 2);
+    assert.equal(imgGenCalls.length, 0, 'Should not call generateImage when shouldGenerateImages is false');
+    assert.equal(draftDiff1.characters[0].image_url, '');
+    assert.equal(draftDiff1.characters[1].image_url, '');
+
+    const existingStory2 = { name: 'Base Story', characters: [{ id: 'char_existing', name: 'ExistingHero', is_user: false }], static_entries: [] };
+    const draftDiff2 = { characters: [], static_entries: [] };
+    const pipelineOn = buildInStorySandbox();
+    await pipelineOn.runCastingPhase(draftDiff2, concept, existingStory2, () => {}, { shouldGenerateImages: true });
+    assert.equal(draftDiff2.characters.length, 2);
+    assert.equal(imgGenCalls.length, 2, 'Should generate 1 base portrait per new character (2 total)');
+    assert.ok(imgGenCalls.every(c => !c.initImg), 'Should only call primary txt2img without I2I emotion burst');
+    assert.ok(draftDiff2.characters[0].image_url.startsWith('local_idb_'));
+    assert.ok(draftDiff2.characters[1].image_url.startsWith('local_idb_'));
+});
