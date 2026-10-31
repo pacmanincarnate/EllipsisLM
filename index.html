@@ -4310,7 +4310,7 @@
 
     <!-- AI Story Architect: Wizard for generating stories from a concept prompt -->
     <div id="gen-story-modal" class="fixed inset-0 z-[60] items-center justify-center hidden">
-        <div class="modal-overlay absolute inset-0 bg-black/60" data-action="close-modal" data-id="gen-story-modal">
+        <div class="modal-overlay absolute inset-0 bg-black/60" data-action="gen-story-overlay-click">
         </div>
         <div
             class="bg-gray-800/90 backdrop-blur-md rounded-lg shadow-2xl w-11/12 max-w-2xl relative flex flex-col p-6 border border-gray-600">
@@ -4318,14 +4318,22 @@
                 <h2 id="gen-story-modal-title"
                     class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
                     AI Story Architect</h2>
-                <button data-action="close-modal" data-id="gen-story-modal"
-                    class="bg-black/40 hover:bg-gray-700 text-gray-300 hover:text-white p-2 rounded-full backdrop-blur-sm transition-colors shadow-lg"
-                    title="Close">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
-                        </path>
-                    </svg>
-                </button>
+                <div class="flex items-center space-x-2">
+                    <button id="gen-story-minimize-btn" data-action="gen-story-minimize"
+                        class="bg-black/40 hover:bg-gray-700 text-gray-300 hover:text-white p-2 rounded-full backdrop-blur-sm transition-colors shadow-lg"
+                        title="Run in background (Minimize)">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13H5"></path>
+                        </svg>
+                    </button>
+                    <button data-action="gen-story-close"
+                        class="bg-black/40 hover:bg-gray-700 text-gray-300 hover:text-white p-2 rounded-full backdrop-blur-sm transition-colors shadow-lg"
+                        title="Close">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div id="gen-story-input-view">
@@ -4334,7 +4342,7 @@
                     class="w-full bg-black/40 border border-gray-600 rounded-lg p-3 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 h-32 resize-none"
                     placeholder="e.g. A cyberpunk noir detective story on Mars where water is more expensive than gold."></textarea>
                 <div class="flex justify-end mt-4 space-x-3">
-                    <button data-action="close-modal" data-id="gen-story-modal"
+                    <button data-action="gen-story-close"
                         class="px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>
                     <button id="gen-story-draft-btn" data-action="gen-story-phase-1"
                         class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all">Draft
@@ -4408,7 +4416,66 @@
                 </div>
                 <p id="gen-story-status" class="text-indigo-300 font-mono text-sm animate-pulse text-center">
                     Initializing creative subroutines...</p>
+                <button data-action="gen-story-minimize"
+                    class="text-xs text-indigo-400 hover:text-indigo-300 underline flex items-center gap-1.5 transition-colors pt-2">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13H5"></path>
+                    </svg>
+                    Run in background (Minimize)
+                </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Floating Story Architect Background Progress Widget -->
+    <div id="story-gen-floating-indicator"
+        class="fixed bottom-5 right-5 z-[70] hidden flex-col bg-gray-900/95 backdrop-blur-md border border-indigo-500/40 rounded-xl shadow-2xl p-3.5 min-w-[320px] max-w-sm transition-all duration-300 cursor-pointer group hover:border-indigo-400 select-none"
+        data-action="gen-story-restore"
+        title="Click to view AI Story Architect progress">
+        <div class="flex items-center justify-between gap-3 mb-2">
+            <div class="flex items-center gap-2 min-w-0">
+                <span class="relative flex h-2.5 w-2.5 flex-shrink-0">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
+                </span>
+                <span class="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 uppercase tracking-wider truncate">
+                    AI Story Architect
+                </span>
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0" onclick="event.stopPropagation();">
+                <button data-action="gen-story-restore"
+                    class="text-gray-400 hover:text-white p-1 rounded hover:bg-white/10 transition-colors"
+                    title="Expand to full dialog">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                    </svg>
+                </button>
+                <button data-action="gen-story-cancel"
+                    class="text-gray-400 hover:text-red-400 p-1 rounded hover:bg-white/10 transition-colors"
+                    title="Cancel generation">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="flex justify-between items-center text-[11px] font-mono mb-1.5">
+            <span id="story-gen-floating-status" class="text-indigo-200 truncate pr-2">Initializing creative subroutines...</span>
+            <span id="story-gen-floating-pct" class="text-indigo-400 font-bold flex-shrink-0">0%</span>
+        </div>
+
+        <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden border border-white/5 relative">
+            <div id="story-gen-floating-bar"
+                class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full rounded-full transition-all duration-300"
+                style="width: 0%"></div>
+        </div>
+
+        <div class="text-[10px] text-gray-400 flex items-center justify-between mt-1 pt-1 border-t border-white/5">
+            <span>Running in background</span>
+            <span class="text-indigo-400/80 group-hover:text-indigo-300 flex items-center gap-0.5">
+                Expand &nearr;
+            </span>
         </div>
     </div>
 
@@ -31205,6 +31272,12 @@ Output Schema:
                     case 'location-details-modal':
                         UIManager.renderLocationDetailsModal();
                         break;
+
+                    case 'gen-story-modal':
+                        if (typeof LibraryController !== 'undefined' && typeof LibraryController.hideFloatingIndicator === 'function') {
+                            LibraryController.hideFloatingIndicator();
+                        }
+                        break;
                 }
 
                 // 3. Open the modal via the low-level manager
@@ -31217,6 +31290,12 @@ Output Schema:
              */
             closeModal(modalId) {
                 ModalManager.close(modalId);
+
+                if (modalId === 'gen-story-modal') {
+                    if (typeof LibraryController !== 'undefined' && typeof LibraryController.isGeneratingStory === 'function' && LibraryController.isGeneratingStory()) {
+                        LibraryController.showFloatingIndicator();
+                    }
+                }
 
                 // Clear viewingStoryId if closing story details
                 if (modalId === 'story-details-modal' || modalId === 'story-library-modal') {
@@ -37785,14 +37864,34 @@ Write only the descriptive paragraphs.`;
              * @param {string} storyId - The ID of the story.
              */
             startInStoryGeneration(storyId) {
-                this.RUNTIME_GEN.mode = 'in-story';
-                this.RUNTIME_GEN.targetStoryId = storyId;
+                if (this.isGeneratingStory()) {
+                    this.restoreStoryGeneration();
+                    return;
+                }
+                if (this.RUNTIME_GEN?.phase === 'approval' && this.RUNTIME_GEN?.conceptData && this.RUNTIME_GEN?.targetStoryId === storyId) {
+                    this.restoreStoryGeneration();
+                    return;
+                }
+
+                this.RUNTIME_GEN = {
+                    draftStory: null,
+                    userPrompt: "",
+                    conceptData: null,
+                    mode: 'in-story',
+                    targetStoryId: storyId,
+                    busy: false,
+                    phase: 'idle',
+                    progress: { pct: 0, msg: "" }
+                };
 
                 const title = document.getElementById('gen-story-modal-title');
                 if (title) title.textContent = "Scenario Architect";
 
                 const draftBtn = document.getElementById('gen-story-draft-btn');
-                if (draftBtn) draftBtn.textContent = "Draft Scenario";
+                if (draftBtn) {
+                    draftBtn.textContent = "Draft Scenario";
+                    draftBtn.disabled = false;
+                }
 
                 const confirmBtn = document.getElementById('gen-story-confirm-btn');
                 if (confirmBtn) confirmBtn.textContent = "Generate Scenario";
@@ -37809,20 +37908,43 @@ Write only the descriptive paragraphs.`;
 
                 document.getElementById('gen-story-input-view').classList.remove('hidden');
                 document.getElementById('gen-story-progress-view').classList.add('hidden');
+                document.getElementById('gen-story-progress-view').classList.remove('flex');
                 document.getElementById('gen-story-approval-view').classList.add('hidden');
+                document.getElementById('gen-story-approval-view').classList.remove('flex');
 
+                this.hideFloatingIndicator();
                 AppController.openModal('gen-story-modal');
             },
 
             startNewStoryGeneration() {
-                this.RUNTIME_GEN.mode = 'new-story';
-                this.RUNTIME_GEN.targetStoryId = null;
+                if (this.isGeneratingStory()) {
+                    this.restoreStoryGeneration();
+                    return;
+                }
+                if (this.RUNTIME_GEN?.phase === 'approval' && this.RUNTIME_GEN?.conceptData) {
+                    this.restoreStoryGeneration();
+                    return;
+                }
+
+                this.RUNTIME_GEN = {
+                    draftStory: null,
+                    userPrompt: "",
+                    conceptData: null,
+                    mode: 'new-story',
+                    targetStoryId: null,
+                    busy: false,
+                    phase: 'idle',
+                    progress: { pct: 0, msg: "" }
+                };
 
                 const title = document.getElementById('gen-story-modal-title');
                 if (title) title.textContent = "AI Story Architect";
 
                 const draftBtn = document.getElementById('gen-story-draft-btn');
-                if (draftBtn) draftBtn.textContent = "Draft Concept";
+                if (draftBtn) {
+                    draftBtn.textContent = "Draft Concept";
+                    draftBtn.disabled = false;
+                }
 
                 const confirmBtn = document.getElementById('gen-story-confirm-btn');
                 if (confirmBtn) confirmBtn.textContent = "Build This World";
@@ -37839,8 +37961,11 @@ Write only the descriptive paragraphs.`;
                 document.getElementById('gen-story-prompt').placeholder = "e.g. A cyberpunk noir detective story on Mars where water is more expensive than gold.";
                 document.getElementById('gen-story-input-view').classList.remove('hidden');
                 document.getElementById('gen-story-progress-view').classList.add('hidden');
+                document.getElementById('gen-story-progress-view').classList.remove('flex');
                 document.getElementById('gen-story-approval-view').classList.add('hidden');
+                document.getElementById('gen-story-approval-view').classList.remove('flex');
 
+                this.hideFloatingIndicator();
                 AppController.openModal('gen-story-modal');
             },
 
@@ -38451,7 +38576,130 @@ Write only the descriptive paragraphs.`;
                 userPrompt: "",
                 conceptData: null,
                 mode: 'new', // 'new' or 'in-story'
-                targetStoryId: null
+                targetStoryId: null,
+                busy: false,
+                phase: 'idle',
+                progress: { pct: 0, msg: "" },
+                abortController: null
+            },
+
+            isGeneratingStory() {
+                return Boolean(this.RUNTIME_GEN && this.RUNTIME_GEN.busy);
+            },
+
+            updateGenProgress(pct, msg) {
+                if (!this.RUNTIME_GEN) this.RUNTIME_GEN = {};
+                this.RUNTIME_GEN.progress = { pct, msg };
+
+                // Update Modal
+                const bar = document.getElementById('gen-story-bar');
+                if (bar) bar.style.width = `${pct}%`;
+                const status = document.getElementById('gen-story-status');
+                if (status) status.textContent = msg;
+
+                // Update Floating Indicator
+                const fBar = document.getElementById('story-gen-floating-bar');
+                if (fBar) fBar.style.width = `${pct}%`;
+                const fStatus = document.getElementById('story-gen-floating-status');
+                if (fStatus) fStatus.textContent = msg;
+                const fPct = document.getElementById('story-gen-floating-pct');
+                if (fPct) fPct.textContent = `${pct}%`;
+            },
+
+            showFloatingIndicator() {
+                const el = document.getElementById('story-gen-floating-indicator');
+                if (el) {
+                    el.classList.remove('hidden');
+                    el.classList.add('flex');
+                }
+                if (this.RUNTIME_GEN?.progress) {
+                    this.updateGenProgress(this.RUNTIME_GEN.progress.pct || 0, this.RUNTIME_GEN.progress.msg || "Working...");
+                }
+            },
+
+            hideFloatingIndicator() {
+                const el = document.getElementById('story-gen-floating-indicator');
+                if (el) {
+                    el.classList.add('hidden');
+                    el.classList.remove('flex');
+                }
+            },
+
+            minimizeStoryGeneration() {
+                AppController.closeModal('gen-story-modal');
+                this.showFloatingIndicator();
+                if (typeof UIManager !== 'undefined' && typeof UIManager.showNotification === 'function') {
+                    UIManager.showNotification('AI Story Architect minimized to background. Click the progress bar to reopen.', 'info');
+                }
+            },
+
+            restoreStoryGeneration() {
+                this.hideFloatingIndicator();
+                AppController.openModal('gen-story-modal');
+
+                const inputView = document.getElementById('gen-story-input-view');
+                const approvalView = document.getElementById('gen-story-approval-view');
+                const progressView = document.getElementById('gen-story-progress-view');
+
+                if (this.RUNTIME_GEN?.phase === 'approval') {
+                    if (inputView) inputView.classList.add('hidden');
+                    if (progressView) { progressView.classList.add('hidden'); progressView.classList.remove('flex'); }
+                    if (approvalView) { approvalView.classList.remove('hidden'); approvalView.classList.add('flex'); }
+                } else {
+                    if (inputView) inputView.classList.add('hidden');
+                    if (approvalView) { approvalView.classList.add('hidden'); approvalView.classList.remove('flex'); }
+                    if (progressView) { progressView.classList.remove('hidden'); progressView.classList.add('flex'); }
+                    if (this.RUNTIME_GEN?.progress) {
+                        this.updateGenProgress(this.RUNTIME_GEN.progress.pct || 0, this.RUNTIME_GEN.progress.msg || "Working...");
+                    }
+                }
+            },
+
+            handleOverlayClick() {
+                if (this.isGeneratingStory()) {
+                    this.minimizeStoryGeneration();
+                } else {
+                    AppController.closeModal('gen-story-modal');
+                }
+            },
+
+            async handleCloseStoryModal() {
+                if (this.isGeneratingStory()) {
+                    let proceed = false;
+                    if (typeof UIManager !== 'undefined' && typeof UIManager.showConfirmationPromise === 'function') {
+                        proceed = await UIManager.showConfirmationPromise(
+                            "AI Story Architect is currently generating. Do you want to cancel the generation? (Click Cancel to keep running in the background)"
+                        );
+                    } else {
+                        proceed = confirm("AI Story Architect is currently generating. Do you want to cancel the generation? (Click Cancel to keep running in the background)");
+                    }
+                    if (proceed) {
+                        await this.cancelStoryGeneration();
+                    } else {
+                        this.minimizeStoryGeneration();
+                    }
+                } else {
+                    AppController.closeModal('gen-story-modal');
+                }
+            },
+
+            async cancelStoryGeneration() {
+                if (this.RUNTIME_GEN?.abortController) {
+                    try {
+                        this.RUNTIME_GEN.abortController.abort();
+                    } catch (err) {
+                        console.warn("Error aborting story gen:", err);
+                    }
+                }
+                if (!this.RUNTIME_GEN) this.RUNTIME_GEN = {};
+                this.RUNTIME_GEN.busy = false;
+                this.RUNTIME_GEN.phase = 'idle';
+                this.hideFloatingIndicator();
+                this.retryGenStory();
+                AppController.closeModal('gen-story-modal');
+                if (typeof UIManager !== 'undefined' && typeof UIManager.showNotification === 'function') {
+                    UIManager.showNotification('Story generation cancelled.', 'info');
+                }
             },
 
             /**
@@ -38462,6 +38710,10 @@ Write only the descriptive paragraphs.`;
                 const input = document.getElementById('gen-story-prompt');
                 const userPrompt = input.value.trim();
                 if (!userPrompt) { alert("Please enter a prompt."); return; }
+
+                this.RUNTIME_GEN.busy = true;
+                this.RUNTIME_GEN.phase = 'concept';
+                this.RUNTIME_GEN.abortController = new AbortController();
 
                 let promptToUse = userPrompt;
 
@@ -38497,10 +38749,8 @@ Write only the descriptive paragraphs.`;
                 document.getElementById('gen-story-progress-view').classList.remove('hidden');
                 document.getElementById('gen-story-progress-view').classList.add('flex');
 
-                const updateUI = (pct, msg) => {
-                    document.getElementById('gen-story-bar').style.width = `${pct}%`;
-                    document.getElementById('gen-story-status').textContent = msg;
-                };
+                const updateUI = (pct, msg) => this.updateGenProgress(pct, msg);
+                updateUI(10, "Initializing creative subroutines...");
 
                 try {
                     // STEP 1: CONCEPT AGENT
@@ -38513,6 +38763,9 @@ Write only the descriptive paragraphs.`;
                     }
 
                     this.RUNTIME_GEN.conceptData = conceptData;
+                    this.RUNTIME_GEN.busy = false;
+                    this.RUNTIME_GEN.phase = 'approval';
+                    this.hideFloatingIndicator();
 
                     // Switch to Edit/Approval View
                     document.getElementById('gen-story-progress-view').classList.remove('flex');
@@ -38529,8 +38782,28 @@ Write only the descriptive paragraphs.`;
                     document.getElementById('gen-approval-summary-input').value = displaySummary;
                     document.getElementById('gen-approval-tags-input').value = displayTags;
 
+                    // If modal was closed/minimized while drafting in background, restore it now
+                    const modal = document.getElementById('gen-story-modal');
+                    if (modal && (modal.classList.contains('hidden') || modal.style.display === 'none')) {
+                        this.restoreStoryGeneration();
+                        if (typeof UIManager !== 'undefined' && typeof UIManager.showNotification === 'function') {
+                            UIManager.showNotification("Story concept drafted! Review your world and click Build.", "success");
+                        }
+                    }
+
                 } catch (e) {
+                    this.RUNTIME_GEN.busy = false;
+                    this.RUNTIME_GEN.phase = 'idle';
+                    this.hideFloatingIndicator();
+                    if (e.name === 'AbortError') {
+                        if (typeof UIManager !== 'undefined' && typeof UIManager.showNotification === 'function') {
+                            UIManager.showNotification("Story draft cancelled.", "info");
+                        }
+                        this.retryGenStory();
+                        return;
+                    }
                     alert("Generation Error: " + e.message);
+                    this.restoreStoryGeneration();
                     this.retryGenStory();
                 }
             },
@@ -38541,6 +38814,9 @@ Write only the descriptive paragraphs.`;
             retryGenStory() {
                 this.RUNTIME_GEN.draftStory = null;
                 this.RUNTIME_GEN.busy = false;
+                this.RUNTIME_GEN.phase = 'idle';
+                this.RUNTIME_GEN.conceptData = null;
+                this.hideFloatingIndicator();
                 document.getElementById('gen-story-approval-view').classList.add('hidden');
                 document.getElementById('gen-story-approval-view').classList.remove('flex');
                 document.getElementById('gen-story-progress-view').classList.add('hidden');
@@ -38563,6 +38839,8 @@ Write only the descriptive paragraphs.`;
                 if (this.RUNTIME_GEN && this.RUNTIME_GEN.busy) return;
                 if (!this.RUNTIME_GEN) this.RUNTIME_GEN = {};
                 this.RUNTIME_GEN.busy = true;
+                this.RUNTIME_GEN.phase = 'world';
+                this.RUNTIME_GEN.abortController = new AbortController();
 
                 // Read Edited Values
                 const title = document.getElementById('gen-approval-title-input').value;
@@ -38578,10 +38856,8 @@ Write only the descriptive paragraphs.`;
                 document.getElementById('gen-story-progress-view').classList.remove('hidden');
                 document.getElementById('gen-story-progress-view').classList.add('flex');
 
-                const updateUI = (pct, msg) => {
-                    document.getElementById('gen-story-bar').style.width = `${pct}%`;
-                    document.getElementById('gen-story-status').textContent = msg;
-                };
+                const updateUI = (pct, msg) => this.updateGenProgress(pct, msg);
+                updateUI(20, "Initiating world synthesis...");
 
                 // BRANCH: In-Story Generation
                 if (this.RUNTIME_GEN.mode === 'in-story' && this.RUNTIME_GEN.targetStoryId) {
@@ -38713,7 +38989,10 @@ Write only the descriptive paragraphs.`;
                         // Currently Pipeline does `DBService.saveImage`. Let's assume it does. 
                         // (Checking Pipeline code would confirm, but usually it does).
 
-                        updateUI(100, "Done!");
+                        updateUI(100, "Done! Loading new scenario...");
+                        this.hideFloatingIndicator();
+                        this.RUNTIME_GEN.busy = false;
+                        this.RUNTIME_GEN.phase = 'idle';
 
                         // Reload Strategy
                         StateManager.getLibrary().active_story_id = story.id;
@@ -38727,7 +39006,18 @@ Write only the descriptive paragraphs.`;
 
                     } catch (e) {
                         console.error(e);
+                        this.RUNTIME_GEN.busy = false;
+                        this.RUNTIME_GEN.phase = 'idle';
+                        this.hideFloatingIndicator();
+                        if (e.name === 'AbortError') {
+                            if (typeof UIManager !== 'undefined' && typeof UIManager.showNotification === 'function') {
+                                UIManager.showNotification("Scenario generation cancelled.", "info");
+                            }
+                            this.retryGenStory();
+                            return;
+                        }
                         alert("In-Story Generation Failed: " + e.message);
+                        this.restoreStoryGeneration();
                         this.retryGenStory();
                         return;
                     }
@@ -38906,6 +39196,11 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     await LibraryController.updateSearchIndex(draft);
                     StateManager.updateTagCache();
 
+                    updateUI(100, "Done! Loading new story...");
+                    this.hideFloatingIndicator();
+                    this.RUNTIME_GEN.busy = false;
+                    this.RUNTIME_GEN.phase = 'idle';
+
                     // Auto Load
                     StateManager.getLibrary().active_story_id = draft.id;
                     StateManager.getLibrary().active_narrative_id = newNarrative.id;
@@ -38917,7 +39212,18 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
 
                 } catch (e) {
                     console.error(e);
+                    this.RUNTIME_GEN.busy = false;
+                    this.RUNTIME_GEN.phase = 'idle';
+                    this.hideFloatingIndicator();
+                    if (e.name === 'AbortError') {
+                        if (typeof UIManager !== 'undefined' && typeof UIManager.showNotification === 'function') {
+                            UIManager.showNotification("Story generation cancelled.", "info");
+                        }
+                        this.retryGenStory();
+                        return;
+                    }
                     alert("Generation Error: " + e.message);
+                    this.restoreStoryGeneration();
                     this.retryGenStory();
                 }
             },
@@ -48989,6 +49295,11 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 ActionHandler.register('gen-story-phase-1', (ds, val, e) => LibraryController.generateStoryPhase1(e));
                 ActionHandler.register('gen-story-retry', () => LibraryController.retryGenStory());
                 ActionHandler.register('gen-story-confirm', () => LibraryController.confirmGenStory());
+                ActionHandler.register('gen-story-overlay-click', () => LibraryController.handleOverlayClick());
+                ActionHandler.register('gen-story-minimize', () => LibraryController.minimizeStoryGeneration());
+                ActionHandler.register('gen-story-restore', () => LibraryController.restoreStoryGeneration());
+                ActionHandler.register('gen-story-cancel', () => LibraryController.cancelStoryGeneration());
+                ActionHandler.register('gen-story-close', () => LibraryController.handleCloseStoryModal());
 
                 // --- AppController (Navigation & Global UI) ---
                 ActionHandler.register('open-modal', (ds) => AppController.openModal(ds.target, ds.id));
@@ -49048,7 +49359,11 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 ActionHandler.register('onboarding-ai-generate', () => {
                     localStorage.setItem('onboarding_dismissed', 'true');
                     AppController.closeModal('onboarding-modal');
-                    AppController.openModal('gen-story-modal');
+                    if (LibraryController.isGeneratingStory()) {
+                        LibraryController.restoreStoryGeneration();
+                    } else {
+                        LibraryController.startNewStoryGeneration();
+                    }
                 });
                 ActionHandler.register('onboarding-import-png', () => {
                     localStorage.setItem('onboarding_dismissed', 'true');
