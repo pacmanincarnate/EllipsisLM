@@ -61,6 +61,7 @@
       }
     ],
     "files": [
+      "assets/locations/defaults/**",
       "electron/**",
       "index.html"
     ],

@@ -7562,8 +7562,8 @@
                         if (errText) errText.textContent = '';
                         const st = typeof ReactiveStore !== 'undefined' ? ReactiveStore.state : {};
                         const gs = (typeof StateManager !== 'undefined' && StateManager.data?.globalSettings) ? StateManager.data.globalSettings : {};
-                        const adapter = document.getElementById('koboldcpp-template-selector')?.value || st.koboldcpp_template || gs.koboldcpp_template || 'jinja';
-                        const normalizedAdapter = adapter === 'none' ? 'None' : (adapter === 'autoguess' ? 'AutoGuess' : adapter);
+                        const adapter = 'jinja';
+                        const normalizedAdapter = 'AutoGuess';
 
                         const urlInput = document.getElementById('koboldcpp-url-input');
                         const rawUrl = urlInput?.value || st.koboldcpp_url || gs.koboldcpp_url || 'http://localhost:5001';
@@ -7792,22 +7792,15 @@
                 </div>
 
                 <div class="mb-4">
-                    <label for="koboldcpp-template-selector" class="text-gray-400 text-sm block mb-1">Prompt
-                        Template</label>
-                    <select id="koboldcpp-template-selector"
-                        class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white">
-                        <option value="jinja" selected>Jinja (Model Embedded / Auto)</option>
-                        <option value="autoguess">AutoGuess Adapter</option>
-                        <option value="none">None (Raw Text)</option>
-                        <option value="llama3">Llama 3</option>
-                        <option value="gemma">Gemma 2 / 4 (Google)</option>
-                        <option value="phi3">Phi-3 (Microsoft)</option>
-                        <option value="mistral">Mistral</option>
-                        <option value="chatml">ChatML (Qwen/DeepSeek)</option>
-                        <option value="alpaca">Alpaca</option>
-                    </select>
-                    <span class="text-[10px] text-gray-400 mt-0.5 block">Jinja uses the native template embedded in the
-                        GGUF model</span>
+                    <label class="text-gray-400 text-sm block mb-1">Prompt / Chat Template</label>
+                    <div class="w-full rounded-lg p-2.5 bg-gray-800/80 border border-gray-600/80 text-xs text-gray-200 flex items-center justify-between shadow-inner">
+                        <span class="font-medium text-emerald-400 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+                            Jinja (Model Embedded)
+                        </span>
+                        <span class="text-[11px] text-gray-400 bg-gray-700/60 px-2 py-0.5 rounded border border-gray-600/50">Auto-Detected</span>
+                    </div>
+                    <span class="text-[10px] text-gray-400 mt-1 block">Native Jinja chat template is applied automatically by KoboldCPP from the loaded model's GGUF metadata.</span>
                 </div>
                 <div>
                     <label for="koboldcpp-temperature-slider"
@@ -12653,7 +12646,7 @@
 
                 // Default autoCloseBrackets to false if not present
                 this.data.globalSettings = { ...defaults, autoCloseBrackets: false, ...parsedSettings };
-                if (!this.data.globalSettings.koboldcpp_template) {
+                if (this.data.globalSettings.koboldcpp_template !== 'jinja') {
                     this.data.globalSettings.koboldcpp_template = 'jinja';
                 }
 
@@ -13896,7 +13889,9 @@
                     dry_allowed_length: samplers.dry_allowed_length,
                     dry_penalty_last_n: samplers.dry_penalty_last_n,
                     dry_sequence_breakers: samplers.dry_sequence_breakers,
+                    max_completion_tokens: samplers.max_tokens,
                     stop: stopSequences,
+                    stop_sequence: stopSequences,
                     stream: true
                 };
 
@@ -13943,6 +13938,7 @@
 
                 let resultText = "";
                 let thinkingText = "";
+                let finishReason = "";
                 const contentType = res.headers.get('content-type') || '';
 
                 // KoboldCPP streams OpenAI-style SSE chunks when stream:true; plain JSON is the fallback.
@@ -13968,14 +13964,16 @@
                                     const jsonStr = trimmed.slice(6).trim();
                                     try {
                                         const parsed = JSON.parse(jsonStr);
-                                        const delta = parsed.choices?.[0]?.delta || {};
+                                        const choice = parsed.choices?.[0] || {};
+                                        const delta = choice.delta || {};
                                         const deltaText = delta.content || '';
-                                        const deltaReasoning = delta.reasoning_content || delta.reasoning || '';
+                                        const deltaReasoning = delta.reasoning_content || delta.reasoning || delta.thought || '';
                                         if (deltaText) {
                                             resultText += deltaText;
                                             if (onToken) onToken(deltaText);
                                         }
                                         if (deltaReasoning) thinkingText += deltaReasoning;
+                                        if (choice.finish_reason) finishReason = choice.finish_reason;
                                     } catch (parseErr) {
                                         // Ignore malformed chunk
                                     }
@@ -13988,9 +13986,11 @@
                 } else {
                     // Fallback: non-streaming chat completion JSON response
                     const data = await res.json();
-                    const msg = data.choices?.[0]?.message || {};
+                    const choice = data.choices?.[0] || {};
+                    const msg = choice.message || {};
                     resultText = msg.content || "";
-                    thinkingText = msg.reasoning_content || msg.reasoning || "";
+                    thinkingText = msg.reasoning_content || msg.reasoning || msg.thought || "";
+                    finishReason = choice.finish_reason || "";
                 }
                 let truncateIdx = -1;
                 for (const seq of stopSequences) {
@@ -14008,10 +14008,32 @@
 
                 resultText = UTILITY.sanitizeModelResponse(resultText);
                 const extracted = UTILITY.extractThinking(resultText);
-                if (extracted.thinking) {
-                    thinkingText = [thinkingText.trim(), extracted.thinking.trim()].filter(Boolean).join('\n\n');
+                let finalContent = extracted.content.trim();
+                let finalThinking = [thinkingText.trim(), extracted.thinking.trim()].filter(Boolean).join('\n\n');
+
+                // Salvage logic: if finalContent is empty, but finalThinking contains the actual XML or schema output
+                // (e.g. model outputted everything inside its thinking block or backend routed it to reasoning)
+                if (!finalContent && finalThinking) {
+                    const salvaged = UTILITY.extractThinking(finalThinking);
+                    if (salvaged.content) {
+                        finalContent = salvaged.content.trim();
+                    } else {
+                        const xmlRootMatch = finalThinking.match(/<(?:response|world_map|locations|character_registry|grid)[\s>][\s\S]*$/i);
+                        if (xmlRootMatch) {
+                            finalContent = xmlRootMatch[0].trim();
+                        }
+                    }
                 }
-                return { text: extracted.content.trim(), thinking: thinkingText.trim() };
+
+                // If content is still empty and finish_reason was length: model exhausted tokens during reasoning
+                if (!finalContent && finishReason === 'length') {
+                    throw new Error(
+                        `KoboldCPP model exhausted its token limit (${samplers.max_tokens} tokens) during reasoning/thinking (finish_reason: length) before producing response text. ` +
+                        `Please increase Max Output Tokens for this model.`
+                    );
+                }
+
+                return { text: finalContent, thinking: finalThinking };
             },
 
             /**
@@ -15530,8 +15552,39 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     return "";
                 });
 
-                // 2. Implicit opening tag: Text starts directly with thinking tokens and ends with </think>
-                // Extremely common in KoboldCPP / Qwen / DeepSeek-R1 where <think> is pre-filled in the prompt header.
+                // Gemma 4 channel tokens & modern MoE control tokens:
+                // <|channel>thought ... <channel|>, <channel>thought ... </channel>,
+                // <|thought|> ... <|/thought|>, <start_of_thought> ... <end_of_thought>, <|think|> ... <|/think|>
+                const gemmaChannelRegex = /<\|channel\>thought\s*([\s\S]*?)\s*<channel\|>/gi;
+                content = content.replace(gemmaChannelRegex, (match, thought) => {
+                    const trimmed = (thought || "").trim();
+                    if (trimmed) thoughts.push(trimmed);
+                    return "";
+                });
+
+                const channelTagRegex = /<channel\>thought\s*([\s\S]*?)\s*<\/channel>/gi;
+                content = content.replace(channelTagRegex, (match, thought) => {
+                    const trimmed = (thought || "").trim();
+                    if (trimmed) thoughts.push(trimmed);
+                    return "";
+                });
+
+                const specialPipedThoughtRegex = /<\|(thought|think)\|>([\s\S]*?)<\|\/\1\|>/gi;
+                content = content.replace(specialPipedThoughtRegex, (match, tag, thought) => {
+                    const trimmed = (thought || "").trim();
+                    if (trimmed) thoughts.push(trimmed);
+                    return "";
+                });
+
+                const startOfThoughtRegex = /<start_of_thought>([\s\S]*?)<end_of_thought>/gi;
+                content = content.replace(startOfThoughtRegex, (match, thought) => {
+                    const trimmed = (thought || "").trim();
+                    if (trimmed) thoughts.push(trimmed);
+                    return "";
+                });
+
+                // 2. Implicit opening tag: Text starts directly with thinking tokens and ends with closing tag
+                // Extremely common in KoboldCPP / Qwen / DeepSeek-R1 / Gemma 4 where thinking header is pre-filled.
                 // Only applies if no paired opening tags were already matched at start.
                 if (thoughts.length === 0) {
                     const implicitCloseRegex = /^([\s\S]*?)<\/(think|thought|thinking|reasoning|scratchpad|analysis)>/i;
@@ -15553,6 +15606,17 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                             thoughts.push(implicitThought);
                         }
                         content = content.substring(implicitBracketMatch[0].length);
+                    }
+
+                    // Gemma 4 & modern MoE implicit channel/thought closing tags at start
+                    const implicitGemmaCloseRegex = /^([\s\S]*?)(?:<channel\|>|<\/channel>|<\|\/(?:thought|think)\|>|<end_of_thought>)/i;
+                    const implicitGemmaMatch = content.match(implicitGemmaCloseRegex);
+                    if (implicitGemmaMatch) {
+                        const implicitThought = implicitGemmaMatch[1].trim();
+                        if (implicitThought) {
+                            thoughts.push(implicitThought);
+                        }
+                        content = content.substring(implicitGemmaMatch[0].length);
                     }
                 }
 
@@ -15599,9 +15663,28 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     content = content.substring(0, tagIdx);
                 }
 
-                // 6. Clean up any stray/leftover closing tags
+                const unclosedGemmaRegex = /(?:<\|channel\>thought|<channel\>thought|<\|(?:thought|think)\|>|<start_of_thought>)([\s\S]*)$/i;
+                const unclosedGemmaMatch = content.match(unclosedGemmaRegex);
+                if (unclosedGemmaMatch) {
+                    const tagIdx = content.search(/(?:<\|channel\>thought|<channel\>thought|<\|(?:thought|think)\|>|<start_of_thought>)/i);
+                    const unclosedThought = unclosedGemmaMatch[1].trim();
+                    if (unclosedThought) {
+                        thoughts.push(unclosedThought);
+                    }
+                    content = content.substring(0, tagIdx);
+                }
+
+                // 6. Clean up any stray/leftover closing and channel tags
                 content = content.replace(/<\/(think|thought|thinking|reasoning|scratchpad|analysis)>/gi, "");
                 content = content.replace(/\[\/(THOUGHTS?|REASONING|THINK)\]/gi, "");
+                content = content.replace(/<channel\|>/gi, "");
+                content = content.replace(/<\/channel>/gi, "");
+                content = content.replace(/<\|channel\>thought/gi, "");
+                content = content.replace(/<\|channel\>/gi, "");
+                content = content.replace(/<\|(?:thought|think)\|>/gi, "");
+                content = content.replace(/<\|\/(?:thought|think)\|>/gi, "");
+                content = content.replace(/<start_of_thought>/gi, "");
+                content = content.replace(/<end_of_thought>/gi, "");
 
                 content = content.trim();
 
@@ -15946,6 +16029,10 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     if (/<(?:response|title|creator_notes|creator_note|scenario_name|brief_summary|cast_roster|world_lore|character)[\s>]|\b(?:Title|Story\s*Title|Creator\s*Notes?|Premise):\s*/i.test(thinking)) {
                         clean = thinking;
                     }
+                }
+                // If clean has no character definitions but thinking does, salvage from thinking
+                if (thinking.trim() && !/<character[\s>]/i.test(clean) && /<character[\s>]/i.test(thinking)) {
+                    clean = thinking;
                 }
 
                 // Strip markdown code fences if wrapped
@@ -16967,11 +17054,16 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 }
 
                 // Max tokens / Length:
+                // For structured generation (Story Architect, world maps, pipelines), default to at least 8192 tokens
+                // so modern MoE thinking models (such as Gemma 4 26B, DeepSeek-R1, QwQ) have ample headroom
+                // for both reasoning tokens and complete XML schemas without premature truncation.
+                const defaultStructuredTokens = 8192;
+                const baseDefault = (st.koboldcpp_max_tokens && st.koboldcpp_max_tokens > 0) ? st.koboldcpp_max_tokens : 2048;
                 const maxTokens = (opts.max_tokens && opts.max_tokens > 0)
                     ? opts.max_tokens
                     : ((opts.maxTokens && opts.maxTokens > 0)
                         ? opts.maxTokens
-                        : ((st.koboldcpp_max_tokens && st.koboldcpp_max_tokens > 0) ? st.koboldcpp_max_tokens : 2048));
+                        : (isStructured ? Math.max(baseDefault, defaultStructuredTokens) : baseDefault));
 
                 return {
                     profile: isStructured ? 'structured' : 'creative',
@@ -19571,10 +19663,387 @@ EXECUTION DIRECTIVE: Your output MUST begin immediately with the opening tag <lo
                     getRemainingMs: () => remainingMs,
                     isActive: () => active
                 };
+            },
+
+            // =================================================================
+            // DEFAULT LOCATION IMAGE CATALOG & RESOLUTION HELPERS (24 PRESETS)
+            // =================================================================
+
+            DEFAULT_LOCATION_IMAGES: [
+                {
+                    key: 'tavern_interior',
+                    filename: 'tavern_interior.jpg',
+                    title: 'Tavern Interior',
+                    tier: 1,
+                    phrases: ['common room', 'taproom', 'alehouse', 'mead hall', 'public house', 'drinking hall', 'inn parlor', 'saloon bar', 'beer hall', 'rustic inn', 'dive bar', 'cocktail lounge', 'tap house'],
+                    keywords: ['tavern', 'inn', 'inns', 'pub', 'pubs', 'cantina', 'saloon', 'bartender', 'barkeep', 'barkeeper', 'innkeeper', 'tankard', 'tankards', 'flagons', 'barstools', 'hearthstone', 'speakeasy', 'brewery', 'taphouse', 'nightclub', 'bistro'],
+                    negativePatterns: [/\bsandbar\b/i, /\bcrowbar\b/i, /\bhandlebar\b/i, /\biron bar\b/i, /\bgold bar\b/i, /\bchocolate bar\b/i]
+                },
+                {
+                    key: 'kitchen',
+                    filename: 'kitchen.jpg',
+                    title: 'Kitchen',
+                    tier: 1,
+                    phrases: ['cookhouse', 'mess hall', 'galley kitchen', 'dining hall', 'prep table', 'butcher block', 'cooking hearth', 'wood stove', 'brick oven', 'spice rack', 'copper pots'],
+                    keywords: ['kitchen', 'scullery', 'pantry', 'cooking', 'cookery', 'culinary', 'stovetop', 'oven', 'cauldron', 'skillet', 'kettle', 'larder', 'ladle', 'cleaver', 'refrigerator', 'fridge', 'microwave', 'appliances', 'countertop', 'countertops', 'bakery', 'bakeshop']
+                },
+                {
+                    key: 'bedroom',
+                    filename: 'bedroom.jpg',
+                    title: 'Bedroom',
+                    tier: 1,
+                    phrases: ['sleeping quarters', 'master suite', 'guest room', 'dorm room', 'bunk room', 'four-poster bed', 'canopy bed', 'bedside table', 'vanity table'],
+                    keywords: ['bedroom', 'bedchamber', 'dormitory', 'bed', 'beds', 'mattress', 'duvet', 'quilt', 'pillows', 'headboard', 'bedsheets', 'linens', 'boudoir', 'nursery', 'bunk', 'bunks', 'trundle', 'cot', 'wardrobe', 'dresser', 'armoire', 'nightstand'],
+                    negativePatterns: [/\briverbeds?\b/i, /\bstreambeds?\b/i, /\blakebeds?\b/i, /\bseabeds?\b/i, /\bflowerbeds?\b/i, /\bseedbeds?\b/i, /\bbedrocks?\b/i]
+                },
+                {
+                    key: 'living_room',
+                    filename: 'living_room.jpg',
+                    title: 'Living Room',
+                    tier: 1,
+                    phrases: ['living room', 'sitting room', 'drawing room', 'family room', 'front parlor', 'rec room', 'sun room', 'tv room', 'reception room', 'coffee table', 'hearth rug'],
+                    keywords: ['parlor', 'parlour', 'lounge', 'foyer', 'sofa', 'couch', 'settee', 'loveseat', 'armchair', 'recliner', 'mantelpiece', 'mantlepiece', 'chandelier', 'drapes', 'upholstered', 'wingback', 'ottoman', 'television', 'fireplace'],
+                    negativePatterns: [/\b(?:wolf|bear|fox|goblin|dragon|beast|monster|lion|tiger)\s+den\b/i]
+                },
+                {
+                    key: 'library_study',
+                    filename: 'library_study.jpg',
+                    title: 'Library / Study',
+                    tier: 1,
+                    phrases: ['grand library', 'royal archive', 'reading room', 'private study', 'wizard\'s study', 'scholar\'s study', 'mahogany desk', 'writing desk', 'ancient tomes', 'rare books'],
+                    keywords: ['library', 'libraries', 'archive', 'archives', 'scriptorium', 'athenaeum', 'bookshop', 'bookstore', 'bookshelves', 'bookshelf', 'bookcases', 'bookcase', 'tomes', 'scrolls', 'manuscripts', 'parchment', 'grimoire', 'grimoires', 'lectern', 'quill', 'inkwell', 'stacks', 'librarian', 'encyclopedia', 'codex', 'vellum', 'folios']
+                },
+                {
+                    key: 'cafe_diner',
+                    filename: 'cafe_diner.jpg',
+                    title: 'Cafe / Diner',
+                    tier: 1,
+                    phrases: ['coffee shop', 'coffee house', 'coffeehouse', 'retro diner', 'tea room', 'teahouse', 'lunch counter', 'soda fountain', 'ramen shop', 'noodle bar', 'vinyl booth', 'menu board'],
+                    keywords: ['cafe', 'cafes', 'diner', 'diners', 'patisserie', 'brasserie', 'espresso', 'barista', 'cappuccino', 'latte', 'jukebox', 'croissant', 'teacup', 'waitress', 'waiter', 'milkshake', 'cafeteria', 'restaurant', 'restaurants']
+                },
+                {
+                    key: 'office_lab',
+                    filename: 'office_lab.jpg',
+                    title: 'Office / Lab',
+                    tier: 1,
+                    phrases: ['research lab', 'science lab', 'medical bay', 'hospital ward', 'operating room', 'corporate office', 'executive office', 'board room', 'boardroom', 'control room', 'server room', 'data center', 'bunker interior', 'computer terminal'],
+                    keywords: ['laboratory', 'laboratories', 'lab', 'labs', 'medbay', 'infirmary', 'cubicle', 'cubicles', 'workstation', 'workstations', 'hologram', 'holographic', 'microscope', 'beakers', 'centrifuge', 'cryopod', 'mainframe', 'whiteboard', 'containment', 'sterile', 'clinic']
+                },
+                {
+                    key: 'space_station',
+                    filename: 'space_station.jpg',
+                    title: 'Space Station',
+                    tier: 1,
+                    phrases: ['space station', 'orbital station', 'starship bridge', 'command deck', 'observation deck', 'hangar bay', 'shuttle bay', 'docking bay', 'starship interior', 'spaceship corridor', 'engineering deck', 'warp core', 'deep space', 'habitat ring'],
+                    keywords: ['station', 'deck', 'starship', 'starships', 'spaceship', 'spaceships', 'spacecraft', 'airlock', 'airlocks', 'bulkhead', 'bulkheads', 'viewport', 'viewports', 'hyperdrive', 'thrusters', 'spacesuit', 'telemetry', 'astrogation', 'orbital', 'cosmos', 'nebula', 'starfield']
+                },
+                {
+                    key: 'suburban_house',
+                    filename: 'suburban_house.jpg',
+                    title: 'Suburban House',
+                    tier: 2,
+                    phrases: ['suburban house', 'suburban home', 'family home', 'two-story house', 'split-level', 'cul-de-sac', 'front lawn', 'front porch', 'front yard', 'backyard', 'picket fence', 'driveway', 'shingled roof'],
+                    keywords: ['suburban', 'suburb', 'suburbs', 'subdivision', 'neighborhood', 'townhouse', 'rowhouse', 'duplex', 'bungalow', 'garage', 'carport', 'mailbox', 'sidewalk', 'lawnmower', 'patio', 'residence', 'residential']
+                },
+                {
+                    key: 'country_house',
+                    filename: 'country_house.jpg',
+                    title: 'Country House',
+                    tier: 2,
+                    phrases: ['country house', 'country home', 'stone cottage', 'thatched cottage', 'woodcutter\'s cottage', 'log cabin', 'hunting lodge', 'country manor', 'country estate', 'ranch house', 'pastoral cottage', 'rustic house'],
+                    keywords: ['farmhouse', 'cottage', 'cottages', 'cabin', 'cabins', 'chalet', 'villa', 'manor', 'homestead', 'croft', 'grange', 'barn', 'barnyard', 'outbuilding', 'thatch', 'thatched', 'whitewashed', 'hedgerow', 'pastoral', 'rural']
+                },
+                {
+                    key: 'castle',
+                    filename: 'castle.jpg',
+                    title: 'Castle',
+                    tier: 2,
+                    phrases: ['royal keep', 'stone keep', 'great hall', 'throne room', 'curtain wall', 'watchtower', 'guard tower', 'stone tower', 'high tower', 'castle walls'],
+                    keywords: ['castle', 'castles', 'fortress', 'citadel', 'stronghold', 'palace', 'chateau', 'bastion', 'rampart', 'ramparts', 'battlement', 'battlements', 'crenellations', 'parapet', 'turret', 'turrets', 'moat', 'drawbridge', 'portcullis', 'redoubt', 'garrison', 'fortification', 'fortified'],
+                    negativePatterns: [/\bkeep\s+(?:going|out|watch|calm|moving|trying|walking|running|away)\b/i]
+                },
+                {
+                    key: 'ruins_temple',
+                    filename: 'ruins_temple.jpg',
+                    title: 'Ruins / Temple',
+                    tier: 2,
+                    phrases: ['ancient ruins', 'temple ruins', 'overgrown ruins', 'forgotten temple', 'sacred shrine', 'stone altar', 'sacrificial altar', 'cathedral interior', 'ritual chamber', 'crumbling pillars', 'standing stones'],
+                    keywords: ['ruins', 'ruined', 'temple', 'temples', 'shrine', 'shrines', 'sanctum', 'altar', 'altars', 'chapel', 'monastery', 'abbey', 'pantheon', 'ziggurat', 'sanctuary', 'crypt', 'mausoleum', 'tomb', 'tombs', 'sarcophagus', 'catacombs', 'pagoda', 'colonnade', 'acropolis', 'parthenon', 'obelisk', 'monolith']
+                },
+                {
+                    key: 'cave_dungeon',
+                    filename: 'cave_dungeon.jpg',
+                    title: 'Cave / Dungeon',
+                    tier: 2,
+                    phrases: ['deep cavern', 'underground cavern', 'dungeon cell', 'prison cell', 'torture chamber', 'mine shaft', 'abandoned mine', 'crystal cave', 'monster lair', 'iron bars', 'limestone cave'],
+                    keywords: ['cave', 'caves', 'cavern', 'caverns', 'dungeon', 'dungeons', 'grotto', 'stalactites', 'stalagmites', 'subterranean', 'tunnel', 'tunnels', 'underdark', 'catacomb', 'undercroft', 'gaol', 'jail', 'shackles', 'manacles', 'bioluminescent', 'chasm', 'minecart']
+                },
+                {
+                    key: 'campsite',
+                    filename: 'campsite.jpg',
+                    title: 'Campsite',
+                    tier: 2,
+                    phrases: ['base camp', 'bandit camp', 'military camp', 'nomad camp', 'caravan camp', 'wilderness outpost', 'canvas tent', 'sleeping bag', 'fire pit', 'wagon circle'],
+                    keywords: ['campsite', 'campground', 'encampment', 'campfire', 'bonfire', 'bivouac', 'tent', 'tents', 'yurt', 'teepee', 'bedroll', 'bedrolls', 'firepit', 'cookfire', 'embers', 'watchfire', 'outpost'],
+                    negativePatterns: [/\bcampaigns?\b/i, /\bchampions?\b/i, /\bscamps?\b/i, /\bdecamps?\b/i]
+                },
+                {
+                    key: 'street_market',
+                    filename: 'street_market.jpg',
+                    title: 'Street Market',
+                    tier: 2,
+                    phrases: ['street market', 'market stall', 'market stalls', 'night market', 'flea market', 'farmers market', 'grand bazaar', 'merchant stall', 'cobblestone street', 'lantern street', 'shopping arcade', 'market square', 'pedestrian street'],
+                    keywords: ['bazaar', 'marketplace', 'hawkers', 'peddlers', 'vendors', 'merchants', 'awnings', 'barrows', 'lanterns', 'haggling', 'souk', 'agora', 'promenade', 'boardwalk', 'alleyway', 'thoroughfare']
+                },
+                {
+                    key: 'fantasy_city',
+                    filename: 'fantasy_city.jpg',
+                    title: 'Fantasy City',
+                    tier: 3,
+                    phrases: ['fantasy city', 'imperial capital', 'ancient capital', 'royal capital', 'walled city', 'elven city', 'dwarven city', 'crystal spires', 'arcane spires', 'floating city', 'celestial city', 'merchant quarter', 'guild district', 'temple district'],
+                    keywords: ['city', 'spires', 'highgarden', 'aqueduct', 'viaduct', 'cathedral', 'guildhall', 'clocktower', 'gargoyles', 'minarets', 'alchemist', 'apothecary', 'blacksmith', 'township', 'burgh']
+                },
+                {
+                    key: 'modern_city',
+                    filename: 'modern_city.jpg',
+                    title: 'Modern City',
+                    tier: 3,
+                    phrases: ['modern city', 'city center', 'city skyline', 'urban sprawl', 'financial district', 'commercial district', 'industrial district', 'office tower', 'apartment block', 'neon lights', 'subway station', 'metro station', 'train station'],
+                    keywords: ['city', 'downtown', 'metropolis', 'megacity', 'skyscraper', 'skyscrapers', 'highrise', 'high-rise', 'penthouse', 'asphalt', 'crosswalk', 'traffic', 'billboard', 'billboards', 'neon', 'cyberpunk', 'boulevard', 'avenue', 'monorail', 'storefront', 'bodega', 'mall']
+                },
+                {
+                    key: 'forest',
+                    filename: 'forest.jpg',
+                    title: 'Forest',
+                    tier: 4,
+                    phrases: ['deep forest', 'ancient forest', 'enchanted forest', 'pine forest', 'redwood forest', 'bamboo forest', 'thick woods', 'forest path', 'forest clearing', 'tree canopy'],
+                    keywords: ['forest', 'forests', 'woodland', 'woodlands', 'woods', 'jungle', 'jungles', 'rainforest', 'darkwood', 'trees', 'timberland', 'thicket', 'copse', 'bramble', 'undergrowth', 'underbrush', 'ferns', 'mossy', 'canopy', 'foliage', 'pines', 'redwoods', 'grove', 'glade', 'sylvan', 'wildwood']
+                },
+                {
+                    key: 'coast',
+                    filename: 'coast.jpg',
+                    title: 'Coast',
+                    tier: 4,
+                    phrases: ['sandy beach', 'ocean beach', 'sea cliffs', 'rocky shore', 'tidal pools', 'port town', 'coral reef', 'tropical island', 'open sea', 'high seas', 'wooden pier', 'harbor pier'],
+                    keywords: ['coast', 'coastline', 'seashore', 'seaside', 'beach', 'beaches', 'ocean', 'sea', 'seas', 'waves', 'surf', 'tide', 'harbor', 'harbour', 'seaport', 'lighthouse', 'shipwreck', 'dunes', 'promontory', 'archipelago', 'atoll', 'cove', 'marina', 'seagulls'],
+                    negativePatterns: [/\bsearch\b/i, /\bseasons?\b/i, /\bseated\b/i, /\bresearch\b/i]
+                },
+                {
+                    key: 'desert_wasteland',
+                    filename: 'desert_wasteland.jpg',
+                    title: 'Desert / Wasteland',
+                    tier: 4,
+                    phrases: ['sand dunes', 'arid wasteland', 'scorched earth', 'salt flats', 'red rock canyon', 'sandstone mesa', 'desert oasis', 'dust bowl', 'barren wastes', 'ash wastes'],
+                    keywords: ['desert', 'deserts', 'wasteland', 'wastes', 'badlands', 'dunes', 'oasis', 'arid', 'parched', 'mirage', 'sandstorm', 'cactus', 'cacti', 'tumbleweed', 'sandstone', 'mesa', 'butte', 'arroyo', 'outback', 'sahara']
+                },
+                {
+                    key: 'river',
+                    filename: 'river.jpg',
+                    title: 'River',
+                    tier: 4,
+                    phrases: ['riverbank', 'riverbanks', 'riverbed', 'riverbeds', 'rushing water', 'winding stream', 'mountain stream', 'babbling brook', 'stone bridge', 'wooden bridge', 'river crossing', 'shallow ford', 'whitewater rapids'],
+                    keywords: ['river', 'rivers', 'stream', 'streams', 'creek', 'creeks', 'brook', 'brooks', 'waterway', 'tributary', 'estuary', 'rapids', 'waterfall', 'waterfalls', 'cascade', 'whirlpool', 'canal']
+                },
+                {
+                    key: 'lake',
+                    filename: 'lake.jpg',
+                    title: 'Lake',
+                    tier: 4,
+                    phrases: ['alpine lake', 'mirror lake', 'wooden dock', 'calm waters', 'still water', 'placid water'],
+                    keywords: ['lake', 'lakes', 'lakeshore', 'lakeside', 'pond', 'ponds', 'millpond', 'lagoon', 'reservoir', 'loch', 'tarn', 'boathouse', 'waterfront', 'marsh', 'swamp', 'wetlands', 'bayou']
+                },
+                {
+                    key: 'mountains',
+                    filename: 'mountains.jpg',
+                    title: 'Mountains',
+                    tier: 4,
+                    phrases: ['mountain range', 'mountain peak', 'mountain pass', 'jagged peaks', 'snow-capped', 'alpine ridge', 'sheer cliff', 'cliff face', 'rocky crag', 'ice field', 'high pass'],
+                    keywords: ['mountain', 'mountains', 'peak', 'peaks', 'summit', 'summits', 'ridge', 'ridgeline', 'crag', 'crags', 'cliff', 'cliffs', 'precipice', 'bluff', 'glacier', 'scree', 'tundra', 'highland', 'highlands', 'plateau', 'volcano']
+                },
+                {
+                    key: 'valley',
+                    filename: 'valley.jpg',
+                    title: 'Valley',
+                    tier: 4,
+                    phrases: ['river valley', 'green valley', 'lush valley', 'hidden valley', 'mountain valley', 'rolling hills', 'open meadow', 'wildflower meadow', 'pastoral plains'],
+                    keywords: ['valley', 'valleys', 'glen', 'dale', 'vale', 'dell', 'meadow', 'meadows', 'pasture', 'pastures', 'prairie', 'steppe', 'savanna', 'wildflowers', 'grasslands', 'farmland']
+                }
+            ],
+
+            /**
+             * Resolves the asset URL for a default location image preset.
+             * Returns relative path on desktop (Electron) and GitHub raw URL on web/mobile.
+             * @param {string} filename - e.g. "modern_city.jpg"
+             * @param {boolean|null} forceElectron - Optional override for tests
+             * @returns {string}
+             */
+            getDefaultLocationAssetUrl(filename, forceElectron = null) {
+                if (!filename) return '';
+                const isElectron = Boolean(forceElectron ?? (typeof window !== 'undefined' && window.electronBridge));
+                if (isElectron) {
+                    return `assets/locations/defaults/${filename}`;
+                }
+                return `https://raw.githubusercontent.com/pacmanincarnate/EllipsisLM/main/assets/locations/defaults/${filename}`;
+            },
+
+            /**
+             * Detects story genre signals from story metadata and entries.
+             * @param {Object|null} storyContext
+             * @returns {'fantasy'|'modern'|'scifi'|'neutral'}
+             */
+            detectStoryGenreContext(storyContext) {
+                if (!storyContext || typeof storyContext !== 'object') return 'neutral';
+
+                const chunks = [];
+                if (Array.isArray(storyContext.tags)) chunks.push(...storyContext.tags);
+                else if (typeof storyContext.tags === 'string') chunks.push(storyContext.tags);
+                if (storyContext.creator_notes) chunks.push(storyContext.creator_notes);
+                if (storyContext.description) chunks.push(storyContext.description);
+                if (storyContext.genre) chunks.push(storyContext.genre);
+
+                const text = chunks.join(' ').toLowerCase();
+                if (!text) return 'neutral';
+
+                const fantasyCount = (text.match(/\b(?:fantasy|medieval|magic|elven|dwarven|kingdom|empire|guild|sword|arcane|feudal|victorian|gothic|warlock|wizard)\b/g) || []).length;
+                const modernCount = (text.match(/\b(?:modern|contemporary|urban|noir|detective|high school|college|slice of life|metropolis|suburban|cop|police)\b/g) || []).length;
+                const scifiCount = (text.match(/\b(?:sci-fi|scifi|science fiction|space|cyberpunk|starship|galactic|orbital|futuristic|android|mech|colony|interstellar)\b/g) || []).length;
+
+                if (scifiCount > fantasyCount && scifiCount > modernCount) return 'scifi';
+                if (fantasyCount > modernCount && fantasyCount > scifiCount) return 'fantasy';
+                if (modernCount > fantasyCount && modernCount > scifiCount) return 'modern';
+                return 'neutral';
+            },
+
+            /**
+             * Matches a location tile to the most fitting default location image preset using
+             * word-boundary regexes, field weights, specificity tiers, and story genre context.
+             * @param {string|Object|null} textOrLocation
+             * @param {Object|null} storyContext
+             * @param {Object} options - e.g. { forceElectron: boolean }
+             * @returns {string|null} - Resolved asset URL or null if no preset scored > 0
+             */
+            matchLocationDefaultImage(textOrLocation, storyContext = null, options = {}) {
+                if (!textOrLocation) return null;
+
+                let name = '';
+                let desc = '';
+                let prompt = '';
+
+                if (typeof textOrLocation === 'string') {
+                    name = textOrLocation;
+                } else if (typeof textOrLocation === 'object') {
+                    name = textOrLocation.name || '';
+                    desc = textOrLocation.description || '';
+                    prompt = textOrLocation.prompt || '';
+                }
+
+                if (!name && !desc && !prompt) return null;
+
+                const genre = this.detectStoryGenreContext(storyContext);
+                const catalog = this.DEFAULT_LOCATION_IMAGES;
+                let highestScore = 0;
+                let bestPreset = null;
+
+                const nameLower = name.toLowerCase();
+                const descLower = desc.toLowerCase();
+                const promptLower = prompt.toLowerCase();
+
+                for (const preset of catalog) {
+                    let score = 0;
+
+                    // Exclusions check
+                    if (preset.negativePatterns && preset.negativePatterns.length > 0) {
+                        const fullLocationText = `${name} ${desc} ${prompt}`;
+                        let hasNegative = false;
+                        for (const neg of preset.negativePatterns) {
+                            if (neg.test(fullLocationText)) {
+                                hasNegative = true;
+                                break;
+                            }
+                        }
+                        if (hasNegative) continue;
+                    }
+
+                    // 1. Exact multi-word phrases (2.5 pts base)
+                    if (preset.phrases) {
+                        for (const phrase of preset.phrases) {
+                            const pLower = phrase.toLowerCase();
+                            if (nameLower.includes(pLower)) score += 2.5 * 3.0; // Name weight 3.0
+                            if (descLower.includes(pLower)) score += 2.5 * 2.0; // Desc weight 2.0
+                            if (promptLower.includes(pLower)) score += 2.5 * 0.75; // Prompt weight 0.75
+                        }
+                    }
+
+                    // 2. Word-boundary single keywords (1.0 pt base)
+                    if (preset.keywords) {
+                        for (const kw of preset.keywords) {
+                            const regex = new RegExp(`\\b${kw}\\b`, 'i');
+                            if (regex.test(name)) score += 1.0 * 3.0;
+                            if (regex.test(desc)) score += 1.0 * 2.0;
+                            if (regex.test(prompt)) score += 1.0 * 0.75;
+                        }
+                    }
+
+                    if (score > 0) {
+                        // Anchor bonus if location name explicitly names the archetype
+                        const titleRegex = new RegExp(`\\b${preset.key.replace(/_/g, ' ')}\\b`, 'i');
+                        if (titleRegex.test(name)) {
+                            score += 4.0;
+                        }
+
+                        // Specificity tier boost
+                        const tierBoost = preset.tier === 1 ? 1.5 : (preset.tier === 2 ? 1.0 : (preset.tier === 3 ? 0.5 : 0.0));
+                        score += tierBoost;
+
+                        // Genre Context Disambiguation
+                        if (genre === 'fantasy') {
+                            if (preset.key === 'fantasy_city' || preset.key === 'castle' || preset.key === 'country_house' || preset.key === 'tavern_interior') {
+                                score += 3.0;
+                            }
+                        } else if (genre === 'modern') {
+                            if (preset.key === 'modern_city' || preset.key === 'suburban_house' || preset.key === 'cafe_diner' || preset.key === 'office_lab') {
+                                score += 3.0;
+                            }
+                        } else if (genre === 'scifi') {
+                            if (preset.key === 'space_station' || preset.key === 'office_lab' || preset.key === 'modern_city') {
+                                score += 4.0;
+                            }
+                        }
+
+                        if (score > highestScore) {
+                            highestScore = score;
+                            bestPreset = preset;
+                        }
+                    }
+                }
+
+                if (!bestPreset || highestScore <= 0) return null;
+                return this.getDefaultLocationAssetUrl(bestPreset.filename, options.forceElectron);
+            },
+
+            /**
+             * Resolves a location's image URL.
+             * Returns location.imageUrl if set (and not unhydrated local IDB),
+             * otherwise falls back to keyword matching against default images.
+             * @param {Object|null} location
+             * @param {Object|null} storyContext
+             * @param {Object} options
+             * @returns {string|null}
+             */
+            resolveLocationImageUrl(location, storyContext = null, options = {}) {
+                if (!location || typeof location !== 'object') return null;
+
+                if (location.imageUrl && typeof location.imageUrl === 'string' && location.imageUrl.trim() !== '') {
+                    if (!location.imageUrl.startsWith('local_idb_location')) {
+                        return location.imageUrl;
+                    }
+                }
+
+                return this.matchLocationDefaultImage(location, storyContext, options);
             }
         };
 
-        /**
+                /**
          * =================================================================================================
          * [SEC:JS:UTIL:PB]
          * PromptBuilder Module
@@ -20935,195 +21404,9 @@ EXECUTION DIRECTIVE: Your output MUST begin immediately with the opening tag <lo
              * @returns {string}
              */
             buildKoboldTemplatedPrompt(components, replacer) {
-                const state = StateManager.getState();
-                const template = state.koboldcpp_template || 'jinja';
-
-                // 1. Construct System/Context Block
-                let system = [components.system_prompt];
-
-                // Location
-                if (components.location_context) system.push("## LOCATION CONTEXT\n" + components.location_context);
-
-                // Stats
-                if (components.stats_context) system.push("## CHARACTER STATS\n" + components.stats_context);
-
-                // Static/World Knowledge
-                system.push("## WORLD KNOWLEDGE\n" + components.static_entries);
-
-                // Characters
-                system.push("## CHARACTERS\n" + components.characters);
-
-                // Example Dialogue
-                const exampleDialogue = (state.chat_history || []).filter(m => m && m.isHidden);
-                if (exampleDialogue.length > 0) {
-                    let examples = "";
-                    exampleDialogue.forEach(msg => {
-                        if (!msg) return;
-                        const char = ReactiveStore.getCharacter(msg.character_id);
-                        if (char) examples += `${char.name}: ${replacer(UTILITY.stripThinking(msg.content || ''))}\n`;
-                    });
-                    if (examples) {
-                        system.push("## EXAMPLE DIALOGUE\n" + examples);
-                    }
-                }
-
-                const system_prompt_str = system.join('\n\n');
-
-                let instruction = "";
-                if (components.customInstruction) {
-                    instruction = components.customInstruction;
-                } else {
-                    instruction = components.isForUser
-                        ? `Generate the next creative response for the user's character, ${components.charToAct.name}.`
-                        : `Generate the next response for ${components.charToAct.name}. Stay in character.`;
-                }
-
-                // Response Length Instruction
-                const responseLength = state.responseLength || 'normal';
-                // Text Mode sets its own brevity rules; the narrative length setting would fight them.
-                if (!components.charToAct.is_narrator && !components.isDirectMessage) {
-                    if (responseLength === 'short') instruction += " Keep the response concise and under two sentences, focusing only on the character's next words and actions.";
-                    else if (responseLength === 'medium') instruction += " Keep the response between three to six sentences, including the character's next words and actions written with descriptive language.";
-                    else if (responseLength === 'long') instruction += " Keep the response between two and four paragraphs. Be descriptive, verbose, and detailed in your response, providing this character's dialogue and actions, as well as full sensory descriptions of the surroundings, characters, and event.";
-                    else if (responseLength === 'novel') instruction += " Continue writing a long-form addition to the text that builds on the current actions, describes the scene, and contributes to world-building. Include full sensory descriptions of the surroundings, characters, and events.";
-                }
-
-                instruction += " Do not repeat the character's name in the response itself.";
-
-                // Event Master
-                if (components.event_master_prompt) system.push("### Secret Event Master Instruction\n" + components.event_master_prompt);
-
-                if (template === 'none') return this.buildDefaultPrompt(components, replacer);
-
-                // Helper for uniform system message formatting across templates
-                const formatSystemMsg = (msg) => {
-                    if (msg.type === 'lore_reveal') {
-                        return `### System Note:\n${replacer(UTILITY.stripThinking(msg.content || ''))}`;
-                    } else if (msg.type === 'system_event') {
-                        return `### System Event: ${replacer(UTILITY.stripThinking(msg.content || ''))}`;
-                    }
-                    return '';
-                };
-
-                // --- LLAMA 3 ---
-                if (template === 'llama3') {
-                    const history_llama3 = components.history.map(msg => {
-                        if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
-                        let role = 'user';
-                        let content = '';
-                        if (msg.type === 'chat') {
-                            const char = ReactiveStore.getCharacter(msg.character_id);
-                            const is_user = char ? char.is_user : (msg.character_id === 'user');
-                            const name = char ? char.name : (is_user ? 'User' : 'Character');
-                            role = is_user ? 'user' : 'assistant';
-                            content = `${name}:\n${replacer(UTILITY.stripThinking(msg.content || ''))}`;
-                        } else {
-                            role = 'system';
-                            content = formatSystemMsg(msg);
-                        }
-                        return `<|start_header_id|>${role}<|end_header_id|>\n\n${content}<|eot_id|>`;
-                    }).filter(Boolean).join('\n');
-
-                    return `<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n${system_prompt_str}<|eot_id|>\n${history_llama3}\n<|start_header_id|>user<|end_header_id|>\n\n${instruction}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n${components.charToAct.name}:\n`;
-                }
-
-                // --- GEMMA (Google) ---
-                if (template === 'gemma') {
-                    const history_gemma = components.history.map(msg => {
-                        if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
-                        let role = 'user';
-                        let content = '';
-
-                        if (msg.type === 'chat') {
-                            const char = ReactiveStore.getCharacter(msg.character_id);
-                            const is_user = char ? char.is_user : (msg.character_id === 'user');
-                            const name = char ? char.name : (is_user ? 'User' : 'Character');
-                            role = is_user ? 'user' : 'model';
-                            content = `${name}:\n${replacer(UTILITY.stripThinking(msg.content || ''))}`;
-                        } else {
-                            // System events injected as user context for Gemma
-                            return `<start_of_turn>user\n${formatSystemMsg(msg)}<end_of_turn>`;
-                        }
-
-                        return `<start_of_turn>${role}\n${content}<end_of_turn>`;
-                    }).filter(Boolean).join('\n');
-
-                    return `<start_of_turn>user\n${system_prompt_str}<end_of_turn>\n${history_gemma}\n<start_of_turn>user\n${instruction}<end_of_turn>\n<start_of_turn>model\n${components.charToAct.name}:\n`;
-                }
-
-                // --- PHI-3 (Microsoft) ---
-                if (template === 'phi3') {
-                    const history_phi = components.history.map(msg => {
-                        if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
-                        let role = 'user';
-                        let content = '';
-                        if (msg.type === 'chat') {
-                            const char = ReactiveStore.getCharacter(msg.character_id);
-                            const is_user = char ? char.is_user : (msg.character_id === 'user');
-                            const name = char ? char.name : (is_user ? 'User' : 'Character');
-                            role = is_user ? 'user' : 'assistant';
-                            content = `${name}:\n${replacer(UTILITY.stripThinking(msg.content || ''))}`;
-                        } else {
-                            return `<|system|>\n${formatSystemMsg(msg)}<|end|>`;
-                        }
-
-                        return `<|${role}|>\n${content}<|end|>`;
-                    }).filter(Boolean).join('\n');
-
-                    return `<|system|>\n${system_prompt_str}<|end|>\n${history_phi}\n<|user|>\n${instruction}<|end|>\n<|assistant|>\n${components.charToAct.name}:\n`;
-                }
-
-                // --- MISTRAL ---
-                if (template === 'mistral') {
-                    const history_str = components.history.map(msg => {
-                        if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
-                        if (msg.type === 'chat') {
-                            const char = ReactiveStore.getCharacter(msg.character_id);
-                            const is_user = char ? char.is_user : (msg.character_id === 'user');
-                            const name = char ? char.name : (is_user ? 'User' : 'Character');
-                            return `${is_user ? 'user' : 'assistant'}:${name}:\n${replacer(UTILITY.stripThinking(msg.content || ''))}`;
-                        } else {
-                            return `system:${formatSystemMsg(msg)}`;
-                        }
-                    }).filter(Boolean).join('\n');
-                    return `<s>[INST] ${system_prompt_str}\n\n${history_str}\n\n${instruction} [/INST]`;
-                }
-
-                // --- CHATML ---
-                if (template === 'chatml') {
-                    const history_chatml = components.history.map(msg => {
-                        if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
-                        let role = 'system';
-                        let content = '';
-                        if (msg.type === 'chat') {
-                            const char = ReactiveStore.getCharacter(msg.character_id);
-                            const is_user = char ? char.is_user : (msg.character_id === 'user');
-                            const name = char ? char.name : (is_user ? 'User' : 'Character');
-                            role = is_user ? 'user' : 'assistant';
-                            content = `${name}:\n${replacer(UTILITY.stripThinking(msg.content || ''))}`;
-                        } else {
-                            content = formatSystemMsg(msg);
-                        }
-                        return `<|im_start|>${role}\n${content}<|im_end|>`;
-                    }).filter(Boolean).join('\n');
-                    return `<|im_start|>system\n${system_prompt_str}<|im_end|>\n${history_chatml}\n<|im_start|>user\n${instruction}<|im_end|>\n<|im_start|>assistant\n${components.charToAct.name}:\n`;
-                }
-
-                // --- ALPACA ---
-                if (template === 'alpaca') {
-                    const history_str = components.history.map(msg => {
-                        if (!msg || (msg.type === 'chat' && msg.isHidden)) return null;
-                        if (msg.type === 'chat') {
-                            const char = ReactiveStore.getCharacter(msg.character_id);
-                            const name = char ? char.name : (msg.character_id === 'user' ? 'User' : 'Character');
-                            return `${name}: ${replacer(UTILITY.stripThinking(msg.content || ''))}`;
-                        } else {
-                            return formatSystemMsg(msg);
-                        }
-                    }).filter(Boolean).join('\n');
-                    return `### Instruction:\n${system_prompt_str}\n\n${history_str}\n\n${instruction}\n\n### Response:\n`;
-                }
-
+                // Modern KoboldCPP utilizes server-side Jinja chat completion (/v1/chat/completions)
+                // using the model's native GGUF embedded template. Client-side prompt building sends clean
+                // default components to prevent double-templating across both local desktop and web environments.
                 return this.buildDefaultPrompt(components, replacer);
             },
 
@@ -27882,6 +28165,9 @@ Output Schema:
                             } else {
                                 backgroundUrl = startLoc.imageUrl;
                             }
+                        } else {
+                            const defaultImg = UTILITY.resolveLocationImageUrl(startLoc, state);
+                            if (defaultImg) backgroundUrl = defaultImg;
                         }
                     }
                 }
@@ -27918,7 +28204,8 @@ Output Schema:
                                     backgroundUrl = startLoc.imageUrl;
                                 }
                             } else {
-                                backgroundUrl = defaultBackgroundUrl;
+                                const defaultImg = UTILITY.resolveLocationImageUrl(startLoc, state);
+                                backgroundUrl = defaultImg || defaultBackgroundUrl;
                             }
                         }
                     }
@@ -27946,7 +28233,8 @@ Output Schema:
                                             backgroundUrl = loc.imageUrl;
                                         }
                                     } else {
-                                        backgroundUrl = defaultBackgroundUrl;
+                                        const defaultImg = UTILITY.resolveLocationImageUrl(loc, state);
+                                        backgroundUrl = defaultImg || defaultBackgroundUrl;
                                     }
                                 }
                             }
@@ -28396,15 +28684,10 @@ Output Schema:
                         }
                         // HYDRATION FIX: If it SHOULD be a local IDB image, but it's not in cache, fetch it.
                         else if (currentLoc.imageUrl && currentLoc.imageUrl.startsWith('local_idb_location')) {
-                            // Trigger async load, but don't block render.
-                            // Pass the *stored* key (e.g. local_idb_location::4,4) to the hydration helper
-                            // The helper expects the raw IDB key, which is "location::4,4" usually?
-                            // Let's check how we save it. 
-                            // In WorldController.handleWorldMapLocationImageUpload: 
-                            // locationKey = `location::${x},${y}`;
-                            // location.imageUrl = `local_idb_location::${x},${y}`;
-                            // So we strip the prefix.
                             this.hydrateLocationImage(currentLoc.imageUrl);
+                        } else if (!currentLoc.imageUrl) {
+                            const defaultImg = UTILITY.resolveLocationImageUrl(currentLoc, state);
+                            if (defaultImg) backgroundUrl = defaultImg;
                         }
                     }
                 }
@@ -28578,8 +28861,17 @@ Output Schema:
                             if (location) {
                                 const locationKey = `location::${x},${y}`;
                                 UIManager.RUNTIME.worldImageCache = UIManager.RUNTIME.worldImageCache || {};
-                                if (UIManager.RUNTIME.worldImageCache[locationKey]) imageSrc = UIManager.RUNTIME.worldImageCache[locationKey];
-                                else if (location.imageUrl && !location.imageUrl.startsWith('local_idb_location')) imageSrc = location.imageUrl;
+                                if (UIManager.RUNTIME.worldImageCache[locationKey]) {
+                                    imageSrc = UIManager.RUNTIME.worldImageCache[locationKey];
+                                } else if (location.imageUrl) {
+                                    if (location.imageUrl.startsWith('local_idb_location')) {
+                                        this.hydrateLocationImage(location.imageUrl);
+                                    } else {
+                                        imageSrc = location.imageUrl;
+                                    }
+                                } else {
+                                    imageSrc = UTILITY.resolveLocationImageUrl(location, state) || '';
+                                }
                             }
                             const bgImage = imageSrc ? `background-image: url('${UTILITY.safeStyleUrl(imageSrc)}');` : '';
                             const isGenerating = (typeof WorldController !== 'undefined' && WorldController.RUNTIME.generatingTiles && WorldController.RUNTIME.generatingTiles.has(`${x},${y}`));
@@ -28646,8 +28938,17 @@ Output Schema:
                             if (location) {
                                 const locationKey = `location::${x},${y}`;
                                 UIManager.RUNTIME.worldImageCache = UIManager.RUNTIME.worldImageCache || {};
-                                if (UIManager.RUNTIME.worldImageCache[locationKey]) imageSrc = UIManager.RUNTIME.worldImageCache[locationKey];
-                                else if (location.imageUrl && !location.imageUrl.startsWith('local_idb_location')) imageSrc = location.imageUrl;
+                                if (UIManager.RUNTIME.worldImageCache[locationKey]) {
+                                    imageSrc = UIManager.RUNTIME.worldImageCache[locationKey];
+                                } else if (location.imageUrl) {
+                                    if (location.imageUrl.startsWith('local_idb_location')) {
+                                        this.hydrateLocationImage(location.imageUrl);
+                                    } else {
+                                        imageSrc = location.imageUrl;
+                                    }
+                                } else {
+                                    imageSrc = UTILITY.resolveLocationImageUrl(location, state) || '';
+                                }
                             }
 
                             const isGenerating = (typeof WorldController !== 'undefined' && WorldController.RUNTIME.generatingTiles && WorldController.RUNTIME.generatingTiles.has(`${x},${y}`));
@@ -32469,9 +32770,9 @@ Output Schema:
                 }
                 const templateSelector = document.getElementById('koboldcpp-template-selector');
                 if (templateSelector) {
-                    templateSelector.value = globalSettings.koboldcpp_template || 'jinja';
+                    templateSelector.value = 'jinja';
                     templateSelector.addEventListener('change', (e) => {
-                        globalSettings.koboldcpp_template = e.target.value;
+                        globalSettings.koboldcpp_template = 'jinja';
                         StateManager.saveGlobalSettings();
                     });
                 }
@@ -33951,7 +34252,7 @@ Output Schema:
                 if (updateUI) updateUI(15, "Agent: Synthesizing story foundation, world bible, and cast...");
 
                 const foundationPrompt = PromptBuilder.buildStoryFoundationPrompt(userPrompt);
-                const raw = await this._callAgentText(foundationPrompt, 2, { profile: 'structured' });
+                const raw = await this._callAgentText(foundationPrompt, 2, { profile: 'structured', max_tokens: 8192 });
                 if (!raw) throw new Error("Concept Agent failed to generate a valid story foundation.");
 
                 const conceptData = UTILITY.parseStoryFoundationXml(raw);
@@ -34207,7 +34508,7 @@ Output Schema:
                 if (updateUI) updateUI(15, "Agent: Synthesizing scenario foundation and casting...");
 
                 const scenarioFoundationPrompt = PromptBuilder.buildScenarioFoundationPrompt(existingStory, userPrompt);
-                const raw = await this._callAgentText(scenarioFoundationPrompt, 2, { profile: 'structured' });
+                const raw = await this._callAgentText(scenarioFoundationPrompt, 2, { profile: 'structured', max_tokens: 8192 });
                 if (!raw) throw new Error("Concept Agent failed to generate a valid scenario foundation.");
 
                 const conceptData = UTILITY.parseScenarioFoundationXml(raw, existingStory);
@@ -44657,8 +44958,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                     }
 
                     if (cached.model === 'koboldcpp') {
-                        const template = state.koboldcpp_template || 'jinja';
-                        metaInfo += `Template Used: ${template.toUpperCase()}\n`;
+                        metaInfo += `Template Used: JINJA (Model Embedded)\n`;
                     }
                     metaInfo += `---------------------------\n\n`;
 
@@ -44709,8 +45009,7 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
 
                 if (state.apiProvider === 'koboldcpp') {
                     // Show specific template being used
-                    const template = state.koboldcpp_template || 'jinja';
-                    metaInfo += `Active Template: ${template.toUpperCase()}\n`;
+                    metaInfo += `Active Template: JINJA (Model Embedded)\n`;
 
                     // Estimate Token Count (Roughly 4 chars per token)
                     const estTokens = Math.ceil(promptText.length / 4);

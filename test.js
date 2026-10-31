@@ -530,6 +530,35 @@ test('extractThinking: handles prompt-prefill where model immediately outputs </
     assert.equal(res.content, 'Immediate story content without thinking.');
 });
 
+test('extractThinking: handles Gemma 4 channel tokens (<|channel>thought ... <channel|>)', () => {
+    const input = '<|channel>thought\nPlanning narrative arc and character archetypes...\n<channel|>\n<response>\n  <title>Chronicles of Eternity</title>\n</response>';
+    const res = UTILITY.extractThinking(input);
+    assert.equal(res.thinking, 'Planning narrative arc and character archetypes...');
+    assert.ok(res.content.startsWith('<response>'));
+    assert.ok(res.content.includes('<title>Chronicles of Eternity</title>'));
+});
+
+test('extractThinking: handles Gemma 4 implicit opening tag with <channel|>', () => {
+    const input = 'Evaluating scene dynamics...\n<channel|>\n"Welcome," she whispered.';
+    const res = UTILITY.extractThinking(input);
+    assert.equal(res.thinking, 'Evaluating scene dynamics...');
+    assert.equal(res.content, '"Welcome," she whispered.');
+});
+
+test('extractThinking: handles Gemma 4 and modern thinking tokens (<|thought|>, <start_of_thought>, <|think|>)', () => {
+    const res1 = UTILITY.extractThinking('<|thought|>pondering<|/thought|>Action.');
+    assert.equal(res1.thinking, 'pondering');
+    assert.equal(res1.content, 'Action.');
+
+    const res2 = UTILITY.extractThinking('<start_of_thought>calculating<end_of_thought>Result.');
+    assert.equal(res2.thinking, 'calculating');
+    assert.equal(res2.content, 'Result.');
+
+    const res3 = UTILITY.extractThinking('<|think|>cogitating<|/think|>Response.');
+    assert.equal(res3.thinking, 'cogitating');
+    assert.equal(res3.content, 'Response.');
+});
+
 // ─── decodeXmlEntities ────────────────────────────────────────────────────
 
 test('decodeXmlEntities: decodes standard XML entities and numeric entities', () => {
@@ -745,6 +774,7 @@ test('resolveSamplerConfig: structured profile sets lower temperature, min_p, to
     assert.equal(config.dry_multiplier, 0.5);
     assert.equal(config.dry_allowed_length, 3);
     assert.equal(config.rep_pen, 1.1);
+    assert.equal(config.max_tokens, 8192);
     deepEq(config.dry_sequence_breakers, ["\n", ",", ":", "{", "}", "[", "]", "<", ">", "\""]);
 });
 
@@ -1162,6 +1192,60 @@ test('parseStoryFoundationXml: singular creator_note tag is recognized', () => {
     const result = UTILITY.parseStoryFoundationXml(xml);
     assert.equal(result.title, 'Clockwork Manor');
     assert.equal(result.creator_notes, 'A mystery inside an automaton workshop.');
+});
+
+test('parseStoryFoundationXml: Gemma 4 thinking channel tokens (<|channel>thought) are extracted cleanly and valid XML parsed', () => {
+    const raw = `<|channel>thought
+I need to plan the plot conflict, antagonist motivation, and human stakes.
+Let's make a cyberpunk detective story.
+<channel|>
+<response>
+  <title>Neon Synapse</title>
+  <creator_notes>A neon-soaked dystopian metropolis where detectives hunt memories.</creator_notes>
+  <tags>cyberpunk, detective, noir</tags>
+  <scenario_name>The First Breach</scenario_name>
+  <brief_summary>Detectives unravel a syndicate wiping human memories.</brief_summary>
+  <world_lore>
+    <entry>
+      <title>The Underbelly</title>
+      <content>Subterranean tunnels where unregistered humans live.</content>
+    </entry>
+  </world_lore>
+  <cast_roster>
+    <character>
+      <id>C1</id>
+      <name>Jax</name>
+      <role>User</role>
+      <archetype>Disillusioned Detective</archetype>
+      <core_flaw>Cannot let go of his partner's death.</core_flaw>
+      <core_desire>To find the truth behind the memory wipes.</core_desire>
+      <vocal_cadence>Low gravelly voice, slow and deliberate.</vocal_cadence>
+    </character>
+    <character>
+      <id>C2</id>
+      <name>Nyx</name>
+      <role>PrimaryAI</role>
+      <archetype>Informant</archetype>
+      <core_flaw>Trust issues</core_flaw>
+      <core_desire>Survival</core_desire>
+      <vocal_cadence>Fast-paced, whispering timbre.</vocal_cadence>
+    </character>
+  </cast_roster>
+  <relationship_matrix>
+    <relationship>
+      <source_name>Jax</source_name>
+      <target_name>Nyx</target_name>
+      <dynamic_summary>Tense transactional alliance</dynamic_summary>
+    </relationship>
+  </relationship_matrix>
+</response>`;
+
+    const result = UTILITY.parseStoryFoundationXml(raw);
+    assert.equal(result.title, 'Neon Synapse');
+    assert.equal(result.creator_notes, 'A neon-soaked dystopian metropolis where detectives hunt memories.');
+    assert.equal(result.characters[0].name, 'Jax');
+    assert.equal(result.characters[1].name, 'Nyx');
+    assert.ok(result.characters.length >= 3); // Auto-ensemble completeness kicks in
 });
 
 test('parseStoryFoundationXml: reasoning model thinking tokens salvaged when content empty', () => {
@@ -3299,4 +3383,129 @@ test('InStoryGenerationPipeline.runCastingPhase: respects shouldGenerateImages o
     assert.ok(imgGenCalls.every(c => !c.initImg), 'Should only call primary txt2img without I2I emotion burst');
     assert.ok(draftDiff2.characters[0].image_url.startsWith('local_idb_'));
     assert.ok(draftDiff2.characters[1].image_url.startsWith('local_idb_'));
+});
+
+// =====================================================================
+// ── DEFAULT LOCATION IMAGE RESOLUTION TESTS (24 PRESETS) ──────────────
+// =====================================================================
+
+test('DEFAULT_LOCATION_IMAGES catalog: exactly 24 presets with valid structure', () => {
+    assert.ok(Array.isArray(UTILITY.DEFAULT_LOCATION_IMAGES), 'DEFAULT_LOCATION_IMAGES should be an array');
+    assert.equal(UTILITY.DEFAULT_LOCATION_IMAGES.length, 24, 'Catalog must contain exactly 24 presets');
+
+    const expectedKeys = [
+        'tavern_interior', 'kitchen', 'bedroom', 'living_room', 'library_study',
+        'cafe_diner', 'office_lab', 'space_station', 'suburban_house', 'country_house',
+        'castle', 'ruins_temple', 'cave_dungeon', 'campsite', 'street_market',
+        'fantasy_city', 'modern_city', 'forest', 'coast', 'desert_wasteland',
+        'river', 'lake', 'mountains', 'valley'
+    ];
+
+    for (const key of expectedKeys) {
+        const item = UTILITY.DEFAULT_LOCATION_IMAGES.find(i => i.key === key);
+        assert.ok(item, `Preset '${key}' must exist in catalog`);
+        assert.equal(item.filename, `${key}.jpg`, `Filename for '${key}' must be '${key}.jpg'`);
+        assert.ok(typeof item.tier === 'number' && item.tier >= 1 && item.tier <= 4, `Preset '${key}' must have tier 1-4`);
+        assert.ok(Array.isArray(item.phrases), `Preset '${key}' must have phrases array`);
+        assert.ok(Array.isArray(item.keywords), `Preset '${key}' must have keywords array`);
+    }
+});
+
+test('getDefaultLocationAssetUrl: returns relative paths on Electron and GitHub URLs on Web/Mobile', () => {
+    const electronUrl = UTILITY.getDefaultLocationAssetUrl('modern_city.jpg', true);
+    assert.equal(electronUrl, 'assets/locations/defaults/modern_city.jpg');
+
+    const webUrl = UTILITY.getDefaultLocationAssetUrl('modern_city.jpg', false);
+    assert.equal(webUrl, 'https://raw.githubusercontent.com/pacmanincarnate/EllipsisLM/main/assets/locations/defaults/modern_city.jpg');
+});
+
+test('matchLocationDefaultImage: resolves direct keywords for all 24 presets', () => {
+    const cases = [
+        { loc: { name: 'The Wayfarer Tavern', description: 'A cozy tavern with roaring hearth and tankards of ale.' }, expected: 'tavern_interior.jpg' },
+        { loc: { name: 'Country Scullery', description: 'A warm kitchen with brick oven and copper pots.' }, expected: 'kitchen.jpg' },
+        { loc: { name: 'Master Bedchamber', description: 'A quiet bedroom with four-poster bed and soft pillows.' }, expected: 'bedroom.jpg' },
+        { loc: { name: 'Cozy Parlor', description: 'A comfortable living room with plush sofa and fireplace.' }, expected: 'living_room.jpg' },
+        { loc: { name: 'Grand Archives', description: 'A vast library with towering bookshelves and ancient tomes.' }, expected: 'library_study.jpg' },
+        { loc: { name: 'Corner Coffeehouse', description: 'A retro diner with vinyl booths and espresso counter.' }, expected: 'cafe_diner.jpg' },
+        { loc: { name: 'Research Laboratory', description: 'A sterile laboratory with server racks and holographic monitors.' }, expected: 'office_lab.jpg' },
+        { loc: { name: 'Orbital Command Bridge', description: 'An observation deck on a space station overlooking the cosmos.' }, expected: 'space_station.jpg' },
+        { loc: { name: 'Two-Story Suburban House', description: 'A pleasant family house with driveway and front porch.' }, expected: 'suburban_house.jpg' },
+        { loc: { name: 'Old Stone Cottage', description: 'A country farmhouse surrounded by pastoral meadows.' }, expected: 'country_house.jpg' },
+        { loc: { name: 'High Citadel', description: 'A massive medieval fortress castle with stone ramparts.' }, expected: 'castle.jpg' },
+        { loc: { name: 'Forgotten Temple', description: 'Ancient overgrown ruins with crumbling stone pillars.' }, expected: 'ruins_temple.jpg' },
+        { loc: { name: 'Underground Grotto', description: 'A dark cavern with glowing stalactites and underground tunnels.' }, expected: 'cave_dungeon.jpg' },
+        { loc: { name: 'Wilderness Base Camp', description: 'A campsite with canvas tents and crackling campfire.' }, expected: 'campsite.jpg' },
+        { loc: { name: 'Bustling Bazaar', description: 'A lively street market lined with vendor stalls and hanging lanterns.' }, expected: 'street_market.jpg' },
+        { loc: { name: 'High Spire Metropolis', description: 'A fantasy city with soaring crystal towers and grand plazas.' }, expected: 'fantasy_city.jpg' },
+        { loc: { name: 'Downtown Center', description: 'A modern city skyline with towering skyscrapers and freeway traffic.' }, expected: 'modern_city.jpg' },
+        { loc: { name: 'Whispering Woods', description: 'A deep ancient forest with towering mossy trees and ferns.' }, expected: 'forest.jpg' },
+        { loc: { name: 'Emerald Coast', description: 'A rocky shoreline beach with crashing ocean waves and harbor pier.' }, expected: 'coast.jpg' },
+        { loc: { name: 'Dune Sea', description: 'An arid desert wasteland with sweeping sand dunes and canyon mesas.' }, expected: 'desert_wasteland.jpg' },
+        { loc: { name: 'Silver River', description: 'A winding river stream with whitewater rapids.' }, expected: 'river.jpg' },
+        { loc: { name: 'Mirror Lake', description: 'A tranquil mountain lake with placid still waters and dock.' }, expected: 'lake.jpg' },
+        { loc: { name: 'Frost Peak Range', description: 'A rugged mountain range with snow-capped summit peaks.' }, expected: 'mountains.jpg' },
+        { loc: { name: 'Sunlit Dale', description: 'A pastoral green valley with rolling hills and wildflower meadows.' }, expected: 'valley.jpg' }
+    ];
+
+    for (const c of cases) {
+        const url = UTILITY.matchLocationDefaultImage(c.loc, null, { forceElectron: true });
+        assert.equal(url, `assets/locations/defaults/${c.expected}`, `Expected ${c.expected} for location "${c.loc.name}"`);
+    }
+});
+
+test('matchLocationDefaultImage: word-boundary regex prevents substring false-positives', () => {
+    // "riverbed" should not match "bedroom" ('bed')
+    const riverbedLoc = { name: 'Riverbed Crossing', description: 'Walking across the rocky riverbed stones.' };
+    const riverbedResult = UTILITY.matchLocationDefaultImage(riverbedLoc, null, { forceElectron: true });
+    assert.equal(riverbedResult, 'assets/locations/defaults/river.jpg', 'Riverbed must match river, never bedroom');
+
+    // "comfort" should not match "castle" ('fort')
+    // "spinning" should not match "tavern_interior" ('inn')
+    // "sudden" should not match "living_room" ('den')
+    // "campaign" should not match "campsite" ('camp')
+    // "elaborate" should not match "office_lab" ('lab')
+    const neutralStoryProse = {
+        name: 'The Quiet Road',
+        description: 'A sudden chill arose as the spinning wheel offered little comfort on this elaborate journey.'
+    };
+    const neutralResult = UTILITY.matchLocationDefaultImage(neutralStoryProse, null, { forceElectron: true });
+    assert.equal(neutralResult, null, 'Prose with substring sub-words (sudden, spinning, comfort, elaborate) must not falsely trigger');
+});
+
+test('matchLocationDefaultImage: field weighting priority (Name > Prompt background vistas)', () => {
+    const loc = {
+        name: 'The Rusty Tankard Tavern',
+        description: 'An old taproom filled with rustic charm.',
+        prompt: 'Seen through the tavern window, distant snow-capped mountains and a winding river flow through the valley.'
+    };
+    const result = UTILITY.matchLocationDefaultImage(loc, null, { forceElectron: true });
+    assert.equal(result, 'assets/locations/defaults/tavern_interior.jpg', 'Name anchor bonus must win over prompt background scenery');
+});
+
+test('matchLocationDefaultImage: genre context disambiguation (Fantasy vs Modern vs Sci-Fi)', () => {
+    const genericPlaza = { name: 'Central City Square', description: 'A bustling urban plaza with merchants and travelers.' };
+
+    const fantasyResult = UTILITY.matchLocationDefaultImage(genericPlaza, { tags: ['fantasy', 'medieval', 'magic'] }, { forceElectron: true });
+    assert.equal(fantasyResult, 'assets/locations/defaults/fantasy_city.jpg');
+
+    const modernResult = UTILITY.matchLocationDefaultImage(genericPlaza, { tags: ['modern', 'urban', 'contemporary'] }, { forceElectron: true });
+    assert.equal(modernResult, 'assets/locations/defaults/modern_city.jpg');
+
+    const genericDeck = { name: 'Station Command Center', description: 'A central command room with viewing screens.' };
+    const scifiResult = UTILITY.matchLocationDefaultImage(genericDeck, { tags: ['sci-fi', 'space', 'starship'] }, { forceElectron: true });
+    assert.equal(scifiResult, 'assets/locations/defaults/space_station.jpg');
+});
+
+test('resolveLocationImageUrl: honors existing non-empty imageUrl and falls back safely', () => {
+    // Explicit custom/external URL returns as-is
+    const customLoc = { name: 'Anywhere', imageUrl: 'https://example.com/custom.png' };
+    assert.equal(UTILITY.resolveLocationImageUrl(customLoc), 'https://example.com/custom.png');
+
+    // Empty string imageUrl falls back to keyword matching
+    const defaultLoc = { name: 'Whispering Woods', imageUrl: '' };
+    assert.equal(UTILITY.resolveLocationImageUrl(defaultLoc, null, { forceElectron: true }), 'assets/locations/defaults/forest.jpg');
+
+    // Unknown empty tile returns null
+    const emptyLoc = { name: '', description: '', imageUrl: '' };
+    assert.equal(UTILITY.resolveLocationImageUrl(emptyLoc), null);
 });
