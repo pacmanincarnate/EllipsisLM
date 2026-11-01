@@ -1349,6 +1349,647 @@ ipcMain.handle('app:scrapeUrl', async (_event, url) => {
 });
 
 // ============================================================
+// KREA 2 KOBOLDCPP IMAGE SUBSYSTEM & SILENT VRAM SWAPPING
+// ============================================================
+function getKreaConfigPath() {
+    return path.join(app.getPath('userData'), 'krea-config.json');
+}
+
+function getKreaConfig() {
+    try {
+        const p = getKreaConfigPath();
+        if (fs.existsSync(p)) {
+            const raw = fs.readFileSync(p, 'utf8');
+            return JSON.parse(raw);
+        }
+    } catch (e) {
+        console.error('[Krea2] Failed to read config:', e);
+    }
+    return {
+        ditPath: '',
+        clipPath: '',
+        vaePath: '',
+        downloadDir: path.join(app.getPath('userData'), 'models', 'krea2')
+    };
+}
+
+function saveKreaConfig(cfg) {
+    try {
+        const p = getKreaConfigPath();
+        const dir = path.dirname(p);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        const existing = getKreaConfig();
+        const merged = { ...existing, ...cfg };
+        fs.writeFileSync(p, JSON.stringify(merged, null, 2), 'utf8');
+        return { success: true, config: merged };
+    } catch (e) {
+        console.error('[Krea2] Failed to save config:', e);
+        return { success: false, error: e.message };
+    }
+}
+
+function validateKreaFiles(cfgInput) {
+    const cfg = cfgInput || getKreaConfig();
+    const missing = [];
+    const details = {
+        dit: { exists: false, path: cfg.ditPath || '', size: 0 },
+        clip: { exists: false, path: cfg.clipPath || '', size: 0 },
+        vae: { exists: false, path: cfg.vaePath || '', size: 0 }
+    };
+
+    // 1. DiT Model
+    if (cfg.ditPath && fs.existsSync(cfg.ditPath)) {
+        try {
+            const st = fs.statSync(cfg.ditPath);
+            if (st.size > 1024 * 1024) {
+                details.dit.exists = true;
+                details.dit.size = st.size;
+            } else {
+                missing.push('dit');
+            }
+        } catch (e) { missing.push('dit'); }
+    } else {
+        missing.push('dit');
+    }
+
+    // 2. Text Encoder (Qwen-VL / CLIP - accepts official, abliterated, or uncensored)
+    if (cfg.clipPath && fs.existsSync(cfg.clipPath)) {
+        try {
+            const st = fs.statSync(cfg.clipPath);
+            if (st.size > 1024 * 1024) {
+                details.clip.exists = true;
+                details.clip.size = st.size;
+            } else {
+                missing.push('clip');
+            }
+        } catch (e) { missing.push('clip'); }
+    } else {
+        missing.push('clip');
+    }
+
+    // 3. VAE
+    if (cfg.vaePath && fs.existsSync(cfg.vaePath)) {
+        try {
+            const st = fs.statSync(cfg.vaePath);
+            if (st.size > 1024 * 1024) {
+                details.vae.exists = true;
+                details.vae.size = st.size;
+            } else {
+                missing.push('vae');
+            }
+        } catch (e) { missing.push('vae'); }
+    } else {
+        missing.push('vae');
+    }
+
+    return {
+        valid: missing.length === 0,
+        missing,
+        details
+    };
+}
+
+function scanKreaFolder(dirPath) {
+    if (!dirPath || !fs.existsSync(dirPath)) {
+        return { ditPath: '', clipPath: '', vaePath: '', missing: ['dit', 'clip', 'vae'] };
+    }
+    try {
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+        const fileNames = entries.filter(e => e.isFile()).map(e => path.join(dirPath, e.name));
+
+        let ditPath = '';
+        let clipPath = '';
+        let vaePath = '';
+
+        // VAE
+        for (const file of fileNames) {
+            const base = path.basename(file);
+            if (/(?:wan.*vae|vae.*wan|wan_2\.1|autoencoder).*\.(?:safetensors|gguf)$/i.test(base) || /(?:^|[-_\.\s])vae\.(?:safetensors|gguf)$/i.test(base)) {
+                vaePath = file;
+                break;
+            }
+        }
+        if (!vaePath) {
+            for (const file of fileNames) {
+                const base = path.basename(file);
+                if (/vae.*\.(?:safetensors|gguf)$/i.test(base)) {
+                    vaePath = file;
+                    break;
+                }
+            }
+        }
+
+        // Text Encoder (Qwen-VL / CLIP - accepts official, abliterated, or uncensored)
+        for (const file of fileNames) {
+            if (file === vaePath) continue;
+            const base = path.basename(file);
+            if (/(?:qwen|clip|vl|text_encoder|encoder).*\.gguf$/i.test(base)) {
+                clipPath = file;
+                break;
+            }
+        }
+
+        // DiT
+        for (const file of fileNames) {
+            if (file === vaePath || file === clipPath) continue;
+            const base = path.basename(file);
+            if (/(?:krea|turbo|diffusion|dit|transformer).*\.gguf$/i.test(base)) {
+                ditPath = file;
+                break;
+            }
+        }
+        if (!ditPath) {
+            for (const file of fileNames) {
+                if (file === vaePath || file === clipPath) continue;
+                if (/\.gguf$/i.test(file)) {
+                    ditPath = file;
+                    break;
+                }
+            }
+        }
+
+        const missing = [];
+        if (!ditPath) missing.push('dit');
+        if (!clipPath) missing.push('clip');
+        if (!vaePath) missing.push('vae');
+
+        return { ditPath, clipPath, vaePath, missing };
+    } catch (e) {
+        console.error('[Krea2] scanKreaFolder failed:', e);
+        return { ditPath: '', clipPath: '', vaePath: '', missing: ['dit', 'clip', 'vae'], error: e.message };
+    }
+}
+
+// Multi-file download state
+let kreaDownloadState = {
+    active: false,
+    cancelled: false,
+    currentRequest: null,
+    currentTempFile: null
+};
+
+const KREA_DOWNLOAD_ITEMS = [
+    {
+        key: 'dit',
+        fileName: 'Krea-2-Turbo-Q4_K_M.gguf',
+        url: 'https://huggingface.co/realrebelai/KREA-2_GGUFs/resolve/main/TURBO/Krea-2-Turbo-Q4_K_M.gguf',
+        expectedSize: 7216993376
+    },
+    {
+        key: 'clip',
+        fileName: 'Qwen3VL-4B-Instruct-Q4_K_M.gguf',
+        url: 'https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF/resolve/main/Qwen3VL-4B-Instruct-Q4_K_M.gguf',
+        expectedSize: 2497281664
+    },
+    {
+        key: 'vae',
+        fileName: 'wan_2.1_vae.safetensors',
+        url: 'https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors',
+        expectedSize: 253815318
+    }
+];
+
+function cancelKreaDownload() {
+    if (kreaDownloadState.active) {
+        kreaDownloadState.cancelled = true;
+        if (kreaDownloadState.currentRequest) {
+            try { kreaDownloadState.currentRequest.destroy(); } catch (e) {}
+        }
+        if (kreaDownloadState.currentTempFile && fs.existsSync(kreaDownloadState.currentTempFile)) {
+            try { fs.unlinkSync(kreaDownloadState.currentTempFile); } catch (e) {}
+        }
+        kreaDownloadState.active = false;
+        kreaDownloadState.currentRequest = null;
+        kreaDownloadState.currentTempFile = null;
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('krea:downloadProgress', { status: 'cancelled' });
+        }
+        return { success: true };
+    }
+    return { success: false, message: 'No active download' };
+}
+
+async function downloadSingleFile(url, destPath, onProgress) {
+    const tempPath = destPath + '.tmp';
+    kreaDownloadState.currentTempFile = tempPath;
+
+    if (fs.existsSync(tempPath)) {
+        try { fs.unlinkSync(tempPath); } catch (e) {}
+    }
+
+    return new Promise((resolve, reject) => {
+        let redirectCount = 0;
+        const maxRedirects = 10;
+
+        function fetchUrl(targetUrl) {
+            if (kreaDownloadState.cancelled) {
+                return reject(new Error('Download cancelled by user'));
+            }
+
+            let parsed;
+            try { parsed = new URL(targetUrl); } catch (e) { return reject(e); }
+            const client = parsed.protocol === 'http:' ? http : https;
+
+            const req = client.get(targetUrl, {
+                headers: { 'User-Agent': 'EllipsisLM-Desktop' }
+            }, (res) => {
+                if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                    redirectCount++;
+                    if (redirectCount > maxRedirects) {
+                        return reject(new Error('Too many redirects'));
+                    }
+                    res.resume();
+                    const next = new URL(res.headers.location, targetUrl).href;
+                    return fetchUrl(next);
+                }
+
+                if (res.statusCode !== 200) {
+                    res.resume();
+                    return reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
+                }
+
+                const totalBytes = parseInt(res.headers['content-length'], 10) || 0;
+                let downloadedBytes = 0;
+                let lastReportTime = Date.now();
+                let bytesSinceLastReport = 0;
+                let speedMBs = '0.00';
+
+                const fileStream = fs.createWriteStream(tempPath);
+
+                fileStream.on('error', (err) => {
+                    try { fileStream.close(); } catch (e) {}
+                    if (fs.existsSync(tempPath)) try { fs.unlinkSync(tempPath); } catch (e) {}
+                    reject(err);
+                });
+
+                res.on('data', (chunk) => {
+                    if (kreaDownloadState.cancelled) {
+                        try { req.destroy(); } catch (e) {}
+                        try { fileStream.close(); } catch (e) {}
+                        if (fs.existsSync(tempPath)) try { fs.unlinkSync(tempPath); } catch (e) {}
+                        return reject(new Error('Download cancelled'));
+                    }
+
+                    downloadedBytes += chunk.length;
+                    bytesSinceLastReport += chunk.length;
+                    const now = Date.now();
+                    const dt = now - lastReportTime;
+                    if (dt >= 500) {
+                        speedMBs = ((bytesSinceLastReport / (1024 * 1024)) / (dt / 1000)).toFixed(2);
+                        lastReportTime = now;
+                        bytesSinceLastReport = 0;
+                        if (onProgress) {
+                            onProgress(downloadedBytes, totalBytes, speedMBs);
+                        }
+                    }
+                });
+
+                res.pipe(fileStream);
+
+                fileStream.on('finish', () => {
+                    fileStream.close(() => {
+                        if (kreaDownloadState.cancelled) {
+                            if (fs.existsSync(tempPath)) try { fs.unlinkSync(tempPath); } catch (e) {}
+                            return reject(new Error('Download cancelled'));
+                        }
+                        fs.rename(tempPath, destPath, (err) => {
+                            if (err) return reject(err);
+                            kreaDownloadState.currentTempFile = null;
+                            resolve(destPath);
+                        });
+                    });
+                });
+            });
+
+            kreaDownloadState.currentRequest = req;
+
+            req.on('error', (err) => {
+                try { fileStream.close(); } catch (e) {}
+                if (fs.existsSync(tempPath)) try { fs.unlinkSync(tempPath); } catch (e) {}
+                reject(err);
+            });
+        }
+
+        fetchUrl(url);
+    });
+}
+
+async function startKreaDownload(targetDir) {
+    if (kreaDownloadState.active) {
+        return { success: false, message: 'Download already in progress' };
+    }
+
+    const destDir = targetDir || path.join(app.getPath('userData'), 'models', 'krea2');
+    if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+    }
+
+    kreaDownloadState.active = true;
+    kreaDownloadState.cancelled = false;
+
+    const savedPaths = {};
+
+    (async () => {
+        try {
+            const totalFiles = KREA_DOWNLOAD_ITEMS.length;
+
+            for (let i = 0; i < totalFiles; i++) {
+                if (kreaDownloadState.cancelled) break;
+                const item = KREA_DOWNLOAD_ITEMS[i];
+                const destFile = path.join(destDir, item.fileName);
+
+                let skipDownload = false;
+                if (fs.existsSync(destFile)) {
+                    try {
+                        const st = fs.statSync(destFile);
+                        if (st.size >= item.expectedSize * 0.95) {
+                            skipDownload = true;
+                            savedPaths[item.key] = destFile;
+                            if (mainWindow && !mainWindow.isDestroyed()) {
+                                mainWindow.webContents.send('krea:downloadProgress', {
+                                    status: 'downloading',
+                                    fileIndex: i + 1,
+                                    totalFiles,
+                                    fileName: item.fileName,
+                                    percent: 100,
+                                    downloadedBytes: st.size,
+                                    totalBytes: st.size,
+                                    speedMBs: 'Cached'
+                                });
+                            }
+                        }
+                    } catch (e) {}
+                }
+
+                if (!skipDownload) {
+                    await downloadSingleFile(item.url, destFile, (downloaded, total, speed) => {
+                        const pct = total > 0 ? Math.min(100, Math.round((downloaded / total) * 100)) : 0;
+                        if (mainWindow && !mainWindow.isDestroyed()) {
+                            mainWindow.webContents.send('krea:downloadProgress', {
+                                status: 'downloading',
+                                fileIndex: i + 1,
+                                totalFiles,
+                                fileName: item.fileName,
+                                percent: pct,
+                                downloadedBytes: downloaded,
+                                totalBytes: total,
+                                speedMBs: speed
+                            });
+                        }
+                    });
+                    savedPaths[item.key] = destFile;
+                }
+            }
+
+            if (!kreaDownloadState.cancelled) {
+                saveKreaConfig({
+                    ditPath: savedPaths.dit || path.join(destDir, KREA_DOWNLOAD_ITEMS[0].fileName),
+                    clipPath: savedPaths.clip || path.join(destDir, KREA_DOWNLOAD_ITEMS[1].fileName),
+                    vaePath: savedPaths.vae || path.join(destDir, KREA_DOWNLOAD_ITEMS[2].fileName),
+                    downloadDir: destDir
+                });
+
+                kreaDownloadState.active = false;
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('krea:downloadProgress', {
+                        status: 'completed',
+                        fileIndex: totalFiles,
+                        totalFiles,
+                        fileName: 'All models ready',
+                        percent: 100,
+                        config: getKreaConfig()
+                    });
+                }
+            }
+        } catch (err) {
+            kreaDownloadState.active = false;
+            if (!kreaDownloadState.cancelled && mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('krea:downloadProgress', {
+                    status: 'error',
+                    error: err.message
+                });
+            }
+        }
+    })();
+
+    return { success: true, downloadDir: destDir };
+}
+
+async function executeSilentImageSwap(payload = {}) {
+    const kreaConfig = getKreaConfig();
+    const val = validateKreaFiles(kreaConfig);
+    if (!val.valid) {
+        throw new Error(`Krea 2 model files missing or incomplete: ${val.missing.join(', ')}. Please configure them in Settings.`);
+    }
+
+    const port = payload.port || 5001;
+    const exePath = getKoboldPath();
+    if (!fs.existsSync(exePath)) {
+        throw new Error('KoboldCPP executable not found. Please ensure KoboldCPP is installed.');
+    }
+
+    // Step 1: Detect if managed Text LLM is currently running
+    const wasTextRunning = (koboldProcess && !koboldProcess.killed && isProcessAlive(koboldProcess.pid));
+    const savedLaunchOpts = lastLaunchOpts ? { ...lastLaunchOpts } : null;
+
+    if (wasTextRunning) {
+        console.log('[Krea2Swap] Stopping active Text LLM to clear VRAM (0 MB)...');
+        stopKobold(true);
+        await new Promise(r => setTimeout(r, 400));
+    }
+
+    try {
+        // Step 2: Spawn Krea 2 KoboldCPP instance
+        const args = [
+            '--nomodel',
+            '--sdmodel', kreaConfig.ditPath,
+            '--sdclip1', kreaConfig.clipPath,
+            '--sdvae', kreaConfig.vaePath,
+            '--sdflashattention',
+            '--sdtiledvae', '640',
+            '--port', String(port),
+            '--skiplauncher'
+        ];
+
+        if (process.platform === 'darwin') {
+            args.push('--usemetal');
+        } else {
+            args.push('--usecuda', 'normal', '0');
+        }
+
+        console.log(`[Krea2Swap] Spawning Krea 2 instance: ${exePath} ${args.join(' ')}`);
+        setKoboldStatus('starting');
+
+        koboldProcess = spawn(exePath, args, {
+            cwd: path.dirname(exePath),
+            windowsHide: true
+        });
+
+        if (koboldProcess && koboldProcess.pid) {
+            managedPid = koboldProcess.pid;
+        }
+
+        koboldProcess.stdout.on('data', (d) => {
+            const lines = d.toString().split('\n').filter(Boolean);
+            lines.forEach(l => sendKoboldLog(l));
+        });
+
+        koboldProcess.stderr.on('data', (d) => {
+            const lines = d.toString().split('\n').filter(Boolean);
+            lines.forEach(l => sendKoboldLog(l));
+        });
+
+        // Await readiness
+        const startTime = Date.now();
+        const timeoutMs = 90000;
+        let isReady = false;
+
+        while (Date.now() - startTime < timeoutMs) {
+            if (!koboldProcess || koboldProcess.killed) {
+                throw new Error('KoboldCPP process terminated unexpectedly while loading Krea 2.');
+            }
+            const ver = await fetchKoboldApiVersion(port);
+            if (ver) {
+                isReady = true;
+                setKoboldStatus('running');
+                break;
+            }
+            await new Promise(r => setTimeout(r, 600));
+        }
+
+        if (!isReady) {
+            throw new Error('Timeout waiting for Krea 2 image engine to initialize.');
+        }
+
+        console.log('[Krea2Swap] Krea 2 image engine is online. Dispatching image generation...');
+
+        // Step 3: Perform txt2img or img2img POST request
+        const isImg2Img = !!(payload.init_images && payload.init_images.length > 0);
+        const endpoint = isImg2Img ? '/sdapi/v1/img2img' : '/sdapi/v1/txt2img';
+
+        const requestBody = {
+            prompt: payload.prompt || '',
+            negative_prompt: payload.negative_prompt || '',
+            width: payload.width || 512,
+            height: payload.height || 512,
+            steps: payload.steps !== undefined ? payload.steps : 8,
+            cfg_scale: payload.cfg_scale !== undefined ? payload.cfg_scale : 1.0,
+            sampler_name: payload.sampler_name || 'Euler',
+            scheduler: payload.scheduler || 'simple',
+            send_images: true,
+            save_images: false
+        };
+
+        if (isImg2Img) {
+            requestBody.init_images = payload.init_images;
+            requestBody.denoising_strength = payload.denoising_strength !== undefined ? payload.denoising_strength : 0.55;
+        }
+
+        const genResult = await new Promise((resolve, reject) => {
+            const postData = JSON.stringify(requestBody);
+            const req = http.request({
+                hostname: '127.0.0.1',
+                port: port,
+                path: endpoint,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(postData)
+                },
+                timeout: 180000
+            }, (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => {
+                    if (res.statusCode !== 200) {
+                        return reject(new Error(`KoboldCPP SDAPI returned status ${res.statusCode}: ${data}`));
+                    }
+                    try {
+                        const json = JSON.parse(data);
+                        resolve(json);
+                    } catch (e) {
+                        reject(new Error('Failed to parse SDAPI response JSON'));
+                    }
+                });
+            });
+
+            req.on('error', reject);
+            req.on('timeout', () => {
+                req.destroy();
+                reject(new Error('Image generation request timed out after 3 minutes.'));
+            });
+
+            req.write(postData);
+            req.end();
+        });
+
+        if (!genResult.images || genResult.images.length === 0) {
+            throw new Error('KoboldCPP returned no image data.');
+        }
+
+        const base64Image = genResult.images[0];
+        console.log('[Krea2Swap] Image generation complete. Terminating Krea 2 instance to restore VRAM...');
+
+        // Step 4: Immediately stop Krea 2 instance (0 VRAM used)
+        stopKobold(true);
+        await new Promise(r => setTimeout(r, 300));
+
+        // Step 5: Immediately restore Text LLM if it was running before
+        if (wasTextRunning && savedLaunchOpts) {
+            console.log('[Krea2Swap] Restoring Text LLM backend...');
+            startKobold(savedLaunchOpts);
+        }
+
+        return {
+            success: true,
+            imageBase64: base64Image
+        };
+    } catch (err) {
+        console.error('[Krea2Swap] Error during image generation swap:', err);
+        try { stopKobold(true); } catch (e) {}
+
+        if (wasTextRunning && savedLaunchOpts) {
+            try {
+                console.log('[Krea2Swap] Restoring Text LLM backend following error...');
+                startKobold(savedLaunchOpts);
+            } catch (e) {}
+        }
+
+        throw err;
+    }
+}
+
+// IPC Handlers for Krea 2
+ipcMain.handle('krea:getConfig', () => getKreaConfig());
+ipcMain.handle('krea:saveConfig', (_event, cfg) => saveKreaConfig(cfg));
+ipcMain.handle('krea:validateFiles', (_event, cfg) => validateKreaFiles(cfg));
+ipcMain.handle('krea:scanFolder', (_event, dirPath) => scanKreaFolder(dirPath));
+ipcMain.handle('krea:startDownload', (_event, targetDir) => startKreaDownload(targetDir));
+ipcMain.handle('krea:cancelDownload', () => cancelKreaDownload());
+ipcMain.handle('krea:generateImageSilent', (_event, payload) => executeSilentImageSwap(payload));
+
+ipcMain.handle('dialog:pickFolder', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+        title: 'Select Folder for Model Files',
+        properties: ['openDirectory', 'createDirectory']
+    });
+    return result.canceled ? null : result.filePaths[0];
+});
+
+ipcMain.handle('dialog:pickModelFileSpecific', async (_event, opts = {}) => {
+    const exts = Array.isArray(opts.extensions) && opts.extensions.length > 0 ? opts.extensions : ['gguf', 'safetensors', 'bin'];
+    const result = await dialog.showOpenDialog(mainWindow, {
+        title: opts.title || 'Select Model Component File',
+        filters: [
+            { name: opts.filterName || 'Model Files', extensions: exts },
+            { name: 'All Files', extensions: ['*'] }
+        ],
+        properties: ['openFile']
+    });
+    return result.canceled ? null : result.filePaths[0];
+});
+
+// ============================================================
 // NATIVE AUTO-BACKUP IPC HANDLERS
 // ============================================================
 ipcMain.handle('backup:saveNative', async (_event, payload) => {

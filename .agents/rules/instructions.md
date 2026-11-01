@@ -30,7 +30,7 @@ EllipsisLM uses an unconventional but highly deliberate architecture that priori
 - `[SEC:JS:SRV:DB]` Database services natively wrapping `IndexedDB` for local storage in the browser cache.
 - `[SEC:JS:SRV:BACKUP]` AutoBackupService managing zero-impact rolling auto-backups and seamless automatic recovery.
 - `[SEC:JS:UI:TEMPLATE]` UI component definition strings to dynamically inject HTML.
-- `[SEC:JS:CTRL:*]` Controllers responsible for orchestrating specific segments (e.g., `LibraryController` for managing stories, `NarrativeController` for routing chats, `WorldController` for managing the map).
+- `[SEC:JS:CTRL:*]` Controllers responsible for orchestrating specific segments (e.g., `LibraryController` for managing stories, `NarrativeController` for routing chats, `WorldController` for managing the map, `KreaWizardController` for KoboldCPP image setup).
 - `[SEC:JS:MOD:AH]` Custom central action handler managing delegated events to minimize event listeners.
 
 When making extensive updates, ensure that new functions and variables are slotted into their appropriate categorized bracket. Where changes necessitate additional categories, notify the user, update the list at the top of index.html, and update instructions.md.

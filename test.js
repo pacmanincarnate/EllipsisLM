@@ -3509,3 +3509,119 @@ test('resolveLocationImageUrl: honors existing non-empty imageUrl and falls back
     const emptyLoc = { name: '', description: '', imageUrl: '' };
     assert.equal(UTILITY.resolveLocationImageUrl(emptyLoc), null);
 });
+
+// ── Krea 2 KoboldCPP Model Helpers ──
+
+test('matchKreaModelFiles: matches stock Krea 2 Turbo files correctly', () => {
+    const files = [
+        'C:\\Models\\Krea-2-Turbo-Q4_K_M.gguf',
+        'C:\\Models\\Qwen3VL-4B-Instruct-Q4_K_M.gguf',
+        'C:\\Models\\wan_2.1_vae.safetensors'
+    ];
+    const result = UTILITY.matchKreaModelFiles(files);
+    assert.equal(result.ditPath, 'C:\\Models\\Krea-2-Turbo-Q4_K_M.gguf');
+    assert.equal(result.clipPath, 'C:\\Models\\Qwen3VL-4B-Instruct-Q4_K_M.gguf');
+    assert.equal(result.vaePath, 'C:\\Models\\wan_2.1_vae.safetensors');
+    deepEq(result.missing, []);
+});
+
+test('matchKreaModelFiles: matches abliterated and uncensored Qwen-VL variants', () => {
+    const files = [
+        '/home/user/models/krea2_turbo.gguf',
+        '/home/user/models/qwen3-vl-4b-abliterated-uncensored-q5.gguf',
+        '/home/user/models/wan2.1_vae_fp16.safetensors'
+    ];
+    const result = UTILITY.matchKreaModelFiles(files);
+    assert.equal(result.ditPath, '/home/user/models/krea2_turbo.gguf');
+    assert.equal(result.clipPath, '/home/user/models/qwen3-vl-4b-abliterated-uncensored-q5.gguf');
+    assert.equal(result.vaePath, '/home/user/models/wan2.1_vae_fp16.safetensors');
+    deepEq(result.missing, []);
+});
+
+test('matchKreaModelFiles: detects missing components cleanly', () => {
+    const incompleteFiles = [
+        'C:\\Models\\Krea-2-Turbo-Q4_K_M.gguf'
+    ];
+    const result = UTILITY.matchKreaModelFiles(incompleteFiles);
+    assert.equal(result.ditPath, 'C:\\Models\\Krea-2-Turbo-Q4_K_M.gguf');
+    assert.equal(result.clipPath, '');
+    assert.equal(result.vaePath, '');
+    deepEq(result.missing.sort(), ['clip', 'vae'].sort());
+});
+
+test('validateKreaModelSet: validates complete and incomplete configurations', () => {
+    const complete = {
+        ditPath: 'C:\\Models\\custom_krea.gguf',
+        clipPath: 'C:\\Models\\my_uncensored_vl.gguf',
+        vaePath: 'C:\\Models\\wan_vae.safetensors'
+    };
+    const validRes = UTILITY.validateKreaModelSet(complete);
+    assert.equal(validRes.valid, true);
+    deepEq(validRes.missingComponents, []);
+
+    const missingClip = {
+        ditPath: 'C:\\Models\\custom_krea.gguf',
+        clipPath: '',
+        vaePath: 'C:\\Models\\wan_vae.safetensors'
+    };
+    const invalidRes = UTILITY.validateKreaModelSet(missingClip);
+    assert.equal(invalidRes.valid, false);
+    deepEq(invalidRes.missingComponents, ['clip']);
+});
+
+test('normalizeKreaParams: defaults to 8 steps and 1.0 CFG with resolution handling', () => {
+    const defaults = UTILITY.normalizeKreaParams();
+    assert.equal(defaults.steps, 8);
+    assert.equal(defaults.cfg, 1.0);
+    assert.equal(defaults.width, 512);
+    assert.equal(defaults.height, 512);
+
+    const custom = UTILITY.normalizeKreaParams({ steps: 12, cfg: 1.5, width: 640, height: 640 });
+    assert.equal(custom.steps, 12);
+    assert.equal(custom.cfg, 1.5);
+    assert.equal(custom.width, 640);
+    assert.equal(custom.height, 640);
+});
+
+
+test('Krea 2 Turbo: Wizard & Settings DOM and ActionHandler contracts', () => {
+    // 1. Wizard Modal structure
+    assert.ok(HTML.includes('id="krea-setup-wizard-modal"'), 'Must include #krea-setup-wizard-modal');
+    assert.ok(HTML.includes('id="krea-step-content-1"'), 'Must include Step 1 container');
+    assert.ok(HTML.includes('id="krea-step-content-2"'), 'Must include Step 2 container');
+    assert.ok(HTML.includes('id="krea-step-content-3"'), 'Must include Step 3 container');
+    assert.ok(HTML.includes('id="krea-subtab-download"'), 'Must include download tab');
+    assert.ok(HTML.includes('id="krea-subtab-link"'), 'Must include link tab');
+    assert.ok(HTML.includes('id="krea-download-progress-bar"'), 'Must include download progress bar');
+
+    // 2. Settings Control Card
+    assert.ok(HTML.includes('id="krea-electron-control-card"'), 'Must include #krea-electron-control-card in settings');
+    assert.ok(HTML.includes('id="krea-settings-status-badge"'), 'Must include #krea-settings-status-badge');
+    assert.ok(HTML.includes('id="krea-settings-missing-alert"'), 'Must include missing alert');
+
+    // 3. ActionHandler registrations
+    const expectedActions = [
+        'open-krea-wizard',
+        'close-krea-wizard',
+        'krea-go-step',
+        'krea-next-step',
+        'krea-prev-step',
+        'krea-tab-switch',
+        'krea-browse-download-dir',
+        'krea-start-download',
+        'krea-cancel-download',
+        'krea-scan-folder',
+        'krea-browse-file',
+        'krea-validate-link',
+        'krea-run-test',
+        'krea-finish-wizard',
+        'krea-settings-scan',
+        'krea-settings-browse'
+    ];
+    for (const act of expectedActions) {
+        assert.ok(HTML.includes(`ActionHandler.register('${act}'`), `ActionHandler must register action '${act}'`);
+    }
+
+    // 4. ImageGenerationService silent swap delegation
+    assert.ok(HTML.includes('window.electronBridge.krea.generateImageSilent'), 'Must delegate to silent swap IPC');
+});

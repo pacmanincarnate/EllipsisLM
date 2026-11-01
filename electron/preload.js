@@ -163,5 +163,25 @@ contextBridge.exposeInMainWorld('electronBridge', {
         openLogFile: () => ipcRenderer.invoke('debug:openLogFile'),
         clearLog: () => ipcRenderer.invoke('debug:clearLog'),
         log: (level, message, source) => ipcRenderer.invoke('debug:log', { level, message, source })
+    },
+
+    /**
+     * Krea 2 KoboldCPP Image Generation Subsystem
+     */
+    krea: {
+        getConfig: () => ipcRenderer.invoke('krea:getConfig'),
+        saveConfig: (cfg) => ipcRenderer.invoke('krea:saveConfig', cfg),
+        validateFiles: (cfg) => ipcRenderer.invoke('krea:validateFiles', cfg),
+        scanFolder: (dirPath) => ipcRenderer.invoke('krea:scanFolder', dirPath),
+        startDownload: (targetDir) => ipcRenderer.invoke('krea:startDownload', targetDir),
+        cancelDownload: () => ipcRenderer.invoke('krea:cancelDownload'),
+        generateImageSilent: (payload) => ipcRenderer.invoke('krea:generateImageSilent', payload),
+        onDownloadProgress: (callback) => {
+            const listener = (_event, data) => callback(data);
+            ipcRenderer.on('krea:downloadProgress', listener);
+            return () => ipcRenderer.removeListener('krea:downloadProgress', listener);
+        },
+        pickFolder: () => ipcRenderer.invoke('dialog:pickFolder'),
+        pickFile: (opts) => ipcRenderer.invoke('dialog:pickModelFileSpecific', opts)
     }
 });

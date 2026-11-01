@@ -47,6 +47,7 @@
     [SEC:JS:CORE:BOOT]      - app (Bootstrap/Init)
     [SEC:JS:CTRL:HUB]       - HubController
     [SEC:JS:CTRL:REFINE]    - RefineMaskController
+    [SEC:JS:CTRL:KREA]      - KreaWizardController (KoboldCPP Image Setup)
     =================================================================================================
 -->
 <html lang="en">
@@ -4931,7 +4932,7 @@
                     <div class="flex items-center justify-between">
                         <span
                             class="text-[9px] font-mono uppercase tracking-widest text-gray-500 font-semibold">EllipsisLM</span>
-                        <span id="app-sidebar-version" class="text-[9px] font-mono text-gray-500">v1.2.1</span>
+                        <span id="app-sidebar-version" class="text-[9px] font-mono text-gray-500">v1.2.2</span>
                     </div>
 
                     <!-- Update Widget Container (Electron only) -->
@@ -5334,6 +5335,306 @@
             <div id="nanogpt-model-list" class="flex-1 overflow-y-auto p-2 min-h-[300px]">
                 <div class="flex items-center justify-center h-full text-gray-400">
                     <span>Loading models...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KoboldCPP Krea 2 Turbo Setup Wizard Modal -->
+    <div id="krea-setup-wizard-modal" class="fixed inset-0 z-[100] items-center justify-center hidden">
+        <div class="modal-overlay absolute inset-0 bg-black/75 backdrop-blur-sm" data-action="close-krea-wizard"></div>
+        <div class="bg-gray-900 border border-violet-500/30 rounded-2xl shadow-2xl w-11/12 max-w-3xl relative flex flex-col max-h-[90vh] overflow-hidden z-10">
+            <!-- Header -->
+            <div class="p-5 border-b border-gray-800 flex justify-between items-center bg-gray-950/60">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-fuchsia-600 flex items-center justify-center text-white shadow-lg shadow-violet-500/20">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white tracking-wide">KoboldCPP Image Generation Setup</h3>
+                        <p class="text-xs text-gray-400">Krea 2 Turbo with Silent VRAM Swapping</p>
+                    </div>
+                </div>
+                <button type="button" data-action="close-krea-wizard"
+                    class="bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white p-2 rounded-full transition-colors"
+                    title="Close">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Step Progress Indicator -->
+            <div class="px-6 py-3 bg-gray-950/40 border-b border-gray-800/80 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2 cursor-pointer" id="krea-step-indicator-1" data-action="krea-go-step" data-step="1">
+                    <span id="krea-badge-step-1" class="w-6 h-6 rounded-full bg-violet-600 text-white font-bold flex items-center justify-center text-xs">1</span>
+                    <span id="krea-label-step-1" class="font-semibold text-gray-200">System & Kobold</span>
+                </div>
+                <div class="flex-1 h-[2px] bg-gray-800 mx-3">
+                    <div id="krea-progress-line-1" class="h-full bg-violet-600 transition-all duration-300 w-0"></div>
+                </div>
+                <div class="flex items-center gap-2 cursor-pointer" id="krea-step-indicator-2" data-action="krea-go-step" data-step="2">
+                    <span id="krea-badge-step-2" class="w-6 h-6 rounded-full bg-gray-800 text-gray-400 font-bold flex items-center justify-center text-xs">2</span>
+                    <span id="krea-label-step-2" class="font-medium text-gray-400">Models (~9.3 GB)</span>
+                </div>
+                <div class="flex-1 h-[2px] bg-gray-800 mx-3">
+                    <div id="krea-progress-line-2" class="h-full bg-violet-600 transition-all duration-300 w-0"></div>
+                </div>
+                <div class="flex items-center gap-2 cursor-pointer" id="krea-step-indicator-3" data-action="krea-go-step" data-step="3">
+                    <span id="krea-badge-step-3" class="w-6 h-6 rounded-full bg-gray-800 text-gray-400 font-bold flex items-center justify-center text-xs">3</span>
+                    <span id="krea-label-step-3" class="font-medium text-gray-400">Test & Finish</span>
+                </div>
+            </div>
+
+            <!-- Modal Body (Steps) -->
+            <div class="p-6 overflow-y-auto flex-1 space-y-6">
+                <!-- STEP 1: Hardware & Version Check -->
+                <div id="krea-step-content-1" class="space-y-4">
+                    <div class="bg-gray-800/60 border border-gray-700/60 rounded-xl p-4">
+                        <h4 class="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                            <span>🖥️</span> System & KoboldCPP Compatibility Check
+                        </h4>
+                        <p class="text-xs text-gray-300 leading-relaxed">
+                            Krea 2 Turbo runs locally inside your bundled KoboldCPP engine using the new <code class="text-violet-300">sd.cpp</code> pipeline. It requires KoboldCPP <strong>v1.116.1+</strong> and at least <strong>8 GB of GPU VRAM</strong> for optimal speed (or standard system RAM with CPU offload).
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="p-4 rounded-xl bg-gray-950/50 border border-gray-800">
+                            <span class="text-xs text-gray-400 uppercase font-bold tracking-wider">KoboldCPP Engine</span>
+                            <div class="flex items-center justify-between mt-2">
+                                <span id="krea-kobold-version-text" class="text-sm font-mono text-white">Checking...</span>
+                                <span id="krea-kobold-version-status" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-gray-800 text-gray-400">Detecting</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 mt-2">Bundled version automatically managed by desktop app.</p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-gray-950/50 border border-gray-800">
+                            <span class="text-xs text-gray-400 uppercase font-bold tracking-wider">VRAM & Memory Management</span>
+                            <div class="flex items-center justify-between mt-2">
+                                <span class="text-sm text-green-400 font-medium">Silent VRAM Swapping</span>
+                                <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-green-950/80 text-green-300 border border-green-800/50">Active</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 mt-2">Zero VRAM waste: KoboldCPP text LLM is automatically unloaded during image generation and restored immediately after.</p>
+                        </div>
+                    </div>
+
+                    <div id="krea-step1-warning" class="hidden p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs">
+                        ⚠️ <span id="krea-step1-warning-text">KoboldCPP update required.</span>
+                    </div>
+
+                    <div class="flex justify-end pt-4">
+                        <button type="button" data-action="krea-next-step"
+                            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium text-sm shadow-lg shadow-violet-600/30 transition-all flex items-center gap-2">
+                            <span>Proceed to Model Setup</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Models Setup (Download or Link) -->
+                <div id="krea-step-content-2" class="space-y-4 hidden">
+                    <!-- Tab Switcher -->
+                    <div class="flex rounded-lg bg-gray-950/80 p-1 border border-gray-800">
+                        <button type="button" data-action="krea-tab-switch" data-tab="download" id="krea-tab-btn-download"
+                            class="flex-1 py-2 text-xs font-semibold rounded-md transition-all bg-violet-600 text-white shadow">
+                            Option A: Automatic Download (~9.3 GB)
+                        </button>
+                        <button type="button" data-action="krea-tab-switch" data-tab="link" id="krea-tab-btn-link"
+                            class="flex-1 py-2 text-xs font-semibold rounded-md transition-all text-gray-400 hover:text-white">
+                            Option B: Link Existing / Custom Models
+                        </button>
+                    </div>
+
+                    <!-- TAB A: Download -->
+                    <div id="krea-subtab-download" class="space-y-4">
+                        <div class="p-4 rounded-xl bg-gray-800/50 border border-gray-700/60">
+                            <p class="text-xs text-gray-300 leading-relaxed mb-3">
+                                Download all 3 required Krea 2 Turbo components directly from HuggingFace into your models folder. Multi-file streaming supports pause/cancelation.
+                            </p>
+                            <div class="space-y-2 text-[11px] text-gray-400">
+                                <div class="flex justify-between items-center py-1 border-b border-gray-700/40">
+                                    <span>1. DiT Diffusion Model (Krea-2-Turbo-Q4_K_M.gguf)</span>
+                                    <span class="font-mono text-gray-300">6.72 GB</span>
+                                </div>
+                                <div class="flex justify-between items-center py-1 border-b border-gray-700/40">
+                                    <span>2. Text Encoder (Qwen3VL-4B-Instruct-Q4_K_M.gguf)</span>
+                                    <span class="font-mono text-gray-300">2.33 GB</span>
+                                </div>
+                                <div class="flex justify-between items-center py-1">
+                                    <span>3. VAE (wan_2.1_vae.safetensors)</span>
+                                    <span class="font-mono text-gray-300">242 MB</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Target Download Directory</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="krea-download-target-dir" readonly
+                                    placeholder="Select a folder with at least 10 GB of free space..."
+                                    class="flex-1 bg-black/40 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500">
+                                <button type="button" data-action="krea-browse-download-dir"
+                                    class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs rounded-xl font-medium border border-gray-700 transition">
+                                    Choose Folder...
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Progress Box (hidden initially) -->
+                        <div id="krea-download-progress-container" class="hidden space-y-2 p-4 rounded-xl bg-gray-950/70 border border-gray-800">
+                            <div class="flex justify-between items-center text-xs">
+                                <span id="krea-download-file-label" class="font-medium text-gray-300">Downloading...</span>
+                                <span id="krea-download-percent-label" class="font-mono font-bold text-violet-400">0%</span>
+                            </div>
+                            <div class="w-full h-2.5 bg-gray-800 rounded-full overflow-hidden">
+                                <div id="krea-download-progress-bar" class="h-full bg-gradient-to-r from-violet-600 to-fuchsia-600 transition-all duration-200 w-0"></div>
+                            </div>
+                            <div class="flex justify-between items-center text-[11px] text-gray-500">
+                                <span id="krea-download-speed-label">Starting stream...</span>
+                                <span id="krea-download-size-label">0 / 9.3 GB</span>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-2">
+                            <button type="button" data-action="krea-prev-step" class="px-4 py-2 text-xs text-gray-400 hover:text-white transition">
+                                ← Back
+                            </button>
+                            <div class="flex gap-2">
+                                <button type="button" id="krea-cancel-download-btn" data-action="krea-cancel-download" class="hidden px-4 py-2 rounded-xl bg-red-950/60 hover:bg-red-900/60 border border-red-800 text-red-200 text-xs font-medium transition">
+                                    Cancel Download
+                                </button>
+                                <button type="button" id="krea-start-download-btn" data-action="krea-start-download" class="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold shadow-lg shadow-violet-600/30 transition flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    <span>Start Download</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB B: Link Existing / Custom Models -->
+                    <div id="krea-subtab-link" class="space-y-4 hidden">
+                        <div class="p-4 rounded-xl bg-gray-800/50 border border-gray-700/60 flex items-center justify-between">
+                            <div>
+                                <h5 class="text-xs font-semibold text-white">Have a models folder already?</h5>
+                                <p class="text-[11px] text-gray-400">Scan any folder containing your GGUF/safetensors files to automatically detect and map all 3 components.</p>
+                            </div>
+                            <button type="button" data-action="krea-scan-folder"
+                                class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shadow transition flex items-center gap-1.5 whitespace-nowrap">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                <span>Scan Folder...</span>
+                            </button>
+                        </div>
+
+                        <!-- Slot 1: DiT Model -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-bold text-gray-300">1. DiT Diffusion Model (.gguf)</label>
+                                <span id="krea-slot-dit-badge" class="text-[10px] px-2 py-0.5 rounded font-mono bg-red-950/80 text-red-400 border border-red-800/40">Missing</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" id="krea-input-dit-path" placeholder="Path to Krea-2-Turbo-*.gguf"
+                                    class="flex-1 bg-black/40 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500 font-mono">
+                                <button type="button" data-action="krea-browse-file" data-slot="dit"
+                                    class="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs rounded-xl font-medium border border-gray-700 transition">
+                                    Browse...
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Slot 2: Text Encoder (Qwen3-VL / Abliterated / Uncensored) -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-300">2. Text Encoder (.gguf)</label>
+                                    <span class="text-[10px] text-violet-400 ml-2">(Supports Qwen3-VL or abliterated/uncensored community finetunes)</span>
+                                </div>
+                                <span id="krea-slot-clip-badge" class="text-[10px] px-2 py-0.5 rounded font-mono bg-red-950/80 text-red-400 border border-red-800/40">Missing</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" id="krea-input-clip-path" placeholder="Path to Qwen3VL-* / Qwen-* / custom text encoder .gguf"
+                                    class="flex-1 bg-black/40 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500 font-mono">
+                                <button type="button" data-action="krea-browse-file" data-slot="clip"
+                                    class="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs rounded-xl font-medium border border-gray-700 transition">
+                                    Browse...
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Slot 3: VAE -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-bold text-gray-300">3. VAE (.safetensors or .gguf)</label>
+                                <span id="krea-slot-vae-badge" class="text-[10px] px-2 py-0.5 rounded font-mono bg-red-950/80 text-red-400 border border-red-800/40">Missing</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" id="krea-input-vae-path" placeholder="Path to wan_2.1_vae.safetensors or vae .gguf"
+                                    class="flex-1 bg-black/40 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500 font-mono">
+                                <button type="button" data-action="krea-browse-file" data-slot="vae"
+                                    class="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs rounded-xl font-medium border border-gray-700 transition">
+                                    Browse...
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="krea-link-error-banner" class="hidden p-3 rounded-xl bg-red-950/50 border border-red-800 text-red-200 text-xs">
+                            Please provide valid paths for all 3 model files before proceeding.
+                        </div>
+
+                        <div class="flex justify-between items-center pt-2">
+                            <button type="button" data-action="krea-prev-step" class="px-4 py-2 text-xs text-gray-400 hover:text-white transition">
+                                ← Back
+                            </button>
+                            <button type="button" data-action="krea-validate-link" class="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold shadow-lg shadow-violet-600/30 transition flex items-center gap-1.5">
+                                <span>Verify & Continue</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Test Generation & Finish -->
+                <div id="krea-step-content-3" class="space-y-4 hidden">
+                    <div class="p-4 rounded-xl bg-green-950/40 border border-green-800/50 text-green-200 text-xs flex items-center gap-3">
+                        <svg class="w-6 h-6 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div>
+                            <strong>Models Configured!</strong>
+                            <p class="text-[11px] text-green-300/80 mt-0.5">All 3 components are verified and linked. Run a quick test render (8 steps) to verify GPU offloading and silent swapping.</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs uppercase text-gray-400 font-bold">Test Prompt</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="krea-test-prompt-input" value="A hyper-detailed cinematic portrait of a mystical wanderer, dramatic lighting, 8k resolution"
+                                class="flex-1 bg-black/40 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500">
+                            <button type="button" id="krea-run-test-btn" data-action="krea-run-test"
+                                class="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold shadow-lg shadow-violet-600/30 transition flex items-center gap-2 whitespace-nowrap">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span>Generate Test</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Test Preview Area -->
+                    <div id="krea-test-preview-box" class="h-64 rounded-xl bg-black/40 border border-gray-800 flex items-center justify-center overflow-hidden relative">
+                        <div id="krea-test-placeholder" class="text-center text-gray-500 text-xs p-4">
+                            Click "Generate Test" to launch KoboldCPP Krea 2 Turbo silently.
+                        </div>
+                        <div id="krea-test-spinner" class="hidden flex flex-col items-center justify-center gap-3">
+                            <div class="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+                            <span class="text-xs text-violet-300 font-medium">Executing silent model swap & rendering...</span>
+                        </div>
+                        <img id="krea-test-result-img" class="hidden max-h-full max-w-full object-contain rounded-lg" alt="Test Result">
+                    </div>
+
+                    <div class="flex justify-between items-center pt-2">
+                        <button type="button" data-action="krea-prev-step" class="px-4 py-2 text-xs text-gray-400 hover:text-white transition">
+                            ← Back
+                        </button>
+                        <button type="button" data-action="krea-finish-wizard" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-xs font-bold shadow-lg shadow-green-600/30 transition">
+                            Save & Finish Setup ✓
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -7056,6 +7357,14 @@
                             window.updateKoboldDownloadUI(window.koboldDownloadState.progress, window.koboldDownloadState.version);
                         });
 
+                        if (window.electronBridge.krea && typeof window.electronBridge.krea.onDownloadProgress === 'function') {
+                            window.electronBridge.krea.onDownloadProgress((data) => {
+                                if (typeof KreaWizardController !== 'undefined') {
+                                    KreaWizardController.onDownloadProgress(data);
+                                }
+                            });
+                        }
+
                         // Incompatible Model Architecture Notification
                         window.electronPromptKoboldUpdate = async function (details = {}) {
                             if (!window.electronBridge) return;
@@ -8488,6 +8797,93 @@
             <!-- KoboldCPP / Local SD Settings -->
             <div id="image-gen-kobold-settings" class="space-y-4">
                 <h4 class="font-bold text-gray-300">KoboldCPP / SDAPI Settings</h4>
+
+                <!-- Electron Krea 2 Turbo Quick Setup Card -->
+                <div id="krea-electron-control-card" class="p-4 rounded-xl bg-gradient-to-b from-gray-800/80 to-gray-900/90 border border-violet-500/30 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">⚡</span>
+                            <span class="font-bold text-sm text-white">Built-in KoboldCPP Krea 2 Turbo</span>
+                        </div>
+                        <span id="krea-settings-status-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gray-800 text-gray-400 border border-gray-700">
+                            Checking...
+                        </span>
+                    </div>
+
+                    <!-- Warning Alert when models missing -->
+                    <div id="krea-settings-missing-alert" class="hidden p-3 rounded-lg bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs space-y-1">
+                        <div class="font-semibold flex items-center gap-1.5">
+                            <span>⚠️</span> Setup Required
+                        </div>
+                        <p class="text-[11px] text-amber-300/80 leading-relaxed">
+                            Krea 2 Turbo models are not fully configured. Run the setup wizard to download the ~9.3 GB bundle or link existing model files (including uncensored/custom Qwen models).
+                        </p>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-2">
+                        <button type="button" data-action="open-krea-wizard"
+                            class="flex-1 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold shadow-md shadow-violet-600/30 transition flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            <span>Launch Krea 2 Setup Wizard</span>
+                        </button>
+                        <button type="button" data-action="krea-settings-scan"
+                            class="px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-medium border border-gray-700 transition flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <span>Scan Folder...</span>
+                        </button>
+                    </div>
+
+                    <!-- Collapsible Model Path Details -->
+                    <details class="text-xs group">
+                        <summary class="cursor-pointer text-gray-400 hover:text-gray-200 font-medium select-none flex items-center justify-between py-1">
+                            <span>Model File Paths & Silent Swap Status</span>
+                            <span class="text-[10px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div class="mt-3 space-y-2.5 pt-2 border-t border-gray-800">
+                            <div>
+                                <div class="flex justify-between items-center mb-1 text-[11px]">
+                                    <span class="text-gray-400 font-medium">DiT Model (--sdmodel)</span>
+                                    <span id="krea-settings-dit-badge" class="font-mono text-[10px] text-gray-500">Not set</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <input type="text" id="krea-settings-dit-path" readonly
+                                        class="flex-1 bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-[11px] text-gray-300 font-mono">
+                                    <button type="button" data-action="krea-settings-browse" data-slot="dit"
+                                        class="px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-[11px] rounded border border-gray-700">Browse</button>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-1 text-[11px]">
+                                    <span class="text-gray-400 font-medium">Text Encoder (--sdclip1, Qwen3-VL/Abliterated)</span>
+                                    <span id="krea-settings-clip-badge" class="font-mono text-[10px] text-gray-500">Not set</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <input type="text" id="krea-settings-clip-path" readonly
+                                        class="flex-1 bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-[11px] text-gray-300 font-mono">
+                                    <button type="button" data-action="krea-settings-browse" data-slot="clip"
+                                        class="px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-[11px] rounded border border-gray-700">Browse</button>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-1 text-[11px]">
+                                    <span class="text-gray-400 font-medium">VAE (--sdvae)</span>
+                                    <span id="krea-settings-vae-badge" class="font-mono text-[10px] text-gray-500">Not set</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <input type="text" id="krea-settings-vae-path" readonly
+                                        class="flex-1 bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-[11px] text-gray-300 font-mono">
+                                    <button type="button" data-action="krea-settings-browse" data-slot="vae"
+                                        class="px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-[11px] rounded border border-gray-700">Browse</button>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-gray-500 mt-2">
+                                When active, EllipsisLM unloads the active text model and launches Krea 2 Turbo silently during image requests, returning VRAM to 0 MB immediately after.
+                            </p>
+                        </div>
+                    </details>
+                </div>
+
                 <div>
                     <label class="block text-xs uppercase text-gray-500 font-bold mb-1">API URL</label>
                     <input type="text" id="image-gen-kobold-url" data-setting-key="koboldImageGenUrl"
@@ -8965,7 +9361,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 1.2.1 (2026.10.25 - 13:54)";
+        const APP_BUILD_TIMESTAMP = "Version: 1.2.2 (2026.10.31 - 22:48)";
 
 
         /**
@@ -10950,6 +11346,12 @@
                         const data = await res.json();
                         return !!(data.system || data.devices);
                     } else if (backend === 'koboldcpp') {
+                        if (window.electronBridge && window.electronBridge.krea) {
+                            try {
+                                const val = await window.electronBridge.krea.validateFiles();
+                                if (val && val.valid) return true;
+                            } catch (_) {}
+                        }
                         const url = (globalSettings.koboldImageGenUrl || "http://localhost:5001").replace(/\/$/, "");
                         const res = await fetch(`${url}/sdapi/v1/options`, { method: 'GET' }); // Check SDAPI options
                         return res.ok;
@@ -10982,6 +11384,33 @@
              * KoboldCPP (SDAPI Compatible) Adapter
              */
             async _generateKoboldCPP(prompt, negativePrompt, options, initImage = null) {
+                // If running in Electron with configured Krea 2 Turbo models, execute silent process swap
+                if (window.electronBridge && window.electronBridge.krea) {
+                    try {
+                        const kreaVal = await window.electronBridge.krea.validateFiles();
+                        if (kreaVal && kreaVal.valid) {
+                            const norm = UTILITY.normalizeKreaParams(options || {});
+                            const res = await window.electronBridge.krea.generateImageSilent({
+                                prompt: prompt,
+                                negativePrompt: negativePrompt || "",
+                                width: norm.width,
+                                height: norm.height,
+                                steps: norm.steps,
+                                cfgScale: norm.cfgScale,
+                                initImage: initImage ? await UTILITY.blobToBase64(initImage) : null,
+                                denoisingStrength: options && options.denoising_strength ? options.denoising_strength : 0.55
+                            });
+                            if (!res || !res.success) {
+                                throw new Error(res && res.error ? res.error : "Krea 2 Turbo generation failed");
+                            }
+                            return UTILITY.base64ToBlob(res.imageBase64, 'image/png');
+                        }
+                    } catch (kreaErr) {
+                        console.error("Silent Krea 2 Swap failed, falling back to HTTP if available:", kreaErr);
+                        if (!window.electronBridge) throw kreaErr;
+                    }
+                }
+
                 const globalSettings = StateManager.data.globalSettings;
                 const url = (globalSettings.koboldImageGenUrl || "http://localhost:5001").replace(/\/$/, "");
 
@@ -20107,6 +20536,129 @@ EXECUTION DIRECTIVE: Your output MUST begin immediately with the opening tag <lo
                 }
 
                 return this.matchLocationDefaultImage(location, storyContext, options);
+            },
+
+            /**
+             * Matches filenames in a directory to the three required Krea 2 Turbo components:
+             * 1. DiT model (GGUF)
+             * 2. Text Encoder / Vision-Language model (Qwen-VL / CLIP GGUF, supporting official, abliterated, or uncensored finetunes)
+             * 3. VAE (safetensors or GGUF)
+             * @param {string[]} fileList - Array of filenames or file paths
+             * @returns {{ ditPath: string, clipPath: string, vaePath: string, missing: string[] }}
+             */
+            matchKreaModelFiles(fileList) {
+                const result = {
+                    ditPath: '',
+                    clipPath: '',
+                    vaePath: '',
+                    missing: []
+                };
+                if (!Array.isArray(fileList) || fileList.length === 0) {
+                    result.missing = ['dit', 'clip', 'vae'];
+                    return result;
+                }
+
+                // 1. VAE candidate: files containing wan/vae/autoencoder and ending in .safetensors or .gguf
+                for (const file of fileList) {
+                    const base = file.split(/[\\/]/).pop() || '';
+                    if (/(?:wan.*vae|vae.*wan|wan_2\.1|autoencoder).*\.(?:safetensors|gguf)$/i.test(base) || /(?:^|[-_\.\s])vae\.(?:safetensors|gguf)$/i.test(base)) {
+                        result.vaePath = file;
+                        break;
+                    }
+                }
+                if (!result.vaePath) {
+                    for (const file of fileList) {
+                        const base = file.split(/[\\/]/).pop() || '';
+                        if (/vae.*\.(?:safetensors|gguf)$/i.test(base)) {
+                            result.vaePath = file;
+                            break;
+                        }
+                    }
+                }
+
+                // 2. Text Encoder candidate: files containing qwen/clip/vl/encoder, including abliterated/uncensored variants
+                for (const file of fileList) {
+                    if (file === result.vaePath) continue;
+                    const base = file.split(/[\\/]/).pop() || '';
+                    if (/(?:qwen|clip|vl|text_encoder|encoder).*\.gguf$/i.test(base)) {
+                        result.clipPath = file;
+                        break;
+                    }
+                }
+
+                // 3. DiT candidate: files containing krea/turbo/dit/transformer
+                for (const file of fileList) {
+                    if (file === result.vaePath || file === result.clipPath) continue;
+                    const base = file.split(/[\\/]/).pop() || '';
+                    if (/(?:krea|turbo|diffusion|dit|transformer).*\.gguf$/i.test(base)) {
+                        result.ditPath = file;
+                        break;
+                    }
+                }
+                // Fallback for DiT: any remaining .gguf file if not yet matched
+                if (!result.ditPath) {
+                    for (const file of fileList) {
+                        if (file === result.vaePath || file === result.clipPath) continue;
+                        if (/\.gguf$/i.test(file)) {
+                            result.ditPath = file;
+                            break;
+                        }
+                    }
+                }
+
+                if (!result.ditPath) result.missing.push('dit');
+                if (!result.clipPath) result.missing.push('clip');
+                if (!result.vaePath) result.missing.push('vae');
+
+                return result;
+            },
+
+            /**
+             * Validates that all three required Krea 2 model components are populated with non-empty paths.
+             * @param {Object} config - { ditPath, clipPath, vaePath }
+             * @returns {{ valid: boolean, missingComponents: string[] }}
+             */
+            validateKreaModelSet(config) {
+                const missing = [];
+                if (!config || typeof config !== 'object') {
+                    return { valid: false, missingComponents: ['dit', 'clip', 'vae'] };
+                }
+                if (!config.ditPath || typeof config.ditPath !== 'string' || config.ditPath.trim() === '') {
+                    missing.push('dit');
+                }
+                if (!config.clipPath || typeof config.clipPath !== 'string' || config.clipPath.trim() === '') {
+                    missing.push('clip');
+                }
+                if (!config.vaePath || typeof config.vaePath !== 'string' || config.vaePath.trim() === '') {
+                    missing.push('vae');
+                }
+                return {
+                    valid: missing.length === 0,
+                    missingComponents: missing
+                };
+            },
+
+            /**
+             * Normalizes image generation options for Krea 2 Turbo architecture.
+             * @param {Object} [options]
+             * @returns {{ steps: number, cfg: number, width: number, height: number, sampler: string, scheduler: string }}
+             */
+            normalizeKreaParams(options = {}) {
+                const steps = (typeof options.steps === 'number' && options.steps > 0) ? options.steps : 8;
+                const cfg = (typeof options.cfg === 'number' && options.cfg > 0) ? options.cfg : 1.0;
+                const width = (typeof options.width === 'number' && options.width > 0) ? options.width : 512;
+                const height = (typeof options.height === 'number' && options.height > 0) ? options.height : 512;
+                const sampler = (typeof options.sampler === 'string' && options.sampler.trim()) ? options.sampler.trim() : 'Euler';
+                const scheduler = (typeof options.scheduler === 'string' && options.scheduler.trim()) ? options.scheduler.trim() : 'simple';
+
+                return {
+                    steps,
+                    cfg,
+                    width,
+                    height,
+                    sampler,
+                    scheduler
+                };
             }
         };
 
@@ -31904,6 +32456,9 @@ Output Schema:
                     // NEW: Render saved image models
                     this.renderSavedOpenRouterImageModels();
                     this.renderSavedNanoGPTImageModels();
+                    if (typeof KreaWizardController !== 'undefined') {
+                        KreaWizardController.syncSettingsUI();
+                    }
 
 
 
@@ -33460,8 +34015,14 @@ Output Schema:
                 if (koboldSettings) {
                     const show = val === 'koboldcpp';
                     koboldSettings.style.display = show ? 'block' : 'none';
-                    if (show) koboldSettings.classList.remove('hidden');
-                    else koboldSettings.classList.add('hidden');
+                    if (show) {
+                        koboldSettings.classList.remove('hidden');
+                        if (typeof KreaWizardController !== 'undefined') {
+                            KreaWizardController.syncSettingsUI();
+                        }
+                    } else {
+                        koboldSettings.classList.add('hidden');
+                    }
                 }
                 if (openRouterSettings) {
                     const show = val === 'openrouter';
@@ -34289,6 +34850,635 @@ Output Schema:
                 }).join('');
             }
         };
+
+        /**
+         * =================================================================================================
+         * [SEC:JS:CTRL:KREA]
+         * KreaWizardController Module
+         * Setup wizard and management controller for KoboldCPP Krea 2 Turbo image generation.
+         * =================================================================================================
+         */
+        const KreaWizardController = {
+            RUNTIME: {
+                currentStep: 1,
+                activeTab: 'download',
+                isDownloading: false,
+                isTesting: false,
+                cachedConfig: null
+            },
+
+            /**
+             * Opens the Krea 2 Turbo Setup Wizard modal.
+             */
+            async openWizard(initialStep = 1) {
+                if (!window.electronBridge || !window.electronBridge.krea) {
+                    if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                        UIManager.showNotification('KoboldCPP Krea 2 Turbo setup is available in the desktop app.', 'info');
+                    } else {
+                        alert('KoboldCPP Krea 2 Turbo setup is available in the desktop app.');
+                    }
+                    return;
+                }
+
+                const modal = document.getElementById('krea-setup-wizard-modal');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+
+                await this.checkSystemRequirements();
+                await this.syncStep2Inputs();
+                this.goToStep(initialStep);
+            },
+
+            /**
+             * Closes the Setup Wizard modal and synchronizes the settings card.
+             */
+            closeWizard() {
+                const modal = document.getElementById('krea-setup-wizard-modal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+                this.syncSettingsUI();
+            },
+
+            /**
+             * Navigates directly to a given wizard step (1..3).
+             */
+            goToStep(stepNum) {
+                const step = Math.max(1, Math.min(3, parseInt(stepNum) || 1));
+                this.RUNTIME.currentStep = step;
+
+                for (let i = 1; i <= 3; i++) {
+                    const content = document.getElementById(`krea-step-content-${i}`);
+                    if (content) content.classList.toggle('hidden', i !== step);
+
+                    const badge = document.getElementById(`krea-badge-step-${i}`);
+                    const label = document.getElementById(`krea-label-step-${i}`);
+                    if (badge && label) {
+                        if (i === step) {
+                            badge.className = 'w-6 h-6 rounded-full bg-violet-600 text-white font-bold flex items-center justify-center text-xs';
+                            label.className = 'font-semibold text-gray-200';
+                        } else if (i < step) {
+                            badge.className = 'w-6 h-6 rounded-full bg-green-700 text-white font-bold flex items-center justify-center text-xs';
+                            label.className = 'font-medium text-green-300';
+                        } else {
+                            badge.className = 'w-6 h-6 rounded-full bg-gray-800 text-gray-400 font-bold flex items-center justify-center text-xs';
+                            label.className = 'font-medium text-gray-400';
+                        }
+                    }
+                }
+
+                const line1 = document.getElementById('krea-progress-line-1');
+                if (line1) line1.style.width = step >= 2 ? '100%' : '0%';
+                const line2 = document.getElementById('krea-progress-line-2');
+                if (line2) line2.style.width = step >= 3 ? '100%' : '0%';
+
+                if (step === 2) {
+                    this.syncStep2Inputs();
+                }
+            },
+
+            /**
+             * Advances to the next step.
+             */
+            nextStep() {
+                if (this.RUNTIME.currentStep === 1) {
+                    this.goToStep(2);
+                } else if (this.RUNTIME.currentStep === 2) {
+                    this.validateFilesAndProceed();
+                }
+            },
+
+            /**
+             * Navigates back to the previous step.
+             */
+            previousStep() {
+                if (this.RUNTIME.currentStep > 1) {
+                    this.goToStep(this.RUNTIME.currentStep - 1);
+                }
+            },
+
+            /**
+             * Switches between Option A (Download) and Option B (Link).
+             */
+            switchTab(tab) {
+                this.RUNTIME.activeTab = tab;
+                const btnDownload = document.getElementById('krea-tab-btn-download');
+                const btnLink = document.getElementById('krea-tab-btn-link');
+                const subDownload = document.getElementById('krea-subtab-download');
+                const subLink = document.getElementById('krea-subtab-link');
+
+                if (tab === 'download') {
+                    if (btnDownload) btnDownload.className = 'flex-1 py-2 text-xs font-semibold rounded-md transition-all bg-violet-600 text-white shadow';
+                    if (btnLink) btnLink.className = 'flex-1 py-2 text-xs font-semibold rounded-md transition-all text-gray-400 hover:text-white';
+                    if (subDownload) subDownload.classList.remove('hidden');
+                    if (subLink) subLink.classList.add('hidden');
+                } else {
+                    if (btnDownload) btnDownload.className = 'flex-1 py-2 text-xs font-semibold rounded-md transition-all text-gray-400 hover:text-white';
+                    if (btnLink) btnLink.className = 'flex-1 py-2 text-xs font-semibold rounded-md transition-all bg-violet-600 text-white shadow';
+                    if (subDownload) subDownload.classList.add('hidden');
+                    if (subLink) subLink.classList.remove('hidden');
+                    this.updateFileBadges();
+                }
+            },
+
+            /**
+             * Checks the local KoboldCPP version and displays capability status.
+             */
+            async checkSystemRequirements() {
+                const versionText = document.getElementById('krea-kobold-version-text');
+                const statusBadge = document.getElementById('krea-kobold-version-status');
+                const warningBox = document.getElementById('krea-step1-warning');
+                const warningText = document.getElementById('krea-step1-warning-text');
+
+                if (!window.electronBridge || !window.electronBridge.kobold) {
+                    if (versionText) versionText.textContent = 'Desktop engine required';
+                    if (statusBadge) {
+                        statusBadge.textContent = 'Unavailable';
+                        statusBadge.className = 'px-2 py-0.5 rounded text-[11px] font-semibold bg-red-950/80 text-red-400 border border-red-800/40';
+                    }
+                    return;
+                }
+
+                try {
+                    let localVer = '';
+                    if (typeof window.electronBridge.kobold.getLocalVersion === 'function') {
+                        localVer = await window.electronBridge.kobold.getLocalVersion();
+                    }
+
+                    if (localVer) {
+                        if (versionText) versionText.textContent = `v${localVer}`;
+                        if (statusBadge) {
+                            statusBadge.textContent = 'Detected ✓';
+                            statusBadge.className = 'px-2 py-0.5 rounded text-[11px] font-semibold bg-green-950/80 text-green-300 border border-green-800/50';
+                        }
+                        if (warningBox) warningBox.classList.add('hidden');
+                    } else {
+                        if (versionText) versionText.textContent = 'Not yet installed';
+                        if (statusBadge) {
+                            statusBadge.textContent = 'Pending';
+                            statusBadge.className = 'px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-800/50';
+                        }
+                        if (warningBox && warningText) {
+                            warningText.textContent = 'KoboldCPP is not installed yet. You can still set up models, but install KoboldCPP in AI Settings to generate images.';
+                            warningBox.classList.remove('hidden');
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Kobold version check error:", e);
+                }
+            },
+
+            /**
+             * Synchronizes inputs in Step 2 with stored Krea config.
+             */
+            async syncStep2Inputs() {
+                if (!window.electronBridge || !window.electronBridge.krea) return;
+                try {
+                    const cfg = await window.electronBridge.krea.getConfig();
+                    this.RUNTIME.cachedConfig = cfg;
+
+                    const ditInput = document.getElementById('krea-input-dit-path');
+                    const clipInput = document.getElementById('krea-input-clip-path');
+                    const vaeInput = document.getElementById('krea-input-vae-path');
+                    const targetDir = document.getElementById('krea-download-target-dir');
+
+                    if (ditInput && cfg.ditPath) ditInput.value = cfg.ditPath;
+                    if (clipInput && cfg.clipPath) clipInput.value = cfg.clipPath;
+                    if (vaeInput && cfg.vaePath) vaeInput.value = cfg.vaePath;
+                    if (targetDir && cfg.downloadDir) targetDir.value = cfg.downloadDir;
+
+                    await this.updateFileBadges();
+                } catch (e) {
+                    console.error("Failed to sync Step 2 inputs:", e);
+                }
+            },
+
+            /**
+             * Updates status badges for the 3 model slots in Step 2 Option B.
+             */
+            async updateFileBadges() {
+                if (!window.electronBridge || !window.electronBridge.krea) return;
+                try {
+                    const ditInput = document.getElementById('krea-input-dit-path');
+                    const clipInput = document.getElementById('krea-input-clip-path');
+                    const vaeInput = document.getElementById('krea-input-vae-path');
+
+                    const val = await window.electronBridge.krea.validateFiles({
+                        ditPath: ditInput ? ditInput.value.trim() : '',
+                        clipPath: clipInput ? clipInput.value.trim() : '',
+                        vaePath: vaeInput ? vaeInput.value.trim() : ''
+                    });
+
+                    const ditBadge = document.getElementById('krea-slot-dit-badge');
+                    const clipBadge = document.getElementById('krea-slot-clip-badge');
+                    const vaeBadge = document.getElementById('krea-slot-vae-badge');
+
+                    if (ditBadge) {
+                        ditBadge.textContent = val.ditExists ? 'Verified ✓' : 'Missing ✕';
+                        ditBadge.className = val.ditExists
+                            ? 'text-[10px] px-2 py-0.5 rounded font-mono bg-green-950/80 text-green-400 border border-green-800/40'
+                            : 'text-[10px] px-2 py-0.5 rounded font-mono bg-red-950/80 text-red-400 border border-red-800/40';
+                    }
+                    if (clipBadge) {
+                        clipBadge.textContent = val.clipExists ? 'Verified ✓' : 'Missing ✕';
+                        clipBadge.className = val.clipExists
+                            ? 'text-[10px] px-2 py-0.5 rounded font-mono bg-green-950/80 text-green-400 border border-green-800/40'
+                            : 'text-[10px] px-2 py-0.5 rounded font-mono bg-red-950/80 text-red-400 border border-red-800/40';
+                    }
+                    if (vaeBadge) {
+                        vaeBadge.textContent = val.vaeExists ? 'Verified ✓' : 'Missing ✕';
+                        vaeBadge.className = val.vaeExists
+                            ? 'text-[10px] px-2 py-0.5 rounded font-mono bg-green-950/80 text-green-400 border border-green-800/40'
+                            : 'text-[10px] px-2 py-0.5 rounded font-mono bg-red-950/80 text-red-400 border border-red-800/40';
+                    }
+                } catch (e) {
+                    console.error("Error updating file badges:", e);
+                }
+            },
+
+            /**
+             * Prompts user to select target folder for downloading models.
+             */
+            async pickDownloadFolder() {
+                if (!window.electronBridge || !window.electronBridge.krea) return;
+                const folder = await window.electronBridge.krea.pickFolder('Select Target Folder for Krea 2 Turbo Models');
+                if (folder) {
+                    const input = document.getElementById('krea-download-target-dir');
+                    if (input) input.value = folder;
+                    await window.electronBridge.krea.saveConfig({ downloadDir: folder });
+                }
+            },
+
+            /**
+             * Prompts user to select a single model file for a given slot (dit, clip, vae).
+             */
+            async pickFile(slot) {
+                if (!window.electronBridge || !window.electronBridge.krea) return;
+                let title = 'Select Model File';
+                let filters = [{ name: 'Model Files', extensions: ['gguf', 'safetensors'] }];
+
+                if (slot === 'dit') {
+                    title = 'Select DiT Diffusion Model (.gguf)';
+                    filters = [{ name: 'DiT GGUF', extensions: ['gguf'] }];
+                } else if (slot === 'clip') {
+                    title = 'Select Text Encoder (.gguf) - Supports Qwen3-VL or Abliterated variants';
+                    filters = [{ name: 'Text Encoder GGUF', extensions: ['gguf'] }];
+                } else if (slot === 'vae') {
+                    title = 'Select VAE Model (.safetensors or .gguf)';
+                    filters = [{ name: 'VAE Model', extensions: ['safetensors', 'gguf'] }];
+                }
+
+                const filePath = await window.electronBridge.krea.pickModelFileSpecific({ title, filters });
+                if (filePath) {
+                    const input = document.getElementById(`krea-input-${slot}-path`);
+                    if (input) input.value = filePath;
+
+                    const partialConfig = {};
+                    if (slot === 'dit') partialConfig.ditPath = filePath;
+                    if (slot === 'clip') partialConfig.clipPath = filePath;
+                    if (slot === 'vae') partialConfig.vaePath = filePath;
+
+                    await window.electronBridge.krea.saveConfig(partialConfig);
+                    await this.updateFileBadges();
+                    this.syncSettingsUI();
+                }
+            },
+
+            /**
+             * Prompts user to pick a folder and automatically scans for DiT, Text Encoder, and VAE.
+             */
+            async scanFolderPrompt(target = 'wizard') {
+                if (!window.electronBridge || !window.electronBridge.krea) return;
+                const folder = await window.electronBridge.krea.pickFolder('Select Folder Containing Krea 2 / Qwen Models');
+                if (!folder) return;
+
+                const result = await window.electronBridge.krea.scanFolder(folder);
+                if (!result || !result.success) {
+                    if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                        UIManager.showNotification('Could not scan folder: ' + (result ? result.error : 'Unknown error'), 'error');
+                    }
+                    return;
+                }
+
+                const matched = result.matched;
+                const ditInput = document.getElementById('krea-input-dit-path');
+                const clipInput = document.getElementById('krea-input-clip-path');
+                const vaeInput = document.getElementById('krea-input-vae-path');
+
+                if (matched.dit && ditInput) ditInput.value = matched.dit;
+                if (matched.clip && clipInput) clipInput.value = matched.clip;
+                if (matched.vae && vaeInput) vaeInput.value = matched.vae;
+
+                await window.electronBridge.krea.saveConfig({
+                    ditPath: matched.dit || '',
+                    clipPath: matched.clip || '',
+                    vaePath: matched.vae || '',
+                    downloadDir: folder
+                });
+
+                await this.updateFileBadges();
+                this.syncSettingsUI();
+
+                if (result.allFound) {
+                    if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                        UIManager.showNotification(`Found all 3 Krea 2 Turbo models in ${folder}!`, 'success');
+                    }
+                    if (target === 'wizard') {
+                        this.switchTab('link');
+                    }
+                } else {
+                    const missingList = result.missing.join(', ');
+                    if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                        UIManager.showNotification(`Scanned folder: found ${result.files.length} model file(s), but missing ${missingList}. Please link remaining files manually.`, 'warning');
+                    }
+                    if (target === 'wizard') {
+                        this.switchTab('link');
+                    }
+                }
+            },
+
+            /**
+             * Initiates the multi-file download stream.
+             */
+            async startDownload() {
+                if (!window.electronBridge || !window.electronBridge.krea) return;
+                const targetInput = document.getElementById('krea-download-target-dir');
+                let targetDir = targetInput ? targetInput.value.trim() : '';
+
+                if (!targetDir) {
+                    await this.pickDownloadFolder();
+                    targetDir = targetInput ? targetInput.value.trim() : '';
+                    if (!targetDir) return;
+                }
+
+                const progressContainer = document.getElementById('krea-download-progress-container');
+                const startBtn = document.getElementById('krea-start-download-btn');
+                const cancelBtn = document.getElementById('krea-cancel-download-btn');
+
+                if (progressContainer) progressContainer.classList.remove('hidden');
+                if (startBtn) startBtn.classList.add('hidden');
+                if (cancelBtn) cancelBtn.classList.remove('hidden');
+
+                this.RUNTIME.isDownloading = true;
+
+                try {
+                    const res = await window.electronBridge.krea.startDownload(targetDir);
+                    if (!res.success) {
+                        throw new Error(res.error || 'Download failed to start');
+                    }
+                } catch (err) {
+                    console.error("Start download error:", err);
+                    if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                        UIManager.showNotification('Download failed: ' + err.message, 'error');
+                    }
+                    if (startBtn) startBtn.classList.remove('hidden');
+                    if (cancelBtn) cancelBtn.classList.add('hidden');
+                    this.RUNTIME.isDownloading = false;
+                }
+            },
+
+            /**
+             * Cancels an ongoing download stream.
+             */
+            async cancelDownload() {
+                if (!window.electronBridge || !window.electronBridge.krea) return;
+                await window.electronBridge.krea.cancelDownload();
+
+                const startBtn = document.getElementById('krea-start-download-btn');
+                const cancelBtn = document.getElementById('krea-cancel-download-btn');
+                const label = document.getElementById('krea-download-file-label');
+
+                if (startBtn) startBtn.classList.remove('hidden');
+                if (cancelBtn) cancelBtn.classList.add('hidden');
+                if (label) label.textContent = 'Download canceled.';
+                this.RUNTIME.isDownloading = false;
+            },
+
+            /**
+             * Handles incoming download progress events from Electron.
+             */
+            onDownloadProgress(data) {
+                const progressBar = document.getElementById('krea-download-progress-bar');
+                const percentLabel = document.getElementById('krea-download-percent-label');
+                const fileLabel = document.getElementById('krea-download-file-label');
+                const speedLabel = document.getElementById('krea-download-speed-label');
+                const sizeLabel = document.getElementById('krea-download-size-label');
+
+                if (progressBar) progressBar.style.width = `${data.percent}%`;
+                if (percentLabel) percentLabel.textContent = `${data.percent}%`;
+                if (fileLabel) fileLabel.textContent = `[${data.fileIndex + 1}/${data.totalFiles}] ${data.filename}`;
+                if (speedLabel) speedLabel.textContent = `${(data.speedBps / (1024 * 1024)).toFixed(1)} MB/s`;
+                if (sizeLabel) {
+                    const curGB = (data.downloadedBytes / (1024 * 1024 * 1024)).toFixed(2);
+                    const totGB = (data.totalBytes / (1024 * 1024 * 1024)).toFixed(2);
+                    sizeLabel.textContent = `${curGB} / ${totGB} GB`;
+                }
+
+                if (data.status === 'completed') {
+                    this.RUNTIME.isDownloading = false;
+                    const startBtn = document.getElementById('krea-start-download-btn');
+                    const cancelBtn = document.getElementById('krea-cancel-download-btn');
+                    if (startBtn) {
+                        startBtn.classList.remove('hidden');
+                        startBtn.innerHTML = '<span>Downloaded ✓</span>';
+                    }
+                    if (cancelBtn) cancelBtn.classList.add('hidden');
+
+                    if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                        UIManager.showNotification('All Krea 2 Turbo models downloaded and linked successfully!', 'success');
+                    }
+                    this.goToStep(3);
+                } else if (data.status === 'error') {
+                    this.RUNTIME.isDownloading = false;
+                    const startBtn = document.getElementById('krea-start-download-btn');
+                    const cancelBtn = document.getElementById('krea-cancel-download-btn');
+                    if (startBtn) startBtn.classList.remove('hidden');
+                    if (cancelBtn) cancelBtn.classList.add('hidden');
+                    if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                        UIManager.showNotification('Download encountered an error: ' + (data.error || 'Network error'), 'error');
+                    }
+                }
+            },
+
+            /**
+             * Validates file paths in Option B and advances to Step 3 if valid.
+             */
+            async validateFilesAndProceed() {
+                if (!window.electronBridge || !window.electronBridge.krea) return;
+
+                const ditInput = document.getElementById('krea-input-dit-path');
+                const clipInput = document.getElementById('krea-input-clip-path');
+                const vaeInput = document.getElementById('krea-input-vae-path');
+
+                const ditPath = ditInput ? ditInput.value.trim() : '';
+                const clipPath = clipInput ? clipInput.value.trim() : '';
+                const vaePath = vaeInput ? vaeInput.value.trim() : '';
+
+                await window.electronBridge.krea.saveConfig({ ditPath, clipPath, vaePath });
+                const val = await window.electronBridge.krea.validateFiles({ ditPath, clipPath, vaePath });
+
+                const errBanner = document.getElementById('krea-link-error-banner');
+                if (val && val.valid) {
+                    if (errBanner) errBanner.classList.add('hidden');
+                    this.goToStep(3);
+                } else {
+                    if (errBanner) {
+                        errBanner.textContent = 'Please provide valid file paths for all 3 components before proceeding.';
+                        errBanner.classList.remove('hidden');
+                    }
+                    await this.updateFileBadges();
+                }
+            },
+
+            /**
+             * Runs a test image generation using the silent swap pipeline.
+             */
+            async runTestGeneration() {
+                if (this.RUNTIME.isTesting) return;
+                if (!window.electronBridge || !window.electronBridge.krea) return;
+
+                this.RUNTIME.isTesting = true;
+                const testBtn = document.getElementById('krea-run-test-btn');
+                const placeholder = document.getElementById('krea-test-placeholder');
+                const spinner = document.getElementById('krea-test-spinner');
+                const resultImg = document.getElementById('krea-test-result-img');
+                const promptInput = document.getElementById('krea-test-prompt-input');
+
+                if (testBtn) testBtn.disabled = true;
+                if (placeholder) placeholder.classList.add('hidden');
+                if (resultImg) resultImg.classList.add('hidden');
+                if (spinner) spinner.classList.remove('hidden');
+
+                const prompt = promptInput ? promptInput.value.trim() : "A cinematic portrait of a mystical wanderer";
+
+                try {
+                    const norm = UTILITY.normalizeKreaParams({ steps: 8, cfg_scale: 1.0, width: 512, height: 512 });
+                    const res = await window.electronBridge.krea.generateImageSilent({
+                        prompt: prompt,
+                        negativePrompt: "",
+                        width: norm.width,
+                        height: norm.height,
+                        steps: norm.steps,
+                        cfgScale: norm.cfgScale
+                    });
+
+                    if (spinner) spinner.classList.add('hidden');
+
+                    if (res && res.success && res.imageBase64) {
+                        if (resultImg) {
+                            resultImg.src = `data:image/png;base64,${res.imageBase64}`;
+                            resultImg.classList.remove('hidden');
+                        }
+                        if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                            UIManager.showNotification('Test image rendered successfully via silent swap!', 'success');
+                        }
+                    } else {
+                        throw new Error(res && res.error ? res.error : 'Generation returned no image');
+                    }
+                } catch (err) {
+                    console.error("Test generation failed:", err);
+                    if (spinner) spinner.classList.add('hidden');
+                    if (placeholder) {
+                        placeholder.textContent = `Generation failed: ${err.message}`;
+                        placeholder.classList.remove('hidden');
+                    }
+                    if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                        UIManager.showNotification('Test generation failed: ' + err.message, 'error');
+                    }
+                } finally {
+                    this.RUNTIME.isTesting = false;
+                    if (testBtn) testBtn.disabled = false;
+                }
+            },
+
+            /**
+             * Finalizes wizard setup: sets koboldcpp backend active, saves settings, and closes.
+             */
+            finishWizard() {
+                if (typeof StateManager !== 'undefined' && StateManager.data && StateManager.data.globalSettings) {
+                    StateManager.data.globalSettings.imageGenBackend = 'koboldcpp';
+                    if (typeof StateManager.saveGlobalSettings === 'function') {
+                        StateManager.saveGlobalSettings();
+                    }
+                }
+
+                const backendSelect = document.getElementById('image-gen-backend');
+                if (backendSelect) {
+                    backendSelect.value = 'koboldcpp';
+                    backendSelect.dispatchEvent(new Event('change'));
+                }
+
+                this.closeWizard();
+                if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                    UIManager.showNotification('KoboldCPP Krea 2 Turbo is active! VRAM will be swapped automatically during generation.', 'success');
+                }
+            },
+
+            /**
+             * Synchronizes the compact Krea 2 Turbo settings card in the Settings modal.
+             */
+            async syncSettingsUI() {
+                const card = document.getElementById('krea-electron-control-card');
+                if (!card) return;
+
+                if (!window.electronBridge || !window.electronBridge.krea) {
+                    card.style.display = 'none';
+                    return;
+                }
+                card.style.display = 'block';
+
+                try {
+                    const val = await window.electronBridge.krea.validateFiles();
+                    const statusBadge = document.getElementById('krea-settings-status-badge');
+                    const missingAlert = document.getElementById('krea-settings-missing-alert');
+
+                    if (val && val.valid) {
+                        if (statusBadge) {
+                            statusBadge.textContent = 'Ready (Silent VRAM Swap)';
+                            statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-green-950/80 text-green-300 border border-green-800/50';
+                        }
+                        if (missingAlert) missingAlert.classList.add('hidden');
+                    } else {
+                        if (statusBadge) {
+                            statusBadge.textContent = 'Missing Models';
+                            statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-800/50';
+                        }
+                        if (missingAlert) missingAlert.classList.remove('hidden');
+                    }
+
+                    const ditPathInput = document.getElementById('krea-settings-dit-path');
+                    const clipPathInput = document.getElementById('krea-settings-clip-path');
+                    const vaePathInput = document.getElementById('krea-settings-vae-path');
+
+                    if (ditPathInput) ditPathInput.value = val.ditPath || '';
+                    if (clipPathInput) clipPathInput.value = val.clipPath || '';
+                    if (vaePathInput) vaePathInput.value = val.vaePath || '';
+
+                    const ditBadge = document.getElementById('krea-settings-dit-badge');
+                    const clipBadge = document.getElementById('krea-settings-clip-badge');
+                    const vaeBadge = document.getElementById('krea-settings-vae-badge');
+
+                    if (ditBadge) {
+                        ditBadge.textContent = val.ditExists ? 'OK ✓' : 'Missing ✕';
+                        ditBadge.className = val.ditExists ? 'font-mono text-[10px] text-green-400' : 'font-mono text-[10px] text-red-400';
+                    }
+                    if (clipBadge) {
+                        clipBadge.textContent = val.clipExists ? 'OK ✓' : 'Missing ✕';
+                        clipBadge.className = val.clipExists ? 'font-mono text-[10px] text-green-400' : 'font-mono text-[10px] text-red-400';
+                    }
+                    if (vaeBadge) {
+                        vaeBadge.textContent = val.vaeExists ? 'OK ✓' : 'Missing ✕';
+                        vaeBadge.className = val.vaeExists ? 'font-mono text-[10px] text-green-400' : 'font-mono text-[10px] text-red-400';
+                    }
+                } catch (e) {
+                    console.error("Error syncing Krea settings card:", e);
+                }
+            }
+        };
+        window.KreaWizardController = KreaWizardController;
 
 
 
@@ -49309,6 +50499,24 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 ActionHandler.register('close-hub-details', () => HubController.closeDetails());
                 ActionHandler.register('import-hub-character', (ds, val) => HubController.importCharacter(val));
                 ActionHandler.register('close-modal', (ds) => AppController.closeModal(ds.id));
+
+                // --- KreaWizardController (KoboldCPP Image Setup) ---
+                ActionHandler.register('open-krea-wizard', () => KreaWizardController.openWizard());
+                ActionHandler.register('close-krea-wizard', () => KreaWizardController.closeWizard());
+                ActionHandler.register('krea-go-step', (ds) => KreaWizardController.goToStep(parseInt(ds.step)));
+                ActionHandler.register('krea-next-step', () => KreaWizardController.nextStep());
+                ActionHandler.register('krea-prev-step', () => KreaWizardController.previousStep());
+                ActionHandler.register('krea-tab-switch', (ds) => KreaWizardController.switchTab(ds.tab));
+                ActionHandler.register('krea-browse-download-dir', () => KreaWizardController.pickDownloadFolder());
+                ActionHandler.register('krea-start-download', () => KreaWizardController.startDownload());
+                ActionHandler.register('krea-cancel-download', () => KreaWizardController.cancelDownload());
+                ActionHandler.register('krea-scan-folder', () => KreaWizardController.scanFolderPrompt('wizard'));
+                ActionHandler.register('krea-browse-file', (ds) => KreaWizardController.pickFile(ds.slot));
+                ActionHandler.register('krea-validate-link', () => KreaWizardController.validateFilesAndProceed());
+                ActionHandler.register('krea-run-test', () => KreaWizardController.runTestGeneration());
+                ActionHandler.register('krea-finish-wizard', () => KreaWizardController.finishWizard());
+                ActionHandler.register('krea-settings-scan', () => KreaWizardController.scanFolderPrompt('settings'));
+                ActionHandler.register('krea-settings-browse', (ds) => KreaWizardController.pickFile(ds.slot));
                 ActionHandler.register('toggle-mobile-menu', () => AppController.toggleMobileMenu());
 
                 // --- TextModeController (Private text threads) ---
