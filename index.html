@@ -4932,7 +4932,7 @@
                     <div class="flex items-center justify-between">
                         <span
                             class="text-[9px] font-mono uppercase tracking-widest text-gray-500 font-semibold">EllipsisLM</span>
-                        <span id="app-sidebar-version" class="text-[9px] font-mono text-gray-500">v1.2.2</span>
+                        <span id="app-sidebar-version" class="text-[9px] font-mono text-gray-500">v1.2.3</span>
                     </div>
 
                     <!-- Update Widget Container (Electron only) -->
@@ -5636,6 +5636,175 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ComfyUI Custom Workflow Profile Editor Modal -->
+    <div id="comfy-workflow-editor-modal" class="fixed inset-0 z-[100] items-center justify-center hidden">
+        <div class="modal-overlay absolute inset-0 bg-black/80 backdrop-blur-sm" data-action="comfy-close-workflow-editor"></div>
+        <div class="bg-gray-900 border border-indigo-500/30 rounded-2xl shadow-2xl w-11/12 max-w-3xl relative flex flex-col max-h-[90vh] overflow-hidden z-10">
+            <!-- Header -->
+            <div class="p-5 border-b border-gray-800 flex justify-between items-center bg-gray-950/70">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white tracking-wide">ComfyUI Workflow Profile Studio</h3>
+                        <p class="text-xs text-gray-400">Map prompt injection, seed, and resolution targets for your custom workflow</p>
+                    </div>
+                </div>
+                <button type="button" data-action="comfy-close-workflow-editor"
+                    class="bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white p-2 rounded-full transition-colors"
+                    title="Close">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-6 overflow-y-auto flex-1 space-y-5">
+                <!-- Status & Auto-detection Banner -->
+                <div id="comfy-wf-status-banner" class="p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-xl text-xs text-indigo-200 flex items-start gap-2.5">
+                    <svg class="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div id="comfy-wf-status-text">
+                        Workflow analyzed. Node mappings have been automatically detected.
+                    </div>
+                </div>
+
+                <!-- Basic Profile Metadata -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Profile Name</label>
+                        <input type="text" id="comfy-wf-profile-name" placeholder="e.g. Flux Cinematic Portrait"
+                            class="w-full bg-black/40 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Workflow Role</label>
+                        <select id="comfy-wf-role"
+                            class="w-full bg-black/40 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:border-indigo-500">
+                            <option value="txt2img">Text-to-Image</option>
+                            <option value="img2img">Image-to-Image</option>
+                            <option value="general">General (Both)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Target Node Mappings -->
+                <div class="bg-gray-800/40 border border-gray-700/60 rounded-xl p-4 space-y-4">
+                    <h4 class="text-xs uppercase font-bold text-gray-300 tracking-wider flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                        Node Mappings (Injection Targets)
+                    </h4>
+
+                    <!-- Positive Prompt -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] text-gray-400 mb-1">Positive Prompt Node</label>
+                            <select id="comfy-wf-map-positive" class="w-full bg-black/40 border border-gray-700 rounded p-2 text-xs text-white focus:border-indigo-500"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-gray-400 mb-1">Property Key</label>
+                            <input type="text" id="comfy-wf-map-positive-key" value="text" class="w-full bg-black/40 border border-gray-700 rounded p-2 text-xs text-white font-mono focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <!-- Negative Prompt -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] text-gray-400 mb-1">Negative Prompt Node (Optional)</label>
+                            <select id="comfy-wf-map-negative" class="w-full bg-black/40 border border-gray-700 rounded p-2 text-xs text-white focus:border-indigo-500"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-gray-400 mb-1">Property Key</label>
+                            <input type="text" id="comfy-wf-map-negative-key" value="text" class="w-full bg-black/40 border border-gray-700 rounded p-2 text-xs text-white font-mono focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <!-- Seed & Image Input -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] text-gray-400 mb-1">Seed Node (KSampler / Noise)</label>
+                            <select id="comfy-wf-map-seed" class="w-full bg-black/40 border border-gray-700 rounded p-2 text-xs text-white focus:border-indigo-500"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-gray-400 mb-1">Source Image Node (Img2Img / LoadImage)</label>
+                            <select id="comfy-wf-map-image-input" class="w-full bg-black/40 border border-gray-700 rounded p-2 text-xs text-white focus:border-indigo-500"></select>
+                        </div>
+                    </div>
+
+                    <!-- Output Node -->
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">Final Image Output Node (SaveImage)</label>
+                        <select id="comfy-wf-map-output" class="w-full bg-black/40 border border-gray-700 rounded p-2 text-xs text-white focus:border-indigo-500"></select>
+                    </div>
+                </div>
+
+                <!-- Parameter Overrides (Non-destructive by default) -->
+                <div class="bg-gray-800/40 border border-gray-700/60 rounded-xl p-4 space-y-2.5">
+                    <h4 class="text-xs uppercase font-bold text-gray-300 tracking-wider">Parameter Overrides</h4>
+                    <p class="text-[11px] text-gray-400 mb-2">Keep unchecked to use the native values embedded in your workflow graph.</p>
+
+                    <label class="flex items-center gap-2.5 text-xs text-gray-300 cursor-pointer hover:text-white">
+                        <input type="checkbox" id="comfy-wf-override-res" class="w-4 h-4 rounded bg-gray-900 border-gray-700 text-indigo-600 focus:ring-indigo-500">
+                        <span>Override Workflow Resolution with EllipsisLM Preset</span>
+                    </label>
+
+                    <label class="flex items-center gap-2.5 text-xs text-gray-300 cursor-pointer hover:text-white">
+                        <input type="checkbox" id="comfy-wf-override-sampler" class="w-4 h-4 rounded bg-gray-900 border-gray-700 text-indigo-600 focus:ring-indigo-500">
+                        <span>Override Workflow Steps / CFG / Sampler with EllipsisLM Setting</span>
+                    </label>
+
+                    <label class="flex items-center gap-2.5 text-xs text-gray-300 cursor-pointer hover:text-white">
+                        <input type="checkbox" id="comfy-wf-override-ckpt" class="w-4 h-4 rounded bg-gray-900 border-gray-700 text-indigo-600 focus:ring-indigo-500">
+                        <span>Override Workflow Checkpoint with EllipsisLM Model Selector</span>
+                    </label>
+                </div>
+
+                <!-- Test Preview & Diagnostics -->
+                <div class="bg-gray-800/40 border border-gray-700/60 rounded-xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs uppercase font-bold text-gray-300 tracking-wider">Test Workflow Execution</h4>
+                        <button type="button" data-action="comfy-test-workflow-profile"
+                            class="bg-gray-700 hover:bg-indigo-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Run Test Generation
+                        </button>
+                    </div>
+
+                    <div id="comfy-wf-test-preview" class="min-h-[120px] bg-black/40 border border-gray-800 rounded-lg flex items-center justify-center p-2 text-center text-xs text-gray-500 overflow-hidden">
+                        No test run yet. Click "Run Test Generation" to test-render with current mappings.
+                    </div>
+                </div>
+
+                <!-- Collapsible Raw Graph JSON Details -->
+                <details class="bg-black/20 border border-gray-800 rounded-lg p-2 text-xs">
+                    <summary class="cursor-pointer text-gray-400 hover:text-gray-300 font-mono text-[11px] select-none">
+                        View Compiled API Graph JSON
+                    </summary>
+                    <pre id="comfy-wf-raw-json" class="mt-2 max-h-48 overflow-auto p-2 bg-black/60 rounded text-[11px] font-mono text-gray-400 select-all whitespace-pre"></pre>
+                </details>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-gray-800 bg-gray-950/70 flex justify-between items-center">
+                <button type="button" data-action="comfy-close-workflow-editor"
+                    class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg text-xs font-medium transition-colors">
+                    Cancel
+                </button>
+                <button type="button" data-action="comfy-save-workflow-profile"
+                    class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-colors shadow-lg shadow-indigo-600/30 flex items-center gap-1.5">
+                    Save Profile ✓
+                </button>
             </div>
         </div>
     </div>
@@ -8780,6 +8949,74 @@
                     </div>
                 </div>
 
+                <!-- Custom Workflow Profiles Studio -->
+                <div class="mt-6 pt-5 border-t border-gray-700/60 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-gray-200 text-sm flex items-center gap-2">
+                                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+                                </svg>
+                                Custom Workflow Profiles
+                            </h4>
+                            <p class="text-[11px] text-gray-400">Import custom ComfyUI workflows (.json or .png) without dev mode.</p>
+                        </div>
+                        <button type="button" data-action="comfy-import-workflow-trigger"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Import Workflow
+                        </button>
+                    </div>
+
+                    <!-- Active Pipeline Selectors -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-black/20 p-3 rounded-lg border border-gray-700/40">
+                        <div>
+                            <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Text-to-Image Workflow</label>
+                            <select id="comfy-active-txt2img-select"
+                                onchange="AppController.setComfyActiveProfile('txt2img', this.value)"
+                                class="w-full bg-black/30 border border-gray-600 rounded p-2 text-xs text-white focus:border-indigo-500">
+                                <option value="">Default Built-in Pipeline (SDXL / SD1.5)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs uppercase text-gray-400 font-bold mb-1">Image-to-Image Workflow</label>
+                            <select id="comfy-active-img2img-select"
+                                onchange="AppController.setComfyActiveProfile('img2img', this.value)"
+                                class="w-full bg-black/30 border border-gray-600 rounded p-2 text-xs text-white focus:border-indigo-500">
+                                <option value="">Default Built-in Pipeline (SDXL / SD1.5)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Dropzone -->
+                    <div id="comfy-workflow-dropzone"
+                        onclick="AppController.triggerComfyWorkflowImport()"
+                        class="border-2 border-dashed border-gray-700 hover:border-indigo-500 bg-gray-900/40 hover:bg-indigo-950/20 rounded-xl p-4 text-center cursor-pointer transition-colors group">
+                        <input type="file" id="comfy-workflow-file-input" accept=".json,.png" class="hidden"
+                            onchange="AppController.handleComfyWorkflowFileSelect(this.files[0])">
+                        <div class="flex flex-col items-center justify-center gap-1.5">
+                            <svg class="w-7 h-7 text-gray-500 group-hover:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="text-xs text-gray-300 font-medium">Drop ComfyUI <span class="text-indigo-400 font-semibold">.json</span> or generated <span class="text-indigo-400 font-semibold">.png</span> here, or click to browse</p>
+                            <p class="text-[11px] text-gray-500">Zero setup required — standard UI saves & API exports are auto-detected</p>
+                        </div>
+                    </div>
+
+                    <!-- Saved Profiles List -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between text-xs text-gray-400">
+                            <span class="font-bold uppercase tracking-wider text-[10px]">Imported Workflow Profiles</span>
+                            <span id="comfy-workflow-count-badge" class="text-[11px] text-gray-500 font-mono">0 profiles</span>
+                        </div>
+                        <div id="comfy-workflow-profiles-list" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Live Hardware Telemetry Banner -->
                 <div id="comfy-hardware-card"
                     class="p-3 bg-gray-900/60 border border-gray-700/60 rounded-lg text-xs hidden">
@@ -9361,7 +9598,7 @@
          * Application Build Information
          * Update this variable to change the footer in Appearance Settings.
          */
-        const APP_BUILD_TIMESTAMP = "Version: 1.2.2 (2026.10.31 - 22:48)";
+        const APP_BUILD_TIMESTAMP = "Version: 1.2.3 (2026.10.31 - 22:48)";
 
 
         /**
@@ -11021,6 +11258,134 @@
             },
 
             /**
+             * Fetches live node object definitions from ComfyUI /object_info endpoint.
+             * @param {string} [url]
+             * @returns {Promise<Object|null>}
+             */
+            async fetchComfyObjectInfo(url) {
+                const globalSettings = StateManager.data.globalSettings;
+                const endpoint = (url || globalSettings.comfyImageGenUrl || "http://127.0.0.1:8188").replace(/\/$/, "");
+                try {
+                    const res = await fetch(`${endpoint}/object_info`, { signal: AbortSignal.timeout(5000) });
+                    if (!res.ok) return null;
+                    return await res.json();
+                } catch (e) {
+                    return null;
+                }
+            },
+
+            /**
+             * Imports a ComfyUI workflow from a File, ArrayBuffer, Uint8Array, or JSON text string.
+             * Handles PNG metadata extraction and automatic UI-to-API conversion.
+             * @param {File|ArrayBuffer|Uint8Array|string} input
+             * @param {string} [url]
+             * @returns {Promise<{ apiWorkflow: Object, rawUiWorkflow: Object|null, analysis: Object, needsLiveConversion: boolean, format: string }>}
+             */
+            async importWorkflowFromFileOrText(input, url) {
+                let apiWorkflow = null;
+                let rawUiWorkflow = null;
+                let format = 'unknown';
+                let needsLiveConversion = false;
+
+                if (typeof File !== 'undefined' && input instanceof File) {
+                    if (input.name.toLowerCase().endsWith('.png') || input.type === 'image/png') {
+                        const buf = await input.arrayBuffer();
+                        const extracted = UTILITY.extractComfyWorkflowFromPng(buf);
+                        if (extracted.prompt) {
+                            apiWorkflow = extracted.prompt;
+                            rawUiWorkflow = extracted.workflow;
+                            format = 'png';
+                        } else if (extracted.workflow) {
+                            rawUiWorkflow = extracted.workflow;
+                            format = 'png-ui';
+                        } else {
+                            throw new Error("No ComfyUI workflow metadata ('prompt' or 'workflow' chunk) found in this PNG image.");
+                        }
+                    } else {
+                        const text = await input.text();
+                        return this.importWorkflowFromFileOrText(text, url);
+                    }
+                } else if (input instanceof ArrayBuffer || (typeof ArrayBuffer !== 'undefined' && ArrayBuffer.isView(input))) {
+                    const extracted = UTILITY.extractComfyWorkflowFromPng(input);
+                    if (extracted.prompt) {
+                        apiWorkflow = extracted.prompt;
+                        rawUiWorkflow = extracted.workflow;
+                        format = 'png';
+                    } else if (extracted.workflow) {
+                        rawUiWorkflow = extracted.workflow;
+                        format = 'png-ui';
+                    } else {
+                        throw new Error("No ComfyUI workflow metadata found in this PNG image buffer.");
+                    }
+                } else if (typeof input === 'string') {
+                    let parsed;
+                    try {
+                        parsed = JSON.parse(input);
+                    } catch (e) {
+                        throw new Error("Invalid JSON workflow file: " + e.message);
+                    }
+
+                    const detected = UTILITY.detectComfyWorkflowFormat(parsed);
+                    if (detected === 'api') {
+                        apiWorkflow = parsed;
+                        format = 'api';
+                    } else if (detected === 'ui') {
+                        rawUiWorkflow = parsed;
+                        format = 'ui';
+                    } else {
+                        throw new Error("Unrecognized ComfyUI workflow format. Please provide a valid ComfyUI JSON save or generated PNG.");
+                    }
+                }
+
+                if (!apiWorkflow && rawUiWorkflow) {
+                    let liveInfo = null;
+                    try {
+                        liveInfo = await this.fetchComfyObjectInfo(url);
+                    } catch (_) {}
+
+                    const conv = UTILITY.convertComfyUiToApiWorkflow(rawUiWorkflow, liveInfo);
+                    apiWorkflow = conv.apiWorkflow;
+                    if (conv.unknownNodeTypes && conv.unknownNodeTypes.length > 0) {
+                        needsLiveConversion = true;
+                    }
+                }
+
+                if (!apiWorkflow || Object.keys(apiWorkflow).length === 0) {
+                    throw new Error("Failed to compile or extract a valid ComfyUI executable API workflow.");
+                }
+
+                const analysis = UTILITY.analyzeComfyWorkflow(apiWorkflow);
+                const isImg2Img = !!(analysis.detectedMapping?.imageNodeId || analysis.detectedMapping?.imageInputNodeId);
+                const mapping = {
+                    promptNodeId: analysis.detectedMapping?.promptNodeId || null,
+                    promptKey: analysis.detectedMapping?.promptKey || 'text',
+                    negativePromptNodeId: analysis.detectedMapping?.negativeNodeId || analysis.detectedMapping?.negativePromptNodeId || null,
+                    negativePromptKey: analysis.detectedMapping?.negativeKey || 'text',
+                    seedNodeId: analysis.detectedMapping?.seedNodeId || null,
+                    imageInputNodeId: analysis.detectedMapping?.imageNodeId || analysis.detectedMapping?.imageInputNodeId || null,
+                    outputNodeId: analysis.detectedMapping?.outputNodeId || null,
+                    checkpointNodeId: analysis.detectedMapping?.checkpointNodeId || null
+                };
+
+                return {
+                    id: 'wf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                    name: (typeof File !== 'undefined' && input instanceof File) ? input.name.replace(/\.[^/.]+$/, '') : 'Custom Workflow',
+                    role: isImg2Img ? 'img2img' : 'txt2img',
+                    format: format,
+                    apiWorkflow: apiWorkflow,
+                    rawUiWorkflow: rawUiWorkflow,
+                    mapping: mapping,
+                    overrides: {
+                        resolution: false,
+                        sampler: false,
+                        checkpoint: false
+                    },
+                    analysis: analysis,
+                    needsLiveConversion: needsLiveConversion
+                };
+            },
+
+            /**
              * Discovers system/GPU hardware stats from ComfyUI.
              * @param {string} [url] - ComfyUI endpoint URL.
              * @returns {Promise<Object|null>}
@@ -11079,22 +11444,84 @@
                 const scheduler = options.scheduler || globalSettings.comfyImageGenScheduler || "normal";
                 const seed = Math.floor(Math.random() * 1000000000000000);
 
-                // Checkpoint resolution
+                // Resolve Active Custom Workflow Profile if configured
+                const profiles = Array.isArray(globalSettings.comfyWorkflowProfiles) ? globalSettings.comfyWorkflowProfiles : [];
+                let activeProfile = options.workflowProfile || null;
+
+                if (initImage) {
+                    if (globalSettings.comfyActiveImg2ImgProfileId && globalSettings.comfyActiveImg2ImgProfileId !== 'builtin') {
+                        activeProfile = profiles.find(p => p.id === globalSettings.comfyActiveImg2ImgProfileId);
+                    }
+                    if (!activeProfile && globalSettings.comfyActiveTxt2ImgProfileId && globalSettings.comfyActiveTxt2ImgProfileId !== 'builtin') {
+                        const txtProfile = profiles.find(p => p.id === globalSettings.comfyActiveTxt2ImgProfileId);
+                        if (txtProfile && (txtProfile.role === 'both' || txtProfile.mapping?.imageInputNodeId)) {
+                            activeProfile = txtProfile;
+                        }
+                    }
+                } else {
+                    if (globalSettings.comfyActiveTxt2ImgProfileId && globalSettings.comfyActiveTxt2ImgProfileId !== 'builtin') {
+                        activeProfile = profiles.find(p => p.id === globalSettings.comfyActiveTxt2ImgProfileId);
+                    }
+                }
+
+                // If activeProfile needs live conversion, fetch object_info and convert
+                if (activeProfile && activeProfile.needsLiveConversion && activeProfile.rawUiWorkflow) {
+                    try {
+                        const liveInfo = await this.fetchComfyObjectInfo(url);
+                        if (liveInfo) {
+                            const converted = UTILITY.convertComfyUiToApiWorkflow(activeProfile.rawUiWorkflow, liveInfo);
+                            if (converted.apiWorkflow && Object.keys(converted.apiWorkflow).length > 0) {
+                                activeProfile.apiWorkflow = converted.apiWorkflow;
+                                activeProfile.needsLiveConversion = false;
+                                StateManager.saveGlobalSettings();
+                            }
+                        }
+                    } catch (_) {}
+                }
+
+                // Checkpoint resolution (only required when using built-in workflow or when checkpoint override is explicitly enabled)
                 let ckpt_name = globalSettings.comfyImageGenCheckpoint;
-                if (!ckpt_name) {
-                    const available = await this.fetchComfyCheckpoints(url);
-                    if (available && available.length > 0) {
-                        ckpt_name = available[0];
-                        globalSettings.comfyImageGenCheckpoint = ckpt_name;
-                        StateManager.saveGlobalSettings();
-                    } else {
-                        throw new Error("No model checkpoint selected and none found in ComfyUI/models/checkpoints/. Please place a .safetensors model in that folder.");
+                if (!activeProfile || activeProfile.mapping?.overrideCheckpoint) {
+                    if (!ckpt_name) {
+                        const available = await this.fetchComfyCheckpoints(url);
+                        if (available && available.length > 0) {
+                            ckpt_name = available[0];
+                            globalSettings.comfyImageGenCheckpoint = ckpt_name;
+                            StateManager.saveGlobalSettings();
+                        } else if (!activeProfile) {
+                            throw new Error("No model checkpoint selected and none found in ComfyUI/models/checkpoints/. Please place a .safetensors model in that folder.");
+                        }
                     }
                 }
 
                 let workflow;
-                if (initImage) {
-                    // Image-to-Image mode
+                let targetOutputNodeId = activeProfile?.mapping?.outputNodeId || null;
+
+                if (activeProfile && activeProfile.apiWorkflow) {
+                    let uploadedImageName = null;
+                    if (initImage) {
+                        uploadedImageName = await this._uploadImageToComfyUI(url, initImage);
+                    }
+                    workflow = UTILITY.injectComfyWorkflowParams(
+                        activeProfile.apiWorkflow,
+                        activeProfile.mapping || {},
+                        {
+                            prompt: prompt,
+                            negativePrompt: negativePrompt || "",
+                            seed: seed,
+                            width: width,
+                            height: height,
+                            steps: steps,
+                            cfg: cfg,
+                            sampler: sampler_name,
+                            scheduler: scheduler,
+                            checkpoint: ckpt_name,
+                            inputImage: uploadedImageName,
+                            denoise: options.denoising_strength !== undefined ? options.denoising_strength : (initImage ? 0.55 : 1.0)
+                        }
+                    );
+                } else if (initImage) {
+                    // Built-in Image-to-Image mode
                     const uploadedImageName = await this._uploadImageToComfyUI(url, initImage);
                     workflow = JSON.parse(JSON.stringify(this.COMFY_IMG2IMG_WORKFLOW));
                     workflow["1"].inputs.ckpt_name = ckpt_name;
@@ -11108,7 +11535,7 @@
                     workflow["6"].inputs.scheduler = scheduler;
                     workflow["6"].inputs.denoise = options.denoising_strength !== undefined ? options.denoising_strength : 0.55;
                 } else {
-                    // Text-to-Image mode
+                    // Built-in Text-to-Image mode
                     workflow = JSON.parse(JSON.stringify(this.COMFY_TXT2IMG_WORKFLOW));
                     workflow["1"].inputs.ckpt_name = ckpt_name;
                     workflow["2"].inputs.width = width;
@@ -11157,7 +11584,15 @@
                                 }
                             } else if (msg.type === 'executed') {
                                 if (msg.data.prompt_id === targetPromptId && msg.data.output && msg.data.output.images) {
-                                    outputImages = msg.data.output.images;
+                                    if (targetOutputNodeId) {
+                                        if (String(msg.data.node) === String(targetOutputNodeId)) {
+                                            outputImages = msg.data.output.images;
+                                        } else if (!outputImages) {
+                                            outputImages = msg.data.output.images;
+                                        }
+                                    } else {
+                                        outputImages = msg.data.output.images;
+                                    }
                                 }
                             } else if (msg.type === 'execution_error') {
                                 if (msg.data.prompt_id === targetPromptId) {
@@ -11225,10 +11660,14 @@
                                     throw new Error(`ComfyUI Error: ${typeof msg === 'string' ? msg : JSON.stringify(msg)}`);
                                 }
                                 if (item.outputs) {
-                                    for (const nId of Object.keys(item.outputs)) {
-                                        if (item.outputs[nId].images && item.outputs[nId].images.length > 0) {
-                                            outputImages = item.outputs[nId].images;
-                                            break;
+                                    if (targetOutputNodeId && item.outputs[targetOutputNodeId]?.images?.length > 0) {
+                                        outputImages = item.outputs[targetOutputNodeId].images;
+                                    } else {
+                                        for (const nId of Object.keys(item.outputs)) {
+                                            if (item.outputs[nId].images && item.outputs[nId].images.length > 0) {
+                                                outputImages = item.outputs[nId].images;
+                                                break;
+                                            }
                                         }
                                     }
                                     if (outputImages) break;
@@ -11262,7 +11701,7 @@
                 return await imgRes.blob();
             },
 
-            ART_STYLE_PROMPTS: {
+                        ART_STYLE_PROMPTS: {
                 "anime": "High-quality anime key visual, vibrant colors, clean lineart, cel shading, intricate details, cinematic lighting, 4k resolution",
                 "cinematic": "Cinematic film still, photorealistic, shallow depth of field with bokeh, dramatic lighting, highly detailed textures, color graded, 8k resolution",
                 "watercolor": "Soft watercolor painting on textured paper, wet-on-wet technique, translucent pastel colors, artistic paint splatters, dreamy atmosphere",
@@ -18304,6 +18743,9 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                 return {
                     apiProvider: 'koboldcpp',
                     imageGenBackend: 'disabled',
+                    comfyWorkflowProfiles: [],
+                    comfyActiveTxt2ImgProfileId: 'builtin',
+                    comfyActiveImg2ImgProfileId: 'builtin',
                     geminiApiKey: '',
                     geminiModel: 'gemini-1.5-flash',
                     openRouterKey: '',
@@ -20659,6 +21101,814 @@ EXECUTION DIRECTIVE: Your output MUST begin immediately with the opening tag <lo
                     sampler,
                     scheduler
                 };
+            },
+
+            /**
+             * Comprehensive built-in ComfyUI schema catalog for converting UI graph JSON to API prompt JSON.
+             * Backs offline imports and popular model workflows (SD1.5, SDXL, Flux, SD3, Pony).
+             */
+/**
+             * Comprehensive built-in ComfyUI schema catalog for converting UI graph JSON to API prompt JSON.
+             * Backs offline imports and popular model workflows (SD1.5, SDXL, Flux, SD3, Pony).
+             */
+            BUILTIN_COMFY_OBJECT_INFO: {
+                "CheckpointLoaderSimple": {
+                    "input": { "required": { "ckpt_name": ["COMBO"] } }
+                },
+                "CLIPTextEncode": {
+                    "input": { "required": { "text": ["STRING", { "multiline": true }], "clip": ["CLIP"] } }
+                },
+                "EmptyLatentImage": {
+                    "input": { "required": { "width": ["INT"], "height": ["INT"], "batch_size": ["INT"] } }
+                },
+                "EmptySD3LatentImage": {
+                    "input": { "required": { "width": ["INT"], "height": ["INT"], "batch_size": ["INT"] } }
+                },
+                "EmptyFluxLatentImage": {
+                    "input": { "required": { "width": ["INT"], "height": ["INT"], "batch_size": ["INT"] } }
+                },
+                "KSampler": {
+                    "input": {
+                        "required": {
+                            "model": ["MODEL"],
+                            "seed": ["INT"],
+                            "steps": ["INT"],
+                            "cfg": ["FLOAT"],
+                            "sampler_name": ["COMBO"],
+                            "scheduler": ["COMBO"],
+                            "positive": ["CONDITIONING"],
+                            "negative": ["CONDITIONING"],
+                            "latent_image": ["LATENT"],
+                            "denoise": ["FLOAT"]
+                        }
+                    }
+                },
+                "KSamplerAdvanced": {
+                    "input": {
+                        "required": {
+                            "model": ["MODEL"],
+                            "add_noise": ["COMBO"],
+                            "noise_seed": ["INT"],
+                            "steps": ["INT"],
+                            "cfg": ["FLOAT"],
+                            "sampler_name": ["COMBO"],
+                            "scheduler": ["COMBO"],
+                            "positive": ["CONDITIONING"],
+                            "negative": ["CONDITIONING"],
+                            "latent_image": ["LATENT"],
+                            "start_at_step": ["INT"],
+                            "end_at_step": ["INT"],
+                            "return_with_leftover_noise": ["COMBO"]
+                        }
+                    }
+                },
+                "VAEDecode": {
+                    "input": { "required": { "samples": ["LATENT"], "vae": ["VAE"] } }
+                },
+                "VAEEncode": {
+                    "input": { "required": { "pixels": ["IMAGE"], "vae": ["VAE"] } }
+                },
+                "SaveImage": {
+                    "input": {
+                        "required": { "images": ["IMAGE"] },
+                        "optional": { "filename_prefix": ["STRING"] }
+                    }
+                },
+                "PreviewImage": {
+                    "input": { "required": { "images": ["IMAGE"] } }
+                },
+                "LoadImage": {
+                    "input": { "required": { "image": ["COMBO"] } }
+                },
+                "UNETLoader": {
+                    "input": { "required": { "unet_name": ["COMBO"], "weight_dtype": ["COMBO"] } }
+                },
+                "CLIPLoader": {
+                    "input": { "required": { "clip_name": ["COMBO"], "type": ["COMBO"] } }
+                },
+                "DualCLIPLoader": {
+                    "input": { "required": { "clip_name1": ["COMBO"], "clip_name2": ["COMBO"], "type": ["COMBO"] } }
+                },
+                "VAELoader": {
+                    "input": { "required": { "vae_name": ["COMBO"] } }
+                },
+                "LoraLoader": {
+                    "input": {
+                        "required": {
+                            "model": ["MODEL"],
+                            "clip": ["CLIP"],
+                            "lora_name": ["COMBO"],
+                            "strength_model": ["FLOAT"],
+                            "strength_clip": ["FLOAT"]
+                        }
+                    }
+                },
+                "LoraLoaderModelOnly": {
+                    "input": {
+                        "required": {
+                            "model": ["MODEL"],
+                            "lora_name": ["COMBO"],
+                            "strength_model": ["FLOAT"]
+                        }
+                    }
+                },
+                "CLIPSetLastLayer": {
+                    "input": { "required": { "clip": ["CLIP"], "stop_at_clip_layer": ["INT"] } }
+                },
+                "FluxGuidance": {
+                    "input": { "required": { "conditioning": ["CONDITIONING"], "guidance": ["FLOAT"] } }
+                },
+                "BasicGuider": {
+                    "input": { "required": { "model": ["MODEL"], "conditioning": ["CONDITIONING"] } }
+                },
+                "BasicScheduler": {
+                    "input": { "required": { "model": ["MODEL"], "scheduler": ["COMBO"], "steps": ["INT"], "denoise": ["FLOAT"] } }
+                },
+                "KSamplerSelect": {
+                    "input": { "required": { "sampler_name": ["COMBO"] } }
+                },
+                "RandomNoise": {
+                    "input": { "required": { "noise_seed": ["INT"] } }
+                },
+                "SamplerCustomAdvanced": {
+                    "input": {
+                        "required": {
+                            "noise": ["NOISE"],
+                            "guider": ["GUIDER"],
+                            "sampler": ["SAMPLER"],
+                            "sigmas": ["SIGMAS"],
+                            "latent_image": ["LATENT"]
+                        }
+                    }
+                },
+                "LatentUpscale": {
+                    "input": {
+                        "required": {
+                            "samples": ["LATENT"],
+                            "upscale_method": ["COMBO"],
+                            "width": ["INT"],
+                            "height": ["INT"],
+                            "crop": ["COMBO"]
+                        }
+                    }
+                },
+                "ImageScale": {
+                    "input": {
+                        "required": {
+                            "image": ["IMAGE"],
+                            "upscale_method": ["COMBO"],
+                            "width": ["INT"],
+                            "height": ["INT"],
+                            "crop": ["COMBO"]
+                        }
+                    }
+                }
+            },
+
+            /**
+             * Detects the format of a ComfyUI workflow JSON or object.
+             * @param {Object|string} input
+             * @returns {'api'|'ui'|'invalid'}
+             */
+            detectComfyWorkflowFormat(input) {
+                if (!input) return 'invalid';
+                let parsed = input;
+                if (typeof input === 'string') {
+                    try {
+                        parsed = JSON.parse(input);
+                    } catch (_) {
+                        return 'invalid';
+                    }
+                }
+                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return 'invalid';
+
+                // Check for LiteGraph UI format: nodes array and links array
+                if (Array.isArray(parsed.nodes) && Array.isArray(parsed.links)) {
+                    return 'ui';
+                }
+
+                // Check for API Prompt format: dictionary of node IDs with class_type or inputs
+                const keys = Object.keys(parsed);
+                if (keys.length === 0) return 'invalid';
+                const isApi = keys.every(k => {
+                    const node = parsed[k];
+                    return node && typeof node === 'object' && !Array.isArray(node) && (typeof node.class_type === 'string' || (node.inputs && typeof node.inputs === 'object'));
+                });
+
+                return isApi ? 'api' : 'invalid';
+            },
+
+            /**
+             * Extracts embedded 'prompt' (API JSON) and 'workflow' (UI graph) from a PNG image buffer.
+             * @param {ArrayBuffer|Uint8Array|Buffer} input
+             * @returns {{ prompt: Object|null, workflow: Object|null }}
+             */
+            extractComfyWorkflowFromPng(input) {
+                const result = { prompt: null, workflow: null };
+                if (!input) return result;
+
+                let arrayBuffer;
+                let baseOffset = 0;
+                let totalLength = 0;
+
+                if (input instanceof ArrayBuffer) {
+                    arrayBuffer = input;
+                    baseOffset = 0;
+                    totalLength = input.byteLength;
+                } else if (ArrayBuffer.isView(input)) {
+                    arrayBuffer = input.buffer;
+                    baseOffset = input.byteOffset;
+                    totalLength = input.byteLength;
+                } else {
+                    return result;
+                }
+
+                if (totalLength < 8) return result;
+
+                const dataView = new DataView(arrayBuffer, baseOffset, totalLength);
+                const PNG_SIGNATURE = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+                for (let i = 0; i < 8; i++) {
+                    if (dataView.getUint8(i) !== PNG_SIGNATURE[i]) return result;
+                }
+
+                const decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8') : null;
+                const decodeUtf8 = (bytes) => {
+                    if (decoder) return decoder.decode(bytes);
+                    if (typeof Buffer !== 'undefined') return Buffer.from(bytes).toString('utf8');
+                    let s = '';
+                    for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+                    return decodeURIComponent(escape(s));
+                };
+
+                let offset = 8;
+                while (offset + 12 <= totalLength) {
+                    const length = dataView.getUint32(offset);
+                    const type = String.fromCharCode(
+                        dataView.getUint8(offset + 4),
+                        dataView.getUint8(offset + 5),
+                        dataView.getUint8(offset + 6),
+                        dataView.getUint8(offset + 7)
+                    );
+
+                    if (type === 'tEXt' || type === 'zTXt') {
+                        let keywordEnd = -1;
+                        for (let i = 0; i < length; i++) {
+                            if (dataView.getUint8(offset + 8 + i) === 0) {
+                                keywordEnd = i;
+                                break;
+                            }
+                        }
+
+                        if (keywordEnd !== -1) {
+                            const kwBytes = new Uint8Array(arrayBuffer, baseOffset + offset + 8, keywordEnd);
+                            let keyword = '';
+                            for (let k = 0; k < kwBytes.length; k++) keyword += String.fromCharCode(kwBytes[k]);
+
+                            let textContent = null;
+                            if (type === 'tEXt') {
+                                const valBytes = new Uint8Array(arrayBuffer, baseOffset + offset + 8 + keywordEnd + 1, length - keywordEnd - 1);
+                                textContent = decodeUtf8(valBytes);
+                            } else if (type === 'zTXt') {
+                                const compressedSlice = new Uint8Array(arrayBuffer, baseOffset + offset + 8 + keywordEnd + 2, length - keywordEnd - 2);
+                                if (typeof pako !== 'undefined' && pako.inflate) {
+                                    textContent = decodeUtf8(pako.inflate(compressedSlice));
+                                } else if (typeof require === 'function') {
+                                    try {
+                                        const zlib = require('zlib');
+                                        textContent = zlib.inflateSync(Buffer.from(compressedSlice)).toString('utf8');
+                                    } catch (_) {}
+                                }
+                            }
+
+                            if (textContent) {
+                                try {
+                                    const parsed = JSON.parse(textContent);
+                                    if (keyword === 'prompt') result.prompt = parsed;
+                                    else if (keyword === 'workflow') result.workflow = parsed;
+                                } catch (_) {}
+                            }
+                        }
+                    }
+
+                    if (type === 'IEND') break;
+                    offset += 12 + length;
+                }
+
+                if (result.prompt && result.workflow && Array.isArray(result.workflow.nodes)) {
+                    for (const node of result.workflow.nodes) {
+                        const idStr = String(node.id);
+                        if (result.prompt[idStr] && node.title) {
+                            if (!result.prompt[idStr]._meta) result.prompt[idStr]._meta = {};
+                            if (!result.prompt[idStr]._meta.title) result.prompt[idStr]._meta.title = node.title;
+                        }
+                    }
+                }
+
+                return result;
+            },
+
+            /**
+             * Converts a LiteGraph UI workflow JSON into ComfyUI's executable API Prompt dictionary format.
+             * @param {Object} uiWorkflow - The UI graph JSON containing 'nodes' and 'links'.
+             * @param {Object} [objectInfoMap] - Optional live /object_info definitions from ComfyUI.
+             * @returns {{ apiWorkflow: Object, unknownNodeTypes: string[] }}
+             */
+            convertComfyUiToApiWorkflow(uiWorkflow, objectInfoMap = {}) {
+                if (!uiWorkflow || typeof uiWorkflow !== 'object' || !Array.isArray(uiWorkflow.nodes)) {
+                    return { apiWorkflow: {}, unknownNodeTypes: [] };
+                }
+
+                const fullSchema = Object.assign({}, UTILITY.BUILTIN_COMFY_OBJECT_INFO, objectInfoMap || {});
+                const nodes = uiWorkflow.nodes;
+                const links = uiWorkflow.links || [];
+
+                const nodeMap = new Map();
+                for (const node of nodes) {
+                    if (node && node.id !== undefined) {
+                        nodeMap.set(String(node.id), node);
+                    }
+                }
+
+                const linkMap = new Map();
+                for (const link of links) {
+                    if (Array.isArray(link) && link.length >= 5) {
+                        const linkId = link[0];
+                        linkMap.set(linkId, {
+                            originId: String(link[1]),
+                            originSlot: link[2],
+                            targetId: String(link[3]),
+                            targetSlot: link[4],
+                            type: link[5]
+                        });
+                    }
+                }
+
+                const resolveUpstream = (originNodeId, originSlot, visited = new Set()) => {
+                    const key = originNodeId + ':' + originSlot;
+                    if (visited.has(key)) return null;
+                    visited.add(key);
+
+                    const node = nodeMap.get(originNodeId);
+                    if (!node) return null;
+
+                    if (node.mode === 2) return null;
+
+                    if (node.type === 'Reroute') {
+                        const inLink = node.inputs && node.inputs[0] ? node.inputs[0].link : null;
+                        if (inLink && linkMap.has(inLink)) {
+                            const l = linkMap.get(inLink);
+                            return resolveUpstream(l.originId, l.originSlot, visited);
+                        }
+                        return null;
+                    }
+
+                    if (node.type === 'PrimitiveNode') {
+                        return { type: 'primitive', value: node.widgets_values ? node.widgets_values[0] : undefined };
+                    }
+
+                    if (node.mode === 4) {
+                        if (Array.isArray(node.inputs)) {
+                            for (const inp of node.inputs) {
+                                if (inp.link && linkMap.has(inp.link)) {
+                                    const l = linkMap.get(inp.link);
+                                    return resolveUpstream(l.originId, l.originSlot, visited);
+                                }
+                            }
+                        }
+                        return null;
+                    }
+
+                    return { type: 'link', value: [originNodeId, originSlot] };
+                };
+
+                const apiWorkflow = {};
+                const unknownNodeTypes = [];
+
+                for (const node of nodes) {
+                    if (!node || node.id === undefined) continue;
+                    const idStr = String(node.id);
+                    const nodeType = node.type;
+
+                    if (!nodeType || nodeType === 'Reroute' || nodeType === 'Note' || nodeType === 'MarkdownNote' || node.mode === 2) {
+                        continue;
+                    }
+
+                    const schema = fullSchema[nodeType];
+                    if (!schema) {
+                        if (!unknownNodeTypes.includes(nodeType)) unknownNodeTypes.push(nodeType);
+                    }
+
+                    const reqSchema = schema && schema.input && schema.input.required ? schema.input.required : {};
+                    const optSchema = schema && schema.input && schema.input.optional ? schema.input.optional : {};
+                    const allInputsDef = Object.assign({}, reqSchema, optSchema);
+
+                    const nodeInputs = {};
+                    const widgetValues = Array.isArray(node.widgets_values) ? [...node.widgets_values] : [];
+                    let widgetIdx = 0;
+
+                    const wiredInputs = new Map();
+                    if (Array.isArray(node.inputs)) {
+                        for (const inp of node.inputs) {
+                            if (inp && inp.name && inp.link && linkMap.has(inp.link)) {
+                                wiredInputs.set(inp.name, linkMap.get(inp.link));
+                            }
+                        }
+                    }
+
+                    if (schema) {
+                        for (const inputName of Object.keys(allInputsDef)) {
+                            if (wiredInputs.has(inputName)) {
+                                const l = wiredInputs.get(inputName);
+                                const up = resolveUpstream(l.originId, l.originSlot);
+                                if (up) {
+                                    if (up.type === 'primitive') {
+                                        nodeInputs[inputName] = up.value;
+                                    } else if (up.type === 'link') {
+                                        nodeInputs[inputName] = up.value;
+                                    }
+                                }
+                                if (widgetIdx < widgetValues.length) {
+                                    if ((inputName === 'seed' || inputName === 'noise_seed') && widgetIdx + 1 < widgetValues.length) {
+                                        const nextVal = widgetValues[widgetIdx + 1];
+                                        if (typeof nextVal === 'string' && ['fixed', 'increment', 'decrement', 'randomize'].includes(nextVal)) {
+                                            widgetIdx++;
+                                        }
+                                    }
+                                }
+                                continue;
+                            }
+
+                            const spec = allInputsDef[inputName];
+                            const inputType = Array.isArray(spec) ? spec[0] : spec;
+                            const isWidgetType = Array.isArray(inputType) || ['INT', 'FLOAT', 'STRING', 'BOOLEAN', 'COMBO'].includes(inputType);
+
+                            if (isWidgetType && widgetIdx < widgetValues.length) {
+                                nodeInputs[inputName] = widgetValues[widgetIdx];
+                                widgetIdx++;
+
+                                if ((inputName === 'seed' || inputName === 'noise_seed') && widgetIdx < widgetValues.length) {
+                                    const nextVal = widgetValues[widgetIdx];
+                                    if (typeof nextVal === 'string' && ['fixed', 'increment', 'decrement', 'randomize'].includes(nextVal)) {
+                                        widgetIdx++;
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        for (const [inName, l] of wiredInputs.entries()) {
+                            const up = resolveUpstream(l.originId, l.originSlot);
+                            if (up && up.type === 'link') {
+                                nodeInputs[inName] = up.value;
+                            }
+                        }
+                    }
+
+                    const apiNode = {
+                        class_type: nodeType,
+                        inputs: nodeInputs,
+                        _meta: {
+                            title: node.title || nodeType
+                        }
+                    };
+
+                    apiWorkflow[idStr] = apiNode;
+                }
+
+                return { apiWorkflow, unknownNodeTypes };
+            },
+
+            /**
+             * Analyzes an API format workflow to discover candidate prompt nodes, negative nodes, seeds, resolutions, and outputs.
+             * @param {Object} apiWorkflow
+             * @returns {{ nodes: Array<Object>, detectedMapping: Object, placeholdersFound: string[] }}
+             */
+            analyzeComfyWorkflow(apiWorkflow) {
+                const nodes = [];
+                const placeholdersFound = [];
+                const detectedMapping = {
+                    positiveNodeId: '',
+                    positiveKey: 'text',
+                    negativeNodeId: '',
+                    negativeKey: 'text',
+                    seedNodeId: '',
+                    seedKey: 'seed',
+                    imageInputNodeId: '',
+                    imageInputKey: 'image',
+                    outputNodeId: '',
+                    checkpointNodeId: '',
+                    latentNodeId: '',
+                    overrideResolution: false,
+                    overrideSampler: false,
+                    overrideCheckpoint: false
+                };
+
+                if (!apiWorkflow || typeof apiWorkflow !== 'object') {
+                    const detectedRole = (detectedMapping.imageNodeId || detectedMapping.imageInputNodeId) ? 'img2img' : 'txt2img';
+                detectedMapping.promptNodeId = detectedMapping.positiveNodeId;
+                detectedMapping.promptKey = detectedMapping.positiveKey || 'text';
+                detectedMapping.promptNodeId = detectedMapping.positiveNodeId;
+                detectedMapping.promptKey = detectedMapping.positiveKey || 'text';
+                detectedMapping.negativePromptNodeId = detectedMapping.negativeNodeId;
+                detectedMapping.negativePromptKey = detectedMapping.negativeKey || 'text';
+                detectedMapping.imageInputNodeId = detectedMapping.imageNodeId;
+                return {
+                    nodes,
+                    detectedMapping,
+                    mapping: detectedMapping,
+                    placeholdersFound,
+                    placeholders: placeholdersFound,
+                    role: detectedRole
+                };
+                }
+
+                const PLACEHOLDER_REGEX = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}|\*([a-zA-Z0-9_]+)\*/g;
+
+                for (const [id, node] of Object.entries(apiWorkflow)) {
+                    if (!node || typeof node !== 'object') continue;
+                    const class_type = node.class_type || '';
+                    const title = node._meta && node._meta.title ? node._meta.title : (class_type || id);
+                    const inputs = node.inputs || {};
+                    const inputKeys = Object.keys(inputs);
+                    const textKeys = [];
+
+                    for (const [k, v] of Object.entries(inputs)) {
+                        if (typeof v === 'string') {
+                            textKeys.push(k);
+                            let match;
+                            while ((match = PLACEHOLDER_REGEX.exec(v)) !== null) {
+                                const ph = match[1] || match[2];
+                                if (!placeholdersFound.includes(ph)) placeholdersFound.push(ph);
+                            }
+                        }
+                    }
+
+                    nodes.push({ id, class_type, title, inputKeys, textKeys });
+                }
+
+                // 1. Placeholder-based detection
+                for (const node of nodes) {
+                    const rawNode = apiWorkflow[node.id];
+                    for (const k of node.textKeys) {
+                        const val = rawNode.inputs[k] || '';
+                        if (/\{\{\s*prompt\s*\}\}|\*prompt\*/i.test(val) && !/negative/i.test(val)) {
+                            if (!detectedMapping.positiveNodeId) {
+                                detectedMapping.positiveNodeId = node.id;
+                                detectedMapping.positiveKey = k;
+                            }
+                        }
+                        if (/\{\{\s*negative_prompt\s*\}\}|\*negative_prompt\*|\{\{\s*negative\s*\}\}|\*negative\*/i.test(val)) {
+                            if (!detectedMapping.negativeNodeId) {
+                                detectedMapping.negativeNodeId = node.id;
+                                detectedMapping.negativeKey = k;
+                            }
+                        }
+                    }
+                }
+
+                // Helper to trace upstream conditioning links to CLIPTextEncode
+                const traceConditioningToText = (link, visited = new Set()) => {
+                    if (!Array.isArray(link) || link.length < 2) return null;
+                    const targetStr = String(link[0]);
+                    if (visited.has(targetStr)) return null;
+                    visited.add(targetStr);
+
+                    const targetNode = apiWorkflow[targetStr];
+                    if (!targetNode) return null;
+
+                    if (targetNode.class_type === 'CLIPTextEncode' || (targetNode.inputs && typeof targetNode.inputs.text === 'string')) {
+                        return targetStr;
+                    }
+
+                    const intermediateKeys = ['conditioning', 'positive', 'conditioning_to', 'guider'];
+                    for (const k of intermediateKeys) {
+                        if (targetNode.inputs && targetNode.inputs[k] && Array.isArray(targetNode.inputs[k])) {
+                            const res = traceConditioningToText(targetNode.inputs[k], visited);
+                            if (res) return res;
+                        }
+                    }
+                    return null;
+                };
+
+                // 2. Trace conditioning from Samplers
+                for (const node of nodes) {
+                    const rawNode = apiWorkflow[node.id];
+                    if (node.class_type.includes('KSampler') || node.class_type.includes('Sampler')) {
+                        if (!detectedMapping.positiveNodeId && rawNode.inputs && rawNode.inputs.positive) {
+                            const foundId = traceConditioningToText(rawNode.inputs.positive);
+                            if (foundId) {
+                                detectedMapping.positiveNodeId = foundId;
+                                detectedMapping.positiveKey = 'text';
+                            }
+                        }
+                        if (!detectedMapping.negativeNodeId && rawNode.inputs && rawNode.inputs.negative) {
+                            const foundId = traceConditioningToText(rawNode.inputs.negative);
+                            if (foundId) {
+                                detectedMapping.negativeNodeId = foundId;
+                                detectedMapping.negativeKey = 'text';
+                            }
+                        }
+                        if (!detectedMapping.seedNodeId && (rawNode.inputs?.seed !== undefined || rawNode.inputs?.noise_seed !== undefined)) {
+                            detectedMapping.seedNodeId = node.id;
+                            detectedMapping.seedKey = rawNode.inputs.seed !== undefined ? 'seed' : 'noise_seed';
+                        }
+                    }
+
+                    if (node.class_type === 'RandomNoise' && !detectedMapping.seedNodeId) {
+                        detectedMapping.seedNodeId = node.id;
+                        detectedMapping.seedKey = 'noise_seed';
+                    }
+
+                    if (node.class_type === 'BasicGuider' && !detectedMapping.positiveNodeId && rawNode.inputs && rawNode.inputs.conditioning) {
+                        const foundId = traceConditioningToText(rawNode.inputs.conditioning);
+                        if (foundId) {
+                            detectedMapping.positiveNodeId = foundId;
+                            detectedMapping.positiveKey = 'text';
+                        }
+                    }
+
+                    if (node.class_type === 'LoadImage' && !detectedMapping.imageInputNodeId) {
+                        detectedMapping.imageInputNodeId = node.id;
+                        detectedMapping.imageInputKey = 'image';
+                    }
+
+                    if (node.class_type === 'SaveImage') {
+                        detectedMapping.outputNodeId = node.id;
+                    } else if (node.class_type === 'PreviewImage' && !detectedMapping.outputNodeId) {
+                        detectedMapping.outputNodeId = node.id;
+                    }
+
+                    if ((node.class_type.includes('CheckpointLoader') || node.class_type.includes('UNETLoader')) && !detectedMapping.checkpointNodeId) {
+                        detectedMapping.checkpointNodeId = node.id;
+                    }
+
+                    if (node.class_type.includes('EmptyLatentImage') && !detectedMapping.latentNodeId) {
+                        detectedMapping.latentNodeId = node.id;
+                    }
+                }
+
+                // 3. Title/Name heuristics fallback for prompts
+                if (!detectedMapping.positiveNodeId) {
+                    const posMatch = nodes.find(n => /positive|prompt|pos/i.test(n.title) && !/negative|neg/i.test(n.title) && n.textKeys.length > 0);
+                    if (posMatch) {
+                        detectedMapping.positiveNodeId = posMatch.id;
+                        detectedMapping.positiveKey = posMatch.textKeys[0];
+                    } else {
+                        const clipNode = nodes.find(n => n.class_type === 'CLIPTextEncode');
+                        if (clipNode) {
+                            detectedMapping.positiveNodeId = clipNode.id;
+                            detectedMapping.positiveKey = 'text';
+                        }
+                    }
+                }
+
+                if (!detectedMapping.negativeNodeId) {
+                    const negMatch = nodes.find(n => /negative|neg/i.test(n.title) && n.textKeys.length > 0);
+                    if (negMatch) {
+                        detectedMapping.negativeNodeId = negMatch.id;
+                        detectedMapping.negativeKey = negMatch.textKeys[0];
+                    } else {
+                        const otherClip = nodes.find(n => n.class_type === 'CLIPTextEncode' && n.id !== detectedMapping.positiveNodeId);
+                        if (otherClip) {
+                            detectedMapping.negativeNodeId = otherClip.id;
+                            detectedMapping.negativeKey = 'text';
+                        }
+                    }
+                }
+
+                const detectedRole = (detectedMapping.imageNodeId || detectedMapping.imageInputNodeId) ? 'img2img' : 'txt2img';
+                detectedMapping.promptNodeId = detectedMapping.positiveNodeId;
+                detectedMapping.promptKey = detectedMapping.positiveKey || 'text';
+                detectedMapping.negativePromptNodeId = detectedMapping.negativeNodeId;
+                detectedMapping.negativePromptKey = detectedMapping.negativeKey || 'text';
+                detectedMapping.imageInputNodeId = detectedMapping.imageNodeId;
+                return {
+                    nodes,
+                    detectedMapping,
+                    mapping: detectedMapping,
+                    placeholdersFound,
+                    placeholders: placeholdersFound,
+                    role: detectedRole
+                };
+            },
+
+            /**
+             * Injects dynamic roleplay prompt, seed, image, and optional overrides into an API workflow.
+             * @param {Object} apiWorkflow
+             * @param {Object} mapping
+             * @param {Object} params
+             * @returns {Object} A cloned and parameterized executable API workflow.
+             */
+            injectComfyWorkflowParams(apiWorkflow, mapping = {}, params = {}) {
+                if (!apiWorkflow || typeof apiWorkflow !== 'object') return {};
+                const wf = JSON.parse(JSON.stringify(apiWorkflow));
+
+                const promptVal = params.prompt || "";
+                const negPromptVal = params.negativePrompt || "";
+                const seedVal = params.seed !== undefined ? params.seed : Math.floor(Math.random() * 1000000000000000);
+                const widthVal = params.width || 512;
+                const heightVal = params.height || 512;
+                const stepsVal = params.steps !== undefined ? params.steps : 20;
+                const cfgVal = params.cfg !== undefined ? params.cfg : 7.0;
+                const samplerVal = params.sampler || "euler";
+                const schedulerVal = params.scheduler || "normal";
+                const ckptVal = params.checkpoint || "";
+                const inputImgVal = params.inputImage || "";
+                const denoiseVal = params.denoise !== undefined ? params.denoise : 1.0;
+
+                const tokenReplacements = {
+                    'prompt': promptVal,
+                    'negative_prompt': negPromptVal,
+                    'negative': negPromptVal,
+                    'seed': seedVal,
+                    'width': widthVal,
+                    'height': heightVal,
+                    'steps': stepsVal,
+                    'cfg': cfgVal,
+                    'sampler': samplerVal,
+                    'scheduler': schedulerVal,
+                    'checkpoint': ckptVal,
+                    'input_image': inputImgVal,
+                    'init_image': inputImgVal,
+                    'denoise': denoiseVal
+                };
+
+                const posTokenReplacedNodes = new Set();
+                const negTokenReplacedNodes = new Set();
+
+                // Pass 1: Global placeholder token replacement
+                for (const [nodeId, node] of Object.entries(wf)) {
+                    if (!node || !node.inputs) continue;
+                    for (const [k, v] of Object.entries(node.inputs)) {
+                        if (typeof v === 'string') {
+                            let newVal = v;
+                            if (/\{\{\s*prompt\s*\}\}|\*prompt\*/i.test(newVal)) {
+                                posTokenReplacedNodes.add(nodeId);
+                                newVal = newVal.replace(/\{\{\s*prompt\s*\}\}|\*prompt\*/gi, promptVal);
+                            }
+                            if (/\{\{\s*negative_prompt\s*\}\}|\*negative_prompt\*|\{\{\s*negative\s*\}\}|\*negative\*/i.test(newVal)) {
+                                negTokenReplacedNodes.add(nodeId);
+                                newVal = newVal.replace(/\{\{\s*negative_prompt\s*\}\}|\*negative_prompt\*|\{\{\s*negative\s*\}\}|\*negative\*/gi, negPromptVal);
+                            }
+
+                            for (const [tokKey, tokVal] of Object.entries(tokenReplacements)) {
+                                if (tokKey === 'prompt' || tokKey === 'negative_prompt' || tokKey === 'negative') continue;
+                                const regex = new RegExp('\\{\\{\\s*' + tokKey + '\\s*\\}\\}|\\*' + tokKey + '\\*', 'gi');
+                                if (regex.test(newVal)) {
+                                    newVal = newVal.replace(regex, String(tokVal));
+                                }
+                            }
+                            node.inputs[k] = newVal;
+                        }
+                    }
+                }
+
+                // Pass 2: Explicit mapping injections
+                if (mapping.positiveNodeId && wf[mapping.positiveNodeId]) {
+                    const key = mapping.positiveKey || 'text';
+                    if (!posTokenReplacedNodes.has(mapping.positiveNodeId)) {
+                        wf[mapping.positiveNodeId].inputs[key] = promptVal;
+                    }
+                }
+
+                if (mapping.negativeNodeId && wf[mapping.negativeNodeId]) {
+                    const key = mapping.negativeKey || 'text';
+                    if (!negTokenReplacedNodes.has(mapping.negativeNodeId)) {
+                        wf[mapping.negativeNodeId].inputs[key] = negPromptVal;
+                    }
+                }
+
+                if (mapping.seedNodeId && wf[mapping.seedNodeId]) {
+                    const key = mapping.seedKey || (wf[mapping.seedNodeId].inputs.seed !== undefined ? 'seed' : 'noise_seed');
+                    wf[mapping.seedNodeId].inputs[key] = seedVal;
+                }
+
+                if (inputImgVal && mapping.imageInputNodeId && wf[mapping.imageInputNodeId]) {
+                    const key = mapping.imageInputKey || 'image';
+                    wf[mapping.imageInputNodeId].inputs[key] = inputImgVal;
+                }
+
+                if (mapping.overrideResolution && mapping.latentNodeId && wf[mapping.latentNodeId]) {
+                    if (params.width) wf[mapping.latentNodeId].inputs.width = params.width;
+                    if (params.height) wf[mapping.latentNodeId].inputs.height = params.height;
+                }
+
+                if (mapping.overrideSampler && mapping.seedNodeId && wf[mapping.seedNodeId]) {
+                    const sNode = wf[mapping.seedNodeId];
+                    if (params.steps !== undefined && sNode.inputs.steps !== undefined) sNode.inputs.steps = params.steps;
+                    if (params.cfg !== undefined && sNode.inputs.cfg !== undefined) sNode.inputs.cfg = params.cfg;
+                    if (params.sampler && sNode.inputs.sampler_name !== undefined) sNode.inputs.sampler_name = params.sampler;
+                    if (params.scheduler && sNode.inputs.scheduler !== undefined) sNode.inputs.scheduler = params.scheduler;
+                    if (params.denoise !== undefined && sNode.inputs.denoise !== undefined) sNode.inputs.denoise = params.denoise;
+                }
+
+                if (mapping.overrideCheckpoint && mapping.checkpointNodeId && wf[mapping.checkpointNodeId]) {
+                    if (params.checkpoint) {
+                        const ckptKey = wf[mapping.checkpointNodeId].inputs.ckpt_name !== undefined ? 'ckpt_name' : 'unet_name';
+                        wf[mapping.checkpointNodeId].inputs[ckptKey] = params.checkpoint;
+                    }
+                }
+
+                return wf;
             }
         };
 
@@ -31521,6 +32771,7 @@ Output Schema:
                     // Image Gen Keys
                     'imageGenBackend', 'comfyImageGenUrl', 'comfyImageGenCheckpoint', 'comfyImageGenWidth', 'comfyImageGenHeight',
                     'comfyImageGenSampler', 'comfyImageGenScheduler', 'comfyImageGenSteps', 'comfyImageGenCfg',
+                    'comfyWorkflowProfiles', 'comfyActiveTxt2ImgProfileId', 'comfyActiveImg2ImgProfileId',
                     'koboldImageGenUrl', 'imageGenOpenRouterKey', 'imageGenOpenRouterModel',
                     'imageGenWidth', 'imageGenHeight',
                     'koboldImageGenCfg', 'koboldImageGenSampler', 'koboldImageGenScheduler', 'koboldImageGenSteps',
@@ -34152,6 +35403,7 @@ Output Schema:
                     if (showToast) {
                         UIManager.showNotification(`ComfyUI: Found ${checkpoints.length} model checkpoint(s).`, "success");
                     }
+                    this.renderComfyWorkflowProfiles();
                 } catch (err) {
                     if (badge) {
                         badge.textContent = "Offline ❌";
@@ -34183,6 +35435,485 @@ Output Schema:
 
                 UIManager.showNotification(`Resolution set to ${width}x${height}`, "info");
             },
+            /**
+             * Renders the custom ComfyUI workflow profiles and syncs active select dropdowns.
+             */
+            renderComfyWorkflowProfiles() {
+                const settings = StateManager.data.globalSettings;
+                if (!Array.isArray(settings.comfyWorkflowProfiles)) {
+                    settings.comfyWorkflowProfiles = [];
+                }
+                const profiles = settings.comfyWorkflowProfiles;
+
+                // Sync count badge
+                const countBadge = document.getElementById('comfy-workflow-count-badge');
+                if (countBadge) {
+                    countBadge.textContent = `${profiles.length} profile${profiles.length === 1 ? '' : 's'}`;
+                }
+
+                // Sync active Txt2Img select
+                const txtSelect = document.getElementById('comfy-active-txt2img-select');
+                if (txtSelect) {
+                    const currentTxt = settings.comfyActiveTxt2ImgProfileId || '';
+                    txtSelect.innerHTML = '<option value="">Default Built-in Pipeline (SDXL / SD1.5)</option>';
+                    profiles.filter(p => !p.role || p.role === 'txt2img' || p.role === 'general').forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = `${p.name || 'Custom Workflow'} (${p.format ? p.format.toUpperCase() : 'API'})`;
+                        if (p.id === currentTxt) opt.selected = true;
+                        txtSelect.appendChild(opt);
+                    });
+                }
+
+                // Sync active Img2Img select
+                const imgSelect = document.getElementById('comfy-active-img2img-select');
+                if (imgSelect) {
+                    const currentImg = settings.comfyActiveImg2ImgProfileId || '';
+                    imgSelect.innerHTML = '<option value="">Default Built-in Pipeline (SDXL / SD1.5)</option>';
+                    profiles.filter(p => p.role === 'img2img' || p.role === 'general').forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = `${p.name || 'Custom Workflow'} (${p.format ? p.format.toUpperCase() : 'API'})`;
+                        if (p.id === currentImg) opt.selected = true;
+                        imgSelect.appendChild(opt);
+                    });
+                }
+
+                // Sync profile cards list
+                const listContainer = document.getElementById('comfy-workflow-profiles-list');
+                if (listContainer) {
+                    listContainer.innerHTML = '';
+                    if (profiles.length === 0) {
+                        listContainer.innerHTML = `
+                            <div class="text-center py-4 px-3 bg-black/20 rounded-lg border border-dashed border-gray-800 text-gray-500 text-xs">
+                                No custom workflows imported yet.<br>
+                                Drag & drop a ComfyUI .json save or generated .png above to get started.
+                            </div>
+                        `;
+                    } else {
+                        profiles.forEach(p => {
+                            const isTxtActive = settings.comfyActiveTxt2ImgProfileId === p.id;
+                            const isImgActive = settings.comfyActiveImg2ImgProfileId === p.id;
+                            const roleBadge = p.role === 'img2img' 
+                                ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-purple-900/60 text-purple-300 border border-purple-700/50">Img2Img</span>'
+                                : p.role === 'general'
+                                ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-sky-900/60 text-sky-300 border border-sky-700/50">General</span>'
+                                : '<span class="px-1.5 py-0.5 rounded text-[10px] bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">Txt2Img</span>';
+
+                            const activeBadges = [];
+                            if (isTxtActive) activeBadges.push('<span class="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">● Active Txt2Img</span>');
+                            if (isImgActive) activeBadges.push('<span class="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">● Active Img2Img</span>');
+
+                            const card = document.createElement('div');
+                            card.className = "flex items-center justify-between p-2.5 bg-gray-900/70 border border-gray-700/50 rounded-lg hover:border-gray-600 transition-colors";
+                            card.innerHTML = `
+                                <div class="min-w-0 flex-1 mr-3">
+                                    <div class="flex items-center gap-2 mb-0.5">
+                                        <span class="font-semibold text-xs text-gray-200 truncate">${UTILITY.escapeHTML(p.name || 'Untitled Workflow')}</span>
+                                        ${roleBadge}
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[11px] text-gray-400 truncate">
+                                        <span>Prompt: Node #${p.mapping?.promptNodeId || '?'}</span>
+                                        <span>•</span>
+                                        <span>Output: Node #${p.mapping?.outputNodeId || '?'}</span>
+                                        ${activeBadges.length > 0 ? `<span>•</span> ${activeBadges.join(' ')}` : ''}
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button type="button" data-action="comfy-open-workflow-editor" data-profile-id="${p.id}"
+                                        class="p-1.5 text-gray-400 hover:text-indigo-300 hover:bg-gray-800 rounded transition-colors" title="Edit Mappings">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                    </button>
+                                    <button type="button" data-action="comfy-delete-workflow-profile" data-profile-id="${p.id}"
+                                        class="p-1.5 text-gray-400 hover:text-rose-400 hover:bg-gray-800 rounded transition-colors" title="Delete Profile">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            `;
+                            listContainer.appendChild(card);
+                        });
+                    }
+                }
+
+                // Setup drag and drop on dropzone
+                const dropzone = document.getElementById('comfy-workflow-dropzone');
+                if (dropzone && !dropzone._dndInitialized) {
+                    dropzone._dndInitialized = true;
+                    dropzone.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.add('border-indigo-500', 'bg-indigo-950/30');
+                    });
+                    dropzone.addEventListener('dragleave', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.remove('border-indigo-500', 'bg-indigo-950/30');
+                    });
+                    dropzone.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.remove('border-indigo-500', 'bg-indigo-950/30');
+                        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+                            this.handleComfyWorkflowFileSelect(e.dataTransfer.files[0]);
+                        }
+                    });
+                }
+            },
+
+            /**
+             * Triggers file browser for workflow import.
+             */
+            triggerComfyWorkflowImport() {
+                const input = document.getElementById('comfy-workflow-file-input');
+                if (input) input.click();
+            },
+
+            /**
+             * Handles file selection for workflow import.
+             * @param {File} file
+             */
+            async handleComfyWorkflowFileSelect(file) {
+                if (!file) return;
+                try {
+                    UIManager.showNotification(`Importing ${file.name}...`, "info");
+                    const url = StateManager.data.globalSettings.comfyImageGenUrl || "http://127.0.0.1:8188";
+                    const profile = await ImageGenerationService.importWorkflowFromFileOrText(file, url);
+                    
+                    // Open the editor modal to review & confirm mappings
+                    this.openComfyWorkflowEditor(null, profile);
+                    UIManager.showNotification(`Parsed workflow "${profile.name}". Review node mappings.`, "success");
+                } catch (err) {
+                    console.error("Workflow import error:", err);
+                    UIManager.showNotification(`Workflow import failed: ${err.message}`, "error");
+                } finally {
+                    const input = document.getElementById('comfy-workflow-file-input');
+                    if (input) input.value = '';
+                }
+            },
+
+            /**
+             * Opens the ComfyUI workflow editor modal.
+             * @param {string|null} [profileId=null]
+             * @param {Object|null} [draftProfile=null]
+             */
+            openComfyWorkflowEditor(profileId = null, draftProfile = null) {
+                let profile = null;
+                const profiles = StateManager.data.globalSettings.comfyWorkflowProfiles || [];
+                if (draftProfile) {
+                    profile = draftProfile;
+                } else if (profileId) {
+                    profile = profiles.find(p => p.id === profileId);
+                }
+
+                if (!profile) {
+                    UIManager.showNotification("Workflow profile not found.", "warning");
+                    return;
+                }
+
+                this._comfyActiveEditingProfile = JSON.parse(JSON.stringify(profile));
+                this.populateComfyWorkflowEditor(this._comfyActiveEditingProfile);
+
+                const modal = document.getElementById('comfy-workflow-editor-modal');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+            },
+
+            /**
+             * Closes the ComfyUI workflow editor modal.
+             */
+            closeComfyWorkflowEditor() {
+                const modal = document.getElementById('comfy-workflow-editor-modal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+                this._comfyActiveEditingProfile = null;
+            },
+
+            /**
+             * Populates the editor modal inputs from the target profile.
+             * @param {Object} profile
+             */
+            populateComfyWorkflowEditor(profile) {
+                if (!profile) return;
+                const nameInput = document.getElementById('comfy-wf-profile-name');
+                if (nameInput) nameInput.value = profile.name || '';
+
+                const roleSelect = document.getElementById('comfy-wf-role');
+                if (roleSelect) roleSelect.value = profile.role || 'txt2img';
+
+                const overrideRes = document.getElementById('comfy-wf-override-res');
+                if (overrideRes) overrideRes.checked = !!profile.overrides?.resolution;
+
+                const overrideSampler = document.getElementById('comfy-wf-override-sampler');
+                if (overrideSampler) overrideSampler.checked = !!profile.overrides?.sampler;
+
+                const overrideCkpt = document.getElementById('comfy-wf-override-ckpt');
+                if (overrideCkpt) overrideCkpt.checked = !!profile.overrides?.checkpoint;
+
+                const rawJson = document.getElementById('comfy-wf-raw-json');
+                if (rawJson) {
+                    try {
+                        rawJson.textContent = JSON.stringify(profile.apiWorkflow || {}, null, 2);
+                    } catch (e) {
+                        rawJson.textContent = '{}';
+                    }
+                }
+
+                const statusText = document.getElementById('comfy-wf-status-text');
+                if (statusText) {
+                    const formatLabel = profile.format ? profile.format.toUpperCase() : 'API';
+                    const nodeCount = Object.keys(profile.apiWorkflow || {}).length;
+                    statusText.innerHTML = `Loaded <strong>${formatLabel}</strong> graph with <strong>${nodeCount}</strong> nodes. Nodes and prompt inputs have been analyzed.`;
+                }
+
+                const preview = document.getElementById('comfy-wf-test-preview');
+                if (preview) {
+                    preview.innerHTML = `<span class="text-gray-500">No test run yet. Click "Run Test Generation" to test-render with current mappings.</span>`;
+                }
+
+                // Helper to populate select with sorted nodes
+                const populateNodeSelect = (selectEl, selectedId, includeNone = false) => {
+                    if (!selectEl) return;
+                    selectEl.innerHTML = '';
+                    if (includeNone) {
+                        const noneOpt = document.createElement('option');
+                        noneOpt.value = '';
+                        noneOpt.textContent = '(None / Disabled)';
+                        selectEl.appendChild(noneOpt);
+                    }
+                    const apiWf = profile.apiWorkflow || {};
+                    const entries = Object.entries(apiWf).sort((a, b) => {
+                        const numA = parseInt(a[0], 10) || 0;
+                        const numB = parseInt(b[0], 10) || 0;
+                        return numA - numB;
+                    });
+
+                    entries.forEach(([id, node]) => {
+                        const opt = document.createElement('option');
+                        opt.value = id;
+                        const title = node._meta?.title || node.title || node.class_type || `Node #${id}`;
+                        opt.textContent = `[#${id}] ${title} (${node.class_type || 'Unknown'})`;
+                        if (String(id) === String(selectedId)) opt.selected = true;
+                        selectEl.appendChild(opt);
+                    });
+                };
+
+                const mapping = profile.mapping || {};
+                populateNodeSelect(document.getElementById('comfy-wf-map-positive'), mapping.promptNodeId, true);
+                const posKeyInput = document.getElementById('comfy-wf-map-positive-key');
+                if (posKeyInput) posKeyInput.value = mapping.promptKey || 'text';
+
+                populateNodeSelect(document.getElementById('comfy-wf-map-negative'), mapping.negativePromptNodeId, true);
+                const negKeyInput = document.getElementById('comfy-wf-map-negative-key');
+                if (negKeyInput) negKeyInput.value = mapping.negativePromptKey || 'text';
+
+                populateNodeSelect(document.getElementById('comfy-wf-map-seed'), mapping.seedNodeId, true);
+                populateNodeSelect(document.getElementById('comfy-wf-map-image-input'), mapping.imageInputNodeId, true);
+                populateNodeSelect(document.getElementById('comfy-wf-map-output'), mapping.outputNodeId, false);
+            },
+
+            /**
+             * Saves the currently active editing profile to globalSettings.
+             */
+            saveComfyWorkflowProfile() {
+                const profile = this._comfyActiveEditingProfile;
+                if (!profile) return;
+
+                const nameInput = document.getElementById('comfy-wf-profile-name');
+                if (nameInput && nameInput.value.trim()) {
+                    profile.name = nameInput.value.trim();
+                }
+
+                const roleSelect = document.getElementById('comfy-wf-role');
+                if (roleSelect) profile.role = roleSelect.value;
+
+                if (!profile.mapping) profile.mapping = {};
+                const posSel = document.getElementById('comfy-wf-map-positive');
+                if (posSel) profile.mapping.promptNodeId = posSel.value || null;
+                const posKey = document.getElementById('comfy-wf-map-positive-key');
+                if (posKey) profile.mapping.promptKey = posKey.value.trim() || 'text';
+
+                const negSel = document.getElementById('comfy-wf-map-negative');
+                if (negSel) profile.mapping.negativePromptNodeId = negSel.value || null;
+                const negKey = document.getElementById('comfy-wf-map-negative-key');
+                if (negKey) profile.mapping.negativePromptKey = negKey.value.trim() || 'text';
+
+                const seedSel = document.getElementById('comfy-wf-map-seed');
+                if (seedSel) profile.mapping.seedNodeId = seedSel.value || null;
+
+                const imgSel = document.getElementById('comfy-wf-map-image-input');
+                if (imgSel) profile.mapping.imageInputNodeId = imgSel.value || null;
+
+                const outSel = document.getElementById('comfy-wf-map-output');
+                if (outSel) profile.mapping.outputNodeId = outSel.value || null;
+
+                if (!profile.overrides) profile.overrides = {};
+                const resCb = document.getElementById('comfy-wf-override-res');
+                if (resCb) profile.overrides.resolution = resCb.checked;
+
+                const samplerCb = document.getElementById('comfy-wf-override-sampler');
+                if (samplerCb) profile.overrides.sampler = samplerCb.checked;
+
+                const ckptCb = document.getElementById('comfy-wf-override-ckpt');
+                if (ckptCb) profile.overrides.checkpoint = ckptCb.checked;
+
+                const settings = StateManager.data.globalSettings;
+                if (!Array.isArray(settings.comfyWorkflowProfiles)) {
+                    settings.comfyWorkflowProfiles = [];
+                }
+
+                const existingIdx = settings.comfyWorkflowProfiles.findIndex(p => p.id === profile.id);
+                if (existingIdx >= 0) {
+                    settings.comfyWorkflowProfiles[existingIdx] = profile;
+                } else {
+                    settings.comfyWorkflowProfiles.push(profile);
+                }
+
+                // If no active profile set for this role, auto-assign this profile
+                if ((profile.role === 'txt2img' || profile.role === 'general') && !settings.comfyActiveTxt2ImgProfileId) {
+                    settings.comfyActiveTxt2ImgProfileId = profile.id;
+                }
+                if ((profile.role === 'img2img' || profile.role === 'general') && !settings.comfyActiveImg2ImgProfileId) {
+                    settings.comfyActiveImg2ImgProfileId = profile.id;
+                }
+
+                StateManager.saveGlobalSettings();
+                this.renderComfyWorkflowProfiles();
+                this.closeComfyWorkflowEditor();
+                UIManager.showNotification(`Saved workflow "${profile.name}".`, "success");
+            },
+
+            /**
+             * Deletes a workflow profile by ID.
+             * @param {string} profileId
+             */
+            deleteComfyWorkflowProfile(profileId) {
+                if (!profileId) return;
+                const settings = StateManager.data.globalSettings;
+                if (!Array.isArray(settings.comfyWorkflowProfiles)) return;
+
+                const prof = settings.comfyWorkflowProfiles.find(p => p.id === profileId);
+                const name = prof ? prof.name : 'workflow';
+
+                settings.comfyWorkflowProfiles = settings.comfyWorkflowProfiles.filter(p => p.id !== profileId);
+                if (settings.comfyActiveTxt2ImgProfileId === profileId) {
+                    settings.comfyActiveTxt2ImgProfileId = '';
+                }
+                if (settings.comfyActiveImg2ImgProfileId === profileId) {
+                    settings.comfyActiveImg2ImgProfileId = '';
+                }
+
+                StateManager.saveGlobalSettings();
+                this.renderComfyWorkflowProfiles();
+                UIManager.showNotification(`Removed workflow "${name}".`, "info");
+            },
+
+            /**
+             * Runs a test generation using the active workflow in the editor.
+             */
+            async testComfyWorkflowProfile() {
+                const profile = this._comfyActiveEditingProfile;
+                if (!profile) return;
+
+                // Sync current form mapping values into temporary profile copy
+                const testProfile = JSON.parse(JSON.stringify(profile));
+                const posSel = document.getElementById('comfy-wf-map-positive');
+                if (posSel) testProfile.mapping.promptNodeId = posSel.value || null;
+                const posKey = document.getElementById('comfy-wf-map-positive-key');
+                if (posKey) testProfile.mapping.promptKey = posKey.value.trim() || 'text';
+
+                const negSel = document.getElementById('comfy-wf-map-negative');
+                if (negSel) testProfile.mapping.negativePromptNodeId = negSel.value || null;
+                const negKey = document.getElementById('comfy-wf-map-negative-key');
+                if (negKey) testProfile.mapping.negativePromptKey = negKey.value.trim() || 'text';
+
+                const seedSel = document.getElementById('comfy-wf-map-seed');
+                if (seedSel) testProfile.mapping.seedNodeId = seedSel.value || null;
+
+                const imgSel = document.getElementById('comfy-wf-map-image-input');
+                if (imgSel) testProfile.mapping.imageInputNodeId = imgSel.value || null;
+
+                const outSel = document.getElementById('comfy-wf-map-output');
+                if (outSel) testProfile.mapping.outputNodeId = outSel.value || null;
+
+                if (!testProfile.overrides) testProfile.overrides = {};
+                const resCb = document.getElementById('comfy-wf-override-res');
+                if (resCb) testProfile.overrides.resolution = resCb.checked;
+
+                const samplerCb = document.getElementById('comfy-wf-override-sampler');
+                if (samplerCb) testProfile.overrides.sampler = samplerCb.checked;
+
+                const ckptCb = document.getElementById('comfy-wf-override-ckpt');
+                if (ckptCb) testProfile.overrides.checkpoint = ckptCb.checked;
+
+                const preview = document.getElementById('comfy-wf-test-preview');
+                if (preview) {
+                    preview.innerHTML = `
+                        <div class="flex items-center justify-center gap-2 py-4 text-indigo-400">
+                            <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <span>Generating test image via ComfyUI...</span>
+                        </div>
+                    `;
+                }
+
+                try {
+                    const testPrompt = "A glowing crystal artifact in an ancient overgrown temple ruin, cinematic lighting, 8k";
+                    const base64Image = await ImageGenerationService._generateComfyUI(testPrompt, "low quality, blurry, distorted", {
+                        workflowProfile: testProfile
+                    });
+
+                    if (preview) {
+                        preview.innerHTML = `
+                            <div class="flex flex-col items-center gap-2 p-2">
+                                <img src="${base64Image}" alt="Test Result" class="max-h-48 rounded-lg shadow-md border border-gray-700 object-contain">
+                                <span class="text-[11px] text-emerald-400 font-semibold">✓ Test generation successful!</span>
+                            </div>
+                        `;
+                    }
+                    UIManager.showNotification("Test image generated successfully!", "success");
+                } catch (err) {
+                    console.error("Test workflow error:", err);
+                    if (preview) {
+                        preview.innerHTML = `
+                            <div class="p-3 text-rose-400 text-xs text-left">
+                                <strong class="block mb-1">Test Run Failed:</strong>
+                                <pre class="font-mono text-[11px] whitespace-pre-wrap">${UTILITY.escapeHTML(err.message)}</pre>
+                            </div>
+                        `;
+                    }
+                    UIManager.showNotification(`Test failed: ${err.message}`, "error");
+                }
+            },
+
+            /**
+             * Sets the active workflow profile for txt2img or img2img.
+             * @param {'txt2img'|'img2img'} type
+             * @param {string} profileId
+             */
+            setComfyActiveProfile(type, profileId) {
+                const settings = StateManager.data.globalSettings;
+                if (type === 'txt2img') {
+                    settings.comfyActiveTxt2ImgProfileId = profileId || '';
+                } else if (type === 'img2img') {
+                    settings.comfyActiveImg2ImgProfileId = profileId || '';
+                }
+                StateManager.saveGlobalSettings();
+                this.renderComfyWorkflowProfiles();
+                const prof = (settings.comfyWorkflowProfiles || []).find(p => p.id === profileId);
+                const label = prof ? prof.name : 'Default Built-in Pipeline';
+                UIManager.showNotification(`Active ${type === 'txt2img' ? 'Txt2Img' : 'Img2Img'} set to: ${label}`, "info");
+            },
+
 
             /**
              * Saves the current OpenRouter model string to the global settings.
@@ -50499,6 +52230,14 @@ Relationship | Alistair & Elara | Alistair has started to trust Elara after she 
                 ActionHandler.register('close-hub-details', () => HubController.closeDetails());
                 ActionHandler.register('import-hub-character', (ds, val) => HubController.importCharacter(val));
                 ActionHandler.register('close-modal', (ds) => AppController.closeModal(ds.id));
+
+                // --- ComfyUI Workflow Profile Studio ---
+                ActionHandler.register('comfy-import-workflow-trigger', () => AppController.triggerComfyWorkflowImport());
+                ActionHandler.register('comfy-open-workflow-editor', (ds) => AppController.openComfyWorkflowEditor(ds.profileId || null));
+                ActionHandler.register('comfy-close-workflow-editor', () => AppController.closeComfyWorkflowEditor());
+                ActionHandler.register('comfy-save-workflow-profile', () => AppController.saveComfyWorkflowProfile());
+                ActionHandler.register('comfy-delete-workflow-profile', (ds) => AppController.deleteComfyWorkflowProfile(ds.profileId));
+                ActionHandler.register('comfy-test-workflow-profile', () => AppController.testComfyWorkflowProfile());
 
                 // --- KreaWizardController (KoboldCPP Image Setup) ---
                 ActionHandler.register('open-krea-wizard', () => KreaWizardController.openWizard());

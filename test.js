@@ -81,7 +81,14 @@ function loadUtility() {
     const block = extractBlock('UTILITY');
     // The block declares `const UTILITY = {...};`. Append the bare identifier so
     // vm.runInNewContext returns it as the completion value.
-    return vm.runInNewContext(block + '\nUTILITY', {});
+    return vm.runInNewContext(block + '\nUTILITY', {
+        TextDecoder: typeof TextDecoder !== 'undefined' ? TextDecoder : undefined,
+        TextEncoder: typeof TextEncoder !== 'undefined' ? TextEncoder : undefined,
+        Uint8Array: typeof Uint8Array !== 'undefined' ? Uint8Array : undefined,
+        DataView: typeof DataView !== 'undefined' ? DataView : undefined,
+        ArrayBuffer: typeof ArrayBuffer !== 'undefined' ? ArrayBuffer : undefined,
+        Buffer: typeof Buffer !== 'undefined' ? Buffer : undefined
+    });
 }
 
 const UTILITY = loadUtility();
@@ -3624,4 +3631,471 @@ test('Krea 2 Turbo: Wizard & Settings DOM and ActionHandler contracts', () => {
 
     // 4. ImageGenerationService silent swap delegation
     assert.ok(HTML.includes('window.electronBridge.krea.generateImageSilent'), 'Must delegate to silent swap IPC');
+});
+
+// ─── Task 1: ComfyUI Format Detection, PNG Extraction & UI-to-API Converter ───
+
+test('detectComfyWorkflowFormat: classifies API, UI, and invalid formats correctly', () => {
+    // API format
+    const apiWf = {
+        "1": { "class_type": "CheckpointLoaderSimple", "inputs": { "ckpt_name": "model.safetensors" } },
+        "2": { "class_type": "CLIPTextEncode", "inputs": { "text": "a cute cat" } }
+    };
+    assert.equal(UTILITY.detectComfyWorkflowFormat(apiWf), 'api');
+    assert.equal(UTILITY.detectComfyWorkflowFormat(JSON.stringify(apiWf)), 'api');
+
+    // UI format
+    const uiWf = {
+        "nodes": [{ "id": 1, "type": "CheckpointLoaderSimple", "widgets_values": ["model.safetensors"] }],
+        "links": [[1, 1, 0, 2, 0, "MODEL"]]
+    };
+    assert.equal(UTILITY.detectComfyWorkflowFormat(uiWf), 'ui');
+    assert.equal(UTILITY.detectComfyWorkflowFormat(JSON.stringify(uiWf)), 'ui');
+
+    // Invalid
+    assert.equal(UTILITY.detectComfyWorkflowFormat(null), 'invalid');
+    assert.equal(UTILITY.detectComfyWorkflowFormat("not a json"), 'invalid');
+    assert.equal(UTILITY.detectComfyWorkflowFormat({}), 'invalid');
+    assert.equal(UTILITY.detectComfyWorkflowFormat([]), 'invalid');
+});
+
+test('extractComfyWorkflowFromPng: extracts prompt and workflow from synthetic PNG buffer', () => {
+    const pngHeader = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+    
+    function makeChunk(type, data) {
+        const len = Buffer.alloc(4);
+        len.writeUInt32BE(data.length, 0);
+        const typeBuf = Buffer.from(type, 'ascii');
+        const crc = Buffer.alloc(4);
+        return Buffer.concat([len, typeBuf, data, crc]);
+    }
+
+    const promptObj = { "3": { "class_type": "KSampler", "inputs": { "seed": 42 } } };
+    const workflowObj = { "nodes": [{ "id": 3, "type": "KSampler", "title": "Main Sampler" }], "links": [] };
+
+    const promptData = Buffer.concat([Buffer.from('prompt\0', 'latin1'), Buffer.from(JSON.stringify(promptObj), 'utf8')]);
+    const workflowData = Buffer.concat([Buffer.from('workflow\0', 'latin1'), Buffer.from(JSON.stringify(workflowObj), 'utf8')]);
+
+    const promptChunk = makeChunk('tEXt', promptData);
+    const workflowChunk = makeChunk('tEXt', workflowData);
+    const iendChunk = makeChunk('IEND', Buffer.alloc(0));
+
+    const fullPng = Buffer.concat([pngHeader, promptChunk, workflowChunk, iendChunk]);
+
+    const extracted = UTILITY.extractComfyWorkflowFromPng(fullPng);
+    assert.ok(extracted.prompt, 'Prompt should be extracted');
+    assert.ok(extracted.workflow, 'Workflow should be extracted');
+    assert.equal(extracted.prompt["3"].inputs.seed, 42);
+    assert.equal(extracted.prompt["3"]._meta?.title, "Main Sampler");
+
+    const emptyBuf = new ArrayBuffer(16);
+    const nonPng = UTILITY.extractComfyWorkflowFromPng(emptyBuf);
+    assert.equal(nonPng.prompt, null);
+    assert.equal(nonPng.workflow, null);
+});
+
+test('convertComfyUiToApiWorkflow: converts standard UI graph to API dictionary, handling seed control_after_generate, reroutes, and inlining', () => {
+    const uiGraph = {
+        "nodes": [
+            {
+                "id": 1,
+                "type": "CheckpointLoaderSimple",
+                "widgets_values": ["v1-5-pruned.safetensors"],
+                "inputs": [],
+                "outputs": [{ "name": "MODEL", "type": "MODEL", "links": [1], "slot_index": 0 }, { "name": "CLIP", "type": "CLIP", "links": [2], "slot_index": 1 }, { "name": "VAE", "type": "VAE", "links": [3], "slot_index": 2 }],
+                "title": "Model Loader"
+            },
+            {
+                "id": 2,
+                "type": "CLIPTextEncode",
+                "widgets_values": ["masterpiece, beautiful anime girl"],
+                "inputs": [{ "name": "clip", "type": "CLIP", "link": 2 }],
+                "outputs": [{ "name": "CONDITIONING", "type": "CONDITIONING", "links": [4], "slot_index": 0 }],
+                "title": "Positive Prompt"
+            },
+            {
+                "id": 99,
+                "type": "Reroute",
+                "inputs": [{ "name": "", "type": "*", "link": 4 }],
+                "outputs": [{ "name": "", "type": "*", "links": [5], "slot_index": 0 }]
+            },
+            {
+                "id": 3,
+                "type": "KSampler",
+                "widgets_values": [987654321, "randomize", 28, 7.5, "euler_ancestral", "karras", 1.0],
+                "inputs": [
+                    { "name": "model", "type": "MODEL", "link": 1 },
+                    { "name": "positive", "type": "CONDITIONING", "link": 5 },
+                    { "name": "negative", "type": "CONDITIONING", "link": null },
+                    { "name": "latent_image", "type": "LATENT", "link": null }
+                ],
+                "outputs": [{ "name": "LATENT", "type": "LATENT", "links": [6], "slot_index": 0 }],
+                "title": "Fast KSampler"
+            },
+            {
+                "id": 4,
+                "type": "SaveImage",
+                "widgets_values": ["Ellipsis_Output"],
+                "inputs": [{ "name": "images", "type": "IMAGE", "link": null }],
+                "outputs": [],
+                "title": "Final Save"
+            },
+            {
+                "id": 50,
+                "type": "Note",
+                "widgets_values": ["Remember to tune CFG"],
+                "inputs": [],
+                "outputs": []
+            }
+        ],
+        "links": [
+            [1, 1, 0, 3, 0, "MODEL"],
+            [2, 1, 1, 2, 0, "CLIP"],
+            [4, 2, 0, 99, 0, "CONDITIONING"],
+            [5, 99, 0, 3, 1, "CONDITIONING"]
+        ]
+    };
+
+    const res = UTILITY.convertComfyUiToApiWorkflow(uiGraph);
+    assert.ok(res.apiWorkflow, 'Must return apiWorkflow');
+    deepEq(res.unknownNodeTypes, []);
+
+    const api = res.apiWorkflow;
+    assert.equal(api["50"], undefined, 'Note node should be stripped');
+    assert.equal(api["99"], undefined, 'Reroute node should be stripped from apiWorkflow roots');
+
+    assert.equal(api["1"].class_type, "CheckpointLoaderSimple");
+    assert.equal(api["1"].inputs.ckpt_name, "v1-5-pruned.safetensors");
+    assert.equal(api["1"]._meta.title, "Model Loader");
+
+    assert.equal(api["2"].class_type, "CLIPTextEncode");
+    assert.equal(api["2"].inputs.text, "masterpiece, beautiful anime girl");
+    deepEq(api["2"].inputs.clip, ["1", 1]);
+
+    assert.equal(api["3"].class_type, "KSampler");
+    assert.equal(api["3"].inputs.seed, 987654321);
+    assert.equal(api["3"].inputs.steps, 28);
+    assert.equal(api["3"].inputs.cfg, 7.5);
+    assert.equal(api["3"].inputs.sampler_name, "euler_ancestral");
+    assert.equal(api["3"].inputs.scheduler, "karras");
+    assert.equal(api["3"].inputs.denoise, 1.0);
+    deepEq(api["3"].inputs.positive, ["2", 0]);
+});
+
+// ─── Task 2: Graph Analyzer & Parameter Injection Engine ───
+
+test('analyzeComfyWorkflow: traces conditioning links, handles Flux stacks, and prioritizes placeholders & save nodes', () => {
+    // 1. Standard KSampler graph with positive and negative links
+    const standardApi = {
+        "1": { "class_type": "CheckpointLoaderSimple", "inputs": { "ckpt_name": "sd15.safetensors" }, "_meta": { "title": "Load Checkpoint" } },
+        "2": { "class_type": "EmptyLatentImage", "inputs": { "width": 512, "height": 768, "batch_size": 1 } },
+        "3": { "class_type": "CLIPTextEncode", "inputs": { "text": "a knight in shining armor", "clip": ["1", 1] }, "_meta": { "title": "Positive Prompt" } },
+        "4": { "class_type": "CLIPTextEncode", "inputs": { "text": "blurry, low quality", "clip": ["1", 1] }, "_meta": { "title": "Negative Prompt" } },
+        "5": { "class_type": "KSampler", "inputs": { "model": ["1", 0], "positive": ["3", 0], "negative": ["4", 0], "latent_image": ["2", 0], "seed": 100, "steps": 25, "cfg": 7 } },
+        "6": { "class_type": "PreviewImage", "inputs": { "images": ["5", 0] } },
+        "7": { "class_type": "SaveImage", "inputs": { "images": ["5", 0], "filename_prefix": "Output" } }
+    };
+
+    const res1 = UTILITY.analyzeComfyWorkflow(standardApi);
+    assert.equal(res1.detectedMapping.positiveNodeId, "3");
+    assert.equal(res1.detectedMapping.negativeNodeId, "4");
+    assert.equal(res1.detectedMapping.seedNodeId, "5");
+    assert.equal(res1.detectedMapping.seedKey, "seed");
+    assert.equal(res1.detectedMapping.latentNodeId, "2");
+    assert.equal(res1.detectedMapping.checkpointNodeId, "1");
+    assert.equal(res1.detectedMapping.outputNodeId, "7", "Must prioritize SaveImage over PreviewImage");
+    assert.equal(res1.detectedMapping.overrideResolution, false);
+    assert.equal(res1.detectedMapping.overrideSampler, false);
+    assert.equal(res1.detectedMapping.overrideCheckpoint, false);
+
+    // 2. Flux custom sampler stack: CLIPTextEncode -> FluxGuidance -> BasicGuider -> SamplerCustomAdvanced + RandomNoise
+    const fluxApi = {
+        "10": { "class_type": "UNETLoader", "inputs": { "unet_name": "flux1-schnell.sft" } },
+        "11": { "class_type": "CLIPTextEncode", "inputs": { "text": "high fantasy castle" } },
+        "12": { "class_type": "FluxGuidance", "inputs": { "conditioning": ["11", 0], "guidance": 3.5 } },
+        "13": { "class_type": "BasicGuider", "inputs": { "model": ["10", 0], "conditioning": ["12", 0] } },
+        "14": { "class_type": "RandomNoise", "inputs": { "noise_seed": 777 } },
+        "15": { "class_type": "SamplerCustomAdvanced", "inputs": { "noise": ["14", 0], "guider": ["13", 0] } },
+        "16": { "class_type": "SaveImage", "inputs": { "images": ["15", 0] } }
+    };
+
+    const res2 = UTILITY.analyzeComfyWorkflow(fluxApi);
+    assert.equal(res2.detectedMapping.positiveNodeId, "11", "Should trace upstream conditioning through FluxGuidance and BasicGuider to CLIPTextEncode");
+    assert.equal(res2.detectedMapping.seedNodeId, "14", "Should detect noise_seed on RandomNoise");
+    assert.equal(res2.detectedMapping.seedKey, "noise_seed");
+    assert.equal(res2.detectedMapping.checkpointNodeId, "10");
+    assert.equal(res2.detectedMapping.outputNodeId, "16");
+
+    // 3. Placeholder tokens detection
+    const placeholderApi = {
+        "1": { "class_type": "CLIPTextEncode", "inputs": { "text": "masterpiece, {{prompt}}, 8k" } },
+        "2": { "class_type": "CLIPTextEncode", "inputs": { "text": "ugly, *negative_prompt*, deformed" } }
+    };
+
+    const res3 = UTILITY.analyzeComfyWorkflow(placeholderApi);
+    assert.equal(res3.detectedMapping.positiveNodeId, "1");
+    assert.equal(res3.detectedMapping.negativeNodeId, "2");
+    assert.ok(res3.placeholdersFound.includes("prompt"));
+    assert.ok(res3.placeholdersFound.includes("negative_prompt"));
+});
+
+test('injectComfyWorkflowParams: replaces placeholders, preserves prefix/suffix, respects non-destructive overrides', () => {
+    const templateWf = {
+        "1": { "class_type": "CheckpointLoaderSimple", "inputs": { "ckpt_name": "custom_flux.safetensors" } },
+        "2": { "class_type": "EmptyLatentImage", "inputs": { "width": 1024, "height": 1024 } },
+        "3": { "class_type": "CLIPTextEncode", "inputs": { "text": "masterpiece, {{prompt}}, hyper-detailed" } },
+        "4": { "class_type": "CLIPTextEncode", "inputs": { "text": "*negative_prompt*" } },
+        "5": { "class_type": "KSampler", "inputs": { "seed": 111, "steps": 4, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple" } },
+        "6": { "class_type": "LoadImage", "inputs": { "image": "dummy.png" } }
+    };
+
+    const mapping = {
+        positiveNodeId: "3",
+        positiveKey: "text",
+        negativeNodeId: "4",
+        negativeKey: "text",
+        seedNodeId: "5",
+        seedKey: "seed",
+        imageInputNodeId: "6",
+        imageInputKey: "image",
+        latentNodeId: "2",
+        checkpointNodeId: "1",
+        overrideResolution: false,
+        overrideSampler: false,
+        overrideCheckpoint: false
+    };
+
+    const params = {
+        prompt: "a majestic dragon flying over mountains",
+        negativePrompt: "blurry, dark",
+        seed: 999999,
+        width: 512,
+        height: 512,
+        steps: 25,
+        cfg: 7.0,
+        sampler: "dpmpp_2m",
+        scheduler: "karras",
+        checkpoint: "standard_sd15.safetensors",
+        inputImage: "uploaded_char_456.png"
+    };
+
+    const injected = UTILITY.injectComfyWorkflowParams(templateWf, mapping, params);
+
+    // 1. Template purity (does not mutate original)
+    assert.equal(templateWf["3"].inputs.text, "masterpiece, {{prompt}}, hyper-detailed");
+    assert.equal(templateWf["5"].inputs.seed, 111);
+
+    // 2. Token substitution with prefix/suffix preservation
+    assert.equal(injected["3"].inputs.text, "masterpiece, a majestic dragon flying over mountains, hyper-detailed");
+    assert.equal(injected["4"].inputs.text, "blurry, dark");
+
+    // 3. Seed and input image injection
+    assert.equal(injected["5"].inputs.seed, 999999);
+    assert.equal(injected["6"].inputs.image, "uploaded_char_456.png");
+
+    // 4. Non-destructive overrides: because override flags are false, workflow-native values stay untouched!
+    assert.equal(injected["2"].inputs.width, 1024, "Should keep workflow-native width 1024 when overrideResolution is false");
+    assert.equal(injected["2"].inputs.height, 1024, "Should keep workflow-native height 1024 when overrideResolution is false");
+    assert.equal(injected["5"].inputs.steps, 4, "Should keep workflow-native steps 4 when overrideSampler is false");
+    assert.equal(injected["5"].inputs.cfg, 1.0, "Should keep workflow-native cfg 1.0 when overrideSampler is false");
+    assert.equal(injected["5"].inputs.sampler_name, "euler", "Should keep workflow-native sampler when overrideSampler is false");
+    assert.equal(injected["1"].inputs.ckpt_name, "custom_flux.safetensors", "Should keep workflow-native checkpoint when overrideCheckpoint is false");
+
+    // 5. When overrides are enabled, values should be overridden
+    const overrideMapping = Object.assign({}, mapping, {
+        overrideResolution: true,
+        overrideSampler: true,
+        overrideCheckpoint: true
+    });
+    const injectedOverrides = UTILITY.injectComfyWorkflowParams(templateWf, overrideMapping, params);
+    assert.equal(injectedOverrides["2"].inputs.width, 512);
+    assert.equal(injectedOverrides["2"].inputs.height, 512);
+    assert.equal(injectedOverrides["5"].inputs.steps, 25);
+    assert.equal(injectedOverrides["5"].inputs.cfg, 7.0);
+    assert.equal(injectedOverrides["5"].inputs.sampler_name, "dpmpp_2m");
+    assert.equal(injectedOverrides["1"].inputs.ckpt_name, "standard_sd15.safetensors");
+});
+
+// ─── Task 3: ImageGenerationService Custom Workflow Integration ───
+
+test('ComfyUI Settings & ImageGenerationService Contracts', () => {
+    assert.ok(HTML.includes("'comfyWorkflowProfiles'"), "Must include comfyWorkflowProfiles in MODEL_SETTING_KEYS");
+    assert.ok(HTML.includes("'comfyActiveTxt2ImgProfileId'"), "Must include comfyActiveTxt2ImgProfileId in MODEL_SETTING_KEYS");
+    assert.ok(HTML.includes("'comfyActiveImg2ImgProfileId'"), "Must include comfyActiveImg2ImgProfileId in MODEL_SETTING_KEYS");
+
+    const defaults = UTILITY.getDefaultApiSettings();
+    deepEq(defaults.comfyWorkflowProfiles, []);
+    assert.equal(defaults.comfyActiveTxt2ImgProfileId, 'builtin');
+    assert.equal(defaults.comfyActiveImg2ImgProfileId, 'builtin');
+
+    assert.ok(HTML.includes('fetchComfyObjectInfo('), 'Must define fetchComfyObjectInfo');
+    assert.ok(HTML.includes('importWorkflowFromFileOrText('), 'Must define importWorkflowFromFileOrText');
+});
+
+// ─── Task 4: Workflow Profile Studio UI & ActionHandler Contracts ───
+
+test('ComfyUI Workflow Studio: DOM & ActionHandler contracts', () => {
+    // 1. Settings elements
+    assert.ok(HTML.includes('id="comfy-active-txt2img-select"'), 'Must include #comfy-active-txt2img-select');
+    assert.ok(HTML.includes('id="comfy-active-img2img-select"'), 'Must include #comfy-active-img2img-select');
+    assert.ok(HTML.includes('id="comfy-workflow-dropzone"'), 'Must include #comfy-workflow-dropzone');
+    assert.ok(HTML.includes('id="comfy-workflow-file-input"'), 'Must include #comfy-workflow-file-input');
+    assert.ok(HTML.includes('id="comfy-workflow-profiles-list"'), 'Must include #comfy-workflow-profiles-list');
+
+    // 2. Editor Modal elements
+    assert.ok(HTML.includes('id="comfy-workflow-editor-modal"'), 'Must include #comfy-workflow-editor-modal');
+    assert.ok(HTML.includes('id="comfy-wf-profile-name"'), 'Must include #comfy-wf-profile-name');
+    assert.ok(HTML.includes('id="comfy-wf-role"'), 'Must include #comfy-wf-role');
+    assert.ok(HTML.includes('id="comfy-wf-map-positive"'), 'Must include #comfy-wf-map-positive');
+    assert.ok(HTML.includes('id="comfy-wf-map-negative"'), 'Must include #comfy-wf-map-negative');
+    assert.ok(HTML.includes('id="comfy-wf-map-seed"'), 'Must include #comfy-wf-map-seed');
+    assert.ok(HTML.includes('id="comfy-wf-map-image-input"'), 'Must include #comfy-wf-map-image-input');
+    assert.ok(HTML.includes('id="comfy-wf-map-output"'), 'Must include #comfy-wf-map-output');
+    assert.ok(HTML.includes('id="comfy-wf-override-res"'), 'Must include #comfy-wf-override-res');
+    assert.ok(HTML.includes('id="comfy-wf-override-sampler"'), 'Must include #comfy-wf-override-sampler');
+    assert.ok(HTML.includes('id="comfy-wf-override-ckpt"'), 'Must include #comfy-wf-override-ckpt');
+    assert.ok(HTML.includes('id="comfy-wf-test-preview"'), 'Must include #comfy-wf-test-preview');
+
+    // 3. ActionHandler registrations
+    const expectedActions = [
+        'comfy-import-workflow-trigger',
+        'comfy-open-workflow-editor',
+        'comfy-close-workflow-editor',
+        'comfy-save-workflow-profile',
+        'comfy-delete-workflow-profile',
+        'comfy-test-workflow-profile'
+    ];
+    for (const act of expectedActions) {
+        assert.ok(HTML.includes(`ActionHandler.register('${act}'`), `ActionHandler must register action '${act}'`);
+    }
+
+    // 4. AppController methods
+    const expectedMethods = [
+        'renderComfyWorkflowProfiles',
+        'triggerComfyWorkflowImport',
+        'handleComfyWorkflowFileSelect',
+        'openComfyWorkflowEditor',
+        'closeComfyWorkflowEditor',
+        'saveComfyWorkflowProfile',
+        'deleteComfyWorkflowProfile',
+        'testComfyWorkflowProfile'
+    ];
+    for (const m of expectedMethods) {
+        assert.ok(HTML.includes(`${m}(`), `AppController must define method '${m}'`);
+    }
+});
+test('ComfyUI Custom Workflow: End-to-end compilation, placeholder analysis & parameter injection', () => {
+    // 1. Define a UI graph with {{prompt}} placeholder and seed widgets
+    const uiWorkflow = {
+        nodes: [
+            {
+                id: 1,
+                type: 'KSampler',
+                inputs: [
+                    { name: 'model', link: null },
+                    { name: 'positive', link: 10 },
+                    { name: 'negative', link: 20 },
+                    { name: 'latent_image', link: 30 }
+                ],
+                widgets_values: [12345, 'randomize', 30, 7.5, 'dpmpp_2m', 'karras', 1.0]
+            },
+            {
+                id: 2,
+                type: 'CLIPTextEncode',
+                inputs: [{ name: 'clip', link: null }],
+                widgets_values: ['high fantasy art, {{prompt}}, intricate details, unreal engine 5']
+            },
+            {
+                id: 3,
+                type: 'CLIPTextEncode',
+                inputs: [{ name: 'clip', link: null }],
+                widgets_values: ['photorealistic, {{negative_prompt}}, bad anatomy']
+            },
+            {
+                id: 4,
+                type: 'EmptyLatentImage',
+                inputs: [],
+                widgets_values: [768, 1024, 1]
+            },
+            {
+                id: 5,
+                type: 'VAEDecode',
+                inputs: [
+                    { name: 'samples', link: 40 },
+                    { name: 'vae', link: null }
+                ],
+                widgets_values: []
+            },
+            {
+                id: 6,
+                type: 'SaveImage',
+                inputs: [{ name: 'images', link: 50 }],
+                widgets_values: ['ComfyUI_Output']
+            }
+        ],
+        links: [
+            [10, 2, 0, 1, 1, 'CONDITIONING'],
+            [20, 3, 0, 1, 2, 'CONDITIONING'],
+            [30, 4, 0, 1, 3, 'LATENT'],
+            [40, 1, 0, 5, 0, 'LATENT'],
+            [50, 5, 0, 6, 0, 'IMAGE']
+        ]
+    };
+
+    // Format detection
+    assert.equal(UTILITY.detectComfyWorkflowFormat(uiWorkflow), 'ui');
+
+    // UI to API Compilation
+    const { apiWorkflow } = UTILITY.convertComfyUiToApiWorkflow(uiWorkflow);
+    assert.ok(apiWorkflow['1'], 'KSampler node #1 must exist');
+    assert.ok(apiWorkflow['2'], 'CLIPTextEncode node #2 must exist');
+    assert.ok(apiWorkflow['6'], 'SaveImage node #6 must exist');
+
+    // Smart Graph Analysis
+    const analysis = UTILITY.analyzeComfyWorkflow(apiWorkflow);
+    assert.equal(analysis.role, 'txt2img');
+    assert.equal(analysis.mapping.promptNodeId, '2');
+    assert.equal(analysis.mapping.negativePromptNodeId, '3');
+    assert.equal(analysis.mapping.seedNodeId, '1');
+    assert.equal(analysis.mapping.outputNodeId, '6');
+    assert.ok(analysis.placeholders.includes('prompt'), 'Must detect placeholder prompt');
+    assert.ok(analysis.placeholders.includes('negative_prompt'), 'Must detect placeholder negative_prompt');
+
+    // Parameter Injection with prefix/suffix preservation
+    const mergedMapping = Object.assign({}, analysis.mapping, {
+        overrideResolution: true,
+        overrideSampler: false,
+        overrideCheckpoint: false
+    });
+    const injected = UTILITY.injectComfyWorkflowParams(apiWorkflow, mergedMapping, {
+        prompt: 'a lone wanderer approaching a cosmic obelisk',
+        negativePrompt: 'blurry, deformed',
+        seed: 999999,
+        width: 1024,
+        height: 1024
+    });
+
+    // Check prompt placeholder interpolation
+    assert.equal(
+        injected['2'].inputs.text,
+        'high fantasy art, a lone wanderer approaching a cosmic obelisk, intricate details, unreal engine 5'
+    );
+
+    // Check negative prompt placeholder interpolation
+    assert.equal(
+        injected['3'].inputs.text,
+        'photorealistic, blurry, deformed, bad anatomy'
+    );
+
+    // Check seed injection
+    assert.equal(injected['1'].inputs.seed, 999999);
+
+    // Check resolution override (enabled)
+    assert.equal(injected['4'].inputs.width, 1024);
+    assert.equal(injected['4'].inputs.height, 1024);
+
+    // Check sampler settings (kept workflow-native because sampler override is false)
+    assert.equal(injected['1'].inputs.steps, 30);
+    assert.equal(injected['1'].inputs.cfg, 7.5);
+    assert.equal(injected['1'].inputs.sampler_name, 'dpmpp_2m');
 });
