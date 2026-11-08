@@ -3983,6 +3983,12 @@ test('ComfyUI Workflow Studio: DOM & ActionHandler contracts', () => {
     for (const m of expectedMethods) {
         assert.ok(HTML.includes(`${m}(`), `AppController must define method '${m}'`);
     }
+
+    // 5. ComfyUI test workflow preview contract
+    assert.ok(
+        HTML.includes('URL.createObjectURL(base64Image)'),
+        'testComfyWorkflowProfile must wrap base64Image Blob with URL.createObjectURL for <img> preview'
+    );
 });
 test('ComfyUI Custom Workflow: End-to-end compilation, placeholder analysis & parameter injection', () => {
     // 1. Define a UI graph with {{prompt}} placeholder and seed widgets
