@@ -42774,11 +42774,22 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
              * @param {HTMLElement} [btnElement] - Optional button element to show loading state.
              */
             async triggerVisualEvent(atIndexOrTempId = null, btnElement = null) {
+                // Guard: Concurrency Check
+                const isInternalPlaceholder = typeof atIndexOrTempId === 'string' && atIndexOrTempId.startsWith('visual_placeholder_');
+                if (this.RUNTIME.isProcessing && !isInternalPlaceholder) {
+                    if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                        UIManager.showNotification("Visual generation is already in progress.", "warning");
+                    }
+                    return;
+                }
+
                 // Guard: Global Image Gen Disabled
                 if (typeof UIManager !== 'undefined' && !UIManager.isImageGenEnabled()) {
                     UIManager.showNotification("Image generation is disabled in settings.", "warning");
                     return;
                 }
+
+                this.RUNTIME.isProcessing = true;
 
                 const state = ReactiveStore.state;
 
@@ -42788,70 +42799,95 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     atIndex = state.chat_history.findIndex(m => m._tempId === atIndexOrTempId);
                 }
 
-                // 1. Determine Range
-                let historySlice;
-                let contextDescription = "";
-
-                if (typeof atIndex === 'number' && atIndex !== -1 && !state.chat_history[atIndex]?.isLoading) {
-                    // Specific point in history: [atIndex-4 ... atIndex]
-                    // Safe slice handling
-                    const start = Math.max(0, atIndex - 4);
-                    const end = atIndex + 1; // slice end is exclusive
-                    historySlice = state.chat_history.slice(start, end);
-                    contextDescription = `(Context: History at message #${atIndex})`;
-                } else {
-                    // Default: Last 5 messages (excluding current placeholder if at end)
-                    const sliceEnd = (typeof atIndex === 'number' && atIndex === state.chat_history.length - 1) ? -1 : undefined;
-                    historySlice = state.chat_history.slice(-5, sliceEnd);
+                // Resolve target button element:
+                // If btnElement is provided and inside .message-dropdown-menu (which auto-closes),
+                // or if btnElement is not provided but we have a valid atIndex,
+                // find the visible button in the chat bubble header.
+                let targetBtn = btnElement;
+                if (typeof document !== 'undefined' && typeof document.querySelector === 'function') {
+                    if ((!targetBtn || (targetBtn.closest && targetBtn.closest('.message-dropdown-menu'))) && typeof atIndex === 'number' && atIndex !== -1) {
+                        const headerBtn = document.querySelector(`.chat-bubble-container[data-message-index="${atIndex}"] button[data-action="trigger-visual-event"]`);
+                        if (headerBtn) targetBtn = headerBtn;
+                    }
                 }
 
-                // 1.5 Build Context (Last 5 messages)
-                const recentHistory = historySlice
-                    .filter(m => m && m.type === 'chat' && !m.isHidden)
-                    .map(m => {
-                        const char = ReactiveStore.getCharacter(m.character_id);
-                        return `${char ? char.name : 'Unknown'}: ${m.content}`;
-                    })
-                    .join('\n');
-
-                // 2. Gather Physical Descriptions for Active Participants
-                const participantIds = NarrativeController.getActiveParticipantIds(5);
-                const activeChars = [...state.characters, ...ReactiveStore.getActiveLocationCharacters()]
-                    .filter(c => participantIds.includes(c.id));
-
-                const charPersonas = activeChars.map(c => {
-                    const appearance = c.appearance || c.short_description || (c.description ? c.description.substring(0, 200) : "No description available.");
-                    return `${c.name} (Physical Aspect):\n${appearance}`;
-                }).join('\n\n');
-
-                let locationContext = "";
-                if (state.worldMap && state.worldMap.currentLocation) {
-                    const loc = state.worldMap.grid.find(l => l.coords.x === state.worldMap.currentLocation.x && l.coords.y === state.worldMap.currentLocation.y);
-                    if (loc) locationContext = `Location: ${loc.name} - ${loc.description}`;
-                }
-
-                // 2. Generate Prompt using AI
-                const systemPrompt = state.visual_master_base_prompt || UTILITY.getDefaultSystemPrompts().visual_master_base_prompt;
-
-                const prompt = `${systemPrompt}\n\nCHARACTERS:\n${charPersonas}\n\nSETTING:\n${locationContext}\n\nDIALOGUE:\n${recentHistory}\n\nKey:`;
-
-                const visualDescription = await APIService.callAI(prompt, false);
-                if (!visualDescription) throw new Error("Failed to generate visual description.");
-
-                // 3. Generate Image
-                // UI feedback on button if present
+                // Capture initial button properties for clean restoration
                 let originalIcon = '';
-                if (btnElement) {
-                    originalIcon = btnElement.innerHTML;
-                    btnElement.innerHTML = `<svg class="animate-spin h-4 w-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-                    btnElement.disabled = true;
-                    btnElement.classList.add('cursor-not-allowed');
-                    // Notify the user globally as well
-                    UIManager.showNotification("Visual Master: Generating scene...", "info");
+                let originalTitle = 'Generate Image';
+                if (targetBtn) {
+                    originalIcon = targetBtn.innerHTML;
+                    originalTitle = targetBtn.title || 'Generate Image';
+
+                    // Phase 1: Prompt Construction State
+                    targetBtn.disabled = true;
+                    targetBtn.classList.add('cursor-wait');
+                    targetBtn.title = 'Crafting scene prompt...';
+                    targetBtn.innerHTML = `<svg class="w-4 h-4 text-purple-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>`;
                 }
 
                 try {
-                    // 3. Generate Image
+                    // 1. Determine Range
+                    let historySlice;
+                    let contextDescription = "";
+
+                    if (typeof atIndex === 'number' && atIndex !== -1 && !state.chat_history[atIndex]?.isLoading) {
+                        // Specific point in history: [atIndex-4 ... atIndex]
+                        // Safe slice handling
+                        const start = Math.max(0, atIndex - 4);
+                        const end = atIndex + 1; // slice end is exclusive
+                        historySlice = state.chat_history.slice(start, end);
+                        contextDescription = `(Context: History at message #${atIndex})`;
+                    } else {
+                        // Default: Last 5 messages (excluding current placeholder if at end)
+                        const sliceEnd = (typeof atIndex === 'number' && atIndex === state.chat_history.length - 1) ? -1 : undefined;
+                        historySlice = state.chat_history.slice(-5, sliceEnd);
+                    }
+
+                    // 1.5 Build Context (Last 5 messages)
+                    const recentHistory = historySlice
+                        .filter(m => m && m.type === 'chat' && !m.isHidden)
+                        .map(m => {
+                            const char = ReactiveStore.getCharacter(m.character_id);
+                            return `${char ? char.name : 'Unknown'}: ${m.content}`;
+                        })
+                        .join('\n');
+
+                    // 2. Gather Physical Descriptions for Active Participants
+                    const participantIds = NarrativeController.getActiveParticipantIds(5);
+                    const activeChars = [...state.characters, ...ReactiveStore.getActiveLocationCharacters()]
+                        .filter(c => participantIds.includes(c.id));
+
+                    const charPersonas = activeChars.map(c => {
+                        const appearance = c.appearance || c.short_description || (c.description ? c.description.substring(0, 200) : "No description available.");
+                        return `${c.name} (Physical Aspect):\n${appearance}`;
+                    }).join('\n\n');
+
+                    let locationContext = "";
+                    if (state.worldMap && state.worldMap.currentLocation) {
+                        const loc = state.worldMap.grid.find(l => l.coords.x === state.worldMap.currentLocation.x && l.coords.y === state.worldMap.currentLocation.y);
+                        if (loc) locationContext = `Location: ${loc.name} - ${loc.description}`;
+                    }
+
+                    // 2. Generate Prompt using AI (Phase 1 Execution)
+                    const systemPrompt = state.visual_master_base_prompt || UTILITY.getDefaultSystemPrompts().visual_master_base_prompt;
+
+                    const prompt = `${systemPrompt}\n\nCHARACTERS:\n${charPersonas}\n\nSETTING:\n${locationContext}\n\nDIALOGUE:\n${recentHistory}\n\nKey:`;
+
+                    const visualDescription = await APIService.callAI(prompt, false);
+                    if (!visualDescription) throw new Error("Failed to generate visual description.");
+
+                    // 3. Transition to Phase 2: Hand-off to Image Gen API
+                    if (targetBtn) {
+                        targetBtn.classList.remove('cursor-wait');
+                        targetBtn.classList.add('cursor-not-allowed');
+                        targetBtn.title = 'Generating image...';
+                        targetBtn.innerHTML = `<svg class="animate-spin h-4 w-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                        if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                            UIManager.showNotification("Visual Master: Generating scene...", "info");
+                        }
+                    }
+
+                    // Generate Image via configured backend
                     const blob = await ImageGenerationService.generateImage(
                         visualDescription, // prompt
                         "nsfw, nude, naked, bad anatomy, text, watermark, blurry, low quality", // negativePrompt
@@ -42877,7 +42913,7 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                         isNew: true
                     };
 
-                    // CRITICAL FIX: Re-resolve index right before update to account for messages added while waiting for generation.
+                    // Re-resolve index right before update to account for messages added while waiting for generation.
                     let finalIndex = -1;
                     if (typeof atIndexOrTempId === 'string') {
                         finalIndex = state.chat_history.findIndex(m => m._tempId === atIndexOrTempId);
@@ -42903,13 +42939,17 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     }
                 } catch (err) {
                     console.error("Visual Event Error:", err);
-                    UIManager.showNotification("Visual generation failed: " + err.message, "error");
+                    if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+                        UIManager.showNotification("Visual generation failed: " + err.message, "error");
+                    }
                 } finally {
-                    if (btnElement) {
-                        btnElement.innerHTML = originalIcon;
-                        btnElement.disabled = false;
-                        btnElement.classList.remove('cursor-not-allowed');
-                    } else {
+                    this.RUNTIME.isProcessing = false;
+                    if (targetBtn) {
+                        targetBtn.innerHTML = originalIcon;
+                        targetBtn.title = originalTitle;
+                        targetBtn.disabled = false;
+                        targetBtn.classList.remove('cursor-wait', 'cursor-not-allowed');
+                    } else if (typeof UIManager !== 'undefined' && UIManager.hideLoadingSpinner) {
                         UIManager.hideLoadingSpinner();
                     }
                 }

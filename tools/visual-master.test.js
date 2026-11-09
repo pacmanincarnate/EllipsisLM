@@ -40,17 +40,19 @@ test('VisualMaster source contract: concurrency check in triggerVisualEvent', ()
     const triggerCode = visualMasterCode.slice(triggerIndex);
     assert.match(
         triggerCode.slice(0, 500),
-        /if\s*\(\s*this\.RUNTIME\.isProcessing\s*\)/,
+        /if\s*\(\s*this\.RUNTIME\.isProcessing/,
         'triggerVisualEvent must check this.RUNTIME.isProcessing near its beginning'
     );
 });
 
 test('VisualMaster source contract: immediate button disable before APIService.callAI', () => {
-    const callAIIndex = visualMasterCode.indexOf('APIService.callAI');
-    assert.ok(callAIIndex !== -1, 'APIService.callAI must be called in VisualMaster');
+    const triggerIndex = visualMasterCode.indexOf('async triggerVisualEvent(');
+    const triggerCode = visualMasterCode.slice(triggerIndex);
+    const callAIIndex = triggerCode.indexOf('APIService.callAI');
+    assert.ok(callAIIndex !== -1, 'APIService.callAI must be called in triggerVisualEvent');
 
     // Finding button disablement before callAI
-    const buttonDisableIndex = visualMasterCode.indexOf('.disabled = true');
+    const buttonDisableIndex = triggerCode.indexOf('.disabled = true');
     assert.ok(
         buttonDisableIndex !== -1 && buttonDisableIndex < callAIIndex,
         'Button must be disabled before calling APIService.callAI'
@@ -58,28 +60,32 @@ test('VisualMaster source contract: immediate button disable before APIService.c
 });
 
 test('VisualMaster source contract: sparkles icon and purple accent set during Phase 1', () => {
-    const callAIIndex = visualMasterCode.indexOf('APIService.callAI');
-    const sparklesIndex = visualMasterCode.indexOf('text-purple-400');
+    const triggerIndex = visualMasterCode.indexOf('async triggerVisualEvent(');
+    const triggerCode = visualMasterCode.slice(triggerIndex);
+    const callAIIndex = triggerCode.indexOf('APIService.callAI');
+    const sparklesIndex = triggerCode.indexOf('text-purple-400');
     assert.ok(
         sparklesIndex !== -1 && sparklesIndex < callAIIndex,
         'Phase 1 sparkles icon with text-purple-400 must be set before APIService.callAI'
     );
     assert.match(
-        visualMasterCode,
+        triggerCode,
         /Crafting scene prompt\.\.\./,
         'Phase 1 tooltip Crafting scene prompt... must be defined'
     );
 });
 
-test('VisualMaster source contract: APIService.callAI must be inside try block', () => {
+test('VisualMaster source contract: APIService.callAI must be inside try block in triggerVisualEvent', () => {
     // APIService.callAI must be preceded by try { and followed by catch and finally
-    const tryIndex = visualMasterCode.indexOf('try {');
-    const callAIIndex = visualMasterCode.indexOf('APIService.callAI');
-    const finallyIndex = visualMasterCode.indexOf('finally {');
+    const triggerIndex = visualMasterCode.indexOf('async triggerVisualEvent(');
+    const triggerCode = visualMasterCode.slice(triggerIndex);
+    const tryIndex = triggerCode.indexOf('try {');
+    const callAIIndex = triggerCode.indexOf('APIService.callAI');
+    const finallyIndex = triggerCode.indexOf('finally {');
 
-    assert.ok(tryIndex !== -1, 'try block must exist in VisualMaster');
-    assert.ok(tryIndex < callAIIndex, 'APIService.callAI must be inside try block');
-    assert.ok(callAIIndex < finallyIndex, 'APIService.callAI must be protected by finally block');
+    assert.ok(tryIndex !== -1, 'try block must exist in triggerVisualEvent');
+    assert.ok(tryIndex < callAIIndex, 'APIService.callAI must be inside try block in triggerVisualEvent');
+    assert.ok(callAIIndex < finallyIndex, 'APIService.callAI must be protected by finally block in triggerVisualEvent');
 });
 
 // ── 2. RUNTIME BEHAVIORAL TESTS (SANDBOXED VM) ──
