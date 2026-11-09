@@ -247,3 +247,76 @@ test('VisualMaster runtime: concurrency guard rejects duplicate calls while proc
         'Warning notification must inform user that visual generation is already running'
     );
 });
+
+test('VisualMaster runtime: automatic dice roll failure cleans up zombie placeholder in chat_history', async () => {
+    const sandbox = createVisualMasterSandbox();
+    const tempId = 'visual_placeholder_99999';
+    sandbox.ReactiveStore.state.chat_history.push({
+        type: 'visual_event',
+        content: 'Painting the scene...',
+        isLoading: true,
+        _tempId: tempId
+    });
+
+    sandbox.APIService.callAI = async () => {
+        throw new Error('LLM timeout');
+    };
+
+    await sandbox.VisualMaster.triggerVisualEvent(tempId);
+
+    const placeholder = sandbox.ReactiveStore.state.chat_history.find(m => m._tempId === tempId);
+    assert.equal(placeholder, undefined, 'Placeholder must be removed from chat_history on failure');
+});
+
+test('VisualMaster runtime: context menu trigger redirects loading state to header button', async () => {
+    const sandbox = createVisualMasterSandbox();
+    let headerBtnObserved = false;
+
+    const mockHeaderBtn = {
+        innerHTML: '<svg class="header-icon"></svg>',
+        title: 'Generate Image',
+        disabled: false,
+        classList: {
+            classes: new Set(),
+            add(...cls) { cls.forEach(c => this.classes.add(c)); },
+            remove(...cls) { cls.forEach(c => this.classes.delete(c)); },
+            contains(c) { return this.classes.has(c); }
+        }
+    };
+
+    // Context menu button that is inside #message-context-menu
+    const contextMenuBtn = {
+        innerHTML: 'Generate Image',
+        title: 'Generate Image',
+        disabled: false,
+        closest(selector) {
+            if (selector.includes('#message-context-menu')) {
+                return { id: 'message-context-menu' };
+            }
+            return null;
+        }
+    };
+
+    sandbox.document.querySelector = (selector) => {
+        if (selector.includes('data-action="trigger-visual-event"')) {
+            return mockHeaderBtn;
+        }
+        return null;
+    };
+
+    sandbox.APIService.callAI = async () => {
+        if (
+            mockHeaderBtn.disabled === true &&
+            mockHeaderBtn.classList.contains('cursor-wait') &&
+            mockHeaderBtn.innerHTML.includes('text-purple-400')
+        ) {
+            headerBtnObserved = true;
+        }
+        return 'visual prompt';
+    };
+
+    await sandbox.VisualMaster.triggerVisualEvent(0, contextMenuBtn);
+
+    assert.ok(headerBtnObserved, 'Visible header button must receive loading state when triggered from context menu');
+    assert.equal(mockHeaderBtn.disabled, false, 'Header button must be re-enabled after completion');
+});

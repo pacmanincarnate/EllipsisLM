@@ -42789,8 +42789,6 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     return;
                 }
 
-                this.RUNTIME.isProcessing = true;
-
                 const state = ReactiveStore.state;
 
                 // --- RESOLVE INDEX IF USING TEMPID ---
@@ -42800,12 +42798,12 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 }
 
                 // Resolve target button element:
-                // If btnElement is provided and inside .message-dropdown-menu (which auto-closes),
+                // If btnElement is provided and inside .message-dropdown-menu or #message-context-menu (which auto-closes),
                 // or if btnElement is not provided but we have a valid atIndex,
                 // find the visible button in the chat bubble header.
                 let targetBtn = btnElement;
                 if (typeof document !== 'undefined' && typeof document.querySelector === 'function') {
-                    if ((!targetBtn || (targetBtn.closest && targetBtn.closest('.message-dropdown-menu'))) && typeof atIndex === 'number' && atIndex !== -1) {
+                    if ((!targetBtn || (targetBtn.closest && targetBtn.closest('.message-dropdown-menu, #message-context-menu'))) && typeof atIndex === 'number' && atIndex !== -1) {
                         const headerBtn = document.querySelector(`.chat-bubble-container[data-message-index="${atIndex}"] button[data-action="trigger-visual-event"]`);
                         if (headerBtn) targetBtn = headerBtn;
                     }
@@ -42814,18 +42812,20 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                 // Capture initial button properties for clean restoration
                 let originalIcon = '';
                 let originalTitle = 'Generate Image';
-                if (targetBtn) {
-                    originalIcon = targetBtn.innerHTML;
-                    originalTitle = targetBtn.title || 'Generate Image';
-
-                    // Phase 1: Prompt Construction State
-                    targetBtn.disabled = true;
-                    targetBtn.classList.add('cursor-wait');
-                    targetBtn.title = 'Crafting scene prompt...';
-                    targetBtn.innerHTML = `<svg class="w-4 h-4 text-purple-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>`;
-                }
 
                 try {
+                    this.RUNTIME.isProcessing = true;
+
+                    if (targetBtn) {
+                        originalIcon = targetBtn.innerHTML;
+                        originalTitle = targetBtn.title || 'Generate Image';
+
+                        // Phase 1: Prompt Construction State
+                        targetBtn.disabled = true;
+                        targetBtn.classList.add('cursor-wait');
+                        targetBtn.title = 'Crafting scene prompt...';
+                        targetBtn.innerHTML = `<svg class="w-4 h-4 text-purple-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>`;
+                    }
                     // 1. Determine Range
                     let historySlice;
                     let contextDescription = "";
@@ -42941,6 +42941,12 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     console.error("Visual Event Error:", err);
                     if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
                         UIManager.showNotification("Visual generation failed: " + err.message, "error");
+                    }
+                    if (isInternalPlaceholder) {
+                        const idx = state.chat_history.findIndex(m => m._tempId === atIndexOrTempId);
+                        if (idx !== -1) {
+                            state.chat_history.splice(idx, 1);
+                        }
                     }
                 } finally {
                     this.RUNTIME.isProcessing = false;
