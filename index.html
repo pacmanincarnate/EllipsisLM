@@ -21863,17 +21863,17 @@ EXECUTION DIRECTIVE: Your output MUST begin immediately with the opening tag <lo
                 }
 
                 // Pass 2: Explicit mapping injections
-                if (mapping.positiveNodeId && wf[mapping.positiveNodeId]) {
-                    const key = mapping.positiveKey || 'text';
-                    if (!posTokenReplacedNodes.has(mapping.positiveNodeId)) {
-                        wf[mapping.positiveNodeId].inputs[key] = promptVal;
+                if (mapping.promptNodeId && wf[mapping.promptNodeId]) {
+                    const key = mapping.promptKey || 'text';
+                    if (!posTokenReplacedNodes.has(mapping.promptNodeId)) {
+                        wf[mapping.promptNodeId].inputs[key] = promptVal;
                     }
                 }
 
-                if (mapping.negativeNodeId && wf[mapping.negativeNodeId]) {
-                    const key = mapping.negativeKey || 'text';
-                    if (!negTokenReplacedNodes.has(mapping.negativeNodeId)) {
-                        wf[mapping.negativeNodeId].inputs[key] = negPromptVal;
+                if (mapping.negativePromptNodeId && wf[mapping.negativePromptNodeId]) {
+                    const key = mapping.negativePromptKey || 'text';
+                    if (!negTokenReplacedNodes.has(mapping.negativePromptNodeId)) {
+                        wf[mapping.negativePromptNodeId].inputs[key] = negPromptVal;
                     }
                 }
 
