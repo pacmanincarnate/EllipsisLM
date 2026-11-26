@@ -39833,33 +39833,38 @@ Write only the descriptive paragraphs.`;
             },
 
             /**
-             * Creates a new blank scenario and opens the editor.
+             * Opens the editor on a new, unsaved scenario draft.
+             * The draft is only written to the database when the user saves, so
+             * cancelling the editor no longer leaves a stray "New Scenario" behind.
              */
             async createNewScenario(storyId) {
                 const story = await DBService.getStory(storyId);
-                if (!story) return;
-
-                const newScenario = {
-                    id: UTILITY.uuid(),
-                    name: "New Scenario",
-                    message: "The story begins..."
-                };
-
-                if (!story.scenarios) story.scenarios = [];
-                story.scenarios.push(newScenario);
-                story.last_modified = new Date().toISOString();
-
-                await DBService.saveStory(story);
-
-                const library = StateManager.getLibrary();
-                const storyInLibrary = library.stories.find(s => s.id === storyId);
-                if (storyInLibrary) {
-                    storyInLibrary.scenarios = story.scenarios;
-                    storyInLibrary.last_modified = story.last_modified;
+                if (!story) {
+                    UIManager.showNotification("Could not open the scenario editor: story not found.", "error");
+                    return;
                 }
 
-                UIManager.openStoryDetails(storyId);
-                this.editScenario(storyId, newScenario.id);
+                const characters = story.characters || [];
+                const userCharacter = characters.find(c => c.is_user);
+
+                const draft = {
+                    id: UTILITY.uuid(),
+                    name: "New Scenario",
+                    message: "The story begins...",
+                    static_entries: [],
+                    dynamic_entries: [],
+                    active_character_ids: characters.map(c => c.id),
+                    user_character_id: userCharacter ? userCharacter.id : null
+                };
+
+                this.currentEditScenario = draft;
+                this.currentEditScenarioStoryId = storyId;
+                this.currentEditScenarioIsNew = true;
+                this.selectedScenarioStaticId = null;
+                this.selectedScenarioDynamicId = null;
+
+                this.populateScenarioEditor(storyId, draft, characters);
+                AppController.openModal('edit-scenario-modal');
             },
 
             /**
@@ -39868,6 +39873,7 @@ Write only the descriptive paragraphs.`;
             // --- SCENARIO EDITING STATE ---
             currentEditScenario: null,
             currentEditScenarioStoryId: null,
+            currentEditScenarioIsNew: false,
             selectedScenarioStaticId: null,
             selectedScenarioDynamicId: null,
 
@@ -39898,14 +39904,22 @@ Write only the descriptive paragraphs.`;
 
             async editScenario(storyId, scenarioId) {
                 const story = await DBService.getStory(storyId);
-                if (!story) return;
+                if (!story) {
+                    UIManager.showNotification("Could not open the scenario editor: story not found.", "error");
+                    return;
+                }
 
-                const scenario = story.scenarios.find(sc => sc.id === scenarioId);
-                if (!scenario) return;
+                const scenario = (story.scenarios || []).find(sc => sc.id === scenarioId);
+                if (!scenario) {
+                    UIManager.showNotification("Could not open the scenario editor: that scenario no longer exists.", "error");
+                    UIManager.openStoryDetails(storyId);
+                    return;
+                }
 
                 // Deep clone for isolated editing
                 this.currentEditScenario = JSON.parse(JSON.stringify(scenario));
                 this.currentEditScenarioStoryId = storyId;
+                this.currentEditScenarioIsNew = false;
 
                 // Migrate legacy scenario_knowledge to static entries if needed
                 if (this.currentEditScenario.scenario_knowledge && (!this.currentEditScenario.static_entries || this.currentEditScenario.static_entries.length === 0)) {
@@ -39921,7 +39935,7 @@ Write only the descriptive paragraphs.`;
                 if (!this.currentEditScenario.static_entries) this.currentEditScenario.static_entries = [];
                 if (!this.currentEditScenario.dynamic_entries) this.currentEditScenario.dynamic_entries = [];
                 if (!this.currentEditScenario.active_character_ids) {
-                    this.currentEditScenario.active_character_ids = story.characters.map(c => c.id);
+                    this.currentEditScenario.active_character_ids = (story.characters || []).map(c => c.id);
                 }
 
                 // Reset selections
@@ -39929,22 +39943,30 @@ Write only the descriptive paragraphs.`;
                 this.selectedScenarioDynamicId = null;
 
                 if (this.currentEditScenario.user_character_id === undefined) {
-                    const existingUser = story.characters.find(c => c.is_user);
+                    const existingUser = (story.characters || []).find(c => c.is_user);
                     this.currentEditScenario.user_character_id = existingUser ? existingUser.id : null;
                 }
 
-                // Populate Setup
+                this.populateScenarioEditor(storyId, this.currentEditScenario, story.characters || []);
+                AppController.openModal('edit-scenario-modal');
+            },
+
+            /**
+             * Fills the scenario editor form from a scenario object.
+             * @param {string} storyId - Owning story id.
+             * @param {Object} scenario - Scenario (or unsaved draft) to display.
+             * @param {Array} characters - Characters available for the cast tab.
+             */
+            populateScenarioEditor(storyId, scenario, characters) {
                 document.getElementById('edit-scenario-story-id').value = storyId;
-                document.getElementById('edit-scenario-id').value = scenarioId;
-                document.getElementById('edit-scenario-name').value = this.currentEditScenario.name || '';
-                document.getElementById('edit-scenario-message').value = this.currentEditScenario.message || '';
+                document.getElementById('edit-scenario-id').value = scenario.id;
+                document.getElementById('edit-scenario-name').value = scenario.name || '';
+                document.getElementById('edit-scenario-message').value = scenario.message || '';
 
                 this.switchScenarioTab('setup');
-                this.renderScenarioCast(story.characters);
+                this.renderScenarioCast(characters || []);
                 this.renderScenarioStaticEntries();
                 this.renderScenarioDynamicEntries();
-
-                AppController.openModal('edit-scenario-modal');
             },
 
             renderScenarioCast(allCharacters) {
@@ -40215,22 +40237,40 @@ Write only the descriptive paragraphs.`;
                 }
 
                 const story = await DBService.getStory(storyId);
-                if (!story) return;
+                if (!story) {
+                    UIManager.showNotification("Could not save the scenario: story not found.", "error");
+                    return;
+                }
 
-                const scenario = story.scenarios.find(sc => sc.id === scenarioId);
-                if (!scenario) return;
-
-                // Sync UI fields into the deep clone
+                // Sync UI fields into the working copy
                 this.currentEditScenario.name = name;
                 this.currentEditScenario.message = message;
 
-                // Mutate the original scenario
-                Object.assign(scenario, this.currentEditScenario);
-                delete scenario.scenario_knowledge; // Ensure legacy is cleaned
+                if (!story.scenarios) story.scenarios = [];
+                const scenario = story.scenarios.find(sc => sc.id === scenarioId);
+
+                if (scenario) {
+                    // Mutate the original scenario
+                    Object.assign(scenario, this.currentEditScenario);
+                    delete scenario.scenario_knowledge; // Ensure legacy is cleaned
+                } else if (this.currentEditScenarioIsNew) {
+                    // Draft from createNewScenario: persist it now that the user saved.
+                    const created = JSON.parse(JSON.stringify(this.currentEditScenario));
+                    created.id = scenarioId;
+                    story.scenarios.push(created);
+                } else {
+                    // The scenario was deleted elsewhere while it was being edited.
+                    UIManager.showNotification("Could not save the scenario: it no longer exists.", "error");
+                    return;
+                }
 
                 story.last_modified = new Date().toISOString();
 
-                await DBService.saveStory(story);
+                const saved = await DBService.saveStory(story);
+                if (!saved) {
+                    UIManager.showNotification("Could not save the scenario: the database write failed.", "error");
+                    return;
+                }
 
                 const library = StateManager.getLibrary();
                 const storyInLibrary = library.stories.find(s => s.id === storyId);
@@ -40239,6 +40279,7 @@ Write only the descriptive paragraphs.`;
                     storyInLibrary.last_modified = story.last_modified;
                 }
 
+                this.currentEditScenarioIsNew = false;
                 AppController.closeModal('edit-scenario-modal');
                 UIManager.openStoryDetails(storyId);
             },

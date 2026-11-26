@@ -66,7 +66,7 @@ We use a tiered structure to manage complex, branching narratives without clutte
 
 This hierarchy allows you to start multiple "runs" of the same scenario without overwriting your progress in either.
 
-- **Scenario Editor**: Customize scenarios with specific notes, active character rosters, and scenario-specific lore. Create new blank scenarios or edit existing templates directly from the UI.
+- **Scenario Editor**: Customize scenarios with specific notes, active character rosters, and scenario-specific lore. Create new blank scenarios or edit existing templates directly from the UI. New scenarios are only written to the library when you press **Save**, so backing out leaves the story untouched, and a save that cannot be completed reports the problem instead of failing silently.
 
 ### Organization
 - **Folders**: Manage large libraries by grouping stories into global folders. The UI includes full filtering, searching, and sorting capabilities to help you find specific characters or universes instantly.
