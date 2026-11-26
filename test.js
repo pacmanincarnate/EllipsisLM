@@ -87,7 +87,10 @@ function loadUtility() {
         Uint8Array: typeof Uint8Array !== 'undefined' ? Uint8Array : undefined,
         DataView: typeof DataView !== 'undefined' ? DataView : undefined,
         ArrayBuffer: typeof ArrayBuffer !== 'undefined' ? ArrayBuffer : undefined,
-        Buffer: typeof Buffer !== 'undefined' ? Buffer : undefined
+        Buffer: typeof Buffer !== 'undefined' ? Buffer : undefined,
+        // createActivityTimeout needs timers; a bare vm context has none.
+        setTimeout,
+        clearTimeout
     });
 }
 
@@ -4104,4 +4107,136 @@ test('ComfyUI Custom Workflow: End-to-end compilation, placeholder analysis & pa
     assert.equal(injected['1'].inputs.steps, 30);
     assert.equal(injected['1'].inputs.cfg, 7.5);
     assert.equal(injected['1'].inputs.sampler_name, 'dpmpp_2m');
+});
+
+// ─── resolveAITimeoutBudget ───────────────────────────────────────────────
+//
+// A single 60-second inactivity budget used to govern every provider. That is
+// too short for local models still loading/processing a prompt (no bytes yet)
+// and for non-streaming providers that must finish the whole generation inside
+// the window. The budget is now two-phase: a generous first-token budget and a
+// tighter gap budget once content is flowing.
+
+test('resolveAITimeoutBudget: defaults to 300s for the first token and 60s between tokens', () => {
+    deepEq(UTILITY.resolveAITimeoutBudget(), { firstByteMs: 300000, interTokenMs: 60000 });
+    deepEq(UTILITY.resolveAITimeoutBudget({}), { firstByteMs: 300000, interTokenMs: 60000 });
+});
+
+test('resolveAITimeoutBudget: an explicit timeoutMs overrides the configured value', () => {
+    deepEq(
+        UTILITY.resolveAITimeoutBudget({ timeoutMs: 1234, configuredSeconds: 120 }),
+        { firstByteMs: 1234, interTokenMs: 60000 }
+    );
+});
+
+test('resolveAITimeoutBudget: configured seconds are converted to milliseconds', () => {
+    deepEq(
+        UTILITY.resolveAITimeoutBudget({ configuredSeconds: '120' }),
+        { firstByteMs: 120000, interTokenMs: 60000 }
+    );
+    deepEq(
+        UTILITY.resolveAITimeoutBudget({ configuredSeconds: 45 }),
+        { firstByteMs: 45000, interTokenMs: 60000 }
+    );
+});
+
+test('resolveAITimeoutBudget: blank or invalid configuration falls back to the default', () => {
+    for (const configuredSeconds of [undefined, null, '', '   ', 'abc', 0, -5, NaN, Infinity]) {
+        deepEq(
+            UTILITY.resolveAITimeoutBudget({ configuredSeconds }),
+            { firstByteMs: 300000, interTokenMs: 60000 },
+            `configuredSeconds=${String(configuredSeconds)} should fall back to the default`
+        );
+    }
+});
+
+test('resolveAITimeoutBudget: clamps the first-token budget to a sane range', () => {
+    assert.equal(
+        UTILITY.resolveAITimeoutBudget({ configuredSeconds: '1' }).firstByteMs,
+        30000,
+        'below 30s must clamp up'
+    );
+    assert.equal(
+        UTILITY.resolveAITimeoutBudget({ configuredSeconds: '99999' }).firstByteMs,
+        3600000,
+        'above 60 minutes must clamp down'
+    );
+});
+
+test('resolveAITimeoutBudget: the between-token budget defaults to 60s and can be overridden', () => {
+    assert.equal(UTILITY.resolveAITimeoutBudget({ interTokenMs: 250 }).interTokenMs, 250);
+    assert.equal(UTILITY.resolveAITimeoutBudget({ interTokenMs: 0 }).interTokenMs, 60000);
+    assert.equal(UTILITY.resolveAITimeoutBudget({ interTokenMs: 'abc' }).interTokenMs, 60000);
+});
+
+// ─── createActivityTimeout: mutable two-phase budget ──────────────────────
+
+test('createActivityTimeout: the default budget remains 60 seconds', () => {
+    const tracker = UTILITY.createActivityTimeout({});
+    assert.equal(tracker.getTimeoutMs(), 60000);
+    tracker.cancel();
+});
+
+test('createActivityTimeout: setTimeoutMs re-arms with the new budget', async () => {
+    let timedOut = false;
+    const tracker = UTILITY.createActivityTimeout({
+        timeoutMs: 5000,
+        onTimeout: () => { timedOut = true; }
+    });
+
+    tracker.setTimeoutMs(40);
+    assert.equal(tracker.getTimeoutMs(), 40);
+
+    await new Promise(resolve => setTimeout(resolve, 90));
+    assert.equal(timedOut, true, 'the shortened budget must fire');
+    tracker.cancel();
+});
+
+test('createActivityTimeout: a sign of life after a budget change uses the new budget', async () => {
+    let timedOut = false;
+    const tracker = UTILITY.createActivityTimeout({
+        timeoutMs: 5000,
+        onTimeout: () => { timedOut = true; }
+    });
+
+    tracker.setTimeoutMs(50);
+    tracker.recordSignOfLife();
+
+    await new Promise(resolve => setTimeout(resolve, 25));
+    assert.equal(timedOut, false, 'must not fire before the new budget elapses');
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assert.equal(timedOut, true, 'must fire once the new budget elapses');
+    tracker.cancel();
+});
+
+test('createActivityTimeout: invalid budgets are ignored', () => {
+    const tracker = UTILITY.createActivityTimeout({ timeoutMs: 1234 });
+    for (const value of [0, -1, NaN, null, undefined, 'abc']) {
+        tracker.setTimeoutMs(value);
+        assert.equal(
+            tracker.getTimeoutMs(),
+            1234,
+            `setTimeoutMs(${String(value)}) must leave the budget unchanged`
+        );
+    }
+    tracker.cancel();
+});
+
+// ─── callAI two-phase wiring (source contract) ────────────────────────────
+
+test('callAI: resolves a two-phase budget instead of a fixed provider timeout', () => {
+    const start = HTML.indexOf('async callAI(');
+    const end = HTML.indexOf('async getGeminiModels(', start);
+    assert.ok(start !== -1 && end > start, 'could not locate the callAI body');
+
+    const body = HTML.slice(start, end);
+    assert.match(body, /resolveAITimeoutBudget/, 'callAI must resolve the shared budget helper');
+    assert.match(body, /firstByteMs/, 'callAI must arm the first-token budget');
+    assert.match(body, /setTimeoutMs/, 'callAI must switch to the between-token budget');
+    assert.doesNotMatch(
+        body,
+        /isCloudReasoning\s*\?\s*180000\s*:\s*60000/,
+        'the old single provider-specific budget must be gone'
+    );
 });
