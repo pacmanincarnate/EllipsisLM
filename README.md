@@ -212,6 +212,8 @@ A user-friendly local interface for downloading and running models.
 5.  By default, LM Studio runs at `http://localhost:1234`.
 6.  **In EllipsisLM**: Open **Global Settings** > **AI Backend** > Select **LM Studio**. Ensure the **LM Studio Server URL** is set to `http://localhost:1234/v1`.
 
+* Note: EllipsisLM waits up to **5 minutes** for a model to start replying, since loading a large local model and processing a long prompt can take a while. If your hardware needs more time, raise **Global Settings** > **AI Backend** > **First response timeout (seconds)**. Once tokens are flowing, a 60-second gap is treated as a stalled connection.
+
 ---
 
 ### 5. Vision Bridge (Optional)

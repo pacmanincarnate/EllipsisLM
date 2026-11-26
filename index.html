@@ -6984,6 +6984,19 @@
                     <option value="webllm">WebLLM (Browser WebGPU)</option>
                 </select>
             </div>
+            <div>
+                <h3 class="text-lg font-medium mb-2">Request Timeout</h3>
+                <label for="request-first-byte-timeout-input" class="text-gray-400 text-sm block mb-1">First response timeout (seconds)</label>
+                <input type="number" id="request-first-byte-timeout-input"
+                    data-setting-key="requestFirstByteTimeoutSeconds"
+                    class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white"
+                    min="30" max="3600" step="30" placeholder="300">
+                <p class="text-gray-400 text-xs mt-1">
+                    How long to wait for the model to start responding. This covers model loading and prompt
+                    processing, which can take several minutes for large local models. Default is 300 seconds.
+                    Once tokens are flowing, a gap of 60 seconds is treated as a stalled connection.
+                </p>
+            </div>
             <div id="gemini-settings">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="text-lg font-medium">Gemini API Settings</h3>
@@ -14147,15 +14160,23 @@
                     }
                 }
 
-                // Deep reasoning models on OpenRouter can think for 1-2+ minutes before emitting prose.
-                // Allocate 180 seconds for OpenRouter reasoning; 60 seconds for local and standard backends.
-                const isCloudReasoning = provider === 'openrouter';
-                const timeoutMs = (options && typeof options.timeoutMs === 'number' && options.timeoutMs > 0)
-                    ? options.timeoutMs
-                    : (isCloudReasoning ? 180000 : 60000);
+                // Two-phase budget (see UTILITY.resolveAITimeoutBudget):
+                //   Phase 1 — waiting for the first token. Local models can spend minutes
+                //             loading and processing a prompt, and non-streaming providers
+                //             only answer once the whole generation is finished.
+                //   Phase 2 — content is flowing. A short gap then means the stream stalled.
+                const globalSettings = StateManager.data.globalSettings || {};
+                const timeoutBudget = UTILITY.resolveAITimeoutBudget({
+                    timeoutMs: options && options.timeoutMs,
+                    configuredSeconds: globalSettings.requestFirstByteTimeoutSeconds !== undefined
+                        ? globalSettings.requestFirstByteTimeoutSeconds
+                        : state.requestFirstByteTimeoutSeconds,
+                    interTokenMs: options && options.interTokenMs
+                });
+                let firstTokenSeen = false;
 
                 const timeoutTracker = UTILITY.createActivityTimeout({
-                    timeoutMs,
+                    timeoutMs: timeoutBudget.firstByteMs,
                     onTimeout: () => {
                         internalController.abort();
                     },
@@ -14176,6 +14197,12 @@
 
                 // Handler invoked by model adapters whenever tokens or progress are received
                 const onSignOfLife = (detail = null) => {
+                    // The first content delta ends the prefill phase. From here on a gap
+                    // between tokens is a stall, not a slow prompt.
+                    if (!firstTokenSeen && detail && detail.firstToken) {
+                        firstTokenSeen = true;
+                        timeoutTracker.setTimeoutMs(timeoutBudget.interTokenMs);
+                    }
                     timeoutTracker.recordSignOfLife(detail);
                     if (options && typeof options.onSignOfLife === 'function') {
                         try { options.onSignOfLife(detail); } catch (e) { }
@@ -14247,8 +14274,13 @@
                 } catch (error) {
                     if (error.name === 'AbortError') {
                         if (timeoutTracker.didTimeout()) {
-                            const timeoutSecs = Math.round(timeoutMs / 1000);
-                            const timeoutError = new Error(`Connection timed out after ${timeoutSecs} seconds with no activity from the model. Check that your AI backend is running.`);
+                            const budgetMs = timeoutTracker.getTimeoutMs();
+                            const timeoutSecs = budgetMs >= 1000
+                                ? String(Math.round(budgetMs / 1000))
+                                : (budgetMs / 1000).toFixed(1);
+                            const timeoutError = new Error(firstTokenSeen
+                                ? `Connection timed out: the model stopped sending data for ${timeoutSecs} seconds mid-response. Check that your AI backend is still running.`
+                                : `Connection timed out: the model did not start responding within ${timeoutSecs} seconds. It may still be loading or processing a long prompt. Check that your AI backend is running.`);
                             if (!silent && typeof UIManager !== 'undefined' && UIManager.showNotification) {
                                 UIManager.showNotification(timeoutError.message, 'error');
                                 timeoutError.reported = true;
@@ -14874,6 +14906,7 @@
                 let resultText = "";
                 let thinkingText = "";
                 let finishReason = "";
+                let firstTokenSignalled = false;
                 const contentType = res.headers.get('content-type') || '';
 
                 // KoboldCPP streams OpenAI-style SSE chunks when stream:true; plain JSON is the fallback.
@@ -14908,6 +14941,12 @@
                                             if (onToken) onToken(deltaText);
                                         }
                                         if (deltaReasoning) thinkingText += deltaReasoning;
+                                        if ((deltaText || deltaReasoning) && onSignOfLife && !firstTokenSignalled) {
+                                            // First real content: prefill is over, so switch to
+                                            // the tighter between-token budget.
+                                            firstTokenSignalled = true;
+                                            onSignOfLife({ firstToken: true });
+                                        }
                                         if (choice.finish_reason) finishReason = choice.finish_reason;
                                     } catch (parseErr) {
                                         // Ignore malformed chunk
@@ -15160,6 +15199,7 @@
                     let fullText = '';
                     let fullThinking = '';
                     let sseBuffer = '';
+                    let firstTokenSignalled = false;
 
                     try {
                         while (true) {
@@ -15188,6 +15228,12 @@
                                         }
                                         if (deltaReasoning) {
                                             fullThinking += deltaReasoning;
+                                        }
+                                        if ((deltaText || deltaReasoning) && onSignOfLife && !firstTokenSignalled) {
+                                            // First real content: prefill is over, so switch to
+                                            // the tighter between-token budget.
+                                            firstTokenSignalled = true;
+                                            onSignOfLife({ firstToken: true });
                                         }
                                     } catch (parseErr) {
                                         // Ignore malformed chunk
@@ -18755,6 +18801,9 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     openRouterThinkingBudget: 0,
                     koboldcpp_url: 'http://localhost:5001',
                     koboldcpp_template: 'jinja',
+                    // Generous first-token budget: local models can take minutes to load
+                    // and process a prompt before they emit anything.
+                    requestFirstByteTimeoutSeconds: 300,
                     koboldcpp_temperature: 1.0,
                     kobold_model_path: '',
                     koboldcpp_context_size: 20480,
@@ -20525,6 +20574,45 @@ EXECUTION DIRECTIVE: Your output MUST begin immediately with the opening tag <lo
             },
 
             /**
+             * Resolves the two-phase inactivity budget used by APIService.callAI.
+             *
+             * A single short budget is wrong at both ends of a request: a local
+             * model can spend minutes loading and processing a prompt before it
+             * emits a byte, while non-streaming providers only answer once the
+             * entire generation is finished. Phase 1 (waiting for the first
+             * token) therefore gets a generous budget; once content is flowing,
+             * phase 2 uses a tighter gap to catch a stalled stream.
+             *
+             * @param {Object} [options]
+             * @param {number} [options.timeoutMs] - Code-level override for the first-token budget. Not clamped.
+             * @param {number|string} [options.configuredSeconds] - User setting, in seconds.
+             * @param {number} [options.interTokenMs] - Code-level override for the between-token budget.
+             * @returns {{firstByteMs: number, interTokenMs: number}}
+             */
+            resolveAITimeoutBudget(options = {}) {
+                const DEFAULT_FIRST_BYTE_MS = 300000; // 5 minutes
+                const DEFAULT_INTER_TOKEN_MS = 60000; // 1 minute
+                const MIN_FIRST_BYTE_MS = 30000;      // 30 seconds
+                const MAX_FIRST_BYTE_MS = 3600000;    // 60 minutes
+
+                let firstByteMs = DEFAULT_FIRST_BYTE_MS;
+                if (typeof options.timeoutMs === 'number' && Number.isFinite(options.timeoutMs) && options.timeoutMs > 0) {
+                    firstByteMs = options.timeoutMs;
+                } else if (options.configuredSeconds !== undefined && options.configuredSeconds !== null && options.configuredSeconds !== '') {
+                    const seconds = parseFloat(options.configuredSeconds);
+                    if (Number.isFinite(seconds) && seconds > 0) {
+                        firstByteMs = Math.min(MAX_FIRST_BYTE_MS, Math.max(MIN_FIRST_BYTE_MS, seconds * 1000));
+                    }
+                }
+
+                const interTokenMs = (typeof options.interTokenMs === 'number' && Number.isFinite(options.interTokenMs) && options.interTokenMs > 0)
+                    ? options.interTokenMs
+                    : DEFAULT_INTER_TOKEN_MS;
+
+                return { firstByteMs, interTokenMs };
+            },
+
+            /**
              * Creates a resilient activity/heartbeat timeout tracker.
              * The timeout resets whenever a sign of life (token, chunk, or status update)
              * is received, ensuring long generation sequences are not prematurely terminated
@@ -20537,7 +20625,7 @@ EXECUTION DIRECTIVE: Your output MUST begin immediately with the opening tag <lo
              * @returns {Object} Activity timeout tracker controller.
              */
             createActivityTimeout(options = {}) {
-                const timeoutMs = typeof options.timeoutMs === 'number' && options.timeoutMs > 0 ? options.timeoutMs : 60000;
+                let timeoutMs = typeof options.timeoutMs === 'number' && options.timeoutMs > 0 ? options.timeoutMs : 60000;
                 const onTimeout = typeof options.onTimeout === 'function' ? options.onTimeout : (() => { });
                 const isHidden = typeof options.isHidden === 'function' ? options.isHidden : (() => false);
 
@@ -20580,6 +20668,17 @@ EXECUTION DIRECTIVE: Your output MUST begin immediately with the opening tag <lo
                     arm(timeoutMs);
                 };
 
+                // Swap the budget mid-flight. Used to tighten the window once the
+                // first token has arrived: the generous prefill budget no longer
+                // applies, so a stalled stream is caught quickly.
+                const setTimeoutMs = (ms) => {
+                    if (typeof ms !== 'number' || !Number.isFinite(ms) || ms <= 0) return;
+                    timeoutMs = ms;
+                    if (!active || timedOut) return;
+                    remainingMs = ms;
+                    arm(ms);
+                };
+
                 const cancel = () => {
                     active = false;
                     if (timeoutId) {
@@ -20595,10 +20694,12 @@ EXECUTION DIRECTIVE: Your output MUST begin immediately with the opening tag <lo
                     arm,
                     disarm,
                     recordSignOfLife,
+                    setTimeoutMs,
                     cancel,
                     didTimeout: () => timedOut,
                     getLastSignOfLife: () => lastSignOfLife,
                     getRemainingMs: () => remainingMs,
+                    getTimeoutMs: () => timeoutMs,
                     isActive: () => active
                 };
             },
@@ -32767,6 +32868,7 @@ Output Schema:
                     'apiProvider', 'geminiApiKey', 'openRouterKey', 'openRouterModel',
                     'openRouterMaxTokens', 'openRouterThinkingEffort', 'openRouterThinkingBudget',
                     'koboldcpp_url', 'koboldcpp_template', 'koboldcpp_temperature', 'koboldcpp_min_p', 'koboldcpp_dry', 'kobold_model_path', 'koboldcpp_context_size', 'koboldcpp_quantkv', 'lmstudio_url',
+                    'requestFirstByteTimeoutSeconds',
                     'geminiModel', 'webllmModel',
                     // Image Gen Keys
                     'imageGenBackend', 'comfyImageGenUrl', 'comfyImageGenCheckpoint', 'comfyImageGenWidth', 'comfyImageGenHeight',
@@ -34139,6 +34241,7 @@ Output Schema:
                 if (document.getElementById('koboldcpp-dry-slider')) setupSlider('koboldcpp-dry-slider', 'koboldcpp-dry-value', 'koboldcpp_dry');
                 if (document.getElementById('koboldcpp-url-input')) setListener('koboldcpp-url-input', 'koboldcpp_url');
                 if (document.getElementById('lmstudio-url-input')) setListener('lmstudio-url-input', 'lmstudio_url');
+                if (document.getElementById('request-first-byte-timeout-input')) setListener('request-first-byte-timeout-input', 'requestFirstByteTimeoutSeconds');
                 if (document.getElementById('webllm-model-selector')) setListener('webllm-model-selector', 'webllmModel');
                 // Gemini Model Selector (Just bind listener, population handled in switchSettingsTab)
                 setListener('gemini-model-selector', 'geminiModel');
