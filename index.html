@@ -6981,6 +6981,7 @@
                     <option value="nanogpt">NanoGPT</option>
                     <option value="koboldcpp">KoboldCPP</option>
                     <option value="lmstudio">LM Studio</option>
+                    <option value="custom">Custom</option>
                     <option value="webllm">WebLLM (Browser WebGPU)</option>
                 </select>
             </div>
@@ -8412,6 +8413,73 @@
                         </button>
                         <span id="lmstudio-status-text" class="text-xs text-gray-400"></span>
                     </div>
+                </div>
+            </div>
+            <div id="custom-settings">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-medium">Custom OpenAI-Compatible Settings</h3>
+                </div>
+                <p class="text-gray-400 text-sm mb-2">Point EllipsisLM at any server that implements the OpenAI chat
+                    completions API (Ollama, llama.cpp, vLLM, LocalAI, and others).</p>
+                <p class="text-amber-400 text-sm mb-3 bg-amber-900/50 p-2 rounded-md">In the browser version, the
+                    endpoint must allow cross-origin requests (CORS).</p>
+
+                <div class="mb-3">
+                    <label for="custom-api-url-input" class="text-gray-400 text-sm block mb-1">API URL</label>
+                    <input type="text" id="custom-api-url-input" data-setting-key="customApiUrl"
+                        class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white"
+                        placeholder="http://localhost:11434/v1">
+                    <span class="text-[10px] text-gray-400 mt-0.5 block">Base URL or full /chat/completions URL. /v1
+                        is added if omitted.</span>
+                </div>
+
+                <div class="mb-3">
+                    <label for="custom-api-key-input" class="text-gray-400 text-sm block mb-1">API Key
+                        (optional)</label>
+                    <input type="password" id="custom-api-key-input" data-setting-key="customApiKey"
+                        class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white"
+                        placeholder="Leave blank for local servers">
+                </div>
+
+                <div class="mb-3">
+                    <label for="custom-model-input" class="text-gray-400 text-sm block mb-1">Model</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="custom-model-input" data-setting-key="customModel"
+                            list="custom-model-options"
+                            class="flex-grow rounded-lg p-2 bg-gray-700 border border-gray-600 text-white"
+                            placeholder="e.g. llama3.1 or gpt-4o-mini">
+                        <datalist id="custom-model-options"></datalist>
+                        <button type="button" id="fetch-custom-models-btn"
+                            class="bg-gray-700 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-lg transition-colors"
+                            title="Fetch models from this endpoint">
+                            Fetch Models
+                        </button>
+                    </div>
+                    <span class="text-[10px] text-gray-400 mt-0.5 block">The model ID your server expects. Use Fetch
+                        Models to list them.</span>
+                </div>
+
+                <div class="mb-3">
+                    <label for="custom-max-tokens-input" class="text-gray-400 text-sm block mb-1">Max Output
+                        Tokens</label>
+                    <input type="number" id="custom-max-tokens-input" data-setting-key="customMaxTokens"
+                        class="w-full rounded-lg p-2 bg-gray-700 border border-gray-600 text-white" min="256"
+                        max="131072" step="256" placeholder="4096">
+                    <span class="text-[10px] text-gray-400 mt-0.5 block">Default: 4096. Structured JSON passes use at
+                        least 8192.</span>
+                </div>
+
+                <label class="flex items-center space-x-2 mb-3 text-sm text-gray-300">
+                    <input type="checkbox" id="custom-vision-toggle" data-setting-key="customSupportsVision">
+                    <span>Model supports image input</span>
+                </label>
+
+                <div class="flex items-center space-x-3">
+                    <button type="button" id="test-custom-btn"
+                        class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors">
+                        Test Connection
+                    </button>
+                    <span id="custom-status-text" class="text-xs text-gray-400"></span>
                 </div>
             </div>
             <div id="webllm-settings">
@@ -13661,6 +13729,11 @@
                             openRouterKey: this.data.globalSettings.openRouterKey,
                             koboldcpp_url: this.data.globalSettings.koboldcpp_url,
                             lmstudio_url: this.data.globalSettings.lmstudio_url,
+                            customApiUrl: this.data.globalSettings.customApiUrl,
+                            customApiKey: this.data.globalSettings.customApiKey,
+                            customModel: this.data.globalSettings.customModel,
+                            customMaxTokens: this.data.globalSettings.customMaxTokens,
+                            customSupportsVision: this.data.globalSettings.customSupportsVision,
 
                             characters: hydratedCharacters,
 
@@ -13671,6 +13744,11 @@
                             openRouterKey: this.data.globalSettings.openRouterKey,
                             koboldcpp_url: this.data.globalSettings.koboldcpp_url,
                             lmstudio_url: this.data.globalSettings.lmstudio_url,
+                            customApiUrl: this.data.globalSettings.customApiUrl,
+                            customApiKey: this.data.globalSettings.customApiKey,
+                            customModel: this.data.globalSettings.customModel,
+                            customMaxTokens: this.data.globalSettings.customMaxTokens,
+                            customSupportsVision: this.data.globalSettings.customSupportsVision,
 
                             // Also enforce Model Selections from Global
                             openRouterModel: this.data.globalSettings.openRouterModel,
@@ -13879,6 +13957,16 @@
                         const res = await fetch(`${baseUrl}/v1/models`);
                         if (!res.ok) throw new Error("LM Studio server not responding.");
                         return true;
+                    } else if (provider === 'custom') {
+                        const baseUrl = UTILITY.resolveOpenAICompatibleBaseUrl(config.customApiUrl || config.custom_api_url);
+                        const headers = {};
+                        const key = String(config.customApiKey || config.custom_api_key || '').trim();
+                        if (key) headers.Authorization = `Bearer ${key}`;
+                        const res = await fetch(`${baseUrl}/models`, { headers });
+                        if (!res.ok) {
+                            throw new Error(`Custom endpoint returned ${res.status} ${res.statusText}. Check the API URL and key.`);
+                        }
+                        return true;
                     }
                     return false;
                 } catch (e) {
@@ -14052,6 +14140,14 @@
                     const visionKeywords = ['vision', 'vl', 'mplug', 'llava', 'pixtral', 'qwen-vl', 'llama-3.2'];
                     return visionKeywords.some(kw => model.toLowerCase().includes(kw));
                 }
+                if (provider === 'custom') {
+                    // Arbitrary endpoints have arbitrary model IDs, so guessing from
+                    // the name is unreliable. The user opts in explicitly.
+                    const s = StateManager.getState();
+                    if (s && s.customSupportsVision !== undefined) return !!s.customSupportsVision;
+                    const global = StateManager.data.globalSettings || {};
+                    return !!global.customSupportsVision;
+                }
                 return false;
             },
 
@@ -14072,6 +14168,8 @@
                         return "Ensure the model loaded in LM Studio supports vision (e.g., Llama 3.2 Vision or Pixtral).";
                     case 'webllm':
                         return "WebLLM vision support is not yet available. Please switch to Gemini or OpenRouter for image analysis.";
+                    case 'custom':
+                        return "Enable 'Model supports image input' in Custom Settings only if your endpoint's model accepts image content. Otherwise, use the Vision Bridge or a vision-capable provider.";
                     default:
                         return "Check your provider's documentation for vision-enabled model IDs.";
                 }
@@ -14109,7 +14207,9 @@
                 const provider = state.apiProvider;
                 const model = (provider === 'gemini' ? (state.geminiModel || StateManager.data.globalSettings.geminiModel) :
                     provider === 'openrouter' ? state.openRouterModel :
-                        provider === 'koboldcpp' ? 'local' : 'unknown') || 'unknown';
+                        provider === 'custom' ? (state.customModel || StateManager.data.globalSettings.customModel) :
+                            provider === 'koboldcpp' ? 'local' :
+                                provider === 'lmstudio' ? 'local' : 'unknown') || 'unknown';
 
                 if (images.length > 0 && !this._supportsVision(provider, model)) {
                     // Vision Bridge ([SEC:JS:SRV:VB]): before telling the model it is blind, try
@@ -14234,6 +14334,8 @@
                         rawResult = await this.callKoboldCPP({ text, images }, activeSignal, isJson, executionOptions);
                     } else if (provider === 'lmstudio') {
                         rawResult = await this.callLMStudio({ text, images }, activeSignal, isJson, executionOptions);
+                    } else if (provider === 'custom') {
+                        rawResult = await this.callCustom({ text, images }, activeSignal, isJson, executionOptions);
                     }
 
                     if (rawResult && typeof rawResult === 'object' && ('text' in rawResult || 'thinking' in rawResult)) {
@@ -14302,6 +14404,7 @@
                         else if (friendlyProvider === 'gemini') friendlyProvider = 'Gemini API';
                         else if (friendlyProvider === 'openrouter') friendlyProvider = 'OpenRouter';
                         else if (friendlyProvider === 'nanogpt') friendlyProvider = 'NanoGPT';
+                        else if (friendlyProvider === 'custom') friendlyProvider = 'Custom endpoint';
 
                         const msg = wentHiddenDuringCall
                             ? `Connection dropped while the app was in the background (${friendlyProvider}).`
@@ -15267,6 +15370,229 @@
                 }
 
                 return { text: content.trim(), thinking: thinking.trim() };
+            },
+
+            /**
+             * Calls a user-configured OpenAI-compatible endpoint.
+             *
+             * The URL is normalised through UTILITY.resolveOpenAICompatibleEndpoint
+             * so a bare host, a /v1 base, or a full chat-completions URL all work.
+             * The API key is optional because local runtimes usually do not need
+             * one. Images are attached only when the user explicitly marks the
+             * model as vision-capable; otherwise callAI has already replaced them
+             * with the no-vision notice (or the Vision Bridge description).
+             *
+             * @param {string|Object} prompt - The prompt or {text, images}.
+             * @param {AbortSignal} signal - AbortSignal.
+             * @param {boolean} isJson - Whether to request a JSON object.
+             * @param {Object} extraOpts - onSignOfLife/onToken hooks and sampler overrides.
+             * @returns {Promise<{text: string, thinking: string}>}
+             */
+            async callCustom(prompt, signal, isJson = false, extraOpts = {}) {
+                const state = StateManager.getState();
+                const global = StateManager.data.globalSettings || {};
+                const apiUrl = state.customApiUrl || global.customApiUrl;
+                const apiKey = String(state.customApiKey || global.customApiKey || '').trim();
+                const model = String(state.customModel || global.customModel || '').trim();
+
+                if (!model) {
+                    throw new Error("Custom model name not set. Enter the model ID your endpoint expects.");
+                }
+
+                const endpoint = UTILITY.resolveOpenAICompatibleEndpoint(apiUrl);
+
+                let cleanPrompt = typeof prompt === 'string' ? prompt : prompt.text;
+                cleanPrompt = UTILITY.stripCacheBreaks(cleanPrompt);
+                const images = typeof prompt === 'string' ? [] : (prompt.images || []);
+
+                const supportsVision = state.customSupportsVision !== undefined
+                    ? state.customSupportsVision
+                    : global.customSupportsVision;
+
+                let contentPayload = cleanPrompt;
+                if (images.length > 0 && supportsVision) {
+                    contentPayload = [{ type: 'text', text: cleanPrompt }];
+                    images.forEach(img => {
+                        contentPayload.push({
+                            type: 'image_url',
+                            image_url: {
+                                url: `data:${img.mimeType || 'image/jpeg'};base64,${img.data}`
+                            }
+                        });
+                    });
+                }
+
+                const samplers = UTILITY.resolveSamplerConfig({ ...extraOpts, isJson }, state);
+                const configuredMax = parseInt(
+                    state.customMaxTokens !== undefined ? state.customMaxTokens : global.customMaxTokens,
+                    10
+                );
+                // Structured passes need room for a full schema even if the user
+                // configured a small conversational ceiling.
+                const maxTokens = Number.isFinite(configuredMax) && configuredMax > 0
+                    ? (isJson ? Math.max(configuredMax, 8192) : configuredMax)
+                    : samplers.max_tokens;
+
+                const payload = {
+                    model: model,
+                    messages: [{ role: 'user', content: contentPayload }],
+                    temperature: samplers.temperature,
+                    max_tokens: maxTokens,
+                    stream: true
+                };
+
+                if (isJson) {
+                    payload.response_format = { type: "json_object" };
+                }
+
+                const headers = { 'Content-Type': 'application/json' };
+                if (apiKey) {
+                    headers.Authorization = `Bearer ${apiKey}`;
+                }
+
+                const onSignOfLife = typeof extraOpts?.onSignOfLife === 'function' ? extraOpts.onSignOfLife : null;
+                const onToken = typeof extraOpts?.onToken === 'function' ? extraOpts.onToken : null;
+
+                let res;
+                try {
+                    res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify(payload),
+                        signal
+                    });
+                } catch (fetchErr) {
+                    if (fetchErr.name === 'AbortError') throw fetchErr;
+                    if (fetchErr instanceof TypeError || (fetchErr.message && (
+                        fetchErr.message.includes('Failed to fetch') ||
+                        fetchErr.message.includes('NetworkError') ||
+                        fetchErr.message.includes('ECONNREFUSED')
+                    ))) {
+                        throw new Error(`Could not connect to the custom endpoint at ${endpoint}. Check the API URL and that the server is running.`);
+                    }
+                    throw fetchErr;
+                }
+
+                if (!res.ok) {
+                    let errorDetails = `Status: ${res.status} ${res.statusText}.`;
+                    try {
+                        const errorJson = await res.json();
+                        errorDetails += ` Message: ${errorJson.error?.message || JSON.stringify(errorJson)}`;
+                    } catch (e) {
+                        try { errorDetails += ` Response body: ${await res.text()}`; } catch (e2) { }
+                    }
+                    throw new Error(`Custom API Error: ${errorDetails}`);
+                }
+
+                if (onSignOfLife) onSignOfLife();
+
+                const contentType = res.headers.get('content-type') || '';
+                if (contentType.includes('text/event-stream') && res.body && typeof res.body.getReader === 'function') {
+                    const reader = res.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let fullText = '';
+                    let fullThinking = '';
+                    let sseBuffer = '';
+                    let firstTokenSignalled = false;
+
+                    try {
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            if (onSignOfLife) onSignOfLife();
+
+                            sseBuffer += decoder.decode(value, { stream: true });
+                            const sseLines = sseBuffer.split('\n');
+                            sseBuffer = sseLines.pop() || '';
+
+                            for (const line of sseLines) {
+                                const trimmed = line.trim();
+                                if (!trimmed || trimmed.startsWith(':')) continue;
+                                if (!trimmed.startsWith('data:')) continue;
+
+                                const jsonStr = trimmed.slice(5).trim();
+                                if (!jsonStr || jsonStr === '[DONE]') continue;
+                                try {
+                                    const parsed = JSON.parse(jsonStr);
+                                    const delta = parsed.choices?.[0]?.delta || {};
+                                    const deltaText = delta.content || '';
+                                    const deltaReasoning = delta.reasoning_content || delta.reasoning || '';
+
+                                    if (deltaText) {
+                                        fullText += deltaText;
+                                        if (onToken) onToken(deltaText);
+                                    }
+                                    if (deltaReasoning) {
+                                        fullThinking += deltaReasoning;
+                                    }
+                                    if ((deltaText || deltaReasoning) && onSignOfLife && !firstTokenSignalled) {
+                                        // First real content: prefill is over, so switch
+                                        // to the tighter between-token budget.
+                                        firstTokenSignalled = true;
+                                        onSignOfLife({ firstToken: true });
+                                    }
+                                } catch (parseErr) {
+                                    // Ignore malformed chunks from non-conforming servers.
+                                }
+                            }
+                        }
+                    } finally {
+                        try { reader.releaseLock(); } catch (e) { }
+                    }
+
+                    const extracted = UTILITY.extractThinking(fullText);
+                    if (extracted.thinking) {
+                        fullThinking = [fullThinking.trim(), extracted.thinking.trim()].filter(Boolean).join('\n\n');
+                        fullText = extracted.content;
+                    }
+                    return { text: fullText.trim(), thinking: fullThinking.trim() };
+                }
+
+                // Fallback: non-streaming JSON response from a server that ignored stream:true.
+                const data = await res.json();
+                if (onSignOfLife) onSignOfLife();
+                const msg = data.choices?.[0]?.message || {};
+                let thinking = msg.reasoning_content || msg.reasoning || "";
+                let content = msg.content || "";
+
+                const extracted = UTILITY.extractThinking(content);
+                if (extracted.thinking) {
+                    thinking = [thinking.trim(), extracted.thinking.trim()].filter(Boolean).join('\n\n');
+                    content = extracted.content;
+                }
+
+                return { text: content.trim(), thinking: thinking.trim() };
+            },
+
+            /**
+             * Lists the model IDs exposed by a custom OpenAI-compatible endpoint.
+             * Accepts both the standard {data:[{id}]} shape and the older
+             * {models:[...]} shape some servers still return.
+             *
+             * @param {string} url - The user-entered API URL.
+             * @param {string} [apiKey] - Optional bearer token.
+             * @returns {Promise<string[]>}
+             */
+            async fetchCustomModels(url, apiKey) {
+                const baseUrl = UTILITY.resolveOpenAICompatibleBaseUrl(url);
+                const headers = {};
+                if (apiKey && String(apiKey).trim()) {
+                    headers.Authorization = `Bearer ${String(apiKey).trim()}`;
+                }
+
+                const res = await fetch(`${baseUrl}/models`, { headers });
+                if (!res.ok) {
+                    throw new Error(`Custom endpoint returned ${res.status} ${res.statusText} while listing models.`);
+                }
+
+                const data = await res.json();
+                const entries = Array.isArray(data.data)
+                    ? data.data
+                    : (Array.isArray(data.models) ? data.models : []);
+
+                return entries
+                    .map(entry => (typeof entry === 'string' ? entry : (entry && (entry.id || entry.name))))
+                    .filter(Boolean);
             },
         };
 
@@ -18813,6 +19139,13 @@ Example output: "Atmospheric dark ambient instrumental, 70 BPM, deep synthesizer
                     koboldcpp_max_tokens: 2048,
                     lmstudio_url: 'http://localhost:1234',
                     lmstudio_max_tokens: 2048,
+                    // Custom (OpenAI-compatible) endpoint. Blank until the user
+                    // points it at a server; the key is optional for local runtimes.
+                    customApiUrl: '',
+                    customApiKey: '',
+                    customModel: '',
+                    customMaxTokens: 4096,
+                    customSupportsVision: false,
                     webllmModel: 'Llama-3.1-8B-Instruct-q4f32_1-MLC',
                     userPersonas: [],
                     savedOpenRouterModels: [],
@@ -20610,6 +20943,45 @@ EXECUTION DIRECTIVE: Your output MUST begin immediately with the opening tag <lo
                     : DEFAULT_INTER_TOKEN_MS;
 
                 return { firstByteMs, interTokenMs };
+            },
+
+            /**
+             * Normalises a user-entered OpenAI-compatible base URL into the full
+             * chat-completions endpoint.
+             *
+             * Users paste all three common shapes:
+             *   http://localhost:11434
+             *   http://localhost:11434/v1
+             *   https://host/v1/chat/completions
+             * Accepting all of them avoids a class of "it works in curl but not
+             * here" failures without making the user learn our URL rules.
+             *
+             * @param {string} url
+             * @returns {string}
+             */
+            resolveOpenAICompatibleEndpoint(url) {
+                const raw = String(url == null ? '' : url).trim().replace(/\/+$/, '');
+                if (!raw) {
+                    throw new Error('Custom API URL is not set. Enter the base URL of your OpenAI-compatible endpoint.');
+                }
+                if (!/^https?:\/\//i.test(raw)) {
+                    throw new Error('Custom API URL must start with http:// or https://.');
+                }
+                if (/\/chat\/completions$/i.test(raw)) return raw;
+                if (/\/v1$/i.test(raw)) return `${raw}/chat/completions`;
+                return `${raw}/v1/chat/completions`;
+            },
+
+            /**
+             * Derives the base URL used for the /models probe from the same
+             * user-entered value accepted by resolveOpenAICompatibleEndpoint.
+             *
+             * @param {string} url
+             * @returns {string}
+             */
+            resolveOpenAICompatibleBaseUrl(url) {
+                const endpoint = this.resolveOpenAICompatibleEndpoint(url);
+                return endpoint.replace(/\/chat\/completions$/i, '');
             },
 
             /**
@@ -27499,8 +27871,9 @@ Output Schema:
                 const provider = state.apiProvider;
                 const model = (provider === 'gemini' ? (state.geminiModel || StateManager.data.globalSettings.geminiModel) :
                     provider === 'openrouter' ? state.openRouterModel :
-                        provider === 'koboldcpp' ? 'local' :
-                            provider === 'lmstudio' ? 'local' : 'unknown') || 'unknown';
+                        provider === 'custom' ? (state.customModel || StateManager.data.globalSettings.customModel) :
+                            provider === 'koboldcpp' ? 'local' :
+                                provider === 'lmstudio' ? 'local' : 'unknown') || 'unknown';
 
                 const warningBox = document.getElementById('vision-warning-box');
                 const warningText = document.getElementById('vision-warning-text');
@@ -32868,6 +33241,7 @@ Output Schema:
                     'apiProvider', 'geminiApiKey', 'openRouterKey', 'openRouterModel',
                     'openRouterMaxTokens', 'openRouterThinkingEffort', 'openRouterThinkingBudget',
                     'koboldcpp_url', 'koboldcpp_template', 'koboldcpp_temperature', 'koboldcpp_min_p', 'koboldcpp_dry', 'kobold_model_path', 'koboldcpp_context_size', 'koboldcpp_quantkv', 'lmstudio_url',
+                    'customApiUrl', 'customApiKey', 'customModel', 'customMaxTokens', 'customSupportsVision',
                     'requestFirstByteTimeoutSeconds',
                     'geminiModel', 'webllmModel',
                     // Image Gen Keys
@@ -33354,6 +33728,11 @@ Output Schema:
                 } else if (state.apiProvider === 'nanogpt') {
                     limit = 32768;
                     providerName = 'NanoGPT';
+                } else if (state.apiProvider === 'custom') {
+                    // The endpoint's real context window is unknown, so use a
+                    // neutral cloud-sized estimate rather than a local default.
+                    limit = 32768;
+                    providerName = 'Custom';
                 }
 
                 const replacer = PromptBuilder._getReplacer(components.charToAct);
@@ -33795,6 +34174,82 @@ Output Schema:
                                 if (lmStatusText) {
                                     lmStatusText.textContent = `Error: ${e.message || "Failed"}`;
                                     lmStatusText.className = "text-xs text-red-400 font-semibold";
+                                }
+                            }
+                        };
+                    }
+
+                    const testCustomBtn = document.getElementById('test-custom-btn');
+                    const fetchCustomBtn = document.getElementById('fetch-custom-models-btn');
+                    const customStatusText = document.getElementById('custom-status-text');
+
+                    if (testCustomBtn) {
+                        testCustomBtn.onclick = async () => {
+                            const url = document.getElementById('custom-api-url-input')?.value || '';
+                            const key = document.getElementById('custom-api-key-input')?.value || '';
+                            if (customStatusText) {
+                                customStatusText.textContent = "Testing...";
+                                customStatusText.className = "text-xs text-yellow-400 font-semibold";
+                            }
+                            try {
+                                const ok = await APIService.testConnection('custom', { customApiUrl: url, customApiKey: key });
+                                if (customStatusText) {
+                                    if (ok) {
+                                        customStatusText.textContent = "Online ✅";
+                                        customStatusText.className = "text-xs text-green-400 font-semibold";
+                                    } else {
+                                        customStatusText.textContent = "Offline ❌";
+                                        customStatusText.className = "text-xs text-red-400 font-semibold";
+                                    }
+                                }
+                            } catch (e) {
+                                if (customStatusText) {
+                                    customStatusText.textContent = `Error: ${e.message || "Failed"}`;
+                                    customStatusText.className = "text-xs text-red-400 font-semibold";
+                                }
+                            }
+                        };
+                    }
+
+                    if (fetchCustomBtn) {
+                        fetchCustomBtn.onclick = async () => {
+                            const url = document.getElementById('custom-api-url-input')?.value || '';
+                            const key = document.getElementById('custom-api-key-input')?.value || '';
+                            const list = document.getElementById('custom-model-options');
+                            const modelInput = document.getElementById('custom-model-input');
+                            if (customStatusText) {
+                                customStatusText.textContent = "Fetching models...";
+                                customStatusText.className = "text-xs text-yellow-400 font-semibold";
+                            }
+                            try {
+                                const models = await APIService.fetchCustomModels(url, key);
+                                if (list) {
+                                    list.innerHTML = '';
+                                    models.forEach(id => {
+                                        const option = document.createElement('option');
+                                        option.value = id;
+                                        list.appendChild(option);
+                                    });
+                                }
+                                if (modelInput && !modelInput.value && models.length > 0) {
+                                    modelInput.value = models[0];
+                                    const globals = StateManager.data.globalSettings;
+                                    if (globals) globals.customModel = models[0];
+                                    if (ReactiveStore.state) ReactiveStore.state.customModel = models[0];
+                                    StateManager.saveGlobalSettings();
+                                }
+                                if (customStatusText) {
+                                    customStatusText.textContent = models.length
+                                        ? `Found ${models.length} model${models.length === 1 ? '' : 's'}`
+                                        : 'No models returned';
+                                    customStatusText.className = models.length
+                                        ? "text-xs text-green-400 font-semibold"
+                                        : "text-xs text-yellow-400 font-semibold";
+                                }
+                            } catch (e) {
+                                if (customStatusText) {
+                                    customStatusText.textContent = `Error: ${e.message || "Failed"}`;
+                                    customStatusText.className = "text-xs text-red-400 font-semibold";
                                 }
                             }
                         };
@@ -34241,6 +34696,21 @@ Output Schema:
                 if (document.getElementById('koboldcpp-dry-slider')) setupSlider('koboldcpp-dry-slider', 'koboldcpp-dry-value', 'koboldcpp_dry');
                 if (document.getElementById('koboldcpp-url-input')) setListener('koboldcpp-url-input', 'koboldcpp_url');
                 if (document.getElementById('lmstudio-url-input')) setListener('lmstudio-url-input', 'lmstudio_url');
+                if (document.getElementById('custom-api-url-input')) setListener('custom-api-url-input', 'customApiUrl');
+                if (document.getElementById('custom-api-key-input')) setListener('custom-api-key-input', 'customApiKey');
+                if (document.getElementById('custom-model-input')) setListener('custom-model-input', 'customModel');
+                if (document.getElementById('custom-max-tokens-input')) setListener('custom-max-tokens-input', 'customMaxTokens');
+
+                const customVisionToggle = document.getElementById('custom-vision-toggle');
+                if (customVisionToggle) {
+                    customVisionToggle.checked = !!globalSettings.customSupportsVision;
+                    customVisionToggle.addEventListener('change', (e) => {
+                        globalSettings.customSupportsVision = e.target.checked;
+                        state.customSupportsVision = e.target.checked;
+                        StateManager.saveGlobalSettings();
+                    });
+                }
+
                 if (document.getElementById('request-first-byte-timeout-input')) setListener('request-first-byte-timeout-input', 'requestFirstByteTimeoutSeconds');
                 if (document.getElementById('webllm-model-selector')) setListener('webllm-model-selector', 'webllmModel');
                 // Gemini Model Selector (Just bind listener, population handled in switchSettingsTab)
@@ -34844,6 +35314,7 @@ Output Schema:
                 const nanogptSettings = document.getElementById('nanogpt-settings');
                 const koboldcppSettings = document.getElementById('koboldcpp-settings');
                 const lmstudioSettings = document.getElementById('lmstudio-settings');
+                const customSettings = document.getElementById('custom-settings');
                 const webllmSettings = document.getElementById('webllm-settings');
 
                 const currentProvider = globalSettings.apiProvider || 'gemini';
@@ -34853,6 +35324,7 @@ Output Schema:
                 if (nanogptSettings) nanogptSettings.style.display = currentProvider === 'nanogpt' ? 'block' : 'none';
                 if (koboldcppSettings) koboldcppSettings.style.display = currentProvider === 'koboldcpp' ? 'block' : 'none';
                 if (lmstudioSettings) lmstudioSettings.style.display = currentProvider === 'lmstudio' ? 'block' : 'none';
+                if (customSettings) customSettings.style.display = currentProvider === 'custom' ? 'block' : 'none';
                 if (webllmSettings) webllmSettings.style.display = currentProvider === 'webllm' ? 'block' : 'none';
 
                 // Toggle for Portrait Panel
@@ -43511,8 +43983,9 @@ OPENING SCENE: ${firstMsg.substring(0, 200)}`;
                     const provider = state.apiProvider;
                     const model = (provider === 'gemini' ? (state.geminiModel || StateManager.data.globalSettings.geminiModel) :
                         provider === 'openrouter' ? state.openRouterModel :
-                            provider === 'koboldcpp' ? 'local' :
-                                provider === 'lmstudio' ? 'local' : 'unknown') || 'unknown';
+                            provider === 'custom' ? (state.customModel || StateManager.data.globalSettings.customModel) :
+                                provider === 'koboldcpp' ? 'local' :
+                                    provider === 'lmstudio' ? 'local' : 'unknown') || 'unknown';
 
                     if (!APIService._supportsVision(provider, model)) {
                         const directions = APIService.getVisionDirections(provider);
@@ -48326,6 +48799,10 @@ Return ONLY the physical description. Write in the 3rd person. No preamble.`;
                 }
                 if (s.apiProvider === 'koboldcpp') return !!s.koboldcpp_url;
                 if (s.apiProvider === 'lmstudio') return !!s.lmstudio_url;
+                if (s.apiProvider === 'custom') {
+                    // The key is optional for local servers; the URL and model are not.
+                    return !!(s.customApiUrl && String(s.customApiUrl).trim() && s.customModel && String(s.customModel).trim());
+                }
                 if (s.apiProvider === 'webllm') return !!s.webllmModel;
 
                 return false;
