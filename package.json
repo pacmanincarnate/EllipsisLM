@@ -15,6 +15,7 @@
     "test:all": "npm run test:extensive",
     "dist": "electron-builder --win --publish never",
     "dist:mac": "electron-builder --mac --publish never",
+    "dist:linux": "electron-builder --linux --publish never",
     "keynote:soundtrack": "node tools/keynote/generate-soundtrack.js",
     "keynote:render": "node tools/keynote/render-pipe.js",
     "prepare": "git config core.hooksPath .githooks || true"
