@@ -158,6 +158,7 @@ EllipsisLM is backend-agnostic. You can switch between local and cloud models de
 
 - **Local Models**: Native support for **KoboldCPP** and **LM Studio**. All processing happens on your machine with 100% privacy.
 - **Cloud Models**: Support for **Google Gemini** and **OpenRouter** (for access to GPT, Claude, etc.) using your own API keys.
+- **Custom Endpoints**: Connect any **OpenAI-compatible** server (Ollama, llama.cpp, vLLM, LocalAI, hosted gateways) with your own URL, optional key, and model ID.
 
 | Feature | Cloud-Only Apps | EllipsisLM |
 | :--- | :--- | :--- |
@@ -214,9 +215,21 @@ A user-friendly local interface for downloading and running models.
 
 * Note: EllipsisLM waits up to **5 minutes** for a model to start replying, since loading a large local model and processing a long prompt can take a while. If your hardware needs more time, raise **Global Settings** > **AI Backend** > **First response timeout (seconds)**. Once tokens are flowing, a 60-second gap is treated as a stalled connection.
 
+### 5. Custom (OpenAI-compatible)
+Any server that implements the OpenAI chat completions API can be used directly — Ollama, llama.cpp's server, vLLM, LocalAI, and hosted gateways all work.
+
+1. Open **Global Settings** > **Model** and choose **Custom** from the AI Provider dropdown.
+2. Enter the **API URL**. A bare host (`http://localhost:11434`), a `/v1` base, or a full `/v1/chat/completions` URL are all accepted; the app adds the missing parts.
+3. Paste an **API Key** if your endpoint requires one. It is optional for local servers.
+4. Enter the **Model** ID your server expects (for example `llama3.1` or `gpt-4o-mini`), or press **Fetch Models** to list what the endpoint exposes.
+5. Press **Test Connection** to check the URL and key.
+6. If the model accepts images, tick **Model supports image input**. Otherwise EllipsisLM uses the Vision Bridge or tells the model it cannot see the image.
+
+* Note: the browser build must be able to reach the endpoint directly, so the server needs to send CORS headers. The Electron build is not affected. **Max Output Tokens** defaults to 4096; structured JSON passes use at least 8192.
+
 ---
 
-### 5. Vision Bridge (Optional)
+### 6. Vision Bridge (Optional)
 
 Only worth setting up if you like a model that cannot see images — DeepSeek and most reasoning
 models are in that group. It has no effect on models that already handle pictures themselves.
@@ -245,7 +258,7 @@ Once your backend is running or your API key is ready:
 1.  Click the **Global Settings** (gear icon) in the top-right corner of EllipsisLM.
 2.  Under the **AI Backend** section, use the dropdown to select your provider.
 3.  Input your **API Key** or **Server URL** as required.
-4.  For OpenRouter or LM Studio, you can use the **Search / Browse** icons next to the model field to select from available models.
+4.  For OpenRouter, LM Studio, or Custom, you can use the **Search / Browse / Fetch Models** controls next to the model field to select from available models.
 
 ---
 

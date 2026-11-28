@@ -4169,6 +4169,68 @@ test('resolveAITimeoutBudget: the between-token budget defaults to 60s and can b
     assert.equal(UTILITY.resolveAITimeoutBudget({ interTokenMs: 'abc' }).interTokenMs, 60000);
 });
 
+// ─── Custom OpenAI-compatible endpoint helpers ────────────────────────────
+//
+// A custom endpoint can be entered as a bare host, a /v1 base, or a full
+// chat-completions URL. Normalising in one place keeps the settings UI, the
+// request path, and the /models probe consistent.
+
+test('resolveOpenAICompatibleEndpoint: accepts a bare host and appends /v1/chat/completions', () => {
+    assert.equal(
+        UTILITY.resolveOpenAICompatibleEndpoint('http://localhost:11434'),
+        'http://localhost:11434/v1/chat/completions'
+    );
+});
+
+test('resolveOpenAICompatibleEndpoint: accepts a /v1 base', () => {
+    assert.equal(
+        UTILITY.resolveOpenAICompatibleEndpoint('http://localhost:8080/v1'),
+        'http://localhost:8080/v1/chat/completions'
+    );
+});
+
+test('resolveOpenAICompatibleEndpoint: leaves a full chat-completions URL alone', () => {
+    assert.equal(
+        UTILITY.resolveOpenAICompatibleEndpoint('https://api.example.com/v1/chat/completions'),
+        'https://api.example.com/v1/chat/completions'
+    );
+});
+
+test('resolveOpenAICompatibleEndpoint: trims whitespace and trailing slashes', () => {
+    assert.equal(
+        UTILITY.resolveOpenAICompatibleEndpoint('  http://localhost:11434/v1/  '),
+        'http://localhost:11434/v1/chat/completions'
+    );
+});
+
+test('resolveOpenAICompatibleEndpoint: rejects blank and non-http URLs', () => {
+    for (const value of [undefined, null, '', '   ', 'localhost:11434', 'ftp://example.com']) {
+        assert.throws(
+            () => UTILITY.resolveOpenAICompatibleEndpoint(value),
+            /Custom API URL/i,
+            `expected ${String(value)} to be rejected`
+        );
+    }
+});
+
+test('resolveOpenAICompatibleBaseUrl: derives the /v1 base for the models probe', () => {
+    assert.equal(UTILITY.resolveOpenAICompatibleBaseUrl('http://localhost:11434'), 'http://localhost:11434/v1');
+    assert.equal(UTILITY.resolveOpenAICompatibleBaseUrl('http://localhost:11434/v1'), 'http://localhost:11434/v1');
+    assert.equal(
+        UTILITY.resolveOpenAICompatibleBaseUrl('https://api.example.com/v1/chat/completions'),
+        'https://api.example.com/v1'
+    );
+});
+
+test('getDefaultApiSettings: exposes an unconfigured Custom OpenAI-compatible provider', () => {
+    const defaults = UTILITY.getDefaultApiSettings();
+    assert.equal(defaults.customApiUrl, '');
+    assert.equal(defaults.customApiKey, '');
+    assert.equal(defaults.customModel, '');
+    assert.equal(defaults.customMaxTokens, 4096);
+    assert.equal(defaults.customSupportsVision, false);
+});
+
 // ─── createActivityTimeout: mutable two-phase budget ──────────────────────
 
 test('createActivityTimeout: the default budget remains 60 seconds', () => {
