@@ -18,6 +18,7 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 
 let lastRequest = null;
 let lastModelsRequest = null;
+let modelsHitCount = 0;
 
 function startMockServer() {
     const server = http.createServer((req, res) => {
@@ -33,6 +34,7 @@ function startMockServer() {
 
         if (req.method === 'GET' && req.url.startsWith('/v1/models')) {
             lastModelsRequest = { url: req.url, headers: req.headers };
+            modelsHitCount++;
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({
                 object: 'list',
@@ -188,6 +190,37 @@ function startMockServer() {
         const onContent = lastRequest && lastRequest.body && lastRequest.body.messages[0].content;
         const hasImagePart = Array.isArray(onContent) && onContent.some(part => part && part.type === 'image_url');
         check('vision on attaches image_url content parts', hasImagePart, JSON.stringify(onContent));
+
+        // 6. Regression: the desktop app-update UI must not short-circuit the
+        //    Model-tab wiring. In Electron, switchSettingsTab took the
+        //    electronBridge branch and skipped every model-tab handler, so the
+        //    Fetch Models and Test Connection buttons did nothing at all.
+        await page.evaluate((url) => {
+            StateManager.data.globalSettings.apiProvider = 'custom';
+            StateManager.data.globalSettings.customApiUrl = url;
+            StateManager.data.globalSettings.customApiKey = '';
+            StateManager.data.globalSettings.customModel = 'test-model';
+            window.electronBridge = window.electronBridge || {};
+            AppController.setApiProvider('custom');
+            AppController.switchSettingsTab('model');
+        }, mockUrl);
+
+        const wiring = await page.evaluate(() => {
+            const buttons = Array.from(document.querySelectorAll('#fetch-custom-models-btn'));
+            const visible = buttons.find(b => b.offsetParent) || buttons[0];
+            return { count: buttons.length, hasOnclick: !!(visible && visible.onclick) };
+        });
+        check('Fetch Models stays wired when the Electron bridge is present', wiring.hasOnclick, JSON.stringify(wiring));
+
+        const hitsBefore = modelsHitCount;
+        await page.evaluate(() => {
+            const buttons = Array.from(document.querySelectorAll('#fetch-custom-models-btn'));
+            const visible = buttons.find(b => b.offsetParent) || buttons[0];
+            if (visible) visible.click();
+        });
+        await page.waitForTimeout(600);
+        check('Fetch Models still probes /v1/models with the Electron bridge present',
+            modelsHitCount > hitsBefore, `${hitsBefore} -> ${modelsHitCount}`);
 
     } catch (e) {
         console.error('[Custom Provider E2E] Fatal:', e);

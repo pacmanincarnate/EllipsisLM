@@ -95,7 +95,7 @@ const api = extractMethodSources('APIService', [
     'callAI', 'callCustom', 'testConnection', 'fetchCustomModels', '_supportsVision', 'getVisionDirections'
 ]);
 const narrative = extractMethodSources('NarrativeController', ['_isModelConfigured']);
-const app = extractMethodSources('AppController', ['bindSettingsListeners']);
+const app = extractMethodSources('AppController', ['bindSettingsListeners', 'switchSettingsTab']);
 const stateManager = extractMethodSources('StateManager', ['loadLibrary']);
 
 // ── Settings UI ──
@@ -150,6 +150,16 @@ test('loadLibrary forces custom provider settings from global settings', () => {
     assert.match(stateManager.loadLibrary, /customApiUrl: this\.data\.globalSettings\.customApiUrl/);
     assert.match(stateManager.loadLibrary, /customApiKey: this\.data\.globalSettings\.customApiKey/);
     assert.match(stateManager.loadLibrary, /customModel: this\.data\.globalSettings\.customModel/);
+});
+
+test('the desktop app-update UI does not short-circuit the Model-tab wiring', () => {
+    // switchSettingsTab used to be
+    //   if (electronBridge && renderAppUpdateUI) renderAppUpdateUI();
+    //   else if (tabName === 'model') { ...wire buttons... }
+    // so in Electron every Model-tab button (Fetch Models, Test Connection,
+    // LM Studio test, Gemini models, TTS) was left unbound.
+    assert.doesNotMatch(app.switchSettingsTab, /renderAppUpdateUI\(\);\s*\}\s*else\s+if/);
+    assert.match(app.switchSettingsTab, /renderAppUpdateUI\(\);\s*\}\s*if\s*\(tabName === 'personas'\)/);
 });
 
 // ── Request adapter ──

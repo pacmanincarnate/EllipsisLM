@@ -34136,9 +34136,15 @@ Output Schema:
                 this.updateSettingsTabsDisabledState();
                 this.bindSettingsListeners();
 
+                // The desktop app-update UI is independent of the tab contents.
+                // It must not be chained to the tab branches below: doing so made
+                // Electron skip every Model-tab handler (Fetch Models, Test
+                // Connection, LM Studio test, Gemini models, TTS).
                 if (window.electronBridge && typeof window.renderAppUpdateUI === 'function') {
                     window.renderAppUpdateUI();
-                } else if (tabName === 'personas') {
+                }
+
+                if (tabName === 'personas') {
                     this.renderUserPersonaList();
                 } else if (tabName === 'prompt') {
                     this.renderTokenVisualizer();
